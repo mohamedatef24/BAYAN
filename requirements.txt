@@ -1,0 +1,8 @@
+transformers
+torch
+datasets
+camel-tools
+sentencepiece
+scikit-learn
+numpy
+pandas
