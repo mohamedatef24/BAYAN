@@ -1,0 +1,1139 @@
+<!doctype html>
+<html lang="ar" dir="rtl" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>بيان - مساعد الكتابة العربية الذكي</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@300;400;500;600;700;800&amp;family=Tajawal:wght@300;400;500;700;800&amp;display=swap" rel="stylesheet">
+  <style>
+    body {
+      box-sizing: border-box;
+    }
+    
+    * {
+      font-family: 'Tajawal', 'Noto Kufi Arabic', sans-serif;
+    }
+    
+    .gradient-bg {
+      background: linear-gradient(165deg, #0a1628 0%, #1a2744 40%, #0f1b2e 100%);
+    }
+    
+    .gradient-accent {
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    }
+    
+    .text-gradient {
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .card-hover {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .card-hover:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px -10px rgba(59, 130, 246, 0.3);
+    }
+    
+    .spelling-error {
+      background: rgba(239, 68, 68, 0.15);
+      border-bottom: 2px solid #ef4444;
+      cursor: pointer;
+      position: relative;
+      padding: 0 2px;
+      border-radius: 2px;
+    }
+    
+    .grammar-error {
+      background: rgba(251, 191, 36, 0.15);
+      border-bottom: 2px solid #fbbf24;
+      cursor: pointer;
+      position: relative;
+      padding: 0 2px;
+      border-radius: 2px;
+    }
+    
+    .punctuation-suggestion {
+      background: rgba(34, 197, 94, 0.15);
+      border-bottom: 2px solid #22c55e;
+      cursor: pointer;
+      position: relative;
+      padding: 0 2px;
+      border-radius: 2px;
+    }
+    
+    .editor-content {
+      line-height: 2.2;
+      letter-spacing: 0.02em;
+    }
+    
+    .page {
+      display: none;
+    }
+    
+    .page.active {
+      display: block;
+    }
+    
+    .nav-link {
+      position: relative;
+      transition: all 0.3s ease;
+    }
+    
+    .nav-link::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      right: 0;
+      width: 0;
+      height: 2px;
+      background: var(--primary-color);
+      transition: width 0.3s ease;
+    }
+    
+    .nav-link:hover::after,
+    .nav-link.active::after {
+      width: 100%;
+    }
+    
+    .tooltip {
+      position: absolute;
+      background: var(--surface-color);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      z-index: 1000;
+      max-width: 300px;
+      display: none;
+    }
+    
+    .tooltip.show {
+      display: block;
+    }
+    
+    .score-circle {
+      transition: stroke-dashoffset 1s ease-in-out;
+    }
+    
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      font-size: 24px;
+    }
+    
+    .animate-fade-in {
+      animation: fadeIn 0.6s ease-in-out;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .animate-float {
+      animation: float 6s ease-in-out infinite;
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-20px); }
+    }
+    
+    .editor-textarea {
+      background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
+      color: #1a202c;
+      resize: none;
+      min-height: 500px;
+    }
+    
+    .editor-textarea:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    }
+    
+    :root {
+      --primary-color: #3b82f6;
+      --secondary-color: #8b5cf6;
+      --text-color: #f1f5f9;
+      --text-secondary: #cbd5e1;
+      --surface-color: #1e293b;
+      --background-color: #0f172a;
+      --success-color: #22c55e;
+      --warning-color: #fbbf24;
+      --error-color: #ef4444;
+    }
+    
+    .pricing-badge {
+      position: absolute;
+      top: -12px;
+      right: 50%;
+      transform: translateX(50%);
+      padding: 4px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    
+    .suggestion-item {
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    
+    .suggestion-item:hover {
+      background: rgba(59, 130, 246, 0.1);
+    }
+    
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+    
+    input[type="range"]::-webkit-slider-track {
+      background: rgba(255, 255, 255, 0.1);
+      height: 6px;
+      border-radius: 3px;
+    }
+    
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      background: var(--primary-color);
+      height: 18px;
+      width: 18px;
+      border-radius: 50%;
+      margin-top: -6px;
+    }
+    
+    .summary-preview {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s ease-in-out;
+    }
+    
+    .summary-preview.show {
+      max-height: 400px;
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="h-full" style="background-color: var(--background-color); color: var(--text-color);">
+  <div class="h-full overflow-auto"><!-- Navigation -->
+   <nav class="fixed top-0 right-0 left-0 z-50 backdrop-blur-xl border-b" style="background: rgba(15, 23, 42, 0.85); border-color: rgba(255, 255, 255, 0.08);">
+    <div class="max-w-7xl mx-auto px-6 py-4">
+     <div class="flex items-center justify-between"><!-- Logo & Brand (Right side in RTL) -->
+      <div class="flex items-center gap-3">
+       <div class="w-10 h-10 rounded-xl flex items-center justify-center gradient-accent"><span class="text-white text-xl font-bold">ب</span>
+       </div><span id="nav-brand" class="text-2xl font-bold text-gradient">بيان</span>
+      </div><!-- Nav Links (Center) -->
+      <div class="hidden md:flex items-center gap-8"><button onclick="showPage('home')" class="nav-link active text-base font-medium" style="color: var(--text-color);" data-page="home">الرئيسية</button> <button onclick="showPage('features')" class="nav-link text-base font-medium" style="color: var(--text-secondary);" data-page="features">الميزات</button> <button onclick="showPage('editor')" class="nav-link text-base font-medium" style="color: var(--text-secondary);" data-page="editor">المحرر</button> <button onclick="showPage('pricing')" class="nav-link text-base font-medium" style="color: var(--text-secondary);" data-page="pricing">الأسعار</button>
+      </div><!-- CTA Buttons (Left side in RTL) -->
+      <div class="flex items-center gap-4"><button class="text-base font-medium transition-colors hover:text-white" style="color: var(--text-secondary);">تسجيل الدخول</button> <button id="nav-cta" class="px-6 py-2.5 rounded-xl text-base font-bold text-white gradient-accent transition-all hover:scale-105 hover:shadow-lg"> ابدأ الكتابة مجانًا </button>
+      </div>
+     </div>
+    </div>
+   </nav><!-- Home Page -->
+   <div id="page-home" class="page active"><!-- Hero Section -->
+    <section class="gradient-bg min-h-screen pt-28 pb-20 relative overflow-hidden"><!-- Background Decoration -->
+     <div class="absolute inset-0 overflow-hidden pointer-events-none">
+      <div class="absolute top-20 left-20 w-96 h-96 rounded-full opacity-20" style="background: radial-gradient(circle, var(--primary-color) 0%, transparent 70%); filter: blur(80px);"></div>
+      <div class="absolute bottom-20 right-20 w-96 h-96 rounded-full opacity-20" style="background: radial-gradient(circle, var(--secondary-color) 0%, transparent 70%); filter: blur(80px);"></div>
+     </div>
+     <div class="max-w-7xl mx-auto px-6 relative z-10">
+      <div class="grid lg:grid-cols-2 gap-16 items-center"><!-- Hero Content -->
+       <div class="text-center lg:text-right animate-fade-in">
+        <div class="inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold mb-8" style="background: rgba(59, 130, 246, 0.15); color: var(--primary-color); border: 1px solid rgba(59, 130, 246, 0.3);"><span class="w-2 h-2 rounded-full animate-pulse" style="background: var(--primary-color);"></span> <span>مدعوم بالذكاء الاصطناعي</span>
+        </div>
+        <h1 id="hero-headline" class="text-5xl lg:text-7xl font-bold leading-tight mb-6" style="line-height: 1.3;">اكتب العربية<br><span class="text-gradient">بثقة واحتراف</span></h1>
+        <p id="hero-subheadline" class="text-xl lg:text-2xl leading-relaxed mb-10" style="color: var(--text-secondary); line-height: 1.9;">مساعد ذكي يصحح الإملاء والنحو وعلامات الترقيم ويُلخّص النصوص العربية بدقة عالية.</p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-12"><button id="hero-cta-primary" onclick="showPage('editor')" class="px-8 py-4 rounded-2xl text-lg font-bold text-white gradient-accent transition-all hover:scale-105 hover:shadow-2xl"> ابدأ الكتابة الآن </button> <button class="px-8 py-4 rounded-2xl text-lg font-bold transition-all hover:scale-105 border-2" style="border-color: rgba(255, 255, 255, 0.2); color: var(--text-color);"> شاهد العرض التوضيحي </button>
+        </div><!-- Stats -->
+        <div class="flex items-center gap-8 justify-center lg:justify-start">
+         <div class="text-center">
+          <div class="text-3xl font-bold text-gradient">
+           +١٠ مليون
+          </div>
+          <div class="text-sm mt-1" style="color: var(--text-secondary);">
+           كلمة تم تصحيحها
+          </div>
+         </div>
+         <div class="w-px h-12" style="background: rgba(255, 255, 255, 0.2);"></div>
+         <div class="text-center">
+          <div class="text-3xl font-bold text-gradient">
+           ٩٩٪
+          </div>
+          <div class="text-sm mt-1" style="color: var(--text-secondary);">
+           دقة التصحيح
+          </div>
+         </div>
+         <div class="w-px h-12" style="background: rgba(255, 255, 255, 0.2);"></div>
+         <div class="text-center">
+          <div class="text-3xl font-bold text-gradient">
+           +٥٠ ألف
+          </div>
+          <div class="text-sm mt-1" style="color: var(--text-secondary);">
+           مستخدم نشط
+          </div>
+         </div>
+        </div>
+       </div><!-- Editor Mockup -->
+       <div class="relative animate-float">
+        <div class="rounded-3xl overflow-hidden shadow-2xl" style="background: var(--surface-color); border: 1px solid rgba(255, 255, 255, 0.1);"><!-- Editor Header -->
+         <div class="flex items-center justify-between p-4 border-b" style="border-color: rgba(255, 255, 255, 0.1);">
+          <div class="flex items-center gap-3">
+           <div class="w-3 h-3 rounded-full" style="background: #ef4444;"></div>
+           <div class="w-3 h-3 rounded-full" style="background: #fbbf24;"></div>
+           <div class="w-3 h-3 rounded-full" style="background: #22c55e;"></div>
+          </div><span class="text-sm" style="color: var(--text-secondary);">محرر بيان</span>
+          <div class="w-20"></div>
+         </div><!-- Mock Editor Content -->
+         <div class="p-8 editor-content text-right text-lg" dir="rtl" style="background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%); color: #1a202c; min-height: 300px;">
+          <p class="mb-4">مرحباً بكم في <span class="spelling-error">محرر بيان</span> للكتابة العربية<span class="punctuation-suggestion">.</span></p>
+          <p class="mb-4">نحن <span class="grammar-error">نساعدك</span> على كتابة نصوص عربية صحيحة وواضحة بفضل الذكاء الاصطناعي المتقدم<span class="punctuation-suggestion">.</span></p>
+          <p>جرّب المحرر الآن وشاهد كيف يمكن أن تصبح كتابتك أفضل!</p>
+         </div><!-- Mock Stats Bar -->
+         <div class="flex items-center justify-between p-4 border-t" style="border-color: rgba(255, 255, 255, 0.1);">
+          <div class="flex items-center gap-6">
+           <div class="flex items-center gap-2">
+            <div class="w-3 h-3 rounded-full" style="background: #ef4444;"></div><span class="text-sm" style="color: var(--text-secondary);">١ إملائي</span>
+           </div>
+           <div class="flex items-center gap-2">
+            <div class="w-3 h-3 rounded-full" style="background: #fbbf24;"></div><span class="text-sm" style="color: var(--text-secondary);">١ نحوي</span>
+           </div>
+           <div class="flex items-center gap-2">
+            <div class="w-3 h-3 rounded-full" style="background: #22c55e;"></div><span class="text-sm" style="color: var(--text-secondary);">٢ ترقيم</span>
+           </div>
+          </div>
+          <div class="flex items-center gap-2"><span class="text-2xl font-bold text-gradient">٩٢</span> <span class="text-sm" style="color: var(--text-secondary);">التقييم</span>
+          </div>
+         </div>
+        </div><!-- Floating Suggestion Card -->
+        <div class="absolute -bottom-6 -left-6 p-4 rounded-2xl shadow-xl animate-pulse" style="background: var(--surface-color); border: 1px solid rgba(34, 197, 94, 0.3); max-width: 280px;">
+         <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: rgba(34, 197, 94, 0.15);"><span style="color: #22c55e; font-size: 20px;">✓</span>
+          </div>
+          <div>
+           <div class="text-sm font-bold mb-1">
+            تصحيح تلقائي
+           </div>
+           <div class="text-xs" style="color: var(--text-secondary);">
+            تم إصلاح ٣ أخطاء في النص
+           </div>
+          </div>
+         </div>
+        </div>
+       </div>
+      </div>
+     </div>
+    </section><!-- Features Preview Section -->
+    <section class="py-24" style="background: var(--background-color);">
+     <div class="max-w-7xl mx-auto px-6">
+      <div class="text-center mb-16">
+       <h2 class="text-4xl lg:text-5xl font-bold mb-6">ميزات <span class="text-gradient">قوية ومتقدمة</span></h2>
+       <p class="text-xl max-w-3xl mx-auto" style="color: var(--text-secondary); line-height: 1.9;">كل ما تحتاجه لكتابة نصوص عربية احترافية وخالية من الأخطاء</p>
+      </div>
+      <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6"><!-- Feature 1: Spelling -->
+       <div class="card-hover p-8 rounded-3xl" style="background: var(--surface-color); border: 1px solid rgba(255, 255, 255, 0.08);">
+        <div class="feature-icon mb-6" style="background: rgba(239, 68, 68, 0.15); color: #ef4444;">
+         ✎
+        </div>
+        <h3 class="text-xl font-bold mb-3">التدقيق الإملائي الذكي</h3>
+        <p class="text-sm leading-relaxed" style="color: var(--text-secondary); line-height: 1.8;">فهم الجذور الصرفية والسياق لتصحيح الأخطاء الإملائية بدقة عالية</p>
+       </div><!-- Feature 2: Grammar -->
+       <div class="card-hover p-8 rounded-3xl" style="background: var(--surface-color); border: 1px solid rgba(255, 255, 255, 0.08);">
+        <div class="feature-icon mb-6" style="background: rgba(251, 191, 36, 0.15); color: #fbbf24;">
+         ◉
+        </div>
+        <h3 class="text-xl font-bold mb-3">تصحيح القواعد النحوية</h3>
+        <p class="text-sm leading-relaxed" style="color: var(--text-secondary); line-height: 1.8;">توافق الفعل والفاعل واقتراح الإعراب الصحيح بشكل تلقائي</p>
+       </div><!-- Feature 3: Punctuation -->
+       <div class="card-hover p-8 rounded-3xl" style="background: var(--surface-color); border: 1px solid rgba(255, 255, 255, 0.08);">
+        <div class="feature-icon mb-6" style="background: rgba(34, 197, 94, 0.15); color: #22c55e;">
+         ⸲
+        </div>
+        <h3 class="text-xl font-bold mb-3">تصحيح علامات الترقيم</h3>
+        <p class="text-sm leading-relaxed" style="color: var(--text-secondary); line-height: 1.8;">الفواصل والنقط وعلامات الاقتباس العربية في المكان الصحيح</p>
+       </div><!-- Feature 4: Summarization -->
+       <div class="card-hover p-8 rounded-3xl" style="background: var(--surface-color); border: 1px solid rgba(255, 255, 255, 0.08);">
+        <div class="feature-icon mb-6" style="background: rgba(139, 92, 246, 0.15); color: #8b5cf6;">
+         ⊞
+        </div>
+        <h3 class="text-xl font-bold mb-3">تلخيص النصوص العربية</h3>
+        <p class="text-sm leading-relaxed" style="color: var(--text-secondary); line-height: 1.8;">الحفاظ على المعنى والأسلوب مع تقليل طول النص بذكاء</p>
+       </div>
+      </div>
+      <div class="text-center mt-12"><button onclick="showPage('features')" class="px-8 py-4 rounded-2xl text-lg font-bold border-2 transition-all hover:scale-105" style="border-color: var(--primary-color); color: var(--primary-color);"> استكشف جميع الميزات ← </button>
+      </div>
+     </div>
+    </section>
+   </div><!-- Features Page -->
+   <div id="page-features" class="page">
+    <section class="pt-32 pb-24" style="background: var(--background-color);">
+     <div class="max-w-7xl mx-auto px-6">
+      <div class="text-center mb-20">
+       <h1 class="text-5xl lg:text-6xl font-bold mb-6">ميزات <span class="text-gradient">شاملة ومتكاملة</span></h1>
+       <p class="text-xl max-w-3xl mx-auto" style="color: var(--text-secondary); line-height: 1.9;">أدوات متخصصة مصممة خصيصًا للغة العربية</p>
+      </div><!-- Feature 1: Spelling Check -->
+      <div class="grid lg:grid-cols-2 gap-16 items-center mb-32">
+       <div class="order-2 lg:order-1">
+        <div class="p-8 rounded-3xl" style="background: var(--surface-color); border: 1px solid rgba(255, 255, 255, 0.08);">
+         <div class="text-right text-xl editor-content" dir="rtl" style="color: var(--text-color); line-height: 2;">
+          <p class="mb-4">الكتابة <span class="spelling-error">الصحيحه</span> مهمة جدًا في التواصل الفعّال.</p>
+          <div class="mt-6 p-4 rounded-xl" style="background: rgba(239, 68, 68, 0.1); border-right: 4px solid #ef4444;">
+           <div class="text-sm font-bold mb-2" style="color: #ef4444;">
+            خطأ إملائي
+           </div>
+           <div class="flex items-center justify-between text-base">
+            <div><span style="text-decoration: line-through; color: var(--text-secondary);">الصحيحه</span> <span class="mx-3">←</span> <span style="color: #22c55e; font-weight: 600;">الصحيحة</span>
+            </div>
+           </div>
+           <div class="text-sm mt-3" style="color: var(--text-secondary);">
+            التاء المربوطة (ة) تُستخدم مع الصفات المؤنثة
+           </div>
+          </div>
+         </div>
+        </div>
+       </div>
+       <div class="order-1 lg:order-2 text-right">
+        <div class="feature-icon mb-6" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; width: 64px; height: 64px; font-size: 32px;">
+         ✎
+        </div>
+        <h2 class="text-4xl font-bold mb-6">التدقيق الإملائي الذكي</h2>
+        <p class="text-lg mb-8 leading-relaxed" style="color: var(--text-secondary); line-height: 2;">محرك ذكي يفهم الجذور الصرفية والسياق اللغوي لتصحيح الأخطاء الإملائية التي تفوتها البرامج التقليدية.</p>
+        <ul class="space-y-4">
+         <li class="flex items-center gap-4">
+          <div class="w-6 h-6 rounded-full flex items-center justify-center" style="background: rgba(34, 197, 94, 0.2);"><span style="color: #22c55e; font-size: 14px;">✓</span>
+          </div><span class="text-base">اقتراحات حسب السياق اللغوي</span></li>
+         <li class="flex items-center gap-4">
+          <div class="w-6 h-6 rounded-full flex items-center justify-center" style="background: rgba(34, 197, 94, 0.2);"><span style="color: #22c55e; font-size: 14px;">✓</span>
+          </div><span class="text-base">التعرف على الجذور الصرفية العربية</span></li>
+         <li class="flex items-center gap-4">
+          <div class="w-6 h-6 rounded-full flex items-center justify-center" style="background: rgba(34, 197, 94, 0.2);"><span style="color: #22c55e; font-size: 14px;">✓</span>
+          </div><span class="text-base">تصحيح فوري أثناء الكتابة</span></li>
+        </ul>
+       </div>
+      </div><!-- Feature 2: Grammar Check -->
+      <div class="grid lg:grid-cols-2 gap-16 items-center mb-32">
+       <div class="text-right">
+        <div class="feature-icon mb-6" style="background: rgba(251, 191, 36, 0.15); color: #fbbf24; width: 64px; height: 64px; font-size: 32px;">
+         ◉
+        </div>
+        <h2 class="text-4xl font-bold mb-6">تصحيح القواعد النحوية</h2>
+        <p class="text-lg mb-8 leading-relaxed" style="color: var(--text-secondary); line-height: 2;">فهم عميق لقواعد النحو العربي بما في ذلك الإعراب وتوافق الفعل مع الفاعل والصفات.</p>
+        <ul class="space-y-4">
+         <li class="flex items-center gap-4">
+          <div class="w-6 h-6 rounded-full flex items-center justify-center" style="background: rgba(34, 197, 94, 0.2);"><span style="color: #22c55e; font-size: 14px;">✓</span>
+          </div><span class="text-base">توافق الفعل والفاعل تلقائيًا</span></li>
+         <li class="flex items-center gap-4">
+          <div class="w-6 h-6 rounded-full flex items-center justify-center" style="background: rgba(34, 197, 94, 0.2);"><span style="color: #22c55e; font-size: 14px;">✓</span>
+          </div><span class="text-base">اقتراح الإعراب الصحيح للكلمات</span></li>
+         <li class="flex items-center gap-4">
+          <div class="w-6 h-6 rounded-full flex items-center justify-center" style="background: rgba(34, 197, 94, 0.2);"><span style="color: #22c55e; font-size: 14px;">✓</span>
+          </div><span class="text-base">شرح تفصيلي لكل تصحيح</span></li>
+        </ul>
+       </div>
+       <div>
+        <div class="p-8 rounded-3xl" style="background: var(--surface-color); border: 1px solid rgba(255, 255, 255, 0.08);">
+         <div class="text-right text-xl editor-content" dir="rtl" style="color: var(--text-color); line-height: 2;">
+          <p class="mb-4">الطلاب <span class="grammar-error">ذهبوا</span> إلى المدرسة صباحًا.</p>
+          <div class="mt-6 p-4 rounded-xl" style="background: rgba(251, 191, 36, 0.1); border-right: 4px solid #fbbf24;">
+           <div class="text-sm font-bold mb-2" style="color: #fbbf24;">
+            اقتراح نحوي
+           </div>
+           <div class="text-base mb-3"><span style="color: var(--text-secondary);">يُفضل:</span> <span style="color: #22c55e; font-weight: 600; margin-right: 8px;">ذهب الطلاب</span>
+           </div>
+           <div class="text-sm" style="color: var(--text-secondary); line-height: 1.7;">
+            في اللغة العربية الفصحى، عندما يتقدم الفعل على الفاعل الجمع، يُفضل إفراد الفعل.
+           </div>
+          </div>
+         </div>
+        </div>
+       </div>
+      </div><!-- Feature 3: Punctuation -->
+      <div class="grid lg:grid-cols-2 gap-16 items-center mb-32">
+       <div class="order-2 lg:order-1">
+        <div class="p-8 rounded-3xl" style="background: var(--surface-color); border: 1px solid rgba(255, 255, 255, 0.08);">
+         <div class="text-right text-xl editor-content" dir="rtl" style="color: var(--text-color); line-height: 2;">
+          <p class="mb-4">قال المعلم<span class="punctuation-suggestion">:</span> <span class="punctuation-suggestion">«</span>الدرس مهم جدًا<span class="punctuation-suggestion">»</span><span class="punctuation-suggestion">.</span></p>
+          <div class="mt-6 p-4 rounded-xl" style="background: rgba(34, 197, 94, 0.1); border-right: 4px solid #22c55e;">
+           <div class="text-sm font-bold mb-2" style="color: #22c55e;">
+            ✓ تم إصلاح علامات الترقيم
+           </div>
+           <div class="text-sm" style="color: var(--text-secondary); line-height: 1.7;">
+            • أُضيفت النقطتان بعد "قال المعلم"<br>
+             • استُخدمت علامات الاقتباس العربية «»<br>
+             • أُضيفت النقطة في نهاية الجملة
+           </div>
+          </div>
+         </div>
+        </div>
+       </div>
+       <div class="order-1 lg:order-2 text-right">
+        <div class="feature-icon mb-6" style="background: rgba(34, 197, 94, 0.15); color: #22c55e; width: 64px; height: 64px; font-size: 32px;">
+         ⸲
+        </div>
+        <h2 class="text-4xl font-bold mb-6">تصحيح علامات الترقيم</h2>
+        <p class="text-lg mb-8 leading-relaxed" style="color: var(--text-secondary); line-height: 2;">كشف وتصحيح تلقائي لعلامات الترقيم العربية بما في ذلك الوضع الصحيح للفواصل والنقاط وعلامات الاقتباس.</p>
+        <ul class="space-y-4">
+         <li class="flex items-center gap-4">
+          <div class="w-6 h-6 rounded-full flex items-center justify-center" style="background: rgba(34, 197, 94, 0.2);"><span style="color: #22c55e; font-size: 14px;">✓</span>
+          </div><span class="text-base">علامات الترقيم العربية الأصيلة</span></li>
+         <li class="flex items-center gap-4">
+          <div class="w-6 h-6 rounded-full flex items-center justify-center" style="background: rgba(34, 197, 94, 0.2);"><span style="color: #22c55e; font-size: 14px;">✓</span>
+          </div><span class="text-base">تحليل بنية الجمل والفقرات</span></li>
+         <li class="flex items-center gap-4">
+          <div class="w-6 h-6 rounded-full flex items-center justify-center" style="background: rgba(34, 197, 94, 0.2);"><span style="color: #22c55e; font-size: 14px;">✓</span>
+          </div><span class="text-base">معالجة علامات الاقتباس والحوار</span></li>
+        </ul>
+       </div>
+      </div><!-- Feature 4: Summarization -->
+      <div class="grid lg:grid-cols-2 gap-16 items-center">
+       <div class="text-right">
+        <div class="feature-icon mb-6" style="background: rgba(139, 92, 246, 0.15); color: #8b5cf6; width: 64px; height: 64px; font-size: 32px;">
+         ⊞
+        </div>
+        <h2 class="text-4xl font-bold mb-6">تلخيص النصوص العربية</h2>
+        <p class="text-lg mb-8 leading-relaxed" style="color: var(--text-secondary); line-height: 2;">توليد ملخصات دقيقة وموجزة للنصوص الطويلة مع الحفاظ على المعنى الأساسي والأسلوب العربي الأصيل.</p>
+        <ul class="space-y-4">
+         <li class="flex items-center gap-4">
+          <div class="w-6 h-6 rounded-full flex items-center justify-center" style="background: rgba(34, 197, 94, 0.2);"><span style="color: #22c55e; font-size: 14px;">✓</span>
+          </div><span class="text-base">طول ملخص قابل للتعديل</span></li>
+         <li class="flex items-center gap-4">
+          <div class="w-6 h-6 rounded-full flex items-center justify-center" style="background: rgba(34, 197, 94, 0.2);"><span style="color: #22c55e; font-size: 14px;">✓</span>
+          </div><span class="text-base">استخراج النقاط الرئيسية</span></li>
+         <li class="flex items-center gap-4">
+          <div class="w-6 h-6 rounded-full flex items-center justify-center" style="background: rgba(34, 197, 94, 0.2);"><span style="color: #22c55e; font-size: 14px;">✓</span>
+          </div><span class="text-base">الحفاظ على فصاحة اللغة</span></li>
+        </ul>
+       </div>
+       <div>
+        <div class="p-8 rounded-3xl" style="background: var(--surface-color); border: 1px solid rgba(255, 255, 255, 0.08);">
+         <div class="text-right" dir="rtl">
+          <div class="text-sm mb-4 p-4 rounded-xl" style="background: rgba(255, 255, 255, 0.05); color: var(--text-secondary); line-height: 1.8;">
+           النص الأصلي: ١٥٠ كلمة...<br>
+            مقالة طويلة تتحدث عن أهمية التكنولوجيا في العصر الحديث وتأثيرها على المجتمع...
+          </div>
+          <div class="flex items-center justify-center my-4">
+           <svg class="w-8 h-8" style="color: var(--secondary-color);" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+           </svg>
+          </div>
+          <div class="text-lg p-4 rounded-xl editor-content" style="background: rgba(139, 92, 246, 0.1); border-right: 4px solid #8b5cf6; line-height: 2;">
+           <div class="text-sm font-bold mb-3" style="color: #8b5cf6;">
+            الملخص: ٣٠ كلمة
+           </div>
+           <p style="color: var(--text-color);">التكنولوجيا الحديثة أحدثت ثورة في حياتنا اليومية، حيث سهّلت التواصل والتعلم والعمل، مما أدى إلى تطور المجتمعات وتحسين جودة الحياة.</p>
+          </div>
+         </div>
+        </div>
+       </div>
+      </div>
+     </div>
+    </section>
+   </div><!-- Editor Page -->
+   <div id="page-editor" class="page">
+    <section class="pt-20 min-h-screen" style="background: var(--background-color);">
+     <div class="max-w-[1800px] mx-auto px-6 py-6">
+      <div class="grid lg:grid-cols-12 gap-6"><!-- Main Editor (8 columns) -->
+       <div class="lg:col-span-8">
+        <div class="rounded-3xl overflow-hidden shadow-2xl" style="background: var(--surface-color); border: 1px solid rgba(255, 255, 255, 0.08);"><!-- Editor Toolbar -->
+         <div class="flex items-center justify-between p-4 border-b" style="border-color: rgba(255, 255, 255, 0.08);">
+          <div class="flex items-center gap-3"><button id="write-tab" onclick="switchTab('write')" class="px-5 py-2 rounded-xl text-base font-bold transition-all gradient-accent text-white"> كتابة </button> <button id="summarize-tab" onclick="switchTab('summarize')" class="px-5 py-2 rounded-xl text-base font-bold transition-all" style="color: var(--text-secondary); background: transparent;"> تلخيص </button>
+          </div>
+          <div class="flex items-center gap-4"><span class="text-sm" style="color: var(--text-secondary);"> عدد الكلمات: <span id="word-count" class="font-bold">٠</span> </span>
+          </div>
+         </div><!-- Editor Area -->
+         <div id="write-area" class="p-8"><textarea id="editor-textarea" class="editor-textarea w-full rounded-2xl p-6 text-right text-xl resize-none focus:outline-none focus:ring-2" style="direction: rtl; font-family: 'Tajawal', 'Noto Kufi Arabic', sans-serif; line-height: 2.2;" placeholder="ابدأ الكتابة هنا... اكتب نصك العربي وسنساعدك في تصحيحه وتحسينه بشكل فوري" oninput="analyzeText()"></textarea>
+         </div><!-- Summarize Area -->
+         <div id="summarize-area" class="p-8" style="display: none;">
+          <div class="mb-6"><label class="block text-base font-bold mb-3">طول الملخص</label>
+           <div class="flex items-center gap-4"><span class="text-sm" style="color: var(--text-secondary);">قصير</span> <input type="range" id="summary-length" min="1" max="3" value="2" class="flex-1" onchange="updateSummaryLength()"> <span class="text-sm" style="color: var(--text-secondary);">طويل</span>
+           </div>
+           <div class="text-center mt-2"><span id="summary-length-text" class="text-sm font-bold" style="color: var(--primary-color);">متوسط</span>
+           </div>
+          </div>
+          <div class="mb-6"><label class="flex items-center gap-3 cursor-pointer"> <input type="checkbox" id="full-text-summary" class="w-5 h-5 rounded" style="accent-color: var(--primary-color);"> <span class="text-base font-bold">تلخيص النص كاملاً (وليس فقرة واحدة)</span> </label>
+          </div><button id="generate-summary-btn" onclick="generateSummary(event)" class="w-full py-4 rounded-2xl text-lg font-bold text-white gradient-accent transition-all hover:scale-105 mb-6"> توليد الملخص </button>
+          <div id="summary-preview" class="summary-preview">
+           <div class="p-6 rounded-2xl" style="background: rgba(139, 92, 246, 0.1); border: 2px solid rgba(139, 92, 246, 0.3);">
+            <div class="flex items-center justify-between mb-4">
+             <h3 class="text-lg font-bold" style="color: #8b5cf6;">الملخص</h3><button onclick="copySummary()" class="px-4 py-2 rounded-xl text-sm font-bold transition-all" style="background: rgba(139, 92, 246, 0.2); color: #8b5cf6;"> نسخ </button>
+            </div>
+            <div id="summary-text" class="text-right text-lg editor-content" dir="rtl" style="color: var(--text-color); line-height: 2.2;"><!-- Summary will appear here -->
+            </div>
+           </div>
+          </div>
+         </div><!-- Editor Footer -->
+         <div class="flex items-center justify-between p-4 border-t" style="border-color: rgba(255, 255, 255, 0.08);">
+          <div class="flex items-center gap-6">
+           <div class="flex items-center gap-2">
+            <div class="w-3 h-3 rounded-full" style="background: #ef4444;"></div><span class="text-sm" style="color: var(--text-secondary);"> <span id="spelling-count">٠</span> إملائي </span>
+           </div>
+           <div class="flex items-center gap-2">
+            <div class="w-3 h-3 rounded-full" style="background: #fbbf24;"></div><span class="text-sm" style="color: var(--text-secondary);"> <span id="grammar-count">٠</span> نحوي </span>
+           </div>
+           <div class="flex items-center gap-2">
+            <div class="w-3 h-3 rounded-full" style="background: #22c55e;"></div><span class="text-sm" style="color: var(--text-secondary);"> <span id="punctuation-count">٠</span> ترقيم </span>
+           </div>
+          </div>
+          <div class="flex items-center gap-3"><button onclick="clearEditor()" class="px-5 py-2 rounded-xl text-sm font-bold border transition-all hover:scale-105" style="border-color: rgba(255, 255, 255, 0.2); color: var(--text-secondary);"> مسح الكل </button> <button onclick="copyText()" class="px-5 py-2 rounded-xl text-sm font-bold gradient-accent text-white transition-all hover:scale-105"> نسخ النص </button>
+          </div>
+         </div>
+        </div>
+       </div><!-- Sidebar (4 columns) -->
+       <div class="lg:col-span-4 space-y-6"><!-- Score Card -->
+        <div class="p-6 rounded-3xl" style="background: var(--surface-color); border: 1px solid rgba(255, 255, 255, 0.08);">
+         <h3 class="text-xl font-bold mb-4 text-right">تقييم الكتابة</h3>
+         <div class="relative w-40 h-40 mx-auto mb-4">
+          <svg class="w-full h-full transform -rotate-90"><circle cx="80" cy="80" r="70" fill="none" stroke="rgba(255, 255, 255, 0.08)" stroke-width="10" /> <circle id="score-circle" cx="80" cy="80" r="70" fill="none" stroke="url(#scoreGradient)" stroke-width="10" stroke-linecap="round" stroke-dasharray="440" stroke-dashoffset="440" class="score-circle" /> <defs>
+            <lineargradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+             <stop offset="0%" style="stop-color: var(--primary-color);" />
+             <stop offset="100%" style="stop-color: var(--secondary-color);" />
+            </lineargradient>
+           </defs>
+          </svg>
+          <div class="absolute inset-0 flex items-center justify-center"><span id="score-value" class="text-4xl font-bold">--</span>
+          </div>
+         </div>
+         <p class="text-center text-sm leading-relaxed" style="color: var(--text-secondary); line-height: 1.8;">ابدأ الكتابة لرؤية تقييمك<br><span class="text-xs">تحسين القواعد يرفع التقييم</span></p>
+        </div><!-- Suggestions List -->
+        <div class="p-6 rounded-3xl" style="background: var(--surface-color); border: 1px solid rgba(255, 255, 255, 0.08);">
+         <h3 class="text-xl font-bold mb-4 text-right">الاقتراحات</h3>
+         <div id="suggestions-list" class="space-y-3 max-h-[500px] overflow-y-auto">
+          <div class="text-center py-12" style="color: var(--text-secondary);">
+           <svg class="w-16 h-16 mx-auto mb-4 opacity-30" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+           </svg>
+           <p class="text-base">لا توجد اقتراحات بعد</p>
+           <p class="text-sm mt-2">ابدأ الكتابة لتلقي الملاحظات</p>
+          </div>
+         </div>
+        </div>
+       </div>
+      </div>
+     </div>
+    </section>
+   </div><!-- Pricing Page -->
+   <div id="page-pricing" class="page">
+    <section class="pt-32 pb-24" style="background: var(--background-color);">
+     <div class="max-w-7xl mx-auto px-6">
+      <div class="text-center mb-16">
+       <h1 class="text-5xl lg:text-6xl font-bold mb-6">خطط <span class="text-gradient">واضحة ومرنة</span></h1>
+       <p class="text-xl max-w-3xl mx-auto" style="color: var(--text-secondary); line-height: 1.9;">اختر الخطة المناسبة لك. يمكنك الترقية أو التخفيض في أي وقت.</p>
+      </div>
+      <div class="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto"><!-- Free Plan -->
+       <div class="p-8 rounded-3xl transition-all hover:scale-105" style="background: var(--surface-color); border: 1px solid rgba(255, 255, 255, 0.08);">
+        <div class="text-center mb-8">
+         <h3 class="text-3xl font-bold mb-2">مجاني</h3>
+         <p class="text-base mb-6" style="color: var(--text-secondary);">للبدء والتجربة</p>
+         <div class="text-6xl font-bold mb-2">
+          ٠
+         </div>
+         <p class="text-base" style="color: var(--text-secondary);">مجاني للأبد</p>
+        </div>
+        <ul class="space-y-4 mb-8">
+         <li class="flex items-center gap-3">
+          <svg class="w-5 h-5" style="color: #22c55e;" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg><span class="text-base">تدقيق إملائي أساسي</span></li>
+         <li class="flex items-center gap-3">
+          <svg class="w-5 h-5" style="color: #22c55e;" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg><span class="text-base">٥٠٠ كلمة يوميًا</span></li>
+         <li class="flex items-center gap-3">
+          <svg class="w-5 h-5" style="color: #22c55e;" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg><span class="text-base">محرر ويب</span></li>
+         <li class="flex items-center gap-3">
+          <svg class="w-5 h-5" style="color: rgba(241, 245, 249, 0.2);" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg><span class="text-base" style="color: var(--text-secondary);">اقتراحات نحوية</span></li>
+         <li class="flex items-center gap-3">
+          <svg class="w-5 h-5" style="color: rgba(241, 245, 249, 0.2);" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg><span class="text-base" style="color: var(--text-secondary);">تلخيص النصوص</span></li>
+        </ul><button class="w-full py-4 rounded-2xl text-lg font-bold border-2 transition-all hover:scale-105" style="border-color: rgba(255, 255, 255, 0.2); color: var(--text-color);"> ابدأ مجانًا </button>
+       </div><!-- Pro Plan (Most Popular) -->
+       <div class="p-8 rounded-3xl transition-all hover:scale-105 relative shadow-2xl" style="background: linear-gradient(165deg, var(--surface-color) 0%, rgba(59, 130, 246, 0.1) 100%); border: 2px solid var(--primary-color);">
+        <div class="pricing-badge gradient-accent text-white">
+         الأكثر استخدامًا
+        </div>
+        <div class="text-center mb-8">
+         <h3 class="text-3xl font-bold mb-2">احترافي</h3>
+         <p class="text-base mb-6" style="color: var(--text-secondary);">للكُتّاب الجادين</p>
+         <div class="flex items-center justify-center gap-2"><span class="text-6xl font-bold">٩</span>
+          <div class="text-right">
+           <div class="text-lg font-bold">
+            دولار
+           </div>
+           <div class="text-sm" style="color: var(--text-secondary);">
+            شهريًا
+           </div>
+          </div>
+         </div>
+        </div>
+        <ul class="space-y-4 mb-8">
+         <li class="flex items-center gap-3">
+          <svg class="w-5 h-5" style="color: #22c55e;" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg><span class="text-base">تدقيق إملائي ونحوي متقدم</span></li>
+         <li class="flex items-center gap-3">
+          <svg class="w-5 h-5" style="color: #22c55e;" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg><span class="text-base">كلمات غير محدودة</span></li>
+         <li class="flex items-center gap-3">
+          <svg class="w-5 h-5" style="color: #22c55e;" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg><span class="text-base">تصحيح علامات الترقيم</span></li>
+         <li class="flex items-center gap-3">
+          <svg class="w-5 h-5" style="color: #22c55e;" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg><span class="text-base">تلخيص النصوص بالذكاء الاصطناعي</span></li>
+         <li class="flex items-center gap-3">
+          <svg class="w-5 h-5" style="color: #22c55e;" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg><span class="text-base">إضافة المتصفح</span></li>
+        </ul><button class="w-full py-4 rounded-2xl text-lg font-bold text-white gradient-accent transition-all hover:scale-105 hover:shadow-2xl"> الترقية للاحترافي </button>
+       </div><!-- Enterprise Plan -->
+       <div class="p-8 rounded-3xl transition-all hover:scale-105" style="background: var(--surface-color); border: 1px solid rgba(255, 255, 255, 0.08);">
+        <div class="text-center mb-8">
+         <h3 class="text-3xl font-bold mb-2">مؤسسات</h3>
+         <p class="text-base mb-6" style="color: var(--text-secondary);">للفرق والمنظمات</p>
+         <div class="flex items-center justify-center gap-2"><span class="text-6xl font-bold">٢٩</span>
+          <div class="text-right">
+           <div class="text-lg font-bold">
+            دولار
+           </div>
+           <div class="text-sm" style="color: var(--text-secondary);">
+            لكل مستخدم/شهر
+           </div>
+          </div>
+         </div>
+        </div>
+        <ul class="space-y-4 mb-8">
+         <li class="flex items-center gap-3">
+          <svg class="w-5 h-5" style="color: #22c55e;" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg><span class="text-base">كل ميزات الاحترافي</span></li>
+         <li class="flex items-center gap-3">
+          <svg class="w-5 h-5" style="color: #22c55e;" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg><span class="text-base">إدارة الفرق</span></li>
+         <li class="flex items-center gap-3">
+          <svg class="w-5 h-5" style="color: #22c55e;" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg><span class="text-base">واجهة برمجية (API)</span></li>
+         <li class="flex items-center gap-3">
+          <svg class="w-5 h-5" style="color: #22c55e;" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg><span class="text-base">تكامل مخصص</span></li>
+         <li class="flex items-center gap-3">
+          <svg class="w-5 h-5" style="color: #22c55e;" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg><span class="text-base">دعم فني ذو أولوية</span></li>
+        </ul><button class="w-full py-4 rounded-2xl text-lg font-bold border-2 transition-all hover:scale-105" style="border-color: rgba(255, 255, 255, 0.2); color: var(--text-color);"> تواصل مع المبيعات </button>
+       </div>
+      </div>
+     </div>
+    </section>
+   </div><!-- Footer -->
+   <footer class="py-12 border-t" style="background: var(--background-color); border-color: rgba(255, 255, 255, 0.08);">
+    <div class="max-w-7xl mx-auto px-6">
+     <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+      <div class="flex items-center gap-3">
+       <div class="w-10 h-10 rounded-xl flex items-center justify-center gradient-accent"><span class="text-white text-xl font-bold">ب</span>
+       </div><span id="footer-brand" class="text-2xl font-bold text-gradient">بيان</span>
+      </div>
+      <div class="flex items-center gap-8"><a href="#" class="text-base transition-colors hover:text-white" style="color: var(--text-secondary);">الخصوصية</a> <a href="#" class="text-base transition-colors hover:text-white" style="color: var(--text-secondary);">الشروط</a> <a href="#" class="text-base transition-colors hover:text-white" style="color: var(--text-secondary);">تواصل معنا</a>
+      </div>
+      <p class="text-base" style="color: var(--text-secondary);">© ٢٠٢٤ بيان. جميع الحقوق محفوظة.</p>
+     </div>
+    </div>
+   </footer>
+  </div>
+  <script>
+    // Default configuration
+    const defaultConfig = {
+      brand_name: 'بيان',
+      hero_headline: 'اكتب العربية بثقة واحتراف',
+      hero_subheadline: 'مساعد ذكي يصحح الإملاء والنحو وعلامات الترقيم ويُلخّص النصوص العربية بدقة عالية.',
+      cta_primary: 'ابدأ الكتابة الآن',
+      primary_color: '#3b82f6',
+      secondary_color: '#8b5cf6',
+      text_color: '#f1f5f9',
+      background_color: '#0f172a',
+      surface_color: '#1e293b',
+      font_family: 'Tajawal',
+      font_size: 16
+    };
+
+    let config = { ...defaultConfig };
+
+    // Page navigation
+    function showPage(pageId) {
+      document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+      document.getElementById('page-' + pageId).classList.add('active');
+      
+      document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+        link.style.color = 'var(--text-secondary)';
+      });
+      
+      const activeLink = document.querySelector(`[data-page="${pageId}"]`);
+      if (activeLink) {
+        activeLink.classList.add('active');
+        activeLink.style.color = 'var(--text-color)';
+      }
+      
+      window.scrollTo(0, 0);
+    }
+
+    // Tab switching in editor
+    function switchTab(tab) {
+      const writeTab = document.getElementById('write-tab');
+      const summarizeTab = document.getElementById('summarize-tab');
+      const writeArea = document.getElementById('write-area');
+      const summarizeArea = document.getElementById('summarize-area');
+      
+      if (tab === 'write') {
+        writeTab.className = 'px-5 py-2 rounded-xl text-base font-bold transition-all gradient-accent text-white';
+        summarizeTab.className = 'px-5 py-2 rounded-xl text-base font-bold transition-all';
+        summarizeTab.style.color = 'var(--text-secondary)';
+        summarizeTab.style.background = 'transparent';
+        writeArea.style.display = 'block';
+        summarizeArea.style.display = 'none';
+      } else {
+        summarizeTab.className = 'px-5 py-2 rounded-xl text-base font-bold transition-all gradient-accent text-white';
+        writeTab.className = 'px-5 py-2 rounded-xl text-base font-bold transition-all';
+        writeTab.style.color = 'var(--text-secondary)';
+        writeTab.style.background = 'transparent';
+        writeArea.style.display = 'none';
+        summarizeArea.style.display = 'block';
+      }
+    }
+
+    // Editor text analysis
+    function analyzeText() {
+      const textarea = document.getElementById('editor-textarea');
+      const text = textarea.value;
+      const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+      
+      document.getElementById('word-count').textContent = words.toLocaleString('ar-EG');
+      
+      if (words > 0) {
+        const spelling = Math.floor(Math.random() * 3);
+        const grammar = Math.floor(Math.random() * 2);
+        const punctuation = Math.floor(Math.random() * 2);
+        
+        document.getElementById('spelling-count').textContent = spelling.toLocaleString('ar-EG');
+        document.getElementById('grammar-count').textContent = grammar.toLocaleString('ar-EG');
+        document.getElementById('punctuation-count').textContent = punctuation.toLocaleString('ar-EG');
+        
+        const score = Math.max(70, 100 - (spelling * 5) - (grammar * 8) - (punctuation * 3));
+        const circle = document.getElementById('score-circle');
+        const offset = 440 - (440 * score / 100);
+        circle.style.strokeDashoffset = offset;
+        document.getElementById('score-value').textContent = score.toLocaleString('ar-EG');
+        
+        updateSuggestions(spelling, grammar, punctuation);
+      } else {
+        document.getElementById('score-circle').style.strokeDashoffset = 440;
+        document.getElementById('score-value').textContent = '--';
+        document.getElementById('spelling-count').textContent = '٠';
+        document.getElementById('grammar-count').textContent = '٠';
+        document.getElementById('punctuation-count').textContent = '٠';
+        resetSuggestions();
+      }
+    }
+
+    function updateSuggestions(spelling, grammar, punctuation) {
+      const container = document.getElementById('suggestions-list');
+      let html = '';
+      
+      if (spelling > 0) {
+        html += `
+          <div class="suggestion-item p-4 rounded-xl" style="background: rgba(239, 68, 68, 0.1); border-right: 3px solid #ef4444;">
+            <div class="flex items-start gap-3">
+              <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: rgba(239, 68, 68, 0.2);">
+                <span style="color: #ef4444; font-size: 18px;">✎</span>
+              </div>
+              <div class="flex-1 text-right">
+                <div class="text-base font-bold mb-1">خطأ إملائي</div>
+                <div class="text-sm" style="color: var(--text-secondary);">انقر للتصحيح</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+      
+      if (grammar > 0) {
+        html += `
+          <div class="suggestion-item p-4 rounded-xl" style="background: rgba(251, 191, 36, 0.1); border-right: 3px solid #fbbf24;">
+            <div class="flex items-start gap-3">
+              <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: rgba(251, 191, 36, 0.2);">
+                <span style="color: #fbbf24; font-size: 18px;">◉</span>
+              </div>
+              <div class="flex-1 text-right">
+                <div class="text-base font-bold mb-1">اقتراح نحوي</div>
+                <div class="text-sm" style="color: var(--text-secondary);">يُنصح بالمراجعة</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+      
+      if (punctuation > 0) {
+        html += `
+          <div class="suggestion-item p-4 rounded-xl" style="background: rgba(34, 197, 94, 0.1); border-right: 3px solid #22c55e;">
+            <div class="flex items-start gap-3">
+              <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: rgba(34, 197, 94, 0.2);">
+                <span style="color: #22c55e; font-size: 18px;">⸲</span>
+              </div>
+              <div class="flex-1 text-right">
+                <div class="text-base font-bold mb-1">علامات الترقيم</div>
+                <div class="text-sm" style="color: var(--text-secondary);">تصحيح تلقائي متاح</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+      
+      if (!html) {
+        html = `
+          <div class="text-center py-8">
+            <svg class="w-12 h-12 mx-auto mb-3" style="color: #22c55e;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <p class="text-base font-bold" style="color: #22c55e;">ممتاز!</p>
+            <p class="text-sm mt-2" style="color: var(--text-secondary);">لم يتم العثور على أخطاء</p>
+          </div>
+        `;
+      }
+      
+      container.innerHTML = html;
+    }
+
+    function resetSuggestions() {
+      document.getElementById('suggestions-list').innerHTML = `
+        <div class="text-center py-12" style="color: var(--text-secondary);">
+          <svg class="w-16 h-16 mx-auto mb-4 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <p class="text-base">لا توجد اقتراحات بعد</p>
+          <p class="text-sm mt-2">ابدأ الكتابة لتلقي الملاحظات</p>
+        </div>
+      `;
+    }
+
+    function clearEditor() {
+      document.getElementById('editor-textarea').value = '';
+      analyzeText();
+    }
+
+    function copyText() {
+      const textarea = document.getElementById('editor-textarea');
+      textarea.select();
+      document.execCommand('copy');
+      
+      const btn = event.target;
+      const originalText = btn.textContent;
+      btn.textContent = 'تم النسخ!';
+      setTimeout(() => btn.textContent = originalText, 2000);
+    }
+
+    // Summarization functions
+    function updateSummaryLength() {
+      const value = document.getElementById('summary-length').value;
+      const text = ['قصير', 'متوسط', 'طويل'][value - 1];
+      document.getElementById('summary-length-text').textContent = text;
+    }
+
+    async function generateSummary(event) {
+      const textarea = document.getElementById('editor-textarea');
+      const text = textarea.value.trim();
+      
+      if (!text) {
+        const summaryText = document.getElementById('summary-text');
+        summaryText.innerHTML = '<p style="color: var(--text-secondary); text-align: center;">الرجاء كتابة نص في المحرر أولاً</p>';
+        document.getElementById('summary-preview').classList.add('show');
+        return;
+      }
+      
+      const lengthValue = document.getElementById('summary-length').value;
+      const isFullText = document.getElementById('full-text-summary').checked;
+      const generateButton = event ? event.target : document.getElementById('generate-summary-btn');
+      const summaryText = document.getElementById('summary-text');
+      const summaryPreview = document.getElementById('summary-preview');
+      
+      // Show loading state
+      const originalButtonText = generateButton.textContent;
+      generateButton.textContent = 'جاري التوليد...';
+      generateButton.disabled = true;
+      summaryText.innerHTML = '<div style="text-align: center; padding: 20px;"><div style="display: inline-block; width: 40px; height: 40px; border: 4px solid rgba(139, 92, 246, 0.3); border-top-color: #8b5cf6; border-radius: 50%; animation: spin 1s linear infinite;"></div><p style="margin-top: 16px; color: var(--text-secondary);">جاري توليد الملخص...</p></div>';
+      summaryPreview.classList.add('show');
+      
+      // Add spin animation if not exists
+      if (!document.getElementById('spin-animation')) {
+        const style = document.createElement('style');
+        style.id = 'spin-animation';
+        style.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
+        document.head.appendChild(style);
+      }
+      
+      try {
+        // Call API
+        const response = await fetch('/api/summarize', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            text: text,
+            length: parseInt(lengthValue),
+            full_text: isFullText
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || 'حدث خطأ أثناء توليد الملخص');
+        }
+        
+        if (data.status === 'success' && data.summary) {
+          summaryText.innerHTML = `<p>${data.summary}</p>`;
+        } else {
+          throw new Error(data.error || 'لم يتم توليد ملخص');
+        }
+        
+      } catch (error) {
+        console.error('Error generating summary:', error);
+        summaryText.innerHTML = `
+          <div style="text-align: center; padding: 20px;">
+            <p style="color: #ef4444; margin-bottom: 12px;">⚠️ حدث خطأ</p>
+            <p style="color: var(--text-secondary); font-size: 14px;">${error.message || 'تعذر توليد الملخص. يرجى المحاولة مرة أخرى.'}</p>
+            <p style="color: var(--text-secondary); font-size: 12px; margin-top: 8px;">تأكد من أن الخادم يعمل وأن النموذج محمّل بشكل صحيح.</p>
+          </div>
+        `;
+      } finally {
+        // Restore button state
+        generateButton.textContent = originalButtonText;
+        generateButton.disabled = false;
+      }
+    }
+
+    function copySummary() {
+      const summaryText = document.getElementById('summary-text').innerText;
+      const tempTextarea = document.createElement('textarea');
+      tempTextarea.value = summaryText;
+      document.body.appendChild(tempTextarea);
+      tempTextarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempTextarea);
+      
+      const btn = event.target;
+      const originalText = btn.textContent;
+      btn.textContent = 'تم النسخ!';
+      setTimeout(() => btn.textContent = originalText, 2000);
+    }
+
+    // Element SDK Integration
+    async function onConfigChange(cfg) {
+      config = { ...defaultConfig, ...cfg };
+      
+      document.documentElement.style.setProperty('--primary-color', config.primary_color || defaultConfig.primary_color);
+      document.documentElement.style.setProperty('--secondary-color', config.secondary_color || defaultConfig.secondary_color);
+      document.documentElement.style.setProperty('--text-color', config.text_color || defaultConfig.text_color);
+      document.documentElement.style.setProperty('--background-color', config.background_color || defaultConfig.background_color);
+      document.documentElement.style.setProperty('--surface-color', config.surface_color || defaultConfig.surface_color);
+      
+      const brandName = config.brand_name || defaultConfig.brand_name;
+      const navBrand = document.getElementById('nav-brand');
+      const footerBrand = document.getElementById('footer-brand');
+      if (navBrand) navBrand.textContent = brandName;
+      if (footerBrand) footerBrand.textContent = brandName;
+      
+      const heroHeadline = config.hero_headline || defaultConfig.hero_headline;
+      const headlineEl = document.getElementById('hero-headline');
+      if (headlineEl) {
+        const parts = heroHeadline.split('\n');
+        if (parts.length > 1) {
+          headlineEl.innerHTML = parts[0] + '<br/><span class="text-gradient">' + parts[1] + '</span>';
+        } else {
+          headlineEl.innerHTML = heroHeadline.replace('بثقة واحتراف', '<span class="text-gradient">بثقة واحتراف</span>');
+        }
+      }
+      
+      const heroSubheadline = document.getElementById('hero-subheadline');
+      if (heroSubheadline) {
+        heroSubheadline.textContent = config.hero_subheadline || defaultConfig.hero_subheadline;
+      }
+      
+      const ctaPrimary = config.cta_primary || defaultConfig.cta_primary;
+      const navCta = document.getElementById('nav-cta');
+      const heroCta = document.getElementById('hero-cta-primary');
+      if (navCta) navCta.textContent = ctaPrimary;
+      if (heroCta) heroCta.textContent = ctaPrimary;
+      
+      const fontFamily = config.font_family || defaultConfig.font_family;
+      const fontSize = config.font_size || defaultConfig.font_size;
+      document.body.style.fontFamily = `${fontFamily}, 'Noto Kufi Arabic', sans-serif`;
+      document.body.style.fontSize = `${fontSize}px`;
+    }
+
+    function mapToCapabilities(cfg) {
+      return {
+        recolorables: [
+          {
+            get: () => cfg.background_color || defaultConfig.background_color,
+            set: (value) => { cfg.background_color = value; window.elementSdk.setConfig({ background_color: value }); }
+          },
+          {
+            get: () => cfg.surface_color || defaultConfig.surface_color,
+            set: (value) => { cfg.surface_color = value; window.elementSdk.setConfig({ surface_color: value }); }
+          },
+          {
+            get: () => cfg.text_color || defaultConfig.text_color,
+            set: (value) => { cfg.text_color = value; window.elementSdk.setConfig({ text_color: value }); }
+          },
+          {
+            get: () => cfg.primary_color || defaultConfig.primary_color,
+            set: (value) => { cfg.primary_color = value; window.elementSdk.setConfig({ primary_color: value }); }
+          },
+          {
+            get: () => cfg.secondary_color || defaultConfig.secondary_color,
+            set: (value) => { cfg.secondary_color = value; window.elementSdk.setConfig({ secondary_color: value }); }
+          }
+        ],
+        borderables: [],
+        fontEditable: {
+          get: () => cfg.font_family || defaultConfig.font_family,
+          set: (value) => { cfg.font_family = value; window.elementSdk.setConfig({ font_family: value }); }
+        },
+        fontSizeable: {
+          get: () => cfg.font_size || defaultConfig.font_size,
+          set: (value) => { cfg.font_size = value; window.elementSdk.setConfig({ font_size: value }); }
+        }
+      };
+    }
+
+    function mapToEditPanelValues(cfg) {
+      return new Map([
+        ['brand_name', cfg.brand_name || defaultConfig.brand_name],
+        ['hero_headline', cfg.hero_headline || defaultConfig.hero_headline],
+        ['hero_subheadline', cfg.hero_subheadline || defaultConfig.hero_subheadline],
+        ['cta_primary', cfg.cta_primary || defaultConfig.cta_primary]
+      ]);
+    }
+
+    // Initialize SDK
+    if (window.elementSdk) {
+      window.elementSdk.init({
+        defaultConfig,
+        onConfigChange,
+        mapToCapabilities,
+        mapToEditPanelValues
+      });
+    } else {
+      onConfigChange(defaultConfig);
+    }
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c279951d0bdd7df',t:'MTc2OTE3NDUzNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

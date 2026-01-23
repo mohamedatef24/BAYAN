@@ -6,3 +6,5 @@ sentencepiece
 scikit-learn
 numpy
 pandas
+flask
+flask-cors
