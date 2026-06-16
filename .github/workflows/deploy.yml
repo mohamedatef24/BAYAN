@@ -60,7 +60,7 @@ jobs:
         run: |
           HEALTH_URL="${{ secrets.BACKEND_URL }}/api/health"
           if [ -z "${{ secrets.BACKEND_URL }}" ]; then
-            HEALTH_URL="https://mohamedatef24-bayan-api.hf.space/api/health"
+            HEALTH_URL="https://bayan10-bayan-api.hf.space/api/health"
           fi
           echo "Checking: $HEALTH_URL"
           response=$(curl -s -w "\n%{http_code}" "$HEALTH_URL")
