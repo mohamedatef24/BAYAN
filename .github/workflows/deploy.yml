@@ -47,34 +47,20 @@ jobs:
           grep -q "https://test.supabase.co" src/index.html && echo "✅ Supabase URL injected" || exit 1
           grep -q "test-key-1234" src/index.html && echo "✅ Supabase key injected" || exit 1
 
-  deploy-backend:
-    name: Deploy Backend (Render)
+  health-check:
+    name: Post-Deploy Health Check
     needs: lint-and-validate
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Render Deploy
-        run: |
-          if [ -n "${{ secrets.RENDER_DEPLOY_HOOK }}" ]; then
-            curl -s -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}" && echo "✅ Render deploy triggered"
-          else
-            echo "⚠️ RENDER_DEPLOY_HOOK not set — skipping backend deploy"
-          fi
-
-  health-check:
-    name: Post-Deploy Health Check
-    needs: deploy-backend
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Wait for Render to deploy
-        run: sleep 90
+      - name: Wait for HuggingFace Spaces to deploy
+        run: sleep 120
 
       - name: Check backend health
         run: |
           HEALTH_URL="${{ secrets.BACKEND_URL }}/api/health"
           if [ -z "${{ secrets.BACKEND_URL }}" ]; then
-            HEALTH_URL="https://bayan-api.onrender.com/api/health"
+            HEALTH_URL="https://mohamedatef24-bayan-api.hf.space/api/health"
           fi
           echo "Checking: $HEALTH_URL"
           response=$(curl -s -w "\n%{http_code}" "$HEALTH_URL")
@@ -88,3 +74,4 @@ jobs:
             echo "❌ Backend health check failed"
             exit 1
           fi
+
