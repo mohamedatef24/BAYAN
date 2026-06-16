@@ -69,7 +69,21 @@ http://localhost:5000
   export PORT=8080
   ```
 
-## Troubleshooting
+### Supabase Authentication (Phase 5)
+
+See `.env.example` and `PHASE_5_IMPLEMENTATION_PLAN.md`.
+
+1. Create a Supabase project and enable **Anonymous** + **Google** auth.
+2. Run `supabase/migrations/001_profiles.sql` in the SQL Editor.
+3. Set meta tags in `src/index.html`:
+   ```html
+   <meta name="supabase-url" content="https://YOUR_PROJECT.supabase.co">
+   <meta name="supabase-anon-key" content="YOUR_ANON_KEY">
+   ```
+4. Add redirect URL: `http://localhost:5000/**`
+
+If Supabase is not configured, the editor still works in offline auth mode.
+
 
 ### Model Not Found Error
 If you see "Model not found" error:
