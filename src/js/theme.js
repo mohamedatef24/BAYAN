@@ -39,6 +39,8 @@ function setTheme(theme) {
   localStorage.setItem(THEME_KEY, theme);
   clearThemePaletteOverrides();
   updateThemeToggleIcon(theme);
+  // Notify settings-sync so the change can be persisted to cloud
+  window.dispatchEvent(new CustomEvent('bayan:themechange', { detail: { theme } }));
 }
 
 function toggleTheme() {

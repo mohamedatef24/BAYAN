@@ -6,12 +6,23 @@ Provides API endpoints for the Bayan web application.
 import os
 import logging
 import time
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 from pathlib import Path
 import traceback
 import difflib
 import re
+
+# Load .env file from project root (one level up from src/)
+try:
+    from dotenv import load_dotenv
+    _env_path = Path(__file__).parent.parent / '.env'
+    load_dotenv(dotenv_path=_env_path)
+except ImportError:
+    pass  # python-dotenv not installed; rely on environment variables directly
+
+SUPABASE_URL = os.environ.get('SUPABASE_URL', '')
+SUPABASE_ANON_KEY = os.environ.get('SUPABASE_ANON_KEY', '')
 
 from model_loader import (
     SummarizationModel,
@@ -40,7 +51,7 @@ logger = logging.getLogger(__name__)
 
 # Initialize Flask app
 app = Flask(__name__, static_folder='.', static_url_path='')
-CORS(app)  # Enable CORS for all routes
+CORS(app, resources={r"/api/*": {"origins": "*"}})  # CORS for API routes only
 
 # Configuration
 MAX_TEXT_LENGTH = 5000  # Maximum characters for input text
@@ -86,14 +97,27 @@ def load_models():
 
 @app.route('/')
 def index():
-    """Serve the main HTML file."""
-    return app.send_static_file('index.html')
+    """Serve the main HTML file with Supabase credentials injected."""
+    html_path = Path(__file__).parent / 'index.html'
+    html = html_path.read_text(encoding='utf-8')
+
+    # Inject Supabase credentials into the meta tags
+    html = html.replace(
+        '<meta name="supabase-url" content="">',
+        f'<meta name="supabase-url" content="{SUPABASE_URL}">'
+    )
+    html = html.replace(
+        '<meta name="supabase-anon-key" content="">',
+        f'<meta name="supabase-anon-key" content="{SUPABASE_ANON_KEY}">'
+    )
+
+    return Response(html, mimetype='text/html')
 
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
-    """Health check endpoint."""
-    return jsonify({
+    """Health check endpoint for production monitoring."""
+    health = {
         'status': 'healthy',
         'models': {
             'summarization': summarization_model is not None,
@@ -101,8 +125,14 @@ def health_check():
             'autocomplete': autocomplete_model is not None,
             'grammar': grammar_model is not None,
             'punctuation': punctuation_model is not None
-        }
-    })
+        },
+        'supabase': {
+            'configured': bool(SUPABASE_URL and SUPABASE_ANON_KEY),
+        },
+        'environment': 'render' if os.environ.get('RENDER') else 'local',
+    }
+    status_code = 200 if health['models']['summarization'] else 503
+    return jsonify(health), status_code
 
 
 @app.route('/api/summarize', methods=['POST'])
@@ -696,13 +726,28 @@ def internal_error(error):
     }), 500
 
 
-if __name__ == '__main__':
-    # Load models on startup
-    logger.info("Starting Bayan server...")
-    
+# ── Gunicorn startup hook ──
+# When running under gunicorn, __name__ != '__main__', so we need
+# to load models eagerly when the module is imported.
+_models_loaded = False
+
+def _ensure_models_loaded():
+    global _models_loaded
+    if _models_loaded:
+        return
+    _models_loaded = True
+    logger.info("Loading models (production startup)...")
     if not load_models():
         logger.error("Failed to load any models. Server will start but functionality will be limited.")
-        logger.error("Please check that the model files are in the correct locations.")
+
+# Load models on import (gunicorn) — guarded by flag to prevent double-load
+if os.environ.get('RENDER') or os.environ.get('GUNICORN_LOADED'):
+    _ensure_models_loaded()
+
+
+if __name__ == '__main__':
+    # Load models on startup (development)
+    _ensure_models_loaded()
     
     # Run the app
     port = int(os.environ.get('PORT', 5000))
@@ -710,4 +755,3 @@ if __name__ == '__main__':
     
     logger.info(f"Starting server on port {port} (debug={debug})")
     app.run(host='0.0.0.0', port=port, debug=debug)
-
