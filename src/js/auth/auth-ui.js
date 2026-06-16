@@ -10,14 +10,21 @@ function bindAuthUIEvents() {
   const gateBackdrop = document.getElementById('auth-gate-backdrop');
   const mobileGuest = document.getElementById('auth-guest-btn-mobile');
   const mobileGoogle = document.getElementById('auth-google-btn-mobile');
-
   if (guestBtn) {
     guestBtn.addEventListener('click', async () => {
       guestBtn.disabled = true;
+      const originalText = guestBtn.textContent;
+      guestBtn.textContent = 'جاري الدخول...';
+
       const result = await signInAsGuest();
       guestBtn.disabled = false;
-      if (result.success) {
-        hideAuthGate();
+      hideAuthGate();
+      showAuthOfflineBanner(false);
+
+      if (!result.success && !result.offline) {
+        alert('حدث خطأ أثناء الدخول كضيف. حاول مجددًا.');
+        guestBtn.textContent = originalText;
+      } else {
         if (typeof showPage === 'function') showPage('editor');
       }
     });
@@ -28,9 +35,10 @@ function bindAuthUIEvents() {
       mobileGuest.disabled = true;
       const result = await signInAsGuest();
       mobileGuest.disabled = false;
-      if (result.success) {
-        hideAuthGate();
-        closeAuthGateSheet();
+      hideAuthGate();
+      closeAuthGateSheet();
+      showAuthOfflineBanner(false);
+      if (result && (result.success || result.offline)) {
         if (typeof showPage === 'function') showPage('editor');
       }
     });
@@ -141,15 +149,24 @@ function updateAuthUI(user) {
   const linkBtn = document.getElementById('auth-link-google-btn');
   const linkMobile = document.getElementById('auth-link-google-btn-mobile');
   const logoutMobile = document.getElementById('auth-logout-btn-mobile');
+  const logoutBtn = document.getElementById('auth-logout-btn');
   const drawerName = document.getElementById('auth-drawer-name');
   const drawerProvider = document.getElementById('auth-drawer-provider');
 
   const offline = window.__bayanAuth && window.__bayanAuth.isOfflineMode;
 
+  // Guest / offline mode — show menu so user can still sign in with Google
   if (!user || offline) {
-    if (menuWrap) menuWrap.classList.add('is-hidden');
-    if (drawerName) drawerName.textContent = offline ? 'غير متصل' : '';
-    if (linkMobile) linkMobile.classList.add('is-hidden');
+    if (menuWrap) menuWrap.classList.remove('is-hidden');
+    if (nameEl) nameEl.textContent = 'ضيف';
+    if (providerEl) providerEl.textContent = 'ضيف';
+    if (avatarEl) avatarEl.textContent = 'ض';
+    if (drawerName) drawerName.textContent = 'ضيف';
+    if (drawerProvider) drawerProvider.textContent = '';
+    // Show Google sign-in option, hide logout
+    if (linkBtn) linkBtn.classList.remove('is-hidden');
+    if (linkMobile) linkMobile.classList.remove('is-hidden');
+    if (logoutBtn) logoutBtn.classList.add('is-hidden');
     if (logoutMobile) logoutMobile.classList.add('is-hidden');
     return;
   }
@@ -180,13 +197,9 @@ function updateAuthUI(user) {
     }
   }
 
-  if (linkBtn) {
-    linkBtn.classList.toggle('is-hidden', !isGuestUser(user));
-  }
-  if (linkMobile) {
-    linkMobile.classList.toggle('is-hidden', !isGuestUser(user));
-  }
-  if (logoutMobile) {
-    logoutMobile.classList.toggle('is-hidden', false);
-  }
+  // Show Google link only for guests, show logout for everyone
+  if (linkBtn) linkBtn.classList.toggle('is-hidden', !isGuestUser(user));
+  if (linkMobile) linkMobile.classList.toggle('is-hidden', !isGuestUser(user));
+  if (logoutBtn) logoutBtn.classList.remove('is-hidden');
+  if (logoutMobile) logoutMobile.classList.remove('is-hidden');
 }

@@ -25,16 +25,26 @@ async function signInAsGuest() {
   }
 
   try {
-    const { data, error } = await withTimeout(
+    const response = await withTimeout(
       client.auth.signInAnonymously(),
       AUTH_SIGN_IN_TIMEOUT_MS,
       'timeout'
     );
-
+    
+    const { data, error } = response;
     if (error) throw error;
 
     setCurrentSession(data.session);
     clearOfflineAuthMode();
+    
+    // Manually update UI and dispatch event since onAuthStateChange might not fire reliably
+    if (typeof updateAuthUI === 'function') {
+      updateAuthUI(data.user);
+    }
+    window.dispatchEvent(new CustomEvent('bayan:authchange', { 
+      detail: { event: 'SIGNED_IN', session: data.session } 
+    }));
+
     return { success: true };
   } catch (err) {
     console.warn('Guest sign-in failed:', err);
@@ -118,8 +128,6 @@ async function linkGoogle() {
  */
 async function signOut() {
   const client = getSupabaseClient();
-  clearOfflineAuthMode();
-
   if (client) {
     try {
       await client.auth.signOut();
@@ -129,8 +137,23 @@ async function signOut() {
   }
 
   setCurrentSession(null);
+  clearOfflineAuthMode();
+
+  if (typeof updateAuthUI === 'function') {
+    updateAuthUI(null);
+  }
+
+  // Redirect to main page on logout
+  if (typeof showPage === 'function') {
+    showPage('home');
+  } else if (window.showPage) {
+    window.showPage('home');
+  }
+
+  window.dispatchEvent(new CustomEvent('bayan:authchange', {
+    detail: { event: 'SIGNED_OUT', session: null }
+  }));
   showAuthGate();
-  updateAuthUI(null);
 }
 
 /**
@@ -140,14 +163,9 @@ function enableOfflineAuthMode() {
   window.__bayanAuth = window.__bayanAuth || {};
   window.__bayanAuth.isOfflineMode = true;
   window.__bayanAuth.userId = null;
-  hideAuthGate();
-  showAuthOfflineBanner(true);
-  if (typeof showDocToast === 'function') {
-    showDocToast(
-      'تعذر الاتصال بخدمة المصادقة. يمكنك متابعة استخدام المحرر والمحاولة لاحقاً.',
-      'info'
-    );
-  }
+  // Update nav to show guest menu with Google sign-in option
+  if (typeof updateAuthUI === 'function') updateAuthUI(null);
+  // showAuthOfflineBanner(true) intentionally omitted — button handler manages UX
 }
 
 function clearOfflineAuthMode() {
