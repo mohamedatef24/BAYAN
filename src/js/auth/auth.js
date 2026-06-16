@@ -114,11 +114,10 @@ async function linkGoogle() {
 
     return signInWithGoogle();
   } catch (err) {
-    console.error('Link Google failed:', err);
-    if (typeof showDocToast === 'function') {
-      showDocToast('تعذر ربط حساب Google', 'error');
-    }
-    return { success: false, error: err.message };
+    console.warn('linkIdentity failed, falling back to signInWithGoogle:', err.message);
+    // linkIdentity often fails when manual linking is disabled in Supabase.
+    // Fall back to a full Google sign-in instead of showing an error.
+    return signInWithGoogle();
   }
 }
 
