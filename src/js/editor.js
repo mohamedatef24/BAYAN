@@ -1,0 +1,361 @@
+// src/js/editor.js
+// Editor management and state
+
+let analyzeTimeout;
+let analyzeAbortController = null;
+const ANALYZE_DEBOUNCE_MS = 500;
+const MAX_ANALYZE_LENGTH = 5000;
+
+/**
+ * Initialize the editor
+ */
+function initEditor() {
+  const editor = getEditorElement();
+  if (!editor) {
+    console.warn('Editor element not found');
+    return;
+  }
+
+  editor.addEventListener('input', () => {
+    analyzeTextDelayed();
+  });
+
+  editor.addEventListener('click', (e) => {
+    handleEditorClick(e);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') hideTooltip();
+  });
+
+  document.addEventListener('click', (e) => {
+    const popover = document.getElementById('editor-tooltip');
+    if (popover && popover.classList.contains('show') &&
+        !popover.contains(e.target) &&
+        !e.target.classList.contains('spelling-error') &&
+        !e.target.classList.contains('grammar-error') &&
+        !e.target.classList.contains('punctuation-suggestion')) {
+      hideTooltip();
+    }
+  });
+
+  const applyAllBtn = document.getElementById('apply-all-btn');
+  const applyAllSheet = document.getElementById('apply-all-sheet');
+  if (applyAllBtn) applyAllBtn.addEventListener('click', applyAllSuggestions);
+  if (applyAllSheet) applyAllSheet.addEventListener('click', applyAllSuggestions);
+
+  updatePlaceholder();
+}
+
+function updateEditorStats() {
+  const text = getEditorText();
+  const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+  const wordCountEl = document.getElementById('word-count');
+  if (wordCountEl) {
+    wordCountEl.textContent = words.toLocaleString('ar-EG');
+  }
+}
+
+function updatePlaceholder() {
+  const editor = getEditorElement();
+  if (!editor) return;
+
+  const text = getEditorText();
+  if (!text || text.trim().length === 0) {
+    editor.setAttribute('data-empty', 'true');
+  } else {
+    editor.removeAttribute('data-empty');
+  }
+}
+
+function analyzeTextDelayed() {
+  clearTimeout(analyzeTimeout);
+  analyzeTimeout = setTimeout(() => {
+    analyzeText();
+  }, ANALYZE_DEBOUNCE_MS);
+}
+
+function findSuggestionById(id) {
+  const suggestions = window.currentSuggestions || [];
+  return suggestions[parseInt(id, 10)] || null;
+}
+
+function findSuggestionElement(id) {
+  return document.querySelector(`[data-suggestion-id="${id}"]`);
+}
+
+async function analyzeText() {
+  const text = getEditorText();
+  updateEditorStats();
+  updatePlaceholder();
+
+  if (!text || text.trim().length === 0) {
+    renderWithoutSuggestions(text);
+    updateSuggestionCounts(0, 0, 0);
+    updateWritingScore(0, 0, 0);
+    updateSuggestionsList([]);
+    window.currentSuggestions = [];
+    updateAnalysisLimitBanner(false);
+    return;
+  }
+
+  const isTruncated = text.length > MAX_ANALYZE_LENGTH;
+  const textForApi = isTruncated ? text.substring(0, MAX_ANALYZE_LENGTH) : text;
+  updateAnalysisLimitBanner(isTruncated);
+
+  if (analyzeAbortController) {
+    analyzeAbortController.abort();
+  }
+  analyzeAbortController = new AbortController();
+
+  setAnalyzingState(true);
+
+  try {
+    const savedSelection = saveSelection();
+    const currentCaretOffset = getCaretOffset();
+
+    const response = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: textForApi }),
+      signal: analyzeAbortController.signal
+    });
+
+    if (!response.ok) {
+      console.error('Analyze API error:', response.status);
+      renderWithoutSuggestions(text);
+      return;
+    }
+
+    const data = await response.json();
+
+    if (data.status !== 'success' || !data.suggestions) {
+      renderWithoutSuggestions(text);
+      return;
+    }
+
+    window.currentSuggestions = sortSuggestions(data.suggestions || []);
+
+    const highlightedHtml = render({
+      text: text,
+      suggestions: window.currentSuggestions
+    });
+
+    setEditorHTML(highlightedHtml);
+
+    if (savedSelection) {
+      restoreSelection(savedSelection);
+    } else {
+      setCaretOffset(currentCaretOffset);
+    }
+
+    const spellingCount = window.currentSuggestions.filter((s) => s.type === 'spelling').length;
+    const grammarCount = window.currentSuggestions.filter((s) => s.type === 'grammar').length;
+    const punctuationCount = window.currentSuggestions.filter((s) => s.type === 'punctuation').length;
+
+    updateSuggestionCounts(spellingCount, grammarCount, punctuationCount);
+    updateWritingScore(spellingCount, grammarCount, punctuationCount);
+    updateSuggestionsList(window.currentSuggestions);
+  } catch (error) {
+    if (error.name === 'AbortError') return;
+    console.error('Analysis error:', error);
+    renderWithoutSuggestions(text);
+  } finally {
+    setAnalyzingState(false);
+  }
+}
+
+function renderWithoutSuggestions(text) {
+  const editor = getEditorElement();
+  if (!editor) return;
+  editor.textContent = text;
+  updatePlaceholder();
+}
+
+function updateSuggestionCounts(spelling, grammar, punctuation) {
+  const spellingEl = document.getElementById('spelling-count');
+  const grammarEl = document.getElementById('grammar-count');
+  const punctuationEl = document.getElementById('punctuation-count');
+
+  if (spellingEl) spellingEl.textContent = spelling.toLocaleString('ar-EG');
+  if (grammarEl) grammarEl.textContent = grammar.toLocaleString('ar-EG');
+  if (punctuationEl) punctuationEl.textContent = punctuation.toLocaleString('ar-EG');
+}
+
+function handleEditorClick(e) {
+  const target = e.target;
+  if (target.classList.contains('spelling-error') ||
+      target.classList.contains('grammar-error') ||
+      target.classList.contains('punctuation-suggestion')) {
+    showTooltip(target);
+  }
+}
+
+function showTooltip(element) {
+  const id = element.dataset.suggestionId;
+  const suggestion = findSuggestionById(id);
+
+  if (!suggestion) return;
+
+  const tooltip = document.getElementById('editor-tooltip');
+  if (!tooltip) return;
+
+  const typeEl = document.getElementById('tooltip-type');
+  const suggestionEl = document.getElementById('tooltip-suggestion');
+
+  const typeMap = {
+    spelling: 'خطأ إملائي',
+    grammar: 'خطأ نحوي',
+    punctuation: 'علامات ترقيم'
+  };
+
+  if (typeEl) {
+    typeEl.textContent = typeMap[suggestion.type] || suggestion.type;
+    typeEl.className = `popover-type popover-type--${suggestion.type}`;
+  }
+
+  if (suggestionEl) {
+    suggestionEl.textContent = suggestion.correction;
+  }
+
+  const rect = element.getBoundingClientRect();
+  let top = rect.bottom + 10;
+  let left = rect.left;
+
+  if (left + 320 > window.innerWidth) {
+    left = window.innerWidth - 330;
+  }
+  if (top + 150 > window.innerHeight) {
+    top = rect.top - 150;
+  }
+
+  tooltip.style.top = `${top}px`;
+  tooltip.style.left = `${Math.max(8, left)}px`;
+  tooltip.classList.add('show');
+
+  window.currentApplySuggestion = suggestion;
+  window.currentSuggestionElement = element;
+  window.currentSuggestionId = id;
+}
+
+function hideTooltip() {
+  const tooltip = document.getElementById('editor-tooltip');
+  if (tooltip) {
+    tooltip.classList.remove('show');
+  }
+  window.currentApplySuggestion = null;
+  window.currentSuggestionElement = null;
+}
+
+function applySuggestionAtOffsets(suggestion) {
+  const text = getEditorText();
+  const before = text.substring(0, suggestion.start);
+  const after = text.substring(suggestion.end);
+  const newText = before + suggestion.correction + after;
+  setEditorHTML(escapeHtml(newText));
+  hideTooltip();
+  analyzeTextDelayed();
+}
+
+function applyCorrection() {
+  if (!window.currentApplySuggestion) return;
+  applySuggestionAtOffsets(window.currentApplySuggestion);
+}
+
+function applySuggestionByIndex(index) {
+  const suggestions = window.currentSuggestions || [];
+  const suggestion = suggestions[index];
+  if (!suggestion) return;
+  applySuggestionAtOffsets(suggestion);
+}
+
+function applyAllSuggestions() {
+  const suggestions = [...(window.currentSuggestions || [])].sort((a, b) => b.start - a.start);
+  if (suggestions.length === 0) return;
+
+  let text = getEditorText();
+  suggestions.forEach((s) => {
+    text = text.substring(0, s.start) + s.correction + text.substring(s.end);
+  });
+
+  setEditorHTML(escapeHtml(text));
+  hideTooltip();
+  analyzeTextDelayed();
+}
+
+function clearEditor() {
+  setEditorHTML('');
+  window.currentSuggestions = [];
+  updateSuggestionCounts(0, 0, 0);
+  updateWritingScore(0, 0, 0);
+  updateSuggestionsList([]);
+  updateEditorStats();
+  updatePlaceholder();
+  updateAnalysisLimitBanner(false);
+  if (typeof updateExportButtonStates === 'function') updateExportButtonStates();
+}
+
+/**
+ * Load plain text into editor — sole entry point for document import
+ * @param {string} text - UTF-8 plain text
+ * @param {object} options - { analyze: true, filename: string }
+ */
+function loadDocumentText(text, options = {}) {
+  const normalized = typeof normalizeImportedText === 'function'
+    ? normalizeImportedText(text)
+    : String(text || '').replace(/^\uFEFF/, '');
+
+  setEditorHTML(escapeHtml(normalized));
+  window.currentSuggestions = [];
+  hideTooltip();
+  updatePlaceholder();
+  updateEditorStats();
+  updateSuggestionCounts(0, 0, 0);
+  updateWritingScore(0, 0, 0);
+  updateSuggestionsList([]);
+  updateAnalysisLimitBanner(normalized.length > MAX_ANALYZE_LENGTH);
+
+  if (typeof updateExportButtonStates === 'function') {
+    updateExportButtonStates();
+  }
+
+  if (options.analyze !== false) {
+    analyzeTextDelayed();
+  }
+}
+
+function copyText() {
+  const text = getEditorText();
+  navigator.clipboard.writeText(text).catch(() => {
+    const temp = document.createElement('textarea');
+    temp.value = text;
+    document.body.appendChild(temp);
+    temp.select();
+    document.execCommand('copy');
+    document.body.removeChild(temp);
+  });
+
+  const btn = event?.target;
+  if (btn) {
+    const originalText = btn.textContent;
+    btn.textContent = 'تم النسخ!';
+    setTimeout(() => { btn.textContent = originalText; }, 2000);
+  }
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    initEditor,
+    analyzeText,
+    analyzeTextDelayed,
+    clearEditor,
+    copyText,
+    loadDocumentText,
+    updateEditorStats,
+    showTooltip,
+    hideTooltip,
+    applyCorrection,
+    applySuggestionByIndex,
+    applyAllSuggestions
+  };
+}

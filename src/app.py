@@ -5,12 +5,31 @@ Provides API endpoints for the Bayan web application.
 
 import os
 import logging
+import time
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from pathlib import Path
 import traceback
+import difflib
+import re
 
-from model_loader import SummarizationModel
+from model_loader import (
+    SummarizationModel,
+    SpellingModel,
+    AutocompleteModel,
+    GrammarModel,
+    PunctuationModel,
+    SUMMARIZATION_PATH,
+    SPELLING_PATH,
+    AUTOCOMPLETE_PATH,
+    GRAMMAR_PATH,
+    PUNCTUATION_PATH
+)
+
+HUGGINGFACE_SUMMARIZATION_REPO = os.environ.get(
+    "SUMMARIZATION_REPO_ID",
+    "bayan10/summarization-model",
+)
 
 # Configure logging
 logging.basicConfig(
@@ -28,52 +47,41 @@ MAX_TEXT_LENGTH = 5000  # Maximum characters for input text
 MAX_SUMMARY_LENGTH = 512  # Maximum tokens for summary
 MIN_TEXT_LENGTH = 10  # Minimum characters for summarization
 
-# Global model instance
-model = None
+# Global model instances
+summarization_model = None
+spelling_model = None
+autocomplete_model = None
+grammar_model = None
+punctuation_model = None
 
 
-def get_model_path():
-    """Get the model path, handling different possible locations."""
-    base_path = Path(__file__).parent.parent
-    current_dir = Path.cwd()
+def load_models():
+    """Load only the summarization model."""
+    global summarization_model, spelling_model, autocomplete_model, grammar_model, punctuation_model
     
-    # Try different possible paths
-    possible_paths = [
-        base_path / "models" / "arabic_summarization_model" / "content" / "drive" / "MyDrive" / "arabic_summarization_model",
-        base_path / "models" / "arabic_summarization_model",
-        current_dir / "models" / "arabic_summarization_model" / "content" / "drive" / "MyDrive" / "arabic_summarization_model",
-        current_dir / "models" / "arabic_summarization_model",
-        Path("models") / "arabic_summarization_model" / "content" / "drive" / "MyDrive" / "arabic_summarization_model",
-        Path("models") / "arabic_summarization_model",
-    ]
-    
-    for path in possible_paths:
-        path = path.resolve()  # Resolve to absolute path
-        if path.exists() and (path / "config.json").exists():
-            logger.info(f"Found model at: {path}")
-            return str(path)
-    
-    # Provide helpful error message
-    error_msg = f"Model not found. Searched in:\n"
-    for p in possible_paths:
-        error_msg += f"  - {p.resolve()}\n"
-    error_msg += "\nPlease ensure the model files are in one of these locations."
-    raise FileNotFoundError(error_msg)
+    loaded = []
+    failed = []
 
-
-def load_model():
-    """Load the summarization model."""
-    global model
+    # Load only the Summarization model. This avoids heavy startup cost from other models.
     try:
-        model_path = get_model_path()
-        logger.info(f"Loading model from: {model_path}")
-        model = SummarizationModel(model_path)
-        logger.info("Model loaded successfully")
-        return True
+        logger.info(f"Loading summarization model from Hugging Face: {HUGGINGFACE_SUMMARIZATION_REPO}")
+        try:
+            summarization_model = SummarizationModel(HUGGINGFACE_SUMMARIZATION_REPO)
+        except Exception as remote_error:
+            logger.warning(f"Remote load failed, falling back to local model: {remote_error}")
+            logger.info(f"Loading summarization model from local path: {SUMMARIZATION_PATH}")
+            summarization_model = SummarizationModel(SUMMARIZATION_PATH)
+        loaded.append("summarization")
+        logger.info("Summarization model loaded successfully")
     except Exception as e:
-        logger.error(f"Error loading model: {str(e)}")
-        logger.error(traceback.format_exc())
-        return False
+        failed.append(("summarization", str(e)))
+        logger.error(f"Failed to load summarization model: {str(e)}")
+
+    logger.info(f"Models loaded: {loaded}")
+    if failed:
+        logger.warning(f"Models failed to load: {[f[0] for f in failed]}")
+
+    return len(loaded) > 0
 
 
 @app.route('/')
@@ -87,7 +95,13 @@ def health_check():
     """Health check endpoint."""
     return jsonify({
         'status': 'healthy',
-        'model_loaded': model is not None
+        'models': {
+            'summarization': summarization_model is not None,
+            'spelling': spelling_model is not None,
+            'autocomplete': autocomplete_model is not None,
+            'grammar': grammar_model is not None,
+            'punctuation': punctuation_model is not None
+        }
     })
 
 
@@ -103,9 +117,9 @@ def summarize():
         "full_text": true/false (whether to summarize full text or just first paragraph)
     }
     """
-    if model is None:
+    if summarization_model is None:
         return jsonify({
-            'error': 'Model not loaded. Please check server logs.',
+            'error': 'Summarization model not loaded. Please check server logs.',
             'status': 'error'
         }), 503
     
@@ -154,7 +168,7 @@ def summarize():
         
         # Generate summary
         logger.info(f"Generating summary: length={length}, max_length={max_length}, text_length={len(text)}")
-        summary = model.summarize(text, max_length=max_length, min_length=max(10, max_length // 3))
+        summary = summarization_model.summarize(text, max_length=max_length, min_length=max(10, max_length // 3))
         
         return jsonify({
             'summary': summary,
@@ -180,6 +194,489 @@ def summarize():
         }), 500
 
 
+@app.route('/api/spelling', methods=['POST'])
+def spelling_correction():
+    """
+    Correct spelling in Arabic text.
+    
+    Expected JSON payload:
+    {
+        "text": "Arabic text to correct"
+    }
+    """
+    if spelling_model is None:
+        return jsonify({
+            'error': 'Spelling model not loaded. Please check server logs.',
+            'status': 'error'
+        }), 503
+    
+    try:
+        if not request.is_json:
+            return jsonify({'error': 'Request must be JSON', 'status': 'error'}), 400
+        
+        data = request.get_json()
+        text = data.get('text', '').strip()
+        
+        if not text:
+            return jsonify({'error': 'Text is required', 'status': 'error'}), 400
+        
+        logger.info(f"Correcting spelling for text of length: {len(text)}")
+        corrected = spelling_model.correct(text)
+        
+        return jsonify({
+            'corrected': corrected,
+            'status': 'success',
+            'original_length': len(text),
+            'corrected_length': len(corrected)
+        })
+    
+    except Exception as e:
+        logger.error(f"Error during spelling correction: {str(e)}")
+        logger.error(traceback.format_exc())
+        return jsonify({
+            'error': 'An error occurred during spelling correction.',
+            'status': 'error',
+            'details': str(e) if app.debug else None
+        }), 500
+
+
+@app.route('/api/autocomplete', methods=['POST'])
+def autocomplete():
+    """
+    Get autocomplete suggestions for Arabic text.
+    
+    Expected JSON payload:
+    {
+        "text": "Arabic text prefix",
+        "n": 5 (number of suggestions, optional)
+    }
+    """
+    if autocomplete_model is None:
+        return jsonify({
+            'error': 'Autocomplete model not loaded. Please check server logs.',
+            'status': 'error'
+        }), 503
+    
+    try:
+        if not request.is_json:
+            return jsonify({'error': 'Request must be JSON', 'status': 'error'}), 400
+        
+        data = request.get_json()
+        text = data.get('text', '').strip()
+        n = int(data.get('n', 5))
+        
+        if not text:
+            return jsonify({'error': 'Text is required', 'status': 'error'}), 400
+        
+        logger.info(f"Getting autocomplete suggestions for: {text[:50]}...")
+        suggestions = autocomplete_model.predict(text, n=n)
+        logger.info(f"Autocomplete suggestions (n={n}): {suggestions}")
+        
+        return jsonify({
+            'suggestions': suggestions,
+            'status': 'success'
+        })
+    
+    except Exception as e:
+        logger.error(f"Error during autocomplete: {str(e)}")
+        logger.error(traceback.format_exc())
+        return jsonify({
+            'error': 'An error occurred during autocomplete.',
+            'status': 'error',
+            'details': str(e) if app.debug else None
+        }), 500
+
+
+@app.route('/api/grammar', methods=['POST'])
+def grammar_correction():
+    """
+    Correct grammar in Arabic text.
+    
+    Expected JSON payload:
+    {
+        "text": "Arabic text to correct"
+    }
+    """
+    if grammar_model is None:
+        return jsonify({
+            'error': 'Grammar model not loaded. Please check server logs.',
+            'status': 'error'
+        }), 503
+    
+    try:
+        if not request.is_json:
+            return jsonify({'error': 'Request must be JSON', 'status': 'error'}), 400
+        
+        data = request.get_json()
+        text = data.get('text', '').strip()
+        
+        if not text:
+            return jsonify({'error': 'Text is required', 'status': 'error'}), 400
+        
+        logger.info(f"Correcting grammar for text of length: {len(text)}")
+        corrected = grammar_model.correct(text)
+        
+        return jsonify({
+            'corrected': corrected,
+            'status': 'success',
+            'original_length': len(text),
+            'corrected_length': len(corrected)
+        })
+    
+    except Exception as e:
+        logger.error(f"Error during grammar correction: {str(e)}")
+        logger.error(traceback.format_exc())
+        return jsonify({
+            'error': 'An error occurred during grammar correction.',
+            'status': 'error',
+            'details': str(e) if app.debug else None
+        }), 500
+
+
+@app.route('/api/punctuation', methods=['POST'])
+def add_punctuation():
+    """
+    Add punctuation to Arabic text.
+    
+    Expected JSON payload:
+    {
+        "text": "Arabic text without punctuation"
+    }
+    """
+    if punctuation_model is None:
+        return jsonify({
+            'error': 'Punctuation model not loaded. Please check server logs.',
+            'status': 'error'
+        }), 503
+    
+    try:
+        if not request.is_json:
+            return jsonify({'error': 'Request must be JSON', 'status': 'error'}), 400
+        
+        data = request.get_json()
+        text = data.get('text', '').strip()
+        
+        if not text:
+            return jsonify({'error': 'Text is required', 'status': 'error'}), 400
+        
+        logger.info(f"Adding punctuation for text of length: {len(text)}")
+        punctuated = punctuation_model.add_punctuation(text)
+        
+        return jsonify({
+            'punctuated': punctuated,
+            'status': 'success',
+            'original_length': len(text),
+            'punctuated_length': len(punctuated)
+        })
+    
+    except Exception as e:
+        logger.error(f"Error during punctuation: {str(e)}")
+        logger.error(traceback.format_exc())
+        return jsonify({
+            'error': 'An error occurred during punctuation.',
+            'status': 'error',
+            'details': str(e) if app.debug else None
+        }), 500
+
+
+def get_word_positions(text):
+    """
+    Returns a list of tuples (word, start_char_index, end_char_index)
+    for all whitespace-separated words in the text.
+    """
+    positions = []
+    for m in re.finditer(r'\S+', text):
+        positions.append((m.group(), m.start(), m.end()))
+    return positions
+
+
+class OffsetMapper:
+    def __init__(self, original, modified):
+        self.original = original
+        self.modified = modified
+        self.mapping = []  # list of (mod_start, mod_end, orig_start, orig_end)
+        self._build_mapping()
+        
+    def _build_mapping(self):
+        s = difflib.SequenceMatcher(None, self.original, self.modified)
+        for tag, i1, i2, j1, j2 in s.get_opcodes():
+            self.mapping.append((j1, j2, i1, i2))
+            
+    def map_offset(self, mod_offset):
+        """
+        Given a character offset in the modified text, return the corresponding
+        character offset in the original text.
+        """
+        for j1, j2, i1, i2 in self.mapping:
+            if j1 <= mod_offset <= j2:
+                if j2 == j1:  # insertion point
+                    return i1
+                # Proportional mapping inside the block
+                ratio = (mod_offset - j1) / (j2 - j1)
+                return int(i1 + ratio * (i2 - i1))
+        return len(self.original)
+
+
+def get_word_diffs(original, corrected):
+    """
+    Identify differences between original and corrected text at the word level.
+    Returns a list of suggestions with start and end character offsets.
+    """
+    orig_words = get_word_positions(original)
+    corr_words = get_word_positions(corrected)
+    s = difflib.SequenceMatcher(None, [w[0] for w in orig_words], [w[0] for w in corr_words])
+    suggestions = []
+    
+    for tag, i1, i2, j1, j2 in s.get_opcodes():
+        if tag == 'replace':
+            if i1 < len(orig_words) and i2 - 1 < len(orig_words):
+                start_char = orig_words[i1][1]
+                end_char = orig_words[i2-1][2]
+                suggestions.append({
+                    'start': start_char,
+                    'end': end_char,
+                    'original': original[start_char:end_char],
+                    'correction': " ".join([w[0] for w in corr_words[j1:j2]]),
+                    'type': 'generic'
+                })
+        elif tag == 'delete':
+            if i1 < len(orig_words) and i2 - 1 < len(orig_words):
+                start_char = orig_words[i1][1]
+                end_char = orig_words[i2-1][2]
+                suggestions.append({
+                    'start': start_char,
+                    'end': end_char,
+                    'original': original[start_char:end_char],
+                    'correction': '',
+                    'type': 'generic'
+                })
+        elif tag == 'insert':
+            pos = orig_words[i1][1] if i1 < len(orig_words) else len(original)
+            suggestions.append({
+                'start': pos,
+                'end': pos,
+                'original': '',
+                'correction': " ".join([w[0] for w in corr_words[j1:j2]]),
+                'type': 'generic'
+            })
+            
+    return suggestions
+
+
+def _levenshtein(a, b):
+    """Simple Levenshtein distance for short words."""
+    m, n = len(a), len(b)
+    if m == 0:
+        return n
+    if n == 0:
+        return m
+    dp = [[0] * (n + 1) for _ in range(m + 1)]
+    for i in range(m + 1):
+        dp[i][0] = i
+    for j in range(n + 1):
+        dp[0][j] = j
+    for i in range(1, m + 1):
+        for j in range(1, n + 1):
+            cost = 0 if a[i - 1] == b[j - 1] else 1
+            dp[i][j] = min(
+                dp[i - 1][j] + 1,      # deletion
+                dp[i][j - 1] + 1,      # insertion
+                dp[i - 1][j - 1] + cost,  # substitution
+            )
+    return dp[m][n]
+
+
+def _is_small_spelling_change(orig_word, corr_word):
+    """
+    Heuristic: only accept small spelling edits and ignore
+    aggressive changes (to avoid over-editing).
+    """
+    if not orig_word or not corr_word:
+        return False
+    if orig_word == corr_word:
+        return False
+
+    # Ignore tokens that contain non-letters (numbers / punctuation)
+    # Arabic letters range plus basic Latin letters.
+    if re.search(r'[^ء-يآأإىa-zA-Z]', orig_word):
+        return False
+    if re.search(r'[^ء-يآأإىa-zA-Z]', corr_word):
+        return False
+
+    dist = _levenshtein(orig_word, corr_word)
+    max_len = max(len(orig_word), len(corr_word))
+
+    # Allow at most 2 character edits and at most 40% of the word
+    return dist <= 2 and (dist / max_len) <= 0.4
+
+
+@app.route('/api/analyze', methods=['POST'])
+def analyze_text():
+    """
+    Perform sequential analysis (Spelling -> Grammar -> Punctuation) 
+    and return word-level suggestions with offsets.
+    """
+    try:
+        if not request.is_json:
+            return jsonify({'error': 'Request must be JSON', 'status': 'error'}), 400
+        
+        data = request.get_json()
+        text = data.get('text', '').strip()
+        
+        if not text:
+            return jsonify({'error': 'Text is required', 'status': 'error'}), 400
+
+        current_text = text
+        suggestions = []
+        mappers = []
+        total_start = time.time()
+
+        def map_range_to_original(start, end):
+            curr_start, curr_end = start, end
+            for mapper in reversed(mappers):
+                curr_start = mapper.map_offset(curr_start)
+                curr_end = mapper.map_offset(curr_end)
+            return curr_start, curr_end
+
+        # 1. Spelling (with conservative post-filtering to avoid over-editing)
+        if spelling_model:
+            try:
+                t0 = time.time()
+                logger.info(f"[ANALYZE] Step 1: Spelling correction starting...")
+                raw_corrected = spelling_model.correct(current_text)
+                logger.info(f"[ANALYZE] Step 1: Spelling done in {time.time()-t0:.2f}s")
+
+                if raw_corrected != current_text:
+                    orig_word_positions = get_word_positions(current_text)
+                    corr_word_positions = get_word_positions(raw_corrected)
+
+                    orig_word_strings = [w[0] for w in orig_word_positions]
+                    corr_word_strings = [w[0] for w in corr_word_positions]
+
+                    s = difflib.SequenceMatcher(None, orig_word_strings, corr_word_strings)
+                    new_words = []
+
+                    for tag, i1, i2, j1, j2 in s.get_opcodes():
+                        if tag == 'equal':
+                            start_idx = orig_word_positions[i1][1]
+                            end_idx = orig_word_positions[i2-1][2]
+                            new_words.append(current_text[start_idx:end_idx])
+                        elif tag == 'replace':
+                            o_segment = orig_word_strings[i1:i2]
+                            c_segment = corr_word_strings[j1:j2]
+
+                            start_idx = orig_word_positions[i1][1]
+                            end_idx = orig_word_positions[i2-1][2]
+
+                            if len(o_segment) == 1 and len(c_segment) == 1:
+                                # 1-word → 1-word: accept only small edits (typos)
+                                o_word = o_segment[0]
+                                c_word = c_segment[0]
+                                if _is_small_spelling_change(o_word, c_word):
+                                    new_words.append(c_word)
+                                    suggestions.append({
+                                        'start': start_idx,
+                                        'end': end_idx,
+                                        'original': o_word,
+                                        'correction': c_word,
+                                        'type': 'spelling',
+                                    })
+                                else:
+                                    new_words.append(current_text[start_idx:end_idx])
+                            elif len(o_segment) == 1 and len(c_segment) > 1:
+                                # 1-word → N words: accept when original is long (likely concatenated)
+                                o_word = o_segment[0]
+                                if len(o_word) >= 12 and ' ' not in o_word:
+                                    corr_str = " ".join(c_segment)
+                                    new_words.append(corr_str)
+                                    suggestions.append({
+                                        'start': start_idx,
+                                        'end': end_idx,
+                                        'original': o_word,
+                                        'correction': corr_str,
+                                        'type': 'spelling',
+                                    })
+                                else:
+                                    new_words.append(current_text[start_idx:end_idx])
+                            else:
+                                new_words.extend([current_text[orig_word_positions[idx][1]:orig_word_positions[idx][2]] for idx in range(i1, i2)])
+                        elif tag == 'delete':
+                            for idx in range(i1, i2):
+                                new_words.append(current_text[orig_word_positions[idx][1]:orig_word_positions[idx][2]])
+                        elif tag == 'insert':
+                            continue
+
+                    safe_text = " ".join(new_words)
+                    mappers.append(OffsetMapper(current_text, safe_text))
+                    current_text = safe_text
+            except Exception as e:
+                logger.error(f"[ANALYZE] Spelling failed: {e}")
+
+        # 2. Grammar (runs on spelling-corrected text)
+        if grammar_model:
+            try:
+                t0 = time.time()
+                logger.info(f"[ANALYZE] Step 2: Grammar correction starting...")
+                corrected_grammar = grammar_model.correct(current_text)
+                logger.info(f"[ANALYZE] Step 2: Grammar done in {time.time()-t0:.2f}s")
+                if corrected_grammar != current_text:
+                    diffs = get_word_diffs(current_text, corrected_grammar)
+                    for d in diffs:
+                        orig_start, orig_end = map_range_to_original(d['start'], d['end'])
+                        suggestions.append({
+                            'start': orig_start,
+                            'end': orig_end,
+                            'original': text[orig_start:orig_end],
+                            'correction': d['correction'],
+                            'type': 'grammar'
+                        })
+                    mappers.append(OffsetMapper(current_text, corrected_grammar))
+                    current_text = corrected_grammar
+            except Exception as e:
+                logger.error(f"[ANALYZE] Grammar failed: {e}")
+
+        # 3. Punctuation (runs on grammar-corrected text)
+        if punctuation_model:
+            try:
+                t0 = time.time()
+                logger.info(f"[ANALYZE] Step 3: Punctuation starting...")
+                corrected_punc = punctuation_model.add_punctuation(current_text)
+                logger.info(f"[ANALYZE] Step 3: Punctuation done in {time.time()-t0:.2f}s")
+                if corrected_punc != current_text:
+                    diffs = get_word_diffs(current_text, corrected_punc)
+                    for d in diffs:
+                        orig_start, orig_end = map_range_to_original(d['start'], d['end'])
+                        suggestions.append({
+                            'start': orig_start,
+                            'end': orig_end,
+                            'original': text[orig_start:orig_end],
+                            'correction': d['correction'],
+                            'type': 'punctuation'
+                        })
+                    current_text = corrected_punc
+            except Exception as e:
+                logger.error(f"[ANALYZE] Punctuation failed: {e}")
+
+        total_time = time.time() - total_start
+        logger.info(f"[ANALYZE] Total analysis time: {total_time:.2f}s | Suggestions: {len(suggestions)}")
+
+        return jsonify({
+            'original': text,
+            'corrected': current_text,
+            'suggestions': suggestions,
+            'status': 'success'
+        })
+
+    except Exception as e:
+        logger.error(f"Error during analysis: {str(e)}")
+        logger.error(traceback.format_exc())
+        return jsonify({
+            'error': 'An error occurred during text analysis.',
+            'status': 'error',
+            'details': str(e) if app.debug else None
+        }), 500
+
+
 @app.errorhandler(404)
 def not_found(error):
     """Handle 404 errors."""
@@ -200,12 +697,12 @@ def internal_error(error):
 
 
 if __name__ == '__main__':
-    # Load model on startup
+    # Load models on startup
     logger.info("Starting Bayan server...")
     
-    if not load_model():
-        logger.error("Failed to load model. Server will start but summarization will not work.")
-        logger.error("Please check that the model files are in the correct location.")
+    if not load_models():
+        logger.error("Failed to load any models. Server will start but functionality will be limited.")
+        logger.error("Please check that the model files are in the correct locations.")
     
     # Run the app
     port = int(os.environ.get('PORT', 5000))

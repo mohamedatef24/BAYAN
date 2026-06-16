@@ -3,250 +3,128 @@
  <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="supabase-url" content="">
+  <meta name="supabase-anon-key" content="">
   <title>بيان - مساعد الكتابة العربية الذكي</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="/_sdk/element_sdk.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@300;400;500;600;700;800&amp;family=Tajawal:wght@300;400;500;700;800&amp;display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <script src="/_sdk/element_sdk.js"></script>
   <style>
-    body {
-      box-sizing: border-box;
-    }
-    
-    * {
-      font-family: 'Tajawal', 'Noto Kufi Arabic', sans-serif;
-    }
-    
-    .gradient-bg {
-      background: linear-gradient(165deg, #0a1628 0%, #1a2744 40%, #0f1b2e 100%);
-    }
-    
-    .gradient-accent {
-      background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-    }
-    
-    .text-gradient {
-      background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    
-    .card-hover {
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    
-    .card-hover:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 20px 40px -10px rgba(59, 130, 246, 0.3);
-    }
-    
-    .spelling-error {
-      background: rgba(239, 68, 68, 0.15);
-      border-bottom: 2px solid #ef4444;
-      cursor: pointer;
-      position: relative;
-      padding: 0 2px;
-      border-radius: 2px;
-    }
-    
-    .grammar-error {
-      background: rgba(251, 191, 36, 0.15);
-      border-bottom: 2px solid #fbbf24;
-      cursor: pointer;
-      position: relative;
-      padding: 0 2px;
-      border-radius: 2px;
-    }
-    
-    .punctuation-suggestion {
-      background: rgba(34, 197, 94, 0.15);
-      border-bottom: 2px solid #22c55e;
-      cursor: pointer;
-      position: relative;
-      padding: 0 2px;
-      border-radius: 2px;
-    }
-    
-    .editor-content {
-      line-height: 2.2;
-      letter-spacing: 0.02em;
-    }
-    
-    .page {
-      display: none;
-    }
-    
-    .page.active {
-      display: block;
-    }
-    
-    .nav-link {
-      position: relative;
-      transition: all 0.3s ease;
-    }
-    
-    .nav-link::after {
-      content: '';
-      position: absolute;
-      bottom: -2px;
-      right: 0;
-      width: 0;
-      height: 2px;
-      background: var(--primary-color);
-      transition: width 0.3s ease;
-    }
-    
-    .nav-link:hover::after,
-    .nav-link.active::after {
-      width: 100%;
-    }
-    
-    .tooltip {
-      position: absolute;
-      background: var(--surface-color);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
-      padding: 16px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-      z-index: 1000;
-      max-width: 300px;
-      display: none;
-    }
-    
-    .tooltip.show {
-      display: block;
-    }
-    
-    .score-circle {
-      transition: stroke-dashoffset 1s ease-in-out;
-    }
-    
-    .feature-icon {
-      width: 48px;
-      height: 48px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 12px;
-      font-size: 24px;
-    }
-    
-    .animate-fade-in {
-      animation: fadeIn 0.6s ease-in-out;
-    }
-    
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    
-    .animate-float {
-      animation: float 6s ease-in-out infinite;
-    }
-    
-    @keyframes float {
-      0%, 100% { transform: translateY(0px); }
-      50% { transform: translateY(-20px); }
-    }
-    
-    .editor-textarea {
-      background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
-      color: #1a202c;
-      resize: none;
-      min-height: 500px;
-    }
-    
-    .editor-textarea:focus {
-      outline: none;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
-    }
-    
-    :root {
-      --primary-color: #3b82f6;
-      --secondary-color: #8b5cf6;
-      --text-color: #f1f5f9;
-      --text-secondary: #cbd5e1;
-      --surface-color: #1e293b;
-      --background-color: #0f172a;
-      --success-color: #22c55e;
-      --warning-color: #fbbf24;
-      --error-color: #ef4444;
-    }
-    
-    .pricing-badge {
-      position: absolute;
-      top: -12px;
-      right: 50%;
-      transform: translateX(50%);
-      padding: 4px 16px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 700;
-    }
-    
-    .suggestion-item {
-      transition: all 0.2s ease;
-      cursor: pointer;
-    }
-    
-    .suggestion-item:hover {
-      background: rgba(59, 130, 246, 0.1);
-    }
-    
-    input[type="range"] {
-      -webkit-appearance: none;
-      appearance: none;
-      background: transparent;
-      cursor: pointer;
-    }
-    
-    input[type="range"]::-webkit-slider-track {
-      background: rgba(255, 255, 255, 0.1);
-      height: 6px;
-      border-radius: 3px;
-    }
-    
-    input[type="range"]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      appearance: none;
-      background: var(--primary-color);
-      height: 18px;
-      width: 18px;
-      border-radius: 50%;
-      margin-top: -6px;
-    }
-    
-    .summary-preview {
-      max-height: 0;
-      overflow: hidden;
-      transition: max-height 0.4s ease-in-out;
-    }
-    
-    .summary-preview.show {
-      max-height: 400px;
-    }
+    /* Marketing page inline overrides — core styles in /css/ */
   </style>
   <style>@view-transition { navigation: auto; }</style>
+  <script src="/js/vendor/supabase.min.js"></script>
+  <script src="/js/auth/config.js"></script>
+  <script src="/js/auth/client.js"></script>
+  <script src="/js/auth/session.js"></script>
+  <script src="/js/auth/auth.js"></script>
+  <script src="/js/auth/auth-ui.js"></script>
+  <script src="/js/theme.js"></script>
   <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+  <script src="/js/vendor/mammoth.browser.min.js"></script>
+  <script src="/js/vendor/docx.umd.js"></script>
+  <script src="/js/vendor/FileSaver.min.js"></script>
+  <script src="/js/vendor/html2pdf.bundle.min.js"></script>
+  <script src="/js/renderer.js"></script>
+  <script src="/js/selection.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/documents/doc-utils.js"></script>
+  <script src="/js/editor.js"></script>
+  <script src="/js/documents/import.js"></script>
+  <script src="/js/documents/export.js?v=20260615d"></script>
+  <script src="/js/documents/documents.js"></script>
  </head>
- <body class="h-full" style="background-color: var(--background-color); color: var(--text-color);">
+ <body class="h-full page-bg">
   <div class="h-full overflow-auto"><!-- Navigation -->
-   <nav class="fixed top-0 right-0 left-0 z-50 backdrop-blur-xl border-b" style="background: rgba(15, 23, 42, 0.85); border-color: rgba(255, 255, 255, 0.08);">
-    <div class="max-w-7xl mx-auto px-6 py-4">
-     <div class="flex items-center justify-between"><!-- Logo & Brand (Right side in RTL) -->
+   <nav class="site-nav fixed top-0 right-0 left-0 z-50" role="navigation" aria-label="التنقل الرئيسي">
+    <div class="max-w-7xl mx-auto px-4 md:px-6 py-3">
+     <div class="flex items-center justify-between gap-3">
       <div class="flex items-center gap-3">
-       <div class="w-10 h-10 rounded-xl flex items-center justify-center gradient-accent"><span class="text-white text-xl font-bold">ب</span>
-       </div><span id="nav-brand" class="text-2xl font-bold text-gradient">بيان</span>
-      </div><!-- Nav Links (Center) -->
-      <div class="hidden md:flex items-center gap-8"><button onclick="showPage('home')" class="nav-link active text-base font-medium" style="color: var(--text-color);" data-page="home">الرئيسية</button> <button onclick="showPage('features')" class="nav-link text-base font-medium" style="color: var(--text-secondary);" data-page="features">الميزات</button> <button onclick="showPage('editor')" class="nav-link text-base font-medium" style="color: var(--text-secondary);" data-page="editor">المحرر</button> <button onclick="showPage('pricing')" class="nav-link text-base font-medium" style="color: var(--text-secondary);" data-page="pricing">الأسعار</button>
-      </div><!-- CTA Buttons (Left side in RTL) -->
-      <div class="flex items-center gap-4"><button class="text-base font-medium transition-colors hover:text-white" style="color: var(--text-secondary);">تسجيل الدخول</button> <button id="nav-cta" class="px-6 py-2.5 rounded-xl text-base font-bold text-white gradient-accent transition-all hover:scale-105 hover:shadow-lg"> ابدأ الكتابة مجانًا </button>
+       <button id="mobile-menu-btn" class="mobile-menu-btn md:hidden" aria-label="فتح القائمة" aria-expanded="false" aria-controls="mobile-drawer">
+        <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+       </button>
+       <div class="w-10 h-10 rounded-xl flex items-center justify-center gradient-accent" aria-hidden="true"><span class="text-white text-xl font-bold">ب</span></div>
+       <span id="nav-brand" class="text-xl md:text-2xl font-bold text-gradient">بيان</span>
+      </div>
+      <div class="hidden md:flex items-center gap-8">
+       <button onclick="showPage('home')" class="nav-link active text-base font-medium" data-page="home">الرئيسية</button>
+       <button onclick="showPage('features')" class="nav-link text-base font-medium" data-page="features">الميزات</button>
+       <button onclick="showPage('editor')" class="nav-link text-base font-medium" data-page="editor">المحرر</button>
+       <button onclick="showPage('pricing')" class="nav-link text-base font-medium" data-page="pricing">الأسعار</button>
+       <a href="https://bayyinah-alpha.vercel.app/" class="nav-link nav-link-external text-base font-medium" target="_blank" rel="noopener noreferrer" aria-label="بَيِّنَة — مساعد ذكي للإجابة عن أسئلة القرآن والحديث وقصص الأنبياء">بَيِّنَة — القرآن والحديث</a>
+      </div>
+      <div class="flex items-center gap-2 md:gap-3">
+       <div id="auth-menu-wrap" class="auth-menu-wrap is-hidden">
+        <div class="auth-dropdown">
+         <button id="auth-menu-trigger" class="auth-menu-trigger" type="button" aria-label="قائمة الحساب" aria-haspopup="true" aria-expanded="false">
+          <span id="auth-avatar" class="auth-avatar" aria-hidden="true">ض</span>
+          <span id="auth-display-name" class="auth-display-name">ضيف</span>
+          <span class="auth-menu-chevron" aria-hidden="true">▾</span>
+         </button>
+         <div id="auth-account-menu" class="auth-account-menu" role="menu" aria-label="الحساب">
+          <div class="auth-account-menu__header">
+           <span id="auth-provider-label" class="auth-provider-label">ضيف</span>
+          </div>
+          <button id="auth-link-google-btn" type="button" class="auth-account-menu__item" role="menuitem">ربط حساب Google</button>
+          <button id="auth-logout-btn" type="button" class="auth-account-menu__item auth-account-menu__item--danger" role="menuitem">تسجيل الخروج</button>
+         </div>
+        </div>
+       </div>
+       <button id="theme-toggle" class="theme-toggle" aria-label="تبديل السمة" aria-pressed="true" type="button"></button>
+       <button id="nav-cta" onclick="showPage('editor')" class="hidden sm:inline-flex px-4 md:px-6 py-2.5 rounded-xl text-sm md:text-base font-bold text-white gradient-accent transition-all">ابدأ الكتابة</button>
       </div>
      </div>
     </div>
-   </nav><!-- Home Page -->
+   </nav>
+   <!-- Mobile drawer -->
+   <div id="mobile-drawer" class="mobile-drawer" aria-hidden="true">
+    <div id="mobile-drawer-backdrop" class="mobile-drawer-backdrop"></div>
+    <div class="mobile-drawer-panel" role="dialog" aria-label="قائمة التنقل">
+     <button id="mobile-drawer-close" class="mobile-drawer-link" style="text-align:left" aria-label="إغلاق القائمة">✕ إغلاق</button>
+     <button class="mobile-drawer-link active" data-page="home">الرئيسية</button>
+     <button class="mobile-drawer-link" data-page="features">الميزات</button>
+     <button class="mobile-drawer-link" data-page="editor">المحرر</button>
+     <button class="mobile-drawer-link" data-page="pricing">الأسعار</button>
+     <a href="https://bayyinah-alpha.vercel.app/" class="mobile-drawer-link mobile-drawer-link-external" target="_blank" rel="noopener noreferrer" aria-label="بَيِّنَة — مساعد ذكي للإجابة عن أسئلة القرآن والحديث وقصص الأنبياء">بَيِّنَة — القرآن والحديث والسيرة</a>
+     <div class="auth-drawer-section">
+      <p class="auth-drawer-label">الحساب</p>
+      <p id="auth-drawer-name" class="auth-drawer-name">—</p>
+      <p id="auth-drawer-provider" class="auth-drawer-provider"></p>
+      <button id="auth-link-google-btn-mobile" type="button" class="mobile-drawer-link auth-drawer-action is-hidden">ربط حساب Google</button>
+      <button id="auth-logout-btn-mobile" type="button" class="mobile-drawer-link auth-drawer-action is-hidden">تسجيل الخروج</button>
+     </div>
+    </div>
+   </div>
+   <div id="auth-offline-banner" class="auth-offline-banner is-hidden" role="status" aria-live="polite">
+    تعذر الاتصال بخدمة المصادقة. يمكنك متابعة استخدام المحرر والمحاولة لاحقاً.
+   </div>
+   <!-- Auth Gate -->
+   <div id="auth-gate" class="auth-gate" aria-hidden="true" role="dialog" aria-labelledby="auth-gate-title" aria-modal="true">
+    <div id="auth-gate-backdrop" class="auth-gate-backdrop"></div>
+    <div class="auth-gate-panel auth-gate-panel--desktop">
+     <h2 id="auth-gate-title" class="auth-gate-title">مرحباً بك في بيان</h2>
+     <p class="auth-gate-subtitle">اختر طريقة المتابعة للبدء في الكتابة والتحليل</p>
+     <div class="auth-gate-actions">
+      <button id="auth-guest-btn" type="button" class="btn-primary auth-gate-btn">المتابعة كضيف</button>
+      <button id="auth-google-btn" type="button" class="btn-ghost auth-gate-btn auth-gate-btn--google">
+       <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+       المتابعة باستخدام Google
+      </button>
+     </div>
+    </div>
+    <div id="auth-gate-sheet" class="auth-gate-panel auth-gate-panel--mobile">
+     <div class="bottom-sheet-handle" aria-hidden="true"></div>
+     <h2 class="auth-gate-title">مرحباً بك في بيان</h2>
+     <p class="auth-gate-subtitle">اختر طريقة المتابعة</p>
+     <button id="auth-guest-btn-mobile" type="button" class="btn-primary auth-gate-btn w-full">المتابعة كضيف</button>
+     <button id="auth-google-btn-mobile" type="button" class="btn-ghost auth-gate-btn auth-gate-btn--google w-full">المتابعة باستخدام Google</button>
+    </div>
+   </div><!-- Home Page -->
    <div id="page-home" class="page active"><!-- Hero Section -->
     <section class="gradient-bg min-h-screen pt-28 pb-20 relative overflow-hidden"><!-- Background Decoration -->
      <div class="absolute inset-0 overflow-hidden pointer-events-none">
@@ -545,86 +423,151 @@
     </section>
    </div><!-- Editor Page -->
    <div id="page-editor" class="page">
-    <section class="pt-20 min-h-screen" style="background: var(--background-color);">
-     <div class="max-w-[1800px] mx-auto px-6 py-6">
-      <div class="grid lg:grid-cols-12 gap-6"><!-- Main Editor (8 columns) -->
-       <div class="lg:col-span-8">
-        <div class="rounded-3xl overflow-hidden shadow-2xl" style="background: var(--surface-color); border: 1px solid rgba(255, 255, 255, 0.08);"><!-- Editor Toolbar -->
-         <div class="flex items-center justify-between p-4 border-b" style="border-color: rgba(255, 255, 255, 0.08);">
-          <div class="flex items-center gap-3"><button id="write-tab" onclick="switchTab('write')" class="px-5 py-2 rounded-xl text-base font-bold transition-all gradient-accent text-white"> كتابة </button> <button id="summarize-tab" onclick="switchTab('summarize')" class="px-5 py-2 rounded-xl text-base font-bold transition-all" style="color: var(--text-secondary); background: transparent;"> تلخيص </button>
-          </div>
-          <div class="flex items-center gap-4"><span class="text-sm" style="color: var(--text-secondary);"> عدد الكلمات: <span id="word-count" class="font-bold">٠</span> </span>
-          </div>
-         </div><!-- Editor Area -->
-         <div id="write-area" class="p-8"><textarea id="editor-textarea" class="editor-textarea w-full rounded-2xl p-6 text-right text-xl resize-none focus:outline-none focus:ring-2" style="direction: rtl; font-family: 'Tajawal', 'Noto Kufi Arabic', sans-serif; line-height: 2.2;" placeholder="ابدأ الكتابة هنا... اكتب نصك العربي وسنساعدك في تصحيحه وتحسينه بشكل فوري" oninput="analyzeText()"></textarea>
-         </div><!-- Summarize Area -->
-         <div id="summarize-area" class="p-8" style="display: none;">
-          <div class="mb-6"><label class="block text-base font-bold mb-3">طول الملخص</label>
-           <div class="flex items-center gap-4"><span class="text-sm" style="color: var(--text-secondary);">قصير</span> <input type="range" id="summary-length" min="1" max="3" value="2" class="flex-1" onchange="updateSummaryLength()"> <span class="text-sm" style="color: var(--text-secondary);">طويل</span>
+    <section class="pt-16 md:pt-20 min-h-screen page-bg">
+     <div class="max-w-[1600px] mx-auto">
+      <div class="editor-layout">
+       <!-- Main Editor -->
+       <div>
+        <div class="editor-shell">
+         <div class="editor-toolbar">
+          <div class="flex items-center gap-2 flex-wrap">
+           <button id="write-tab" onclick="switchTab('write')" class="editor-tab active" type="button">كتابة</button>
+           <button id="summarize-tab" onclick="switchTab('summarize')" class="editor-tab" type="button">تلخيص</button>
+           <div class="doc-toolbar-actions doc-toolbar-actions--desktop">
+            <button id="doc-import-btn" class="btn-ghost doc-dropdown__trigger" type="button" aria-label="استيراد ملف نصي أو Word">استيراد</button>
+            <div class="doc-dropdown">
+             <button id="doc-export-trigger" class="btn-ghost doc-dropdown__trigger" type="button" aria-label="تصدير المستند" aria-haspopup="true" aria-expanded="false">تصدير ▾</button>
+             <div id="doc-export-menu" class="doc-dropdown__menu" role="menu" aria-label="خيارات التصدير">
+              <button type="button" class="doc-dropdown__item" role="menuitem" data-export-format="txt">ملف نصي (.txt)</button>
+              <button type="button" class="doc-dropdown__item" role="menuitem" data-export-format="docx">Word (.docx)</button>
+              <button type="button" class="doc-dropdown__item" role="menuitem" data-export-format="pdf">PDF (.pdf)</button>
+             </div>
+            </div>
            </div>
-           <div class="text-center mt-2"><span id="summary-length-text" class="text-sm font-bold" style="color: var(--primary-color);">متوسط</span>
-           </div>
           </div>
-          <div class="mb-6"><label class="flex items-center gap-3 cursor-pointer"> <input type="checkbox" id="full-text-summary" class="w-5 h-5 rounded" style="accent-color: var(--primary-color);"> <span class="text-base font-bold">تلخيص النص كاملاً (وليس فقرة واحدة)</span> </label>
-          </div><button id="generate-summary-btn" onclick="generateSummary(event)" class="w-full py-4 rounded-2xl text-lg font-bold text-white gradient-accent transition-all hover:scale-105 mb-6"> توليد الملخص </button>
+          <div class="flex items-center gap-4 flex-wrap">
+           <div id="analyzing-indicator" class="analyzing-indicator" aria-live="polite">
+            <span class="analyzing-spinner" aria-hidden="true"></span>
+            <span>جاري التحليل...</span>
+           </div>
+           <span class="text-sm text-secondary">عدد الكلمات: <span id="word-count" class="font-bold">٠</span></span>
+          </div>
+         </div>
+         <input type="file" id="doc-import-input" class="sr-only" accept=".txt,.docx,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document" aria-hidden="true">
+         <div id="write-area">
+          <div id="analysis-limit-banner" class="analysis-limit-banner is-hidden" role="status" aria-live="polite"></div>
+          <div id="editor-container" class="editor-surface editor-content"
+            role="textbox" aria-multiline="true" aria-label="محرر النص العربي"
+            aria-describedby="editor-hint" contenteditable="true"
+            data-placeholder="ابدأ الكتابة هنا... اكتب نصك العربي وسنساعدك في تصحيحه وتحسينه بشكل فوري"></div>
+          <p id="editor-hint" class="sr-only">اكتب نصاً عربياً. ستظهر الاقتراحات تلقائياً.</p>
+          <div id="editor-tooltip" class="suggestion-popover" role="dialog" aria-label="اقتراح تصحيح">
+           <div id="tooltip-type" class="popover-type">خطأ</div>
+           <div id="tooltip-suggestion" class="popover-correction"></div>
+           <button class="popover-apply" onclick="applyCorrection()" type="button">تطبيق التصحيح</button>
+           <p class="popover-hint">Enter للتطبيق · Escape للإغلاق</p>
+          </div>
+         </div>
+         <div id="summarize-area" class="summarize-panel is-hidden">
+          <div class="mb-6">
+           <label class="block text-base font-bold mb-3" for="summary-length">طول الملخص</label>
+           <div class="flex items-center gap-4">
+            <span class="text-sm text-secondary">قصير</span>
+            <input type="range" id="summary-length" min="1" max="3" value="2" onchange="updateSummaryLength()" aria-valuetext="متوسط">
+            <span class="text-sm text-secondary">طويل</span>
+           </div>
+           <div class="text-center mt-2"><span id="summary-length-text" class="text-sm font-bold text-brand">متوسط</span></div>
+          </div>
+          <div class="mb-6">
+           <label class="flex items-center gap-3 cursor-pointer">
+            <input type="checkbox" id="full-text-summary" class="w-5 h-5 rounded">
+            <span class="text-base font-bold">تلخيص النص كاملاً</span>
+           </label>
+          </div>
+          <button id="generate-summary-btn" onclick="generateSummary(event)" class="btn-primary w-full py-4 text-lg mb-6" type="button">توليد الملخص</button>
           <div id="summary-preview" class="summary-preview">
-           <div class="p-6 rounded-2xl" style="background: rgba(139, 92, 246, 0.1); border: 2px solid rgba(139, 92, 246, 0.3);">
+           <div class="summary-card">
             <div class="flex items-center justify-between mb-4">
-             <h3 class="text-lg font-bold" style="color: #8b5cf6;">الملخص</h3><button onclick="copySummary()" class="px-4 py-2 rounded-xl text-sm font-bold transition-all" style="background: rgba(139, 92, 246, 0.2); color: #8b5cf6;"> نسخ </button>
+             <h3 class="text-lg font-bold summary-card__title">الملخص</h3>
+             <button onclick="copySummary()" class="btn-ghost" type="button">نسخ</button>
             </div>
-            <div id="summary-text" class="text-right text-lg editor-content" dir="rtl" style="color: var(--text-color); line-height: 2.2;"><!-- Summary will appear here -->
-            </div>
+            <div id="summary-text" class="text-right text-lg editor-content" dir="rtl"></div>
            </div>
           </div>
-         </div><!-- Editor Footer -->
-         <div class="flex items-center justify-between p-4 border-t" style="border-color: rgba(255, 255, 255, 0.08);">
-          <div class="flex items-center gap-6">
-           <div class="flex items-center gap-2">
-            <div class="w-3 h-3 rounded-full" style="background: #ef4444;"></div><span class="text-sm" style="color: var(--text-secondary);"> <span id="spelling-count">٠</span> إملائي </span>
-           </div>
-           <div class="flex items-center gap-2">
-            <div class="w-3 h-3 rounded-full" style="background: #fbbf24;"></div><span class="text-sm" style="color: var(--text-secondary);"> <span id="grammar-count">٠</span> نحوي </span>
-           </div>
-           <div class="flex items-center gap-2">
-            <div class="w-3 h-3 rounded-full" style="background: #22c55e;"></div><span class="text-sm" style="color: var(--text-secondary);"> <span id="punctuation-count">٠</span> ترقيم </span>
-           </div>
+         </div>
+         <div class="editor-footer">
+          <div class="editor-stats" role="status" aria-label="إحصائيات الأخطاء">
+           <div class="flex items-center gap-2"><span class="stat-dot stat-dot--spelling" aria-hidden="true"></span><span class="text-sm text-secondary"><span id="spelling-count">٠</span> إملائي</span></div>
+           <div class="flex items-center gap-2"><span class="stat-dot stat-dot--grammar" aria-hidden="true"></span><span class="text-sm text-secondary"><span id="grammar-count">٠</span> نحوي</span></div>
+           <div class="flex items-center gap-2"><span class="stat-dot stat-dot--punctuation" aria-hidden="true"></span><span class="text-sm text-secondary"><span id="punctuation-count">٠</span> ترقيم</span></div>
           </div>
-          <div class="flex items-center gap-3"><button onclick="clearEditor()" class="px-5 py-2 rounded-xl text-sm font-bold border transition-all hover:scale-105" style="border-color: rgba(255, 255, 255, 0.2); color: var(--text-secondary);"> مسح الكل </button> <button onclick="copyText()" class="px-5 py-2 rounded-xl text-sm font-bold gradient-accent text-white transition-all hover:scale-105"> نسخ النص </button>
+          <div class="editor-actions">
+           <div class="doc-mobile-actions sm:hidden">
+            <button id="doc-import-btn-mobile" class="btn-ghost flex-1" type="button" aria-label="استيراد ملف">استيراد</button>
+            <button id="doc-mobile-export-trigger" class="btn-ghost flex-1" type="button" aria-label="تصدير المستند" aria-expanded="false">تصدير</button>
+           </div>
+           <button onclick="clearEditor()" class="btn-ghost" type="button">مسح الكل</button>
+           <button onclick="copyText()" class="btn-primary" type="button">نسخ النص</button>
           </div>
          </div>
         </div>
-       </div><!-- Sidebar (4 columns) -->
-       <div class="lg:col-span-4 space-y-6"><!-- Score Card -->
-        <div class="p-6 rounded-3xl" style="background: var(--surface-color); border: 1px solid rgba(255, 255, 255, 0.08);">
+        <button id="mobile-sheet-trigger" class="mobile-sheet-trigger" type="button" aria-expanded="false" aria-controls="bottom-sheet">
+         <span>الاقتراحات (<span id="mobile-suggestion-count">٠</span>)</span>
+         <span aria-hidden="true">▲</span>
+        </button>
+       </div>
+       <!-- Sidebar -->
+       <div class="sidebar-panel sidebar-desktop">
+        <div class="surface-card sidebar-card">
          <h3 class="text-xl font-bold mb-4 text-right">تقييم الكتابة</h3>
-         <div class="relative w-40 h-40 mx-auto mb-4">
-          <svg class="w-full h-full transform -rotate-90"><circle cx="80" cy="80" r="70" fill="none" stroke="rgba(255, 255, 255, 0.08)" stroke-width="10" /> <circle id="score-circle" cx="80" cy="80" r="70" fill="none" stroke="url(#scoreGradient)" stroke-width="10" stroke-linecap="round" stroke-dasharray="440" stroke-dashoffset="440" class="score-circle" /> <defs>
-            <lineargradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-             <stop offset="0%" style="stop-color: var(--primary-color);" />
-             <stop offset="100%" style="stop-color: var(--secondary-color);" />
-            </lineargradient>
-           </defs>
+         <div class="score-ring-wrap" role="img" aria-label="تقييم الكتابة">
+          <svg class="w-full h-full transform -rotate-90" viewBox="0 0 160 160" aria-hidden="true">
+           <circle cx="80" cy="80" r="70" fill="none" stroke="var(--color-border)" stroke-width="10"/>
+           <circle id="score-circle" cx="80" cy="80" r="70" fill="none" stroke="url(#scoreGradient)" stroke-width="10" stroke-linecap="round" stroke-dasharray="440" stroke-dashoffset="440" class="score-circle"/>
+           <defs><linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="var(--primary-color)"/><stop offset="100%" stop-color="var(--secondary-color)"/></linearGradient></defs>
           </svg>
-          <div class="absolute inset-0 flex items-center justify-center"><span id="score-value" class="text-4xl font-bold">--</span>
-          </div>
+          <div class="score-value"><span id="score-value">--</span></div>
          </div>
-         <p class="text-center text-sm leading-relaxed" style="color: var(--text-secondary); line-height: 1.8;">ابدأ الكتابة لرؤية تقييمك<br><span class="text-xs">تحسين القواعد يرفع التقييم</span></p>
-        </div><!-- Suggestions List -->
-        <div class="p-6 rounded-3xl" style="background: var(--surface-color); border: 1px solid rgba(255, 255, 255, 0.08);">
+         <p id="score-hint" class="text-center text-sm text-secondary">ابدأ الكتابة لرؤية تقييمك</p>
+        </div>
+        <div class="surface-card sidebar-card">
          <h3 class="text-xl font-bold mb-4 text-right">الاقتراحات</h3>
-         <div id="suggestions-list" class="space-y-3 max-h-[500px] overflow-y-auto">
-          <div class="text-center py-12" style="color: var(--text-secondary);">
-           <svg class="w-16 h-16 mx-auto mb-4 opacity-30" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-           </svg>
-           <p class="text-base">لا توجد اقتراحات بعد</p>
-           <p class="text-sm mt-2">ابدأ الكتابة لتلقي الملاحظات</p>
-          </div>
-         </div>
+         <div id="suggestions-list" class="suggestions-scroll" role="list" aria-live="polite" aria-label="اقتراحات التصحيح"></div>
+         <button id="apply-all-btn" class="btn-primary apply-all-btn is-hidden" type="button">تطبيق الكل</button>
         </div>
        </div>
       </div>
      </div>
     </section>
+   </div>
+   <!-- Mobile bottom sheet -->
+   <div id="bottom-sheet" class="bottom-sheet" aria-hidden="true">
+    <div id="bottom-sheet-backdrop" class="bottom-sheet-backdrop"></div>
+    <div class="bottom-sheet-panel" role="dialog" aria-label="الاقتراحات">
+     <div class="bottom-sheet-handle" aria-hidden="true"></div>
+     <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-bold">الاقتراحات</h3>
+      <button id="bottom-sheet-close" class="btn-ghost" type="button" aria-label="إغلاق">إغلاق</button>
+     </div>
+     <div id="bottom-sheet-list" class="suggestions-scroll" role="list" aria-live="polite"></div>
+     <button id="apply-all-sheet" class="btn-primary apply-all-btn mt-4 is-hidden" type="button">تطبيق الكل</button>
+    </div>
+   </div>
+   <!-- Mobile export sheet (documents) -->
+   <div id="doc-export-sheet" class="bottom-sheet" aria-hidden="true">
+    <div id="doc-export-sheet-backdrop" class="bottom-sheet-backdrop"></div>
+    <div class="bottom-sheet-panel" role="dialog" aria-label="تصدير المستند">
+     <div class="bottom-sheet-handle" aria-hidden="true"></div>
+     <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-bold">تصدير المستند</h3>
+      <button id="doc-export-sheet-close" class="btn-ghost" type="button" aria-label="إغلاق">إغلاق</button>
+     </div>
+     <div class="flex flex-col gap-2">
+      <button type="button" class="doc-dropdown__item" data-export-format="txt">ملف نصي (.txt)</button>
+      <button type="button" class="doc-dropdown__item" data-export-format="docx">Word (.docx)</button>
+      <button type="button" class="doc-dropdown__item" data-export-format="pdf">PDF (.pdf)</button>
+     </div>
+    </div>
    </div><!-- Pricing Page -->
    <div id="page-pricing" class="page">
     <section class="pt-32 pb-24" style="background: var(--background-color);">
@@ -734,16 +677,16 @@
      </div>
     </section>
    </div><!-- Footer -->
-   <footer class="py-12 border-t" style="background: var(--background-color); border-color: rgba(255, 255, 255, 0.08);">
+   <footer class="py-12 border-t footer-bar">
     <div class="max-w-7xl mx-auto px-6">
      <div class="flex flex-col md:flex-row items-center justify-between gap-6">
       <div class="flex items-center gap-3">
        <div class="w-10 h-10 rounded-xl flex items-center justify-center gradient-accent"><span class="text-white text-xl font-bold">ب</span>
        </div><span id="footer-brand" class="text-2xl font-bold text-gradient">بيان</span>
       </div>
-      <div class="flex items-center gap-8"><a href="#" class="text-base transition-colors hover:text-white" style="color: var(--text-secondary);">الخصوصية</a> <a href="#" class="text-base transition-colors hover:text-white" style="color: var(--text-secondary);">الشروط</a> <a href="#" class="text-base transition-colors hover:text-white" style="color: var(--text-secondary);">تواصل معنا</a>
+      <div class="flex flex-wrap items-center justify-center gap-6 md:gap-8"><a href="#" class="text-base transition-colors hover:text-white" style="color: var(--text-secondary);">الخصوصية</a> <a href="#" class="text-base transition-colors hover:text-white" style="color: var(--text-secondary);">الشروط</a> <a href="#" class="text-base transition-colors hover:text-white" style="color: var(--text-secondary);">تواصل معنا</a> <a href="https://bayyinah-alpha.vercel.app/" class="footer-external-link text-base transition-colors" target="_blank" rel="noopener noreferrer" aria-label="بَيِّنَة — مساعد ذكي للإجابة عن أسئلة القرآن والحديث وقصص الأنبياء">بَيِّنَة — القرآن والحديث والسيرة</a>
       </div>
-      <p class="text-base" style="color: var(--text-secondary);">© ٢٠٢٤ بيان. جميع الحقوق محفوظة.</p>
+      <p class="text-base" style="color: var(--text-secondary);">© ٢٠٢٦ بيان. جميع الحقوق محفوظة.</p>
      </div>
     </div>
    </footer>
@@ -755,12 +698,9 @@
       hero_headline: 'اكتب العربية بثقة واحتراف',
       hero_subheadline: 'مساعد ذكي يصحح الإملاء والنحو وعلامات الترقيم ويُلخّص النصوص العربية بدقة عالية.',
       cta_primary: 'ابدأ الكتابة الآن',
-      primary_color: '#3b82f6',
-      secondary_color: '#8b5cf6',
-      text_color: '#f1f5f9',
-      background_color: '#0f172a',
-      surface_color: '#1e293b',
-      font_family: 'Tajawal',
+      primary_color: '#6BA3E0',
+      secondary_color: '#A594E8',
+      font_family: 'Cairo',
       font_size: 16
     };
 
@@ -770,173 +710,43 @@
     function showPage(pageId) {
       document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
       document.getElementById('page-' + pageId).classList.add('active');
-      
-      document.querySelectorAll('.nav-link').forEach(link => {
+
+      document.querySelectorAll('.nav-link, .mobile-drawer-link').forEach(link => {
         link.classList.remove('active');
-        link.style.color = 'var(--text-secondary)';
       });
-      
-      const activeLink = document.querySelector(`[data-page="${pageId}"]`);
-      if (activeLink) {
-        activeLink.classList.add('active');
-        activeLink.style.color = 'var(--text-color)';
-      }
-      
+
+      document.querySelectorAll(`[data-page="${pageId}"]`).forEach(link => {
+        link.classList.add('active');
+      });
+
       window.scrollTo(0, 0);
     }
 
-    // Tab switching in editor
     function switchTab(tab) {
       const writeTab = document.getElementById('write-tab');
       const summarizeTab = document.getElementById('summarize-tab');
       const writeArea = document.getElementById('write-area');
       const summarizeArea = document.getElementById('summarize-area');
-      
+
       if (tab === 'write') {
-        writeTab.className = 'px-5 py-2 rounded-xl text-base font-bold transition-all gradient-accent text-white';
-        summarizeTab.className = 'px-5 py-2 rounded-xl text-base font-bold transition-all';
-        summarizeTab.style.color = 'var(--text-secondary)';
-        summarizeTab.style.background = 'transparent';
-        writeArea.style.display = 'block';
-        summarizeArea.style.display = 'none';
+        writeTab.classList.add('active');
+        summarizeTab.classList.remove('active');
+        writeArea.classList.remove('is-hidden');
+        summarizeArea.classList.add('is-hidden');
       } else {
-        summarizeTab.className = 'px-5 py-2 rounded-xl text-base font-bold transition-all gradient-accent text-white';
-        writeTab.className = 'px-5 py-2 rounded-xl text-base font-bold transition-all';
-        writeTab.style.color = 'var(--text-secondary)';
-        writeTab.style.background = 'transparent';
-        writeArea.style.display = 'none';
-        summarizeArea.style.display = 'block';
+        summarizeTab.classList.add('active');
+        writeTab.classList.remove('active');
+        writeArea.classList.add('is-hidden');
+        summarizeArea.classList.remove('is-hidden');
       }
     }
-
-    // Editor text analysis
-    function analyzeText() {
-      const textarea = document.getElementById('editor-textarea');
-      const text = textarea.value;
-      const words = text.trim() ? text.trim().split(/\s+/).length : 0;
-      
-      document.getElementById('word-count').textContent = words.toLocaleString('ar-EG');
-      
-      if (words > 0) {
-        const spelling = Math.floor(Math.random() * 3);
-        const grammar = Math.floor(Math.random() * 2);
-        const punctuation = Math.floor(Math.random() * 2);
-        
-        document.getElementById('spelling-count').textContent = spelling.toLocaleString('ar-EG');
-        document.getElementById('grammar-count').textContent = grammar.toLocaleString('ar-EG');
-        document.getElementById('punctuation-count').textContent = punctuation.toLocaleString('ar-EG');
-        
-        const score = Math.max(70, 100 - (spelling * 5) - (grammar * 8) - (punctuation * 3));
-        const circle = document.getElementById('score-circle');
-        const offset = 440 - (440 * score / 100);
-        circle.style.strokeDashoffset = offset;
-        document.getElementById('score-value').textContent = score.toLocaleString('ar-EG');
-        
-        updateSuggestions(spelling, grammar, punctuation);
-      } else {
-        document.getElementById('score-circle').style.strokeDashoffset = 440;
-        document.getElementById('score-value').textContent = '--';
-        document.getElementById('spelling-count').textContent = '٠';
-        document.getElementById('grammar-count').textContent = '٠';
-        document.getElementById('punctuation-count').textContent = '٠';
-        resetSuggestions();
-      }
-    }
-
-    function updateSuggestions(spelling, grammar, punctuation) {
-      const container = document.getElementById('suggestions-list');
-      let html = '';
-      
-      if (spelling > 0) {
-        html += `
-          <div class="suggestion-item p-4 rounded-xl" style="background: rgba(239, 68, 68, 0.1); border-right: 3px solid #ef4444;">
-            <div class="flex items-start gap-3">
-              <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: rgba(239, 68, 68, 0.2);">
-                <span style="color: #ef4444; font-size: 18px;">✎</span>
-              </div>
-              <div class="flex-1 text-right">
-                <div class="text-base font-bold mb-1">خطأ إملائي</div>
-                <div class="text-sm" style="color: var(--text-secondary);">انقر للتصحيح</div>
-              </div>
-            </div>
-          </div>
-        `;
-      }
-      
-      if (grammar > 0) {
-        html += `
-          <div class="suggestion-item p-4 rounded-xl" style="background: rgba(251, 191, 36, 0.1); border-right: 3px solid #fbbf24;">
-            <div class="flex items-start gap-3">
-              <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: rgba(251, 191, 36, 0.2);">
-                <span style="color: #fbbf24; font-size: 18px;">◉</span>
-              </div>
-              <div class="flex-1 text-right">
-                <div class="text-base font-bold mb-1">اقتراح نحوي</div>
-                <div class="text-sm" style="color: var(--text-secondary);">يُنصح بالمراجعة</div>
-              </div>
-            </div>
-          </div>
-        `;
-      }
-      
-      if (punctuation > 0) {
-        html += `
-          <div class="suggestion-item p-4 rounded-xl" style="background: rgba(34, 197, 94, 0.1); border-right: 3px solid #22c55e;">
-            <div class="flex items-start gap-3">
-              <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: rgba(34, 197, 94, 0.2);">
-                <span style="color: #22c55e; font-size: 18px;">⸲</span>
-              </div>
-              <div class="flex-1 text-right">
-                <div class="text-base font-bold mb-1">علامات الترقيم</div>
-                <div class="text-sm" style="color: var(--text-secondary);">تصحيح تلقائي متاح</div>
-              </div>
-            </div>
-          </div>
-        `;
-      }
-      
-      if (!html) {
-        html = `
-          <div class="text-center py-8">
-            <svg class="w-12 h-12 mx-auto mb-3" style="color: #22c55e;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
-            <p class="text-base font-bold" style="color: #22c55e;">ممتاز!</p>
-            <p class="text-sm mt-2" style="color: var(--text-secondary);">لم يتم العثور على أخطاء</p>
-          </div>
-        `;
-      }
-      
-      container.innerHTML = html;
-    }
-
-    function resetSuggestions() {
-      document.getElementById('suggestions-list').innerHTML = `
-        <div class="text-center py-12" style="color: var(--text-secondary);">
-          <svg class="w-16 h-16 mx-auto mb-4 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-          </svg>
-          <p class="text-base">لا توجد اقتراحات بعد</p>
-          <p class="text-sm mt-2">ابدأ الكتابة لتلقي الملاحظات</p>
-        </div>
-      `;
-    }
-
-    function clearEditor() {
-      document.getElementById('editor-textarea').value = '';
-      analyzeText();
-    }
-
-    function copyText() {
-      const textarea = document.getElementById('editor-textarea');
-      textarea.select();
-      document.execCommand('copy');
-      
-      const btn = event.target;
-      const originalText = btn.textContent;
-      btn.textContent = 'تم النسخ!';
-      setTimeout(() => btn.textContent = originalText, 2000);
-    }
+    
+    // OLD FUNCTIONS REMOVED - Now in editor.js with offset-based rendering
+    // - analyzeText() - moved to editor.js
+    // - updateSuggestions() - replaced with offset-based render()
+    // - resetSuggestions() - replaced with renderWithoutSuggestions()
+    // - clearEditor() - moved to editor.js
+    // - copyText() - moved to editor.js
 
     // Summarization functions
     function updateSummaryLength() {
@@ -946,12 +756,11 @@
     }
 
     async function generateSummary(event) {
-      const textarea = document.getElementById('editor-textarea');
-      const text = textarea.value.trim();
+      const text = (typeof getEditorText === 'function' ? getEditorText() : '').trim();
       
       if (!text) {
         const summaryText = document.getElementById('summary-text');
-        summaryText.innerHTML = '<p style="color: var(--text-secondary); text-align: center;">الرجاء كتابة نص في المحرر أولاً</p>';
+        summaryText.innerHTML = '<p class="text-secondary text-center">الرجاء كتابة نص في المحرر أولاً</p>';
         document.getElementById('summary-preview').classList.add('show');
         return;
       }
@@ -966,16 +775,10 @@
       const originalButtonText = generateButton.textContent;
       generateButton.textContent = 'جاري التوليد...';
       generateButton.disabled = true;
-      summaryText.innerHTML = '<div style="text-align: center; padding: 20px;"><div style="display: inline-block; width: 40px; height: 40px; border: 4px solid rgba(139, 92, 246, 0.3); border-top-color: #8b5cf6; border-radius: 50%; animation: spin 1s linear infinite;"></div><p style="margin-top: 16px; color: var(--text-secondary);">جاري توليد الملخص...</p></div>';
+      summaryText.innerHTML = '<div class="summary-loading"><span class="summary-loading__spinner" aria-hidden="true"></span><p class="summary-loading__text">جاري توليد الملخص...</p></div>';
       summaryPreview.classList.add('show');
       
-      // Add spin animation if not exists
-      if (!document.getElementById('spin-animation')) {
-        const style = document.createElement('style');
-        style.id = 'spin-animation';
-        style.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
-        document.head.appendChild(style);
-      }
+      // Add spin animation if not exists — defined in base.css
       
       try {
         // Call API
@@ -998,18 +801,24 @@
         }
         
         if (data.status === 'success' && data.summary) {
-          summaryText.innerHTML = `<p>${data.summary}</p>`;
+          const p = document.createElement('p');
+          p.textContent = data.summary;
+          summaryText.textContent = '';
+          summaryText.appendChild(p);
         } else {
           throw new Error(data.error || 'لم يتم توليد ملخص');
         }
         
       } catch (error) {
         console.error('Error generating summary:', error);
+        const safeMsg = typeof escapeHtml === 'function'
+          ? escapeHtml(error.message || 'تعذر توليد الملخص. يرجى المحاولة مرة أخرى.')
+          : String(error.message || 'تعذر توليد الملخص. يرجى المحاولة مرة أخرى.');
         summaryText.innerHTML = `
-          <div style="text-align: center; padding: 20px;">
-            <p style="color: #ef4444; margin-bottom: 12px;">⚠️ حدث خطأ</p>
-            <p style="color: var(--text-secondary); font-size: 14px;">${error.message || 'تعذر توليد الملخص. يرجى المحاولة مرة أخرى.'}</p>
-            <p style="color: var(--text-secondary); font-size: 12px; margin-top: 8px;">تأكد من أن الخادم يعمل وأن النموذج محمّل بشكل صحيح.</p>
+          <div class="summary-loading">
+            <p class="summary-error">⚠️ حدث خطأ</p>
+            <p class="text-secondary text-caption">${safeMsg}</p>
+            <p class="text-muted text-label mt-2">تأكد من أن الخادم يعمل وأن النموذج محمّل بشكل صحيح.</p>
           </div>
         `;
       } finally {
@@ -1037,12 +846,14 @@
     // Element SDK Integration
     async function onConfigChange(cfg) {
       config = { ...defaultConfig, ...cfg };
-      
-      document.documentElement.style.setProperty('--primary-color', config.primary_color || defaultConfig.primary_color);
-      document.documentElement.style.setProperty('--secondary-color', config.secondary_color || defaultConfig.secondary_color);
-      document.documentElement.style.setProperty('--text-color', config.text_color || defaultConfig.text_color);
-      document.documentElement.style.setProperty('--background-color', config.background_color || defaultConfig.background_color);
-      document.documentElement.style.setProperty('--surface-color', config.surface_color || defaultConfig.surface_color);
+
+      // Brand accents only — surfaces & text are owned by data-theme in tokens.css
+      const primary = config.primary_color || defaultConfig.primary_color;
+      const secondary = config.secondary_color || defaultConfig.secondary_color;
+      document.documentElement.style.setProperty('--color-primary', primary);
+      document.documentElement.style.setProperty('--color-secondary', secondary);
+      document.documentElement.style.setProperty('--primary-color', primary);
+      document.documentElement.style.setProperty('--secondary-color', secondary);
       
       const brandName = config.brand_name || defaultConfig.brand_name;
       const navBrand = document.getElementById('nav-brand');
@@ -1074,25 +885,13 @@
       
       const fontFamily = config.font_family || defaultConfig.font_family;
       const fontSize = config.font_size || defaultConfig.font_size;
-      document.body.style.fontFamily = `${fontFamily}, 'Noto Kufi Arabic', sans-serif`;
+      document.body.style.fontFamily = `${fontFamily}, 'Cairo', sans-serif`;
       document.body.style.fontSize = `${fontSize}px`;
     }
 
     function mapToCapabilities(cfg) {
       return {
         recolorables: [
-          {
-            get: () => cfg.background_color || defaultConfig.background_color,
-            set: (value) => { cfg.background_color = value; window.elementSdk.setConfig({ background_color: value }); }
-          },
-          {
-            get: () => cfg.surface_color || defaultConfig.surface_color,
-            set: (value) => { cfg.surface_color = value; window.elementSdk.setConfig({ surface_color: value }); }
-          },
-          {
-            get: () => cfg.text_color || defaultConfig.text_color,
-            set: (value) => { cfg.text_color = value; window.elementSdk.setConfig({ text_color: value }); }
-          },
           {
             get: () => cfg.primary_color || defaultConfig.primary_color,
             set: (value) => { cfg.primary_color = value; window.elementSdk.setConfig({ primary_color: value }); }
@@ -1134,6 +933,25 @@
     } else {
       onConfigChange(defaultConfig);
     }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await initAuth();
+      initTheme();
+      initUI();
+      initEditor();
+      initDocuments();
+      updateSuggestionsList([]);
+
+      const mobileImport = document.getElementById('doc-import-btn-mobile');
+      const importInput = document.getElementById('doc-import-input');
+      if (mobileImport && importInput) {
+        mobileImport.addEventListener('click', () => importInput.click());
+      }
+
+      if (window.location.hash === '#/editor') {
+        showPage('editor');
+      }
+    });
   </script>
  <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c279951d0bdd7df',t:'MTc2OTE3NDUzNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
