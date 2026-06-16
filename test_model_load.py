@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.INFO)
 
 def test_model_loading():
     """Test if the model loads correctly."""
-    model_path = Path("models/arabic_summarization_model/content/drive/MyDrive/arabic_summarization_model")
+    model_path = Path("models/Summarization/Model")
     
     if not model_path.exists():
         print(f"ERROR: Model path does not exist: {model_path}")
