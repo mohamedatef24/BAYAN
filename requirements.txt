@@ -8,3 +8,5 @@ numpy
 pandas
 flask
 flask-cors
+jellyfish
+python-Levenshtein
