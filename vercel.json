@@ -4,7 +4,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://bayan-api.onrender.com/api/:path*"
+      "destination": "https://mohamedatef24-bayan-api.hf.space/api/:path*"
     },
     {
       "source": "/(.*)",
