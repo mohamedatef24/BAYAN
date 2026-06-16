@@ -1,0 +1,169 @@
+/**
+ * Bayan Design System — Theme Tokens
+ * Comfortable palettes for long Arabic reading (Notion / Grammarly inspired)
+ */
+
+/* ── Shared structural tokens ── */
+:root {
+  --font-family-primary: 'Cairo', 'Tajawal', 'Noto Sans Arabic', sans-serif;
+
+  --font-size-display: 3rem;
+  --font-size-h1: 2.25rem;
+  --font-size-h2: 1.875rem;
+  --font-size-h3: 1.25rem;
+  --font-size-body: 1rem;
+  --font-size-editor: 1.125rem;
+  --font-size-caption: 0.875rem;
+  --font-size-label: 0.75rem;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --line-height-editor: 1.9;
+  --line-height-body: 1.75;
+  --letter-spacing-arabic: 0.015em;
+
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-card: 1rem;
+
+  --transition-fast: 0.15s ease;
+  --transition-base: 0.2s ease;
+  --transition-slow: 0.3s ease;
+}
+
+/* ── Dark Theme — soft charcoal, easy on eyes ── */
+:root,
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --color-bg: #12141A;
+  --color-surface: #1A1D26;
+  --color-surface-elevated: #242833;
+  --color-editor: #1E2229;
+
+  --color-primary: #6BA3E0;
+  --color-secondary: #A594E8;
+  --color-accent: #6BBECF;
+
+  --color-success: #6BC98A;
+  --color-warning: #E4B35A;
+  --color-error: #E88A8A;
+
+  --color-text-primary: #ECEEF2;
+  --color-text-secondary: #B4BBC6;
+  --color-text-muted: #8A939F;
+  --color-text-inverse: #F4F5F7;
+  --color-placeholder: #9AA3AE;
+
+  --color-border: rgba(236, 238, 242, 0.09);
+  --color-border-strong: rgba(236, 238, 242, 0.16);
+
+  --focus-ring: rgba(107, 163, 224, 0.42);
+
+  --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.28);
+  --shadow-popover: 0 16px 40px rgba(0, 0, 0, 0.38);
+  --shadow-editor: 0 2px 16px rgba(0, 0, 0, 0.2);
+
+  --color-overlay: rgba(8, 10, 14, 0.62);
+
+  --highlight-spelling-bg: rgba(232, 138, 138, 0.16);
+  --highlight-spelling-border: #E88A8A;
+  --highlight-grammar-bg: rgba(228, 179, 90, 0.16);
+  --highlight-grammar-border: #E4B35A;
+  --highlight-punctuation-bg: rgba(107, 201, 138, 0.14);
+  --highlight-punctuation-border: #6BC98A;
+
+  --color-nav-bg: rgba(18, 20, 26, 0.94);
+  --color-badge-spelling-bg: rgba(232, 138, 138, 0.18);
+  --color-badge-grammar-bg: rgba(228, 179, 90, 0.18);
+  --color-badge-punctuation-bg: rgba(107, 201, 138, 0.16);
+  --color-summary-accent-bg: rgba(165, 148, 232, 0.14);
+  --color-summary-accent-border: rgba(165, 148, 232, 0.38);
+  --color-suggestion-hover-bg: rgba(107, 163, 224, 0.12);
+  --color-primary-subtle-bg: rgba(107, 163, 224, 0.14);
+  --color-primary-subtle-border: rgba(107, 163, 224, 0.32);
+
+  --primary-color: var(--color-primary);
+  --secondary-color: var(--color-secondary);
+  --text-color: var(--color-text-primary);
+  --text-secondary: var(--color-text-secondary);
+  --surface-color: var(--color-surface);
+  --background-color: var(--color-bg);
+  --success-color: var(--color-success);
+  --warning-color: var(--color-warning);
+  --error-color: var(--color-error);
+  --nav-bg: var(--color-nav-bg);
+}
+
+/* ── Light Theme — warm paper, strong readable text ── */
+[data-theme="light"] {
+  color-scheme: light;
+
+  --color-bg: #F3F1EC;
+  --color-surface: #FAF9F6;
+  --color-surface-elevated: #EFEBE4;
+  --color-editor: #FFFDF8;
+
+  --color-primary: #2B6CB8;
+  --color-secondary: #6B57A8;
+  --color-accent: #2A8F9E;
+
+  --color-success: #2F8554;
+  --color-warning: #B7791F;
+  --color-error: #C53030;
+
+  --color-text-primary: #1A1D21;
+  --color-text-secondary: #3A424E;
+  --color-text-muted: #5A6472;
+  --color-text-inverse: #FAFAF8;
+  --color-placeholder: #6B7580;
+
+  --color-border: rgba(26, 29, 33, 0.1);
+  --color-border-strong: rgba(26, 29, 33, 0.18);
+
+  --focus-ring: rgba(43, 108, 184, 0.32);
+
+  --shadow-card: 0 6px 20px rgba(26, 29, 33, 0.07);
+  --shadow-popover: 0 14px 36px rgba(26, 29, 33, 0.11);
+  --shadow-editor: 0 1px 8px rgba(26, 29, 33, 0.05);
+
+  --color-overlay: rgba(26, 29, 33, 0.38);
+
+  --highlight-spelling-bg: #FDECEC;
+  --highlight-spelling-border: #C53030;
+  --highlight-grammar-bg: #FEF6E4;
+  --highlight-grammar-border: #B7791F;
+  --highlight-punctuation-bg: #EAF6EE;
+  --highlight-punctuation-border: #2F8554;
+
+  --color-nav-bg: rgba(250, 249, 246, 0.94);
+  --color-badge-spelling-bg: rgba(197, 48, 48, 0.1);
+  --color-badge-grammar-bg: rgba(183, 121, 31, 0.12);
+  --color-badge-punctuation-bg: rgba(47, 133, 84, 0.1);
+  --color-summary-accent-bg: rgba(107, 87, 168, 0.08);
+  --color-summary-accent-border: rgba(107, 87, 168, 0.22);
+  --color-suggestion-hover-bg: rgba(43, 108, 184, 0.07);
+  --color-primary-subtle-bg: rgba(43, 108, 184, 0.09);
+  --color-primary-subtle-border: rgba(43, 108, 184, 0.22);
+
+  --primary-color: var(--color-primary);
+  --secondary-color: var(--color-secondary);
+  --text-color: var(--color-text-primary);
+  --text-secondary: var(--color-text-secondary);
+  --surface-color: var(--color-surface);
+  --background-color: var(--color-bg);
+  --success-color: var(--color-success);
+  --warning-color: var(--color-warning);
+  --error-color: var(--color-error);
+  --nav-bg: var(--color-nav-bg);
+}
