@@ -25,7 +25,7 @@ function bindAuthUIEvents() {
         alert('حدث خطأ أثناء الدخول كضيف. حاول مجددًا.');
         guestBtn.textContent = originalText;
       } else {
-        if (typeof showPage === 'function') showPage('editor');
+        if (typeof showPage === 'function') showPage('home');
       }
     });
   }
@@ -39,7 +39,7 @@ function bindAuthUIEvents() {
       closeAuthGateSheet();
       showAuthOfflineBanner(false);
       if (result && (result.success || result.offline)) {
-        if (typeof showPage === 'function') showPage('editor');
+        if (typeof showPage === 'function') showPage('home');
       }
     });
   }
