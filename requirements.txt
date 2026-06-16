@@ -10,3 +10,5 @@ flask
 flask-cors
 jellyfish
 python-Levenshtein
+gunicorn
+python-dotenv

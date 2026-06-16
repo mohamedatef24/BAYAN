@@ -199,6 +199,9 @@ function setEditorHTML(html) {
   const editor = document.getElementById('editor-container');
   if (!editor) return;
   editor.innerHTML = html;
+  try {
+    localStorage.setItem('bayan_editor_draft', html);
+  } catch (e) {}
 }
 
 /**

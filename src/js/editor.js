@@ -16,8 +16,21 @@ function initEditor() {
     return;
   }
 
+  // Restore draft if no document was explicitly loaded yet
+  try {
+    const draft = localStorage.getItem('bayan_editor_draft');
+    if (draft && !editor.innerHTML.trim()) {
+      editor.innerHTML = draft;
+      // Trigger analysis on load
+      setTimeout(analyzeTextDelayed, 500);
+    }
+  } catch (e) {}
+
   editor.addEventListener('input', () => {
     analyzeTextDelayed();
+    try {
+      localStorage.setItem('bayan_editor_draft', editor.innerHTML);
+    } catch (e) {}
   });
 
   editor.addEventListener('click', (e) => {

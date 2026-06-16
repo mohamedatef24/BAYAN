@@ -13,8 +13,7 @@
   <link rel="stylesheet" href="/css/tokens.css">
   <link rel="stylesheet" href="/css/base.css">
   <link rel="stylesheet" href="/css/components.css">
-  <script src="/_sdk/element_sdk.js"></script>
-  <style>
+    <style>
     /* Marketing page inline overrides — core styles in /css/ */
   </style>
   <style>@view-transition { navigation: auto; }</style>
@@ -25,8 +24,7 @@
   <script src="/js/auth/auth.js"></script>
   <script src="/js/auth/auth-ui.js"></script>
   <script src="/js/theme.js"></script>
-  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
-  <script src="/js/vendor/mammoth.browser.min.js"></script>
+    <script src="/js/vendor/mammoth.browser.min.js"></script>
   <script src="/js/vendor/docx.umd.js"></script>
   <script src="/js/vendor/FileSaver.min.js"></script>
   <script src="/js/vendor/html2pdf.bundle.min.js"></script>
@@ -38,6 +36,18 @@
   <script src="/js/documents/import.js"></script>
   <script src="/js/documents/export.js?v=20260615d"></script>
   <script src="/js/documents/documents.js"></script>
+  <!-- Phase 7 — Sync System -->
+  <script src="/js/sync/sync-queue.js"></script>
+  <script src="/js/sync/sync-resolver.js"></script>
+  <script src="/js/sync/sync-manager.js"></script>
+  <!-- Phase 6 — Cloud Persistence -->
+  <script src="/js/documents-cloud/documents-api.js"></script>
+  <script src="/js/documents-cloud/documents-state.js"></script>
+  <script src="/js/documents-cloud/documents-ui.js"></script>
+  <script src="/js/summaries/summaries-api.js"></script>
+  <script src="/js/summaries/summaries-ui.js"></script>
+  <script src="/js/settings-sync/settings-api.js"></script>
+  <script src="/js/settings-sync/settings-sync.js"></script>
  </head>
  <body class="h-full page-bg">
   <div class="h-full overflow-auto"><!-- Navigation -->
@@ -103,6 +113,16 @@
    <div id="auth-offline-banner" class="auth-offline-banner is-hidden" role="status" aria-live="polite">
     تعذر الاتصال بخدمة المصادقة. يمكنك متابعة استخدام المحرر والمحاولة لاحقاً.
    </div>
+   <!-- Phase 6.1 — Docs Sidebar -->
+   <div id="docs-sidebar" class="docs-sidebar" role="complementary" aria-label="مستنداتي">
+    <div class="docs-sidebar__header">
+     <span class="docs-sidebar__title">📁 مستنداتي</span>
+    </div>
+    <div class="docs-sidebar__body">
+     <button id="docs-new-btn" class="docs-new-btn" type="button" aria-label="مستند جديد">＋ مستند جديد</button>
+     <div id="docs-list" role="list" aria-label="قائمة المستندات"></div>
+    </div>
+   </div>
    <!-- Auth Gate -->
    <div id="auth-gate" class="auth-gate" aria-hidden="true" role="dialog" aria-labelledby="auth-gate-title" aria-modal="true">
     <div id="auth-gate-backdrop" class="auth-gate-backdrop"></div>
@@ -125,7 +145,7 @@
      <button id="auth-google-btn-mobile" type="button" class="btn-ghost auth-gate-btn auth-gate-btn--google w-full">المتابعة باستخدام Google</button>
     </div>
    </div><!-- Home Page -->
-   <div id="page-home" class="page active"><!-- Hero Section -->
+   <div id="page-home" class="page"><!-- Hero Section -->
     <section class="gradient-bg min-h-screen pt-28 pb-20 relative overflow-hidden"><!-- Background Decoration -->
      <div class="absolute inset-0 overflow-hidden pointer-events-none">
       <div class="absolute top-20 left-20 w-96 h-96 rounded-full opacity-20" style="background: radial-gradient(circle, var(--primary-color) 0%, transparent 70%); filter: blur(80px);"></div>
@@ -443,6 +463,13 @@
               <button type="button" class="doc-dropdown__item" role="menuitem" data-export-format="pdf">PDF (.pdf)</button>
              </div>
             </div>
+            <!-- Phase 6.1: Docs sidebar toggle + save -->
+            <button id="docs-sidebar-toggle" class="docs-sidebar-toggle btn-ghost" type="button" aria-label="مستنداتي" aria-expanded="false" aria-controls="docs-sidebar">📁 مستنداتي</button>
+            <button id="doc-save-btn" class="doc-save-btn" type="button" aria-label="حفظ المستند" title="حفظ">💾</button>
+           </div>
+           <!-- Doc title bar -->
+           <div class="doc-title-bar">
+            <span id="doc-current-title" class="doc-current-title">مستند جديد</span>
            </div>
           </div>
           <div class="flex items-center gap-4 flex-wrap">
@@ -719,8 +746,13 @@
         link.classList.add('active');
       });
 
+      try {
+        sessionStorage.setItem('bayan_current_page', pageId);
+      } catch (e) {}
+
       window.scrollTo(0, 0);
     }
+
 
     function switchTab(tab) {
       const writeTab = document.getElementById('write-tab');
@@ -941,6 +973,13 @@
       initEditor();
       initDocuments();
       updateSuggestionsList([]);
+      // Phase 7 — Sync System
+      if (typeof SyncManager !== 'undefined') SyncManager.init();
+
+      // Phase 6 — Cloud persistence
+      await initSettingsSync();
+      initDocumentsCloud();
+      initSummaries();
 
       const mobileImport = document.getElementById('doc-import-btn-mobile');
       const importInput = document.getElementById('doc-import-input');
@@ -948,8 +987,21 @@
         mobileImport.addEventListener('click', () => importInput.click());
       }
 
-      if (window.location.hash === '#/editor') {
-        showPage('editor');
+      try {
+        const savedPage = sessionStorage.getItem('bayan_current_page');
+        if (savedPage) {
+          showPage(savedPage);
+        } else if (window.location.hash === '#/editor') {
+          showPage('editor');
+        } else {
+          showPage('home');
+        }
+      } catch (e) {
+        if (window.location.hash === '#/editor') {
+          showPage('editor');
+        } else {
+          showPage('home');
+        }
       }
     });
   </script>
