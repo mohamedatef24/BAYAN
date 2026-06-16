@@ -1,176 +1,106 @@
 # 🚀 BAYAN — Phase 8: Deployment Report
 
-## 📋 Deployment Status
+## ✅ Deployment Status
 
 | Component | Platform | Status | URL |
 |-----------|----------|--------|-----|
-| Frontend | Vercel | 🟡 Ready to Deploy | `https://<your-project>.vercel.app` |
-| Backend (Flask API) | Render | 🟡 Ready to Deploy | `https://bayan-api.onrender.com` |
-| Database & Auth | Supabase | ✅ Already Live | `https://rhbgqjmkjvyzgxheyeyt.supabase.co` |
-| CI/CD | GitHub Actions | 🟡 Ready (needs repo push) | — |
+| Frontend + Backend | HuggingFace Spaces | ✅ **LIVE** | [bayan10-bayan-api.hf.space](https://bayan10-bayan-api.hf.space) |
+| Database & Auth | Supabase | ✅ **LIVE** | `https://rhbgqjmkjvyzgxheyeyt.supabase.co` |
+| Google OAuth | Google Cloud + Supabase | ✅ **Working** | — |
+| Anonymous Auth | Supabase | ✅ **Working** | — |
+| Source Code | GitHub | ✅ **Synced** | [github.com/mohamedatef24/BAYAN](https://github.com/mohamedatef24/BAYAN) |
+| CI/CD | GitHub Actions | 🟡 Ready (triggers on merge to `main`) | — |
 
 ---
 
-## 📦 Files Created / Modified
+## 📦 What Was Done (Phase 8 Complete)
 
-### New Files
+### Deployment Files Created
 | File | Purpose |
 |------|---------|
-| `Procfile` | Render startup command (gunicorn, single worker, 120s timeout) |
-| `render.yaml` | Render Blueprint for automated infrastructure setup |
-| `vercel.json` | Vercel config: API proxy → Render, SPA routing, security headers, caching |
-| `build.py` | Injects Supabase env vars into `index.html` at build time |
-| `.github/workflows/deploy.yml` | CI/CD: validate → deploy backend → health check |
+| `Dockerfile` | Docker config for HuggingFace Spaces (Python 3.12, gunicorn, port 7860) |
+| `Procfile` | Gunicorn startup command |
+| `render.yaml` | Render Blueprint (unused — switched to HF Spaces) |
+| `vercel.json` | Vercel config with API proxy to HF Spaces |
+| `build.py` | Injects Supabase env vars into HTML at build time |
+| `.github/workflows/deploy.yml` | CI/CD: validate → health check |
+| `README_HF.md` | HuggingFace Spaces metadata (backup) |
 
-### Modified Files
-| File | Changes |
-|------|---------|
+### Code Changes
+| File | Change |
+|------|--------|
+| `README.md` | Added HF Spaces YAML frontmatter (sdk: docker, app_port: 7860) |
 | `requirements.txt` | Added `gunicorn`, `python-dotenv` |
-| `src/app.py` | CORS scoped to `/api/*`, enhanced `/api/health`, gunicorn startup hook |
-| `.gitignore` | Added `.vercel/`, `node_modules/`, `.pytest_cache/`, `test-results/` |
+| `src/app.py` | CORS scoped to API routes, enhanced health check, gunicorn model preload |
+| `src/js/auth/auth-ui.js` | Guest login → landing page (not editor) |
+| `src/js/auth/auth.js` | Google link failure falls back to full sign-in |
+| `.gitignore` | Added `.vercel/`, `.pytest_cache/`, `test-results/` |
+
+### Configuration Done (Manual)
+- ✅ HuggingFace Space created under `bayan10` org
+- ✅ Supabase secrets set in HF Spaces (SUPABASE_URL, SUPABASE_ANON_KEY)
+- ✅ Google OAuth published (External, production mode)
+- ✅ Redirect URIs configured in Google Cloud Console
+- ✅ Supabase URL Configuration updated with HF Space domain
+- ✅ Git credentials fixed (stale token cleared)
+- ✅ `index.html.orig` binary purged from git history (HF requirement)
 
 ---
 
-## 🔧 Deployment Steps
-
-### Step 1: Push to GitHub
-
-```bash
-git add -A
-git commit -m "Phase 8: Production deployment configuration"
-git push origin main
-```
-
-### Step 2: Deploy Backend to Render
-
-1. Go to [render.com/dashboard](https://dashboard.render.com)
-2. Click **"New" → "Web Service"**
-3. Connect your GitHub repo
-4. Render will auto-detect `render.yaml` and configure the service
-5. **Set environment variables** in Render dashboard:
-   - `SUPABASE_URL` = `https://rhbgqjmkjvyzgxheyeyt.supabase.co`
-   - `SUPABASE_ANON_KEY` = `<your anon key>`
-6. Click **Deploy**
-
-> ⚠️ **Important**: The summarization model needs ~1-2GB RAM. Use Render's **Starter plan ($7/mo)** or higher.
-
-### Step 3: Deploy Frontend to Vercel
-
-1. Go to [vercel.com/new](https://vercel.com/new)
-2. Import your GitHub repo
-3. **Set environment variables** in Vercel project settings:
-   - `SUPABASE_URL` = `https://rhbgqjmkjvyzgxheyeyt.supabase.co`
-   - `SUPABASE_ANON_KEY` = `<your anon key>`
-4. **Build command**: `python build.py` (auto-detected from `vercel.json`)
-5. **Output directory**: `src` (auto-detected from `vercel.json`)
-6. Click **Deploy**
-
-### Step 4: Update vercel.json API Proxy URL
-
-After Render deploys, update `vercel.json` to point to your actual Render URL:
-
-```json
-{
-  "source": "/api/:path*",
-  "destination": "https://YOUR-ACTUAL-RENDER-URL.onrender.com/api/:path*"
-}
-```
-
-### Step 5: Configure Supabase for Production
-
-1. Go to **Supabase Dashboard → Authentication → URL Configuration**
-2. Set **Site URL** to your Vercel production URL (e.g., `https://bayan-xxx.vercel.app`)
-3. Add **Redirect URLs**:
-   - `https://bayan-xxx.vercel.app/**`
-   - `http://localhost:5050/**` (for local dev)
-4. Under **Providers → Google**:
-   - Update **Authorized redirect URI** in Google Cloud Console to include Supabase's callback URL
-
-### Step 6: Set Up GitHub Actions Secrets
-
-In your GitHub repo → Settings → Secrets → Actions, add:
-- `RENDER_DEPLOY_HOOK`: Get from Render dashboard → your service → Settings → Deploy Hook
-- `BACKEND_URL`: Your Render URL (e.g., `https://bayan-api.onrender.com`)
-
----
-
-## 🏗️ Architecture
+## 🏗️ Architecture (Final)
 
 ```
-┌─────────────────────┐     ┌─────────────────────────┐
-│   Vercel (CDN)      │     │   Render (Flask API)    │
-│                     │     │                         │
-│  Static Frontend    │────▶│  /api/analyze           │
-│  index.html         │proxy│  /api/summarize         │
-│  css/ js/           │     │  /api/health            │
-│                     │     │  Summarization Model    │
-└────────┬────────────┘     └─────────────────────────┘
-         │
-         │ Direct client-side
-         ▼
-┌─────────────────────┐
-│   Supabase          │
-│                     │
-│  Auth (Anon+Google) │
-│  Database (RLS)     │
-│  - profiles         │
-│  - documents        │
-│  - summaries        │
-│  - user_settings    │
-└─────────────────────┘
+User Browser
+    │
+    ▼
+┌─────────────────────────────────┐
+│  HuggingFace Spaces (Docker)   │
+│  https://bayan10-bayan-api.hf.space │
+│                                 │
+│  Flask (gunicorn, port 7860)   │
+│  ├── Static: index.html, css/, js/ │
+│  ├── /api/health               │
+│  ├── /api/analyze              │
+│  ├── /api/summarize            │
+│  └── Summarization Model (MBart) │
+└────────────┬────────────────────┘
+             │ Client-side JS
+             ▼
+┌─────────────────────────────────┐
+│  Supabase                      │
+│  ├── Auth (Anonymous + Google) │
+│  └── Database (RLS)            │
+│      ├── profiles              │
+│      ├── documents             │
+│      ├── summaries             │
+│      └── user_settings         │
+└─────────────────────────────────┘
 ```
 
 ---
 
-## ✅ Health Check Endpoint
+## ⚠️ Known Limitations
 
-After deployment, verify:
-
-```bash
-curl https://bayan-api.onrender.com/api/health
-```
-
-Expected response:
-```json
-{
-  "status": "healthy",
-  "models": {
-    "summarization": true,
-    "spelling": false,
-    "autocomplete": false,
-    "grammar": false,
-    "punctuation": false
-  },
-  "supabase": {
-    "configured": true
-  },
-  "environment": "render"
-}
-```
+| Issue | Details | Workaround |
+|-------|---------|------------|
+| Google OAuth in HF iframe | 403 error when accessed via `huggingface.co/spaces/...` | Use direct URL: `https://bayan10-bayan-api.hf.space` |
+| Summarization model on free tier | Free CPU has 2GB RAM — model may OOM | Monitor logs; upgrade to GPU Space if needed |
+| Cold starts | HF Spaces sleeps after 48h inactivity | First request takes ~60s to wake up |
 
 ---
 
-## ⚠️ Known Production Risks
+## 🔮 Next Steps (Optional Improvements)
 
-| Risk | Severity | Mitigation |
-|------|----------|------------|
-| Render free tier cold starts (30s+ delay) | Medium | Upgrade to Starter plan or use keep-alive pings |
-| Model RAM (summarization ~1.5GB) | High | Use Starter+ plan on Render, or HuggingFace Spaces |
-| Supabase rate limiting (anonymous auth) | Low | Already handled with fallback session injection |
-| Tailwind CDN in production | Low | Replace with local build in future optimization phase |
+### Immediate (Quick Wins)
+- [ ] **Merge `auth_Youssef` → `main`** on GitHub (create PR)
+- [ ] **Verify summarization works** — check if model loads on HF Spaces (check Logs tab)
+- [ ] **Test full user journey** on the live URL
 
----
-
-## 🧪 Post-Deploy Verification Checklist
-
-- [ ] Frontend loads on Vercel URL
-- [ ] Auth gate appears on first visit
-- [ ] "Continue as Guest" creates session
-- [ ] Google OAuth redirects correctly
-- [ ] Editor loads after auth
-- [ ] Typing triggers text analysis (via `/api/analyze`)
-- [ ] Summarization works (via `/api/summarize`)
-- [ ] Documents save and persist after refresh
-- [ ] Theme toggle persists after refresh
-- [ ] Logout returns to clean state
-- [ ] `/api/health` returns 200
+### Future Enhancements
+- [ ] **Custom domain** — Point `bayan.app` to the HF Space
+- [ ] **Separate frontend (Vercel)** — Deploy frontend to Vercel CDN for faster loading; `vercel.json` is already configured
+- [ ] **Enable all models** — Spelling (`bayan10/AraSpell-Model`), Punctuation (`bayan10/PuncAra-v1`), Autocomplete (`bayan10/AutoComplete`) — requires GPU Space or higher RAM
+- [ ] **Monitoring** — Set up uptime monitoring (UptimeRobot, free)
+- [ ] **Analytics** — Add Plausible/Umami for usage tracking
+- [ ] **Rate limiting** — Add Flask-Limiter for API protection
+- [ ] **PWA** — Add service worker + manifest for offline support
