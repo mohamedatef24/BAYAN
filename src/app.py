@@ -692,15 +692,14 @@ def analyze_text():
             return curr_start, curr_end
 
         # 1. Spelling (with conservative post-filtering to avoid over-editing)
-        has_spelling = USE_HF_API or spelling_model
+        has_spelling = True  # Always available via lazy-loaded araspell_service
         if has_spelling:
             try:
                 t0 = time.time()
                 logger.info(f"[ANALYZE] Step 1: Spelling correction starting...")
-                if USE_HF_API:
-                    raw_corrected = hf_correct_spelling(current_text)
-                else:
-                    raw_corrected = spelling_model.correct(current_text)
+                from nlp.spelling.araspell_service import get_spelling_model
+                spell_checker = get_spelling_model()
+                raw_corrected = spell_checker.correct(current_text)
                 logger.info(f"[ANALYZE] Step 1: Spelling done in {time.time()-t0:.2f}s")
 
                 if raw_corrected != current_text:
