@@ -1,8 +1,8 @@
 """
 HuggingFace Inference API client for Bayan models.
 
-Uses huggingface_hub.InferenceClient which routes through HF's internal
-network when running inside HF Spaces.
+Uses huggingface_hub.InferenceClient._inner_post (v1.19.0) which handles
+internal routing inside HF Spaces.
 """
 
 import os
@@ -22,7 +22,7 @@ def _get_client():
     if _client is None:
         from huggingface_hub import InferenceClient
         _client = InferenceClient(token=HF_API_TOKEN if HF_API_TOKEN else None)
-        logger.info("InferenceClient initialized")
+        logger.info("InferenceClient v1.19.0 initialized")
     return _client
 
 
@@ -33,54 +33,51 @@ PUNCTUATION_REPO = os.environ.get("PUNCTUATION_REPO_ID", "bayan10/PuncAra-v1")
 AUTOCOMPLETE_REPO = os.environ.get("AUTOCOMPLETE_REPO_ID", "bayan10/AutoComplete")
 
 
-def _raw_inference(repo_id, payload):
+def _call_model(repo_id, payload, task=None):
     """
-    Make a raw inference call using whatever transport InferenceClient uses.
-    Tries multiple approaches to find one that works.
+    Call HF model using InferenceClient._inner_post.
+    This is the raw transport that all typed methods use internally.
     """
     client = _get_client()
 
-    # Approach 1: Try the internal _post method
-    if hasattr(client, '_post'):
-        logger.info("Using client._post for %s", repo_id)
-        response = client._post(json=payload, model=repo_id)
-        return json.loads(response) if isinstance(response, (bytes, str)) else response
+    if "options" not in payload:
+        payload["options"] = {"wait_for_model": True}
 
-    # Approach 2: Get the session from the client and use it directly
-    session = None
-    for attr in ['_session', 'session', '_client', 'client', '_http_client']:
-        if hasattr(client, attr):
-            session = getattr(client, attr)
-            break
+    logger.info("Calling HF model: %s (task=%s)", repo_id, task)
 
-    if session and hasattr(session, 'post'):
-        # Find the base API URL
-        api_url = None
-        for attr in ['api_url', 'base_url', '_api_url', 'inference_url', '_base_url']:
-            val = getattr(client, attr, None)
-            if val and isinstance(val, str):
-                api_url = val
-                break
+    try:
+        # Use _inner_post — the internal transport in huggingface_hub 1.19.0
+        response = client._inner_post(
+            json=payload,
+            model=repo_id,
+            task=task,
+        )
 
-        if not api_url:
-            api_url = "https://api-inference.huggingface.co/models"
+        # response is bytes
+        if isinstance(response, bytes):
+            result = json.loads(response.decode("utf-8"))
+        elif isinstance(response, str):
+            result = json.loads(response)
+        else:
+            result = response
 
-        url = api_url.rstrip('/') + '/' + repo_id if '/models' in api_url else api_url + '/models/' + repo_id
-        logger.info("Using session.post to %s", url)
+        logger.info("HF result for %s: type=%s preview=%s",
+                    repo_id, type(result).__name__, str(result)[:200])
+        return result
 
-        headers = {"Content-Type": "application/json"}
-        if HF_API_TOKEN:
-            headers["Authorization"] = "Bearer " + HF_API_TOKEN
+    except TypeError as e:
+        # If _inner_post has different signature, try without task
+        logger.warning("_inner_post with task failed: %s, retrying without task", e)
+        response = client._inner_post(
+            json=payload,
+            model=repo_id,
+        )
+        if isinstance(response, bytes):
+            return json.loads(response.decode("utf-8"))
+        elif isinstance(response, str):
+            return json.loads(response)
+        return response
 
-        resp = session.post(url, json=payload, headers=headers, timeout=120)
-        return resp.json()
-
-    raise RuntimeError("No usable transport found on InferenceClient")
-
-
-# ============================================================
-# Model wrappers
-# ============================================================
 
 def _extract_text(result, fallback=""):
     """Extract text from various HF response formats."""
@@ -93,6 +90,8 @@ def _extract_text(result, fallback=""):
                     or fallback)
         return str(item) if str(item).strip() else fallback
     if isinstance(result, dict):
+        if "error" in result:
+            raise RuntimeError("HF API error: " + str(result["error"]))
         return (result.get("summary_text")
                 or result.get("generated_text")
                 or result.get("translation_text")
@@ -100,41 +99,37 @@ def _extract_text(result, fallback=""):
     return str(result) if result else fallback
 
 
+# ============================================================
+# Model wrappers
+# ============================================================
+
 def hf_summarize(text, max_length=128, min_length=30):
     """Summarize Arabic text."""
-    result = _raw_inference(SUMMARIZATION_REPO, {
+    result = _call_model(SUMMARIZATION_REPO, {
         "inputs": text,
         "parameters": {"max_length": max_length, "min_length": min_length},
-        "options": {"wait_for_model": True},
-    })
+    }, task="summarization")
     return _extract_text(result, text[:100])
 
 
 def hf_correct_spelling(text):
     """Correct spelling in Arabic text."""
-    result = _raw_inference(SPELLING_REPO, {
-        "inputs": text,
-        "options": {"wait_for_model": True},
-    })
+    result = _call_model(SPELLING_REPO, {"inputs": text})
     return _extract_text(result, text)
 
 
 def hf_add_punctuation(text):
     """Add punctuation to Arabic text."""
-    result = _raw_inference(PUNCTUATION_REPO, {
-        "inputs": text,
-        "options": {"wait_for_model": True},
-    })
+    result = _call_model(PUNCTUATION_REPO, {"inputs": text})
     return _extract_text(result, text)
 
 
 def hf_autocomplete(text, n=5):
     """Get autocomplete suggestions."""
-    result = _raw_inference(AUTOCOMPLETE_REPO, {
+    result = _call_model(AUTOCOMPLETE_REPO, {
         "inputs": text,
         "parameters": {"max_new_tokens": 20},
-        "options": {"wait_for_model": True},
-    })
+    }, task="text-generation")
 
     if isinstance(result, str):
         c = result[len(text):].strip() if result.startswith(text) else result
@@ -159,46 +154,21 @@ def check_hf_api_available():
 
 
 def debug_test_all_models():
-    """Full diagnostic debug."""
+    """Test all HF models with full diagnostics."""
     results = {}
     test_text = "هذا نص تجريبي للاختبار"
     long_text = (test_text + " ") * 5
 
-    # Deep diagnostics
+    # Version info
     try:
-        client = _get_client()
         import huggingface_hub
-        all_attrs = [a for a in dir(client) if not a.startswith('__')]
-        private_attrs = {a: str(type(getattr(client, a, None)).__name__)
-                        for a in all_attrs if a.startswith('_') and not a.startswith('__')}
-        public_methods = [a for a in all_attrs if not a.startswith('_')
-                         and callable(getattr(client, a, None))]
-
-        diag = {
-            "hf_hub_version": getattr(huggingface_hub, '__version__', 'unknown'),
-            "has__post": hasattr(client, '_post'),
-            "has_session": hasattr(client, '_session') or hasattr(client, 'session'),
-            "private_attrs": private_attrs,
-            "public_methods": public_methods[:30],
+        results["_info"] = {
+            "hf_hub_version": huggingface_hub.__version__,
+            "has__inner_post": hasattr(_get_client(), '_inner_post'),
         }
-
-        # Try to find internal session/transport
-        for attr in ['_session', 'session', '_client', 'client', '_http_client',
-                     '_api_url', 'api_url', 'base_url', '_base_url', 'inference_url',
-                     'headers', '_headers']:
-            val = getattr(client, attr, 'NOT_FOUND')
-            if val != 'NOT_FOUND':
-                diag['found_' + attr] = str(val)[:200] if not callable(val) else 'callable'
     except Exception as e:
-        diag = {"error": repr(e)[:300]}
+        results["_info"] = {"error": repr(e)[:200]}
 
-    results["_diagnostics"] = diag
-    results["_env"] = {
-        "HF_INFERENCE_ENDPOINT": os.environ.get("HF_INFERENCE_ENDPOINT", "NOT SET"),
-        "SPACE_ID": os.environ.get("SPACE_ID", "NOT SET"),
-    }
-
-    # Test each model
     for name, fn, args in [
         ("summarization", hf_summarize, (long_text, 30, 10)),
         ("spelling", hf_correct_spelling, (test_text,)),
@@ -211,7 +181,7 @@ def debug_test_all_models():
             elapsed = time.time() - t0
             results[name] = {
                 "status": "ok",
-                "result": str(result)[:200],
+                "result": str(result)[:300],
                 "time_seconds": round(elapsed, 2),
             }
         except Exception as e:
