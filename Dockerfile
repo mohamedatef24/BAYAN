@@ -13,19 +13,34 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu && \
     pip install --no-cache-dir -r requirements.txt
 
-# Pre-download the summarization model during build (network is available here)
+# Pre-download models during build (network is available here)
 # At runtime, the container has NO outbound DNS, so models must be cached
+
+# 1. Summarization model (MBart, float16)
 RUN python -c "\
 from transformers import MBartForConditionalGeneration, AutoTokenizer, AutoConfig; \
 import torch; \
 repo = 'bayan10/summarization-model'; \
-print('Downloading tokenizer...'); \
+print('Downloading summarization tokenizer...'); \
 AutoTokenizer.from_pretrained(repo); \
-print('Downloading config...'); \
+print('Downloading summarization config...'); \
 AutoConfig.from_pretrained(repo); \
-print('Downloading model (float16)...'); \
+print('Downloading summarization model (float16)...'); \
 MBartForConditionalGeneration.from_pretrained(repo, torch_dtype=torch.float16); \
-print('Model cached successfully!'); \
+print('Summarization model cached!'); \
+"
+
+# 2. Spelling model (AraSpell — AraBERT encoder-decoder + checkpoint)
+RUN python -c "\
+from huggingface_hub import hf_hub_download; \
+from transformers import AutoTokenizer, EncoderDecoderModel; \
+print('Downloading AraSpell checkpoint...'); \
+hf_hub_download(repo_id='bayan10/AraSpell-Model', filename='last_model.pt'); \
+print('Downloading AraBERT tokenizer...'); \
+AutoTokenizer.from_pretrained('aubmindlab/bert-base-arabertv02'); \
+print('Downloading AraBERT encoder-decoder...'); \
+EncoderDecoderModel.from_encoder_decoder_pretrained('aubmindlab/bert-base-arabertv02', 'aubmindlab/bert-base-arabertv02'); \
+print('Spelling model cached!'); \
 "
 
 # Copy application code
