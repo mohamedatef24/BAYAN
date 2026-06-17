@@ -81,13 +81,14 @@ punctuation_model = None
 
 
 def load_models():
-    """Load models. In HF API mode, skip local loading entirely."""
+    """Load models. In HF API mode, load summarization locally; other models gracefully degrade."""
     global summarization_model, spelling_model, autocomplete_model, grammar_model, punctuation_model
     
     if USE_HF_API:
-        logger.info("HF_API_TOKEN is set — using HuggingFace Inference API (no local models loaded)")
-        logger.info("Models will be called remotely: summarization, spelling, punctuation, autocomplete")
-        return True
+        logger.info("HF_API_TOKEN is set — HF API mode enabled")
+        logger.info("NOTE: HF Spaces free tier has NO outbound DNS. Loading summarization model locally.")
+        logger.info("Spelling, punctuation, autocomplete will gracefully degrade (return input unchanged).")
+        # Fall through to load summarization model locally
     
     loaded = []
     failed = []
@@ -139,20 +140,22 @@ def health_check():
     if USE_HF_API:
         health = {
             'status': 'healthy',
-            'mode': 'hf_inference_api',
+            'mode': 'hf_spaces_local',
             'models': {
-                'summarization': True,
-                'spelling': True,
-                'autocomplete': True,
-                'grammar': True,
-                'punctuation': True
+                'summarization': summarization_model is not None,
+                'spelling': False,
+                'autocomplete': False,
+                'grammar': False,
+                'punctuation': False
             },
+            'note': 'Free tier: summarization local, other models return input unchanged',
             'supabase': {
                 'configured': bool(SUPABASE_URL and SUPABASE_ANON_KEY),
             },
             'environment': 'huggingface_spaces',
         }
-        return jsonify(health), 200
+        status_code = 200 if summarization_model is not None else 503
+        return jsonify(health), status_code
     
     health = {
         'status': 'healthy',
@@ -201,7 +204,7 @@ def summarize():
         "full_text": true/false (whether to summarize full text or just first paragraph)
     }
     """
-    if not USE_HF_API and summarization_model is None:
+    if summarization_model is None:
         return jsonify({
             'error': 'Summarization model not loaded. Please check server logs.',
             'status': 'error'
@@ -253,10 +256,8 @@ def summarize():
         # Generate summary
         logger.info(f"Generating summary: length={length}, max_length={max_length}, text_length={len(text)}")
         
-        if USE_HF_API:
-            summary = hf_summarize(text, max_length=max_length, min_length=max(10, max_length // 3))
-        else:
-            summary = summarization_model.summarize(text, max_length=max_length, min_length=max(10, max_length // 3))
+        # Always use local model (HF Spaces free tier has no outbound DNS for API calls)
+        summary = summarization_model.summarize(text, max_length=max_length, min_length=max(10, max_length // 3))
         
         return jsonify({
             'summary': summary,
