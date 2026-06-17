@@ -382,54 +382,6 @@ def summarize():
         }), 500
 
 
-@app.route('/api/spelling', methods=['POST'])
-def spelling_correction():
-    """
-    Correct spelling in Arabic text.
-    
-    Expected JSON payload:
-    {
-        "text": "Arabic text to correct"
-    }
-    """
-    if not USE_HF_API and spelling_model is None:
-        return jsonify({
-            'error': 'Spelling model not loaded. Please check server logs.',
-            'status': 'error'
-        }), 503
-    
-    try:
-        if not request.is_json:
-            return jsonify({'error': 'Request must be JSON', 'status': 'error'}), 400
-        
-        data = request.get_json()
-        text = data.get('text', '').strip()
-        
-        if not text:
-            return jsonify({'error': 'Text is required', 'status': 'error'}), 400
-        
-        logger.info(f"Correcting spelling for text of length: {len(text)}")
-        if USE_HF_API:
-            corrected = hf_correct_spelling(text)
-        else:
-            corrected = spelling_model.correct(text)
-        
-        return jsonify({
-            'corrected': corrected,
-            'status': 'success',
-            'original_length': len(text),
-            'corrected_length': len(corrected)
-        })
-    
-    except Exception as e:
-        logger.error(f"Error during spelling correction: {str(e)}")
-        logger.error(traceback.format_exc())
-        return jsonify({
-            'error': 'An error occurred during spelling correction.',
-            'status': 'error',
-            'details': str(e) if app.debug else None
-        }), 500
-
 
 @app.route('/api/autocomplete', methods=['POST'])
 def autocomplete():
