@@ -659,8 +659,9 @@ def _is_small_spelling_change(orig_word, corr_word):
     dist = _levenshtein(orig_word, corr_word)
     max_len = max(len(orig_word), len(corr_word))
 
-    # Allow at most 2 character edits and at most 40% of the word
-    return dist <= 2 and (dist / max_len) <= 0.4
+    # Allow at most 3 character edits and at most 50% of the word
+    # AraSpell has its own validation pipeline, so we can be more permissive here
+    return dist <= 3 and (dist / max_len) <= 0.5
 
 
 @app.route('/api/analyze', methods=['POST'])
@@ -740,9 +741,9 @@ def analyze_text():
                                 else:
                                     new_words.append(current_text[start_idx:end_idx])
                             elif len(o_segment) == 1 and len(c_segment) > 1:
-                                # 1-word → N words: accept when original is long (likely concatenated)
+                                # 1-word → N words: accept word splits (e.g. فيالمدرسة → في المدرسة)
                                 o_word = o_segment[0]
-                                if len(o_word) >= 12 and ' ' not in o_word:
+                                if len(o_word) >= 5 and ' ' not in o_word:
                                     corr_str = " ".join(c_segment)
                                     new_words.append(corr_str)
                                     suggestions.append({
