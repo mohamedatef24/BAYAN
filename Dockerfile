@@ -8,10 +8,25 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install Python dependencies
-# Install CPU-only PyTorch first (saves ~1.5GB vs full torch)
+# Install CPU-only PyTorch first (saves ~1.5GB vs full torch with CUDA)
 COPY requirements.txt .
 RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu && \
     pip install --no-cache-dir -r requirements.txt
+
+# Pre-download the summarization model during build (network is available here)
+# At runtime, the container has NO outbound DNS, so models must be cached
+RUN python -c "\
+from transformers import MBartForConditionalGeneration, AutoTokenizer, AutoConfig; \
+import torch; \
+repo = 'bayan10/summarization-model'; \
+print('Downloading tokenizer...'); \
+AutoTokenizer.from_pretrained(repo); \
+print('Downloading config...'); \
+AutoConfig.from_pretrained(repo); \
+print('Downloading model (float16)...'); \
+MBartForConditionalGeneration.from_pretrained(repo, torch_dtype=torch.float16); \
+print('Model cached successfully!'); \
+"
 
 # Copy application code
 COPY src/ ./src/
