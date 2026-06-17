@@ -1,35 +1,54 @@
-# ## 📦 Part 1: Imports & Setup
-
+# AraSpell — Arabic Spell Checker Pipeline
+# Production-ready version
 
 import re
+import math
+import logging
 import torch
 import os
+from collections import Counter
 from transformers import AutoTokenizer, EncoderDecoderModel
 import Levenshtein
-import jellyfish  # NEW: For Damerau-Levenshtein (transpositions as 1 edit)
+import jellyfish
 
-print("✅ All imports successful")
-print(f"🔧 PyTorch version: {torch.__version__}")
-print(f"🔧 CUDA available: {torch.cuda.is_available()}")
-if torch.cuda.is_available():
-    print(f"🔧 GPU: {torch.cuda.get_device_name(0)}")
-
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# 🏆 PRODUCTION SPELL CHECKER - OPTIMIZED VERSION (Merged from src/)
+# LOAD ARABERT SEQ2SEQ MODEL
 # ═══════════════════════════════════════════════════════════════════════════════
 
+from huggingface_hub import hf_hub_download
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# 🏆 PRODUCTION SPELL CHECKER - OPTIMIZED VERSION (Merged from src/)
-# ═══════════════════════════════════════════════════════════════════════════════
-# IMPROVEMENTS:
-# 1. unified_collapse_repeated() - More conservative (3+ for Arabic)
-# 2. fix_hamza_conservative() - Only fixes word endings
-# 3. remove_hallucinations() - Removes duplicate words and trailing 'و'
-# 4. Expanded PREPOSITIONS - 16 prepositions instead of 2
-# 5. Better word splitting and joining
-# ═══════════════════════════════════════════════════════════════════════════════
+MODEL_REPO = 'bayan10/AraSpell-Model'
+MODEL_FILENAME = 'last_model.pt'
+
+try:
+    logger.info(f"Downloading/loading model from Hugging Face: {MODEL_REPO}")
+    MODEL_PATH = hf_hub_download(repo_id=MODEL_REPO, filename=MODEL_FILENAME)
+except Exception as e:
+    raise RuntimeError(f"Failed to download model from Hugging Face: {e}")
+
+MODEL_NAME = 'aubmindlab/bert-base-arabertv02'
+
+tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+model = EncoderDecoderModel.from_encoder_decoder_pretrained(MODEL_NAME, MODEL_NAME)
+
+model.config.decoder_start_token_id = tokenizer.cls_token_id
+model.config.pad_token_id = tokenizer.pad_token_id
+model.config.eos_token_id = tokenizer.sep_token_id
+model.generation_config.max_length = 128
+model.generation_config.decoder_start_token_id = tokenizer.cls_token_id
+model.generation_config.pad_token_id = tokenizer.pad_token_id
+model.generation_config.eos_token_id = tokenizer.sep_token_id
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+checkpoint = torch.load(MODEL_PATH, map_location=device, weights_only=False)
+model.load_state_dict(checkpoint['model_state_dict'], strict=False)
+model = model.to(device)
+model.eval()
+
+logger.info(f"Model loaded on {device}, epoch: {checkpoint.get('epoch', 'N/A')}")
 
 from enum import Enum
 from typing import List, Tuple, Optional
@@ -47,11 +66,11 @@ class ErrorType(Enum):
     CLEAN = "clean"
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# POST PROCESSOR (OPTIMIZED - Merged from src/)
+# POST PROCESSOR
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class AraSpellPostProcessor:
-    """Post-processing techniques (OPTIMIZED VERSION)"""
+    """Arabic text post-processing techniques."""
     
     ARABIC_HARAKAT = 'ًٌٍَُِّْ'
     TATWEEL = 'ـ'
@@ -60,9 +79,7 @@ class AraSpellPostProcessor:
     }
     ARABIC_CONSONANTS = set('بتثجحخدذرزسشصضطظعغفقكلمن')
     
-    # ═══════════════════════════════════════════════════════════════════════════════
-    # BASIC NORMALIZATION
-    # ═══════════════════════════════════════════════════════════════════════════════
+    # --- Basic Normalization ---
     
     @staticmethod
     def remove_harakat(text: str) -> str:
@@ -81,16 +98,13 @@ class AraSpellPostProcessor:
             text = text.replace(old, new)
         return text
     
-    # ═══════════════════════════════════════════════════════════════════════════════
-    # UNIFIED CORE FUNCTIONS (NEW from src/)
-    # ═══════════════════════════════════════════════════════════════════════════════
+    # --- Core Functions ---
     
     @staticmethod
     def unified_collapse_repeated(text: str) -> str:
         """
-        UNIFIED repetition collapse (IMPROVED!)
-        - Arabic: 3+ consecutive → 1 (more conservative!)
-        - Latin: 2+ consecutive → 1
+        Collapse repeated characters.
+        Arabic: 3+ consecutive → 1 | Latin: 2+ consecutive → 1
         """
         # Arabic characters: 3+ → 1
         text = re.sub(r"([\u0600-\u06FF])\1{2,}", r"\1", text)
@@ -100,14 +114,9 @@ class AraSpellPostProcessor:
         
         return text
     
-
-    
     @staticmethod
     def remove_duplicate_words(text: str) -> str:
-        """
-        Remove consecutive duplicate words (NEW from src/)
-        Examples: كتاب كتاب → كتاب
-        """
+        """Remove consecutive duplicate words. e.g. كتاب كتاب → كتاب"""
         words = text.split()
         if len(words) < 2:
             return text
@@ -119,13 +128,9 @@ class AraSpellPostProcessor:
         
         return ' '.join(result)
     
-
-    
     @staticmethod
     def normalize_spaces(text: str) -> str:
-        """
-        UNIFIED space normalization (NEW from src/)
-        """
+        """Normalize whitespace: multiple spaces, unicode spaces, punctuation spacing."""
         # Multiple spaces → single
         text = re.sub(r' +', ' ', text)
         
@@ -159,20 +164,11 @@ class AraSpellPostProcessor:
                 i += 1
         return ' '.join(result)
     
-    # ═══════════════════════════════════════════════════════════════════════════════
-    # HAMZA HANDLING (NEW from src/)
-    # ═══════════════════════════════════════════════════════════════════════════════
+    # --- Hamza & Ta Marbuta Handling ---
     
     @staticmethod
     def fix_hamza_conservative(text: str) -> str:
-        """
-        CONSERVATIVE Hamza normalization (NEW!)
-        Only normalizes at word END, not middle
-        
-        Examples:
-        ✓ "المدرسه" → "المدرسة" (end of word)
-        ✓ "سأل" → "سأل" (middle - KEEP IT!)
-        """
+        """Conservative Hamza normalization — only at word END, not middle."""
         words = text.split()
         result = []
         
@@ -191,34 +187,63 @@ class AraSpellPostProcessor:
         return ' '.join(result)
     
     @staticmethod
-    def fix_ha_ta_marbuta(text: str) -> str:
+    def fix_ha_ta_marbuta(text: str, vocab_manager=None) -> str:
         """
-        Fix ه → ة at end of words (pattern-based)
+        Smart ه → ة fix at end of words.
+        
+        Key insight: ه at word end can be:
+        - Ta Marbuta (should be ة): المدرسه → المدرسة
+        - Possessive pronoun (should stay ه): تحقيقه = his achievement
+        
+        Strategy: Only convert if the ة version is IV (in tokenizer vocab).
+        This distinguishes المدرسة (IV) from تحقيقة (not a real word form).
+        Without vocab_manager, falls back to original pattern-based approach.
         """
+        # Protected words: anything containing لله
+        PROTECTED_ENDINGS = ['لله']
+        
         words = text.split()
         result = []
         
         for word in words:
+            # Skip protected words (Allah-related)
+            if any(word.endswith(e) for e in PROTECTED_ENDINGS):
+                result.append(word)
+                continue
+            
             if len(word) >= 4 and word.endswith('ه'):
                 # Check if second-to-last char is a consonant
                 if word[-2] in AraSpellPostProcessor.ARABIC_CONSONANTS:
-                    result.append(word[:-1] + 'ة')
-                    continue
+                    candidate_with_ta = word[:-1] + 'ة'
+                    
+                    if vocab_manager:
+                        # SMART MODE: Use vocab to decide
+                        ta_iv = vocab_manager.is_iv(candidate_with_ta)
+                        ha_iv = vocab_manager.is_iv(word)
+                        
+                        if ta_iv:
+                            # ة version is IV → convert (المدرسه→المدرسة)
+                            result.append(candidate_with_ta)
+                            continue
+                        elif ha_iv:
+                            # Only ه version is IV → keep ه (possessive: تحقيقه)
+                            result.append(word)
+                            continue
+                        # else: NEITHER is IV → keep original ه
+                        # (safer than guessing — could be rare possessive)
+                    else:
+                        # FALLBACK: No vocab → use original pattern-based approach
+                        result.append(candidate_with_ta)
+                        continue
             result.append(word)
         
         return ' '.join(result)
     
-    # ═══════════════════════════════════════════════════════════════════════════════
-    # HALLUCINATION REMOVAL (NEW from src/)
-    # ═══════════════════════════════════════════════════════════════════════════════
+    # --- Hallucination Removal ---
     
     @staticmethod
     def remove_hallucinations(text: str) -> str:
-        """
-        Remove model hallucinations (NEW from src/):
-        - Duplicate words
-        - Trailing 'و' artifacts
-        """
+        """Remove model hallucinations: duplicate words, trailing 'و' artifacts."""
         words = text.split()
         if not words:
             return text
@@ -270,9 +295,7 @@ class AraSpellPostProcessor:
         
         return text
     
-    # ═══════════════════════════════════════════════════════════════════════════════
-    # WORD SPLITTING & MERGING (NEW from src/)
-    # ═══════════════════════════════════════════════════════════════════════════════
+    # --- Word Splitting & Merging ---
     
     @staticmethod
     def merge_separated_al(text: str) -> str:
@@ -281,12 +304,7 @@ class AraSpellPostProcessor:
     
     @staticmethod
     def join_fragments(text: str) -> str:
-        """
-        IMPROVED: Join short fragments with better validation (NEW from src/)
-        الط + الب → الطالب
-        
-        FIXED: No longer joins valid separate words like "في من"
-        """
+        """Join short fragments with validation. e.g. الط + الب → الطالب"""
         words = text.split()
         if len(words) < 2:
             return text
@@ -341,14 +359,13 @@ class AraSpellPostProcessor:
         
         return ' '.join(result)
     
-    # ═══════════════════════════════════════════════════════════════════════════════
-    # MAIN PIPELINES
-    # ═══════════════════════════════════════════════════════════════════════════════
+    # --- Main Pipelines ---
     
     @staticmethod
-    def full_postprocess(text: str, original: str = "") -> str:
+    def full_postprocess(text: str, original: str = "", vocab_manager=None) -> str:
         """
         Apply all post-processing steps (OPTIMIZED ORDER!)
+        vocab_manager: optional, enables smart ه/ة handling
         """
         # 1. Remove hallucinated prefixes
         if original:
@@ -366,8 +383,8 @@ class AraSpellPostProcessor:
         # 5. Fix Hamza (CONSERVATIVE!)
         text = AraSpellPostProcessor.fix_hamza_conservative(text)
         
-        # 6. Fix Ta Marbuta
-        text = AraSpellPostProcessor.fix_ha_ta_marbuta(text)
+        # 6. Fix Ta Marbuta (SMART MODE with vocab_manager!)
+        text = AraSpellPostProcessor.fix_ha_ta_marbuta(text, vocab_manager=vocab_manager)
         
         # 7. Remove word repetition with 'و'
         text = AraSpellPostProcessor.remove_word_repetition_with_wa(text)
@@ -382,7 +399,7 @@ class AraSpellPostProcessor:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# ERROR CLASSIFIER (Keep from original notebook)
+# ERROR CLASSIFIER
 # ─────────────────────────────────────────────────────────────────────────────
 
 class ErrorClassifier:
@@ -427,18 +444,12 @@ class ErrorClassifier:
         else:
             return ErrorType.CLEAN
 
-
 # ═══════════════════════════════════════════════════════════════════════════════
-# Part 3: Production Spell Checker Class
-# This is the best pipeline based on extensive testing of 8+ different approaches
-# ═══════════════════════════════════════════════════════════════════════════════
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# RULES-BASED CORRECTOR (EXPANDED - Merged from src/)
+# RULES-BASED CORRECTOR
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class RulesBasedCorrector:
-    """Rules-based correction (EXPANDED VERSION)"""
+    """Rules-based correction with keyboard proximity mapping."""
     
     # Persian/Urdu → Arabic mapping
     SUBSTITUTION_MAP = {
@@ -459,6 +470,55 @@ class RulesBasedCorrector:
         'لل'
     }
     
+    # Keyboard Proximity Mapping
+    # Arabic keyboard layout adjacency
+    KEYBOARD_NEIGHBORS = {
+        'ض': ['ص', 'ق'],
+        'ص': ['ض', 'ث', 'ق'],
+        'ث': ['ص', 'ق'],
+        'ق': ['ض', 'ص', 'ث', 'ف', 'غ'],
+        'ف': ['ق', 'غ', 'ع', 'ب'],
+        'غ': ['ق', 'ف', 'ع', 'ه'],
+        'ع': ['ف', 'غ', 'ه', 'خ'],
+        'ه': ['غ', 'ع', 'خ', 'ح'],
+        'خ': ['ع', 'ه', 'ح', 'ج'],
+        'ح': ['ه', 'خ', 'ج'],
+        'ج': ['خ', 'ح', 'د'],
+        'د': ['ج', 'ذ'],
+        'ذ': ['د'],
+        'ش': ['س', 'ي', 'ئ'],
+        'س': ['ش', 'ي', 'ب'],
+        'ي': ['ش', 'س', 'ب', 'ت'],
+        'ب': ['ي', 'س', 'ف', 'ل', 'ن'],
+        'ل': ['ب', 'ا', 'ن', 'م'],
+        'ا': ['ل', 'ت', 'م'],
+        'ت': ['ي', 'ا', 'ن'],
+        'ن': ['ب', 'ل', 'ت', 'م', 'ك'],
+        'م': ['ل', 'ا', 'ن', 'ك'],
+        'ك': ['ن', 'م', 'ط'],
+        'ط': ['ك', 'ظ'],
+        'ظ': ['ط'],
+        'ئ': ['ش', 'ء', 'ر'],
+        'ء': ['ئ', 'ؤ'],
+        'ؤ': ['ء', 'ر'],
+        'ر': ['ئ', 'ؤ', 'لا', 'ى', 'ز'],
+        'لا': ['ر', 'ى'],
+        'ى': ['ر', 'لا', 'ة', 'ز'],
+        'ة': ['ى', 'و', 'ز'],
+        'و': ['ة', 'ز'],
+        'ز': ['ر', 'ى', 'ة', 'و'],
+        # Alif variants
+        'أ': ['ا', 'إ', 'آ'],
+        'إ': ['ا', 'أ'],
+        'آ': ['ا', 'أ'],
+    }
+    
+    @staticmethod
+    def is_keyboard_neighbor(char1: str, char2: str) -> bool:
+        """Check if two Arabic chars are adjacent on keyboard."""
+        neighbors = RulesBasedCorrector.KEYBOARD_NEIGHBORS.get(char1, [])
+        return char2 in neighbors
+    
     @staticmethod
     def fix_char_substitution(text: str) -> str:
         """Replace Persian/Urdu characters with Arabic"""
@@ -468,10 +528,7 @@ class RulesBasedCorrector:
     
     @staticmethod
     def fix_char_repetition(text: str) -> str:
-        """
-        Remove excessive character repetition (IMPROVED!)
-        Now: 3+ consecutive → 1 (more conservative)
-        """
+        """Remove excessive character repetition (3+ consecutive → 1)."""
         # Only collapse 3+ repetitions (not 2+)
         text = re.sub(r'([^\d\s])\1{2,}', r'\1', text)
         return text
@@ -596,11 +653,7 @@ class OutputValidator:
         if not corrected or not corrected.strip():
             return False, "empty_output"
         
-        # ═══════════════════════════════════════════════════════════════════════════
-        # SPACE LENIENCY (Phase 1 - Solutions.md الفكرة 3)
-        # ═══════════════════════════════════════════════════════════════════════════
-        # If the ONLY difference is whitespace → accept if resulting words are valid
-        # This fixes split/merge issues like "فيالمدرسة" → "في المدرسة"
+        # Space Leniency: if ONLY difference is whitespace → accept
         original_no_space = original.replace(' ', '').replace('\u200c', '')  # Also handle ZWNJ
         corrected_no_space = corrected.replace(' ', '').replace('\u200c', '')
         
@@ -639,9 +692,8 @@ class OutputValidator:
              
         return True, "valid"
 
-
 # ═══════════════════════════════════════════════════════════════════════════════
-# VOCABULARY MANAGER (NEW - Phase 1)
+# VOCABULARY MANAGER
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class VocabularyManager:
@@ -673,7 +725,7 @@ class VocabularyManager:
         # Build normalized vocabulary for fuzzy matching
         self.normalized_vocab = {self.normalize_for_comparison(w): w for w in self.vocab}
         
-        print(f"📚 VocabularyManager initialized: {len(self.vocab)} words")
+        logger.info(f"VocabularyManager initialized: {len(self.vocab)} words")
     
     @classmethod
     def normalize_for_comparison(cls, word: str) -> str:
@@ -763,9 +815,8 @@ class VocabularyManager:
         max_len = max(len(original), len(corrected), 1)
         return 1.0 - (dist / max_len)
 
-
 # ═══════════════════════════════════════════════════════════════════════════════
-# WORD ALIGNER (Phase 2 - Solutions.md الفكرة 5)
+# WORD ALIGNER
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class WordAligner:
@@ -848,12 +899,26 @@ class WordAligner:
             return input_word 
             
         # Case 4: Both OOV
-        # Take output, usually closer to target even if still OOV
+        # Subword-level correction
+        # If words are similar length, try character-level blending to find IV
+        if len(input_word) == len(output_word) and len(input_word) >= 3:
+            # Try replacing one char at a time from output into input
+            for i in range(len(input_word)):
+                if input_word[i] != output_word[i]:
+                    # Try input with this one char from output
+                    hybrid = input_word[:i] + output_word[i] + input_word[i+1:]
+                    if self.vocab.is_iv(hybrid):
+                        return hybrid
+                    # Try output with this one char from input
+                    hybrid2 = output_word[:i] + input_word[i] + output_word[i+1:]
+                    if self.vocab.is_iv(hybrid2):
+                        return hybrid2
+        
+        # Default: Take output, usually closer to target even if still OOV
         return output_word
 
-
 # ═══════════════════════════════════════════════════════════════════════════════
-# SPLIT/MERGE SPECIALIST (Phase 2 - Solutions.md الفكرة 4)
+# SPLIT/MERGE SPECIALIST
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class SplitMergeSpecialist:
@@ -893,15 +958,24 @@ class SplitMergeSpecialist:
             self.SEPARABLE_PREFIXES, key=len, reverse=True
         )
     
+    # Attached prefix patterns that should NOT be split (normal Arabic word formations)
+    ATTACHED_PREFIXES = [
+        'وال', 'بال', 'فال', 'كال', 'لل',   # Conjunction/Preposition + Article
+        'وب', 'وف', 'ول', 'وك', 'وم', 'ون',  # Conjunction + Preposition
+        'فب', 'فل', 'فك', 'فم',              # Conjunction + Preposition
+    ]
+    
     def split_word(self, word: str) -> str:
         """
         Try to split an OOV word into IV components.
         
-        STRICT Strategy: Only split when BOTH parts are IV.
-        This prevents over-splitting like معظم → مع ظم
+        Strict Strategy:
+        - Only split when BOTH parts are IV
+        - Protect attached prefix patterns (وال، بال، etc.)
+        - Minimum part lengths to prevent micro-splits
         """
-        # Short words: don't split
-        if len(word) < 4:
+        # Short words: don't split (increased from 4 to 5 for safety)
+        if len(word) < 5:
             return word
         
         # Already IV: no need to split
@@ -912,17 +986,29 @@ class SplitMergeSpecialist:
         if word in self.PROTECTED_WORDS:
             return word
         
+        # Protected prefix patterns (وال، بال، فال، etc.)
+        # These are normal Arabic word formations, NOT merge errors
+        for prefix in self.ATTACHED_PREFIXES:
+            if word.startswith(prefix):
+                remainder = word[len(prefix):]
+                # If the remainder (without the prefix) is IV, this is a valid prefixed word
+                if self.vocab.is_iv(remainder):
+                    return word  # Don't split — it's prefix+valid_word
+                # Also check with article: e.g. والخصوصي → وال+خصوصي, check خصوصي
+                if prefix.endswith('ال') and self.vocab.is_iv(remainder):
+                    return word
+        
         # 1. Try separable prefixes first (higher priority)
         for prefix in self.separable_prefixes:
-            if word.startswith(prefix) and len(word) > len(prefix) + 1:
+            if word.startswith(prefix) and len(word) > len(prefix) + 2:  # Remainder must be > 2 chars
                 remainder = word[len(prefix):]
                 
                 # Only accept if remainder is IV
                 if self.vocab.is_iv(remainder):
                     return f"{prefix} {remainder}"
         
-        # 2. Try all positions - STRICT: BOTH parts must be IV
-        for i in range(2, len(word) - 1):
+        # 2. Try all positions - STRICT: BOTH parts must be IV AND both >= 3 chars
+        for i in range(3, len(word) - 2):  # Both parts at least 3 chars
             left = word[:i]
             right = word[i:]
             
@@ -932,14 +1018,20 @@ class SplitMergeSpecialist:
         # No valid split found
         return word
     
+    # Common Arabic pronoun/possessive suffixes (2-3 chars)
+    # These are often incorrectly split from their host word
+    PRONOUN_SUFFIXES = {'كم', 'هم', 'ها', 'هن', 'كن', 'نا', 'هما', 'كما', 'تم', 'تن'}
+    
     def merge_fragments(self, text: str) -> str:
         """
         Try to merge adjacent OOV fragments into IV words.
         
         Key patterns:
-        1. Ta-marbuta detachment: السوري ة → السورية (Safe even if السوري is IV)
+        1. Ta-marbuta detachment: السوري ة → السورية
         2. Al- detachment: ال كتاب → الكتاب
         3. General OOV+OOV merging: Only if both are OOV and result is IV
+        4. Short OOV fragment: 1-2 char OOV + next → IV
+        5. Pronoun suffix reattachment: علي كم → عليكم
         """
         words = text.split()
         if len(words) < 2:
@@ -986,6 +1078,24 @@ class SplitMergeSpecialist:
                         result.append(merged)
                         i += 2
                         continue
+                
+                # Pattern 5: Pronoun suffix reattachment
+                # Fixes over-splitting: علي كم → عليكم
+                if next_word in self.PRONOUN_SUFFIXES:
+                    if self.vocab.is_iv(merged) and not self.vocab.is_iv(word):
+                        result.append(merged)
+                        i += 2
+                        continue
+                
+                # Pattern 6: Short fragment merge
+                # Merges two short words when combined they form a valid longer word
+                # Fixes: علي كم → عليكم, ويت أمل → ويتأمل, المد فتر → المدفتر
+                # Condition: both words ≤ 3 chars, merged ≥ 5 chars and IV
+                if len(word) <= 3 and len(next_word) <= 3:
+                    if len(merged) >= 5 and self.vocab.is_iv(merged):
+                        result.append(merged)
+                        i += 2
+                        continue
             
             result.append(word)
             i += 1
@@ -1013,11 +1123,9 @@ class SplitMergeSpecialist:
         
         return ' '.join(processed)
 
-
 # ═══════════════════════════════════════════════════════════════════════════════
-# EDIT DISTANCE CORRECTOR (NEW!)
+# EDIT DISTANCE CORRECTOR
 # ═══════════════════════════════════════════════════════════════════════════════
-
 
 class EditDistanceCorrector:
     """
@@ -1089,154 +1197,7 @@ class EditDistanceCorrector:
         return ' '.join(corrected_words)
 
     
-    @staticmethod
-    def check_word_count(original: str, corrected: str) -> Tuple[bool, str]:
-        """Check if word count is reasonable"""
-        words_original = original.split()
-        words_corrected = corrected.split()
-        
-        # Allow more flexibility for merged words
-        # If original has long words (>7 chars), allow more splits
-        has_long_word = any(len(w) > 7 for w in words_original)
-        max_expansion = 3 if has_long_word else 1
-        
-        if len(words_corrected) > len(words_original) + max_expansion:
-            return False, "too_many_words"
-        
-        return True, "valid"
-    
-    @staticmethod
-    def check_token_overlap(original: str, corrected: str) -> Tuple[bool, str]:
-        """Check token overlap"""
-        tokens_original = set(original.split())
-        tokens_corrected = set(corrected.split())
-        
-        if not tokens_original:
-            return True, "valid"
-            
-        # Skip for short sentences (1-2 words) where edit distance is better
-        if len(tokens_original) <= 2:
-            return True, "valid"
-        
-        overlap = len(tokens_original & tokens_corrected) / len(tokens_original)
-        
-        if overlap < 0.2:
-            return False, "low_token_overlap"
-        
-        return True, "valid"
-    
-    @staticmethod
-    def check_edit_distance_reasonable(original: str, corrected: str) -> Tuple[bool, str]:
-        """Check if edit distance is reasonable"""
-        distance = OutputValidator.calculate_edit_distance(original, corrected)
-        threshold = len(original) * 0.5  # Adaptive threshold
-        
-        if distance > threshold:
-            return False, "excessive_edit_distance"
-        
-        return True, "valid"
-    
-    @staticmethod
-    def check_length(original: str, corrected: str) -> Tuple[bool, str]:
-        """Check if length change is reasonable"""
-        max_change = len(original) * 0.25 + 3
-        
-        if abs(len(corrected) - len(original)) > max_change:
-            return False, "excessive_length_change"
-        
-        return True, "valid"
-    
-    @staticmethod
-    def check_repetition(corrected: str) -> Tuple[bool, str]:
-        """Check for suspicious repetitions"""
-        # Check for 4+ consecutive identical chars
-        if re.search(r'(.)\1{3,}', corrected):
-            return False, "excessive_repetition"
-        
-        return True, "valid"
-    
-    @staticmethod
-    def check_word_quality(corrected: str) -> Tuple[bool, str]:
-        """Check for suspicious short words"""
-        words = corrected.split()
-        
-        # Count 1-char words
-        single_char_count = sum(1 for w in words if len(w) == 1)
-        
-        if single_char_count > 2:
-            return False, "too_many_short_words"
-        
-        return True, "valid"
-    
-    @staticmethod
-    def check_word_splitting_quality(corrected: str) -> Tuple[bool, str]:
-        """Check if word splitting looks suspicious"""
-        words = corrected.split()
-        
-        # Check for many 2-char words
-        two_char_count = sum(1 for w in words if len(w) == 2)
-        
-        if len(words) > 3 and two_char_count > len(words) * 0.5:
-            return False, "suspicious_word_splitting"
-        
-        return True, "valid"
-    
-    @staticmethod
-    def check_single_chars(corrected: str) -> Tuple[bool, str]:
-        """Check for suspicious single characters"""
-        words = corrected.split()
-        
-        for word in words:
-            if len(word) == 1 and word not in {'و', 'ب', 'ل', 'ك', 'ف'}:
-                return False, "suspicious_short_word"
-        
-        return True, "valid"
-    
-    @staticmethod
-    def check_word_preservation(original: str, corrected: str) -> Tuple[bool, str]:
-        """Check if at least some words are preserved"""
-        words_original = set(original.split())
-        words_corrected = set(corrected.split())
-        
-        if len(words_original) <= 1:
-            return True, "valid"
-            
-        # Skip if splitting a single merged word
-        if len(words_original) == 1 and len(words_corrected) > 1:
-            return True, "valid"
-        
-        preserved = len(words_original & words_corrected) / len(words_original)
-        
-        if preserved < 0.1:
-            return False, "too_few_preserved_words"
-        
-        return True, "valid"
-    
-    @staticmethod
-    def validate(original: str, corrected: str, error_type: str = "unknown") -> Tuple[bool, str]:
-        """
-        Validate model output
-        Returns: (is_valid, reason)
-        """
-        # Run all checks
-        checks = [
-            OutputValidator.check_character_preservation(original, corrected),
-            OutputValidator.check_word_count(original, corrected),
-            OutputValidator.check_token_overlap(original, corrected),
-            OutputValidator.check_edit_distance_reasonable(original, corrected),
-            OutputValidator.check_length(original, corrected),
-            OutputValidator.check_repetition(corrected),
-            OutputValidator.check_word_quality(corrected),
-            OutputValidator.check_word_splitting_quality(corrected),
-            OutputValidator.check_single_chars(corrected),
-            OutputValidator.check_word_preservation(original, corrected),
-        ]
-        
-        for is_valid, reason in checks:
-            if not is_valid:
-                return False, reason
-        
-        return True, "valid"
+
 
 
 
@@ -1310,7 +1271,7 @@ class ContextualCorrector:
                 if candidate not in candidates:
                     candidates.append(candidate)
         
-        # 2. 🆕 Remove repeated characters (deletion)
+        # 2. Remove repeated characters (deletion)
         # Fixes: مدررسة -> مدرسة, جميلل -> جميل
         for i in range(len(word) - 1):
             if word[i] == word[i+1]:
@@ -1319,7 +1280,7 @@ class ContextualCorrector:
                 if candidate not in candidates:
                     candidates.append(candidate)
         
-        # 3. 🆕 Edit Distance 1 Candidates (Insertions, Substitutions, Transpositions)
+        # 3. Edit Distance 1 Candidates (Insertions, Substitutions, Transpositions)
         # Using a restricted set of characters to avoid explosion
         COMMON_CHARS = 'ابتثجحخدذرزسشصضطظعغفقكلمنهويأإآءئؤةى'
         
@@ -1421,84 +1382,8 @@ class ContextualCorrector:
         
         return scores
     
-    def correct_word_in_context(self, text: str, position: int, threshold: float = 0.05) -> Tuple[str, dict]:
-        """
-        Correct a word in context
-        Returns: (corrected_word, metadata)
-        """
-        words = text.split()
-        if position >= len(words):
-            return words[position] if position < len(words) else "", {}
-        
-        original_word = words[position]
-        
-        # Generate candidates
-        candidates = self.generate_candidates(original_word)
-        
-        if len(candidates) == 1:
-            return original_word, {'candidates': 1, 'corrected': False}
-        
-        # Score candidates (batch)
-        scores = self.score_candidates_batch(text, position, candidates)
-        
-        # Find best candidate
-        best_word = max(scores, key=scores.get)
-        best_score = scores[best_word]
-        original_score = scores[original_word]
-        
-        # Check if original is in vocabulary (Single Token)
-        # We need to know if original_score is reliable (IV) or just a prefix score (OOV)
-        orig_tokens = self.tokenizer.encode(original_word, add_special_tokens=False)
-        is_orig_iv = len(orig_tokens) == 1
-        
-        # Apply correction logic
-        min_abs_improvement = 1e-4
-        is_improvement = False
-        
-        if is_orig_iv:
-            # Standard relative improvement for IV words
-            if best_score > original_score * (1 + threshold) and \
-               best_score > original_score + min_abs_improvement:
-                is_improvement = True
-        else:
-            # Original is OOV/Multi-token (likely specific scoring issue with prefixes like 'ال')
-            # If best_word is IV (Single Token), effectively compare its score against an absolute threshold
-            # because original_score (prefix) is misleadingly high.
-            # We use a stricter absolute threshold for this case to avoid over-correction of valid OOVs.
-            oov_correction_threshold = 0.001 # 0.1% probability minimum (Lowered to catch 'الطقس')
-            
-            # Also ensure best_word is IV (which we forced in generation, but good to be sure)
-            best_tokens = self.tokenizer.encode(best_word, add_special_tokens=False)
-            is_best_iv = len(best_tokens) == 1
-            
-            if is_best_iv and best_score > oov_correction_threshold:
-                # We ignore original_score here as it's likely just P(prefix)
-                is_improvement = True
-            elif best_score > original_score * (1 + threshold):
-                # Fallback to relative check if both are OOV or logic allows
-                is_improvement = True
-
-        if best_word != original_word and is_improvement:
-            return best_word, {
-                'candidates': len(candidates),
-                'corrected': True,
-                'original_score': original_score,
-                'best_score': best_score,
-                'improvement': best_score - original_score,
-                'is_orig_iv': is_orig_iv
-            }
-        
-        return original_word, {
-            'candidates': len(candidates),
-            'corrected': False,
-            'original_score': original_score
-        }
-    
     def predict_masked_token(self, text: str, position: int, top_k: int = 5) -> List[Tuple[str, float]]:
-        """
-        Predict words for a masked position.
-        Returns: List of (word, score)
-        """
+        """Predict words for a masked position. Returns list of (word, score)."""
         words = text.split()
         if position >= len(words):
             return []
@@ -1528,85 +1413,83 @@ class ContextualCorrector:
             token_id = top_k_indices[i].item()
             score = top_k_weights[i].item()
             token = self.tokenizer.decode([token_id]).strip()
-            # Filter out subwords (starting with ##) and special tokens
             if not token.startswith("##") and token not in self.tokenizer.all_special_tokens:
                 results.append((token, score))
                 
         return results
 
-    def refine_sentence_with_mask(self, text: str, threshold: float = 0.001) -> str:
-        """
-        Refine sentence by masking weak words and predicting replacements.
-        Effectively uses BERT as a contextual dictionary.
+    def refine_sentence_with_mask(self, text: str, threshold: float = 0.001, vocab_manager=None, raw_model_output=None) -> str:
+        """Refine sentence by masking weak words and predicting replacements.
+        IV-Safe + Strict similarity + BERT Kill Switch.
         """
         words = text.split()
         refined_words = words.copy()
         
+        # Build set of raw model words for kill switch
+        raw_words = raw_model_output.split() if raw_model_output else []
+        
         for i, word in enumerate(words):
+            # IV-Safe check - NEVER replace IV words
+            if vocab_manager and vocab_manager.is_iv(word):
+                continue
+            
+            # BERT Kill Switch: skip words matching raw model output
+            if i < len(raw_words) and word == raw_words[i]:
+                continue
+            
+            # Skip very short words (prepositions etc)
+            if len(word) <= 2:
+                continue
+            
             # 1. Check confidence
-            # We use score_with_mlm. If score is very low, it's a candidate for refinement.
             current_score = self.score_with_mlm(text, i, word)
             
-            # If word is confident enough, skip
-            # Threshold needs to be tuned. 0.001 implies 0.1% probability.
             if current_score > threshold:
                 continue
                 
             # 2. Mask and Predict
             predictions = self.predict_masked_token(text, i, top_k=10)
             
-            # 3. Filter and Select
+            # 3. Filter and Select (strict)
             for pred_word, pred_score in predictions:
                 if pred_word == word:
                     continue
 
-                # STRICTER CONSTRAINTS
-                
-                # 1. Length Check
-                if abs(len(pred_word) - len(word)) > 2:
+                if abs(len(pred_word) - len(word)) > 1:
                      continue
                      
-                # 2. Similarity Check (Edit Distance)
-                # We want to fix TYPOS, not semantic hallucinations.
-                # So the replacement MUST be structurally similar.
-                # Exception: If original word is very short (<3 chars), strict check.
-                
+                # Similarity Check (0.90 minimum)
                 dist = Levenshtein.distance(word, pred_word)
                 max_len = max(len(word), len(pred_word))
                 similarity = 1.0 - (dist / max_len)
                 
+                if similarity < 0.90:
+                    continue
                 
-                # Minimum similarity required: 0.7 (Much stricter to prevent semantic shift)
-                # 'بسرعّة' -> 'بسرعة' (High sim)
-                # 'الإسلامية' -> 'التطبيقية' (Low sim - rejected)
-                if similarity < 0.7:
+                # Must be IV
+                if vocab_manager and vocab_manager.is_oov(pred_word):
+                    continue
+                
+                # Minimum absolute confidence gate (12%)
+                if pred_score < 0.12:
                     continue
                     
-                # 3. Score Improvement
-                # If current word is total garbage (score < 1e-5), take any reasonable predicted word.
-                # If current word has some confidence, only replace if prediction is MUCH better.
-                
-                # Check if original word is IV and common
+                # Score Improvement
                 is_original_common = current_score > 0.001
                 
                 if is_original_common:
-                     # Very strict if original seems okay
-                     if pred_score > current_score * 500:
+                     if pred_score > current_score * 1000:
                          refined_words[i] = pred_word
                          break
                 else:
-                    # Looser if original is weak
-                    if pred_score > current_score * 10 or pred_score > 0.1:
+                    if pred_score > current_score * 50 and pred_score > 0.2:
                         refined_words[i] = pred_word
-                        break # Take the top valid prediction
+                        break
         
         return ' '.join(refined_words)
     
     def calculate_sentence_score(self, text: str) -> float:
-        """
-        Calculate a 'fluency' score for the sentence using BERT MLM.
-        Returns the average probability of each word being predicted in its context.
-        """
+        """Calculate fluency score using BERT MLM average word probability."""
         words = text.split()
         if not words:
             return 0.0
@@ -1615,8 +1498,6 @@ class ContextualCorrector:
         scored_words = 0
         
         for i, word in enumerate(words):
-            # We skip scoring very common stopwords to focus on content/structure?
-            # No, keep it simple for now: score everything.
             score = self.score_with_mlm(text, i, word)
             total_score += score
             scored_words += 1
@@ -1625,36 +1506,6 @@ class ContextualCorrector:
             return 0.0
             
         return total_score / scored_words
-
-    def correct_sentence(self, text: str, threshold: float = 0.01) -> Tuple[str, dict]:
-        """
-        Correct all words in a sentence
-        Returns: (corrected_text, metadata)
-        """
-        words = text.split()
-        corrected_words = []
-        corrections = []
-        
-        for i, word in enumerate(words):
-            corrected_word, meta = self.correct_word_in_context(text, i, threshold)
-            corrected_words.append(corrected_word)
-            
-            if meta.get('corrected'):
-                corrections.append({
-                    'position': i,
-                    'original': word,
-                    'corrected': corrected_word,
-                    'confidence': meta.get('improvement', 0)
-                })
-        
-        corrected_text = ' '.join(corrected_words)
-        
-        return corrected_text, {
-            'corrections': corrections,
-            'total_words': len(words)
-        }
-
-
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1675,22 +1526,21 @@ class ArabicSpellChecker:
         self.classifier = ErrorClassifier()
         self.rules = RulesBasedCorrector()
         self.validator = OutputValidator()
-        self.vocab_manager = VocabularyManager(tokenizer)  # Phase 1: Vocabulary Manager
+        self.vocab_manager = VocabularyManager(tokenizer)
         self.edit_corrector = EditDistanceCorrector(tokenizer)  # Edit Distance candidates
-        self.split_merge = SplitMergeSpecialist(self.vocab_manager)  # Phase 2: Split/Merge
+        self.split_merge = SplitMergeSpecialist(self.vocab_manager)
         
-        # Phase 2: WordAligner for word-level hybrid corrections
+        # WordAligner for word-level hybrid corrections
         self.word_aligner = WordAligner(self.vocab_manager)
         
         # Initialize contextual corrector (optional)
         self.use_contextual = use_contextual
         if use_contextual:
             try:
-                # Initialize ContextualCorrector
                 self.contextual = ContextualCorrector()
-                print("✅ Contextual correction enabled")
+                logger.info("Contextual correction enabled")
             except Exception as e:
-                print(f"⚠️ Contextual correction disabled: {e}")
+                logger.warning(f"Contextual correction disabled: {e}")
                 self.contextual = None
                 self.use_contextual = False
         else:
@@ -1709,8 +1559,7 @@ class ArabicSpellChecker:
         return text
     
     def _fix_merged_with_errors(self, text: str) -> str:
-        """
-        🆕 Fix merged words that contain errors
+        """ Fix merged words that contain errors
         
         Examples:
             الممدرسة → المدرسة
@@ -1727,8 +1576,7 @@ class ArabicSpellChecker:
     
 
     def _split_merged_words_linguistic(self, text: str) -> str:
-        """
-        🆕 Split merged words using linguistic patterns
+        """ Split merged words using linguistic patterns
         
         Examples:
             كلصباح → كل صباح
@@ -1757,18 +1605,11 @@ class ArabicSpellChecker:
         
         # Pattern 6: على/عن in middle of (merged) words
         text = re.sub(r'([ا-ي]{3,})(على|عن)([ا-ي]{3,})', r'\1 \2 \3', text)
-
-        # Pattern 7: بسم الله الرحمن الرحيم (common concatenation)
-        text = re.sub(r'\bبسماللهالرحمنالرحيم\b', 'بسم الله الرحمن الرحيم', text)
-        text = re.sub(r'\bبسمالله\b', 'بسم الله', text)
-        text = re.sub(r'اللهالرحمن', 'الله الرحمن', text)
-        text = re.sub(r'الرحمنالرحيم', 'الرحمن الرحيم', text)
-
+        
         return text
     
     def _split_long_words_heuristic(self, text: str, max_length: int = 15) -> str:
-        """
-        🆕 Split suspiciously long words using heuristics
+        """ Split suspiciously long words using heuristics
         """
         words = text.split()
         result = []
@@ -1805,8 +1646,7 @@ class ArabicSpellChecker:
         return ' '.join(result)
     
     def _normalize_tanween_patterns(self, text: str) -> str:
-        """
-        🆕 Normalize tanween patterns
+        """ Normalize tanween patterns
         
         Examples:
             جدأ → جداً
@@ -1834,7 +1674,7 @@ class ArabicSpellChecker:
         text = self.postprocessor.remove_tatweel(text)
         text = self.postprocessor.normalize_special_chars(text)
         
-        # 🆕 التحسينات المدمجة (IMPROVEMENTS INTEGRATED!)
+        # Integrated improvements
         # Fix repeated chars and merged words with errors FIRST
         text = self._fix_repeated_end_chars(text)
         text = self._fix_merged_with_errors(text)
@@ -1859,38 +1699,40 @@ class ArabicSpellChecker:
         
         return text
     
-    def _fix_word_split(self, text: str) -> str:
-        """Fix over-split words by joining fragments"""
-        return self.postprocessor.join_fragments(text)
-    
     def postprocess(self, text: str, original: str = "") -> str:
-        """Postprocessing pipeline"""
-        return self.postprocessor.full_postprocess(text, original)
+        """Postprocessing pipeline — passes vocab_manager for smart ه/ة handling"""
+        return self.postprocessor.full_postprocess(text, original, vocab_manager=self.vocab_manager)
     
     def model_inference(self, text: str, num_return_sequences: int = 5) -> List[str]:
-        """Run seq2seq model inference and return top candidates"""
+        """Run seq2seq model inference and return top candidates.
+        Also extracts beam scores (token-level probabilities) for diagnostics.
+        """
         # Tokenize
         inputs = self.tokenizer(text, return_tensors='pt', padding=True, truncation=True, max_length=128)
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
         
-        # Generate (encoder-decoder needs decoder_start_token_id / bos_token_id)
-        decoder_start = getattr(
-            self.model.config, 'decoder_start_token_id', None
-        ) or getattr(self.model.config, 'bos_token_id', None) or self.tokenizer.cls_token_id
-        pad_id = getattr(self.model.config, 'pad_token_id', None) or self.tokenizer.pad_token_id
+        # Generate with beam search
+        # Keeping 5 beams as model was trained/optimized for this
+        # Keeping 5 beams as model was trained/optimized for this
         with torch.no_grad():
             outputs = self.model.generate(
                 **inputs,
-                max_length=128,
                 num_beams=5,
                 num_return_sequences=num_return_sequences,
                 early_stopping=True,
-                decoder_start_token_id=decoder_start,
-                pad_token_id=pad_id,
+                return_dict_in_generate=True,
+                output_scores=True
             )
         
         # Decode
-        candidates = self.tokenizer.batch_decode(outputs, skip_special_tokens=True)
+        candidates = self.tokenizer.batch_decode(outputs.sequences, skip_special_tokens=True)
+        
+        # Store beam scores for potential use
+        self._last_beam_scores = {}
+        if hasattr(outputs, 'sequences_scores') and outputs.sequences_scores is not None:
+            scores = outputs.sequences_scores.tolist()
+            for cand, score in zip(candidates, scores):
+                self._last_beam_scores[cand] = score
         
         return candidates
     
@@ -1924,36 +1766,56 @@ class ArabicSpellChecker:
         candidates.append(preprocessed_text)
         
         # B. Smart Rules Candidate (Aggressive Heuristic)
-        # This helps when the model fails but the rule-based fix is obvious
         rules_candidate = self.rules.advanced_heuristic_repair(text)
         candidates.append(rules_candidate)
         
-        # B2. Edit Distance Candidate (NEW!)
-        # Tries to fix typos using simple edit distance (Norvig)
+        # B2. Edit Distance Candidate
         edit_candidate = self.edit_corrector.generate_candidate(text)
         if edit_candidate != text and edit_candidate != rules_candidate:
             candidates.append(edit_candidate)
         
-        # B3. Split/Merge Candidate (Phase 2)
-        # NOTE: Disabled - caused regression (Hybrid Wins 144→134)
-        # split_merge_candidate = self.split_merge.process_text(preprocessed_text)
-        # if split_merge_candidate != preprocessed_text and split_merge_candidate not in candidates:
-        #     candidates.append(split_merge_candidate)
-        
         # C. Model Beams
+        raw_model_output = None  # Track for safety net
         try:
             model_candidates = self.model_inference(preprocessed_text, num_return_sequences=5)
+            raw_model_output = model_candidates[0] if model_candidates else None
             candidates.extend(model_candidates)
             
-            # D. Word-Aligned Hybrid Candidate (Phase 2 - Solution 5)
+            # D. Word-Aligned Hybrid Candidate
             # Creates a hybrid by selecting best word from each position
-            # (OOV input + IV output → take output, IV input + OOV output → keep input)
             if model_candidates:
                 hybrid_candidate = self.word_aligner.align_words(preprocessed_text, model_candidates[0])
                 if hybrid_candidate not in candidates:
                     candidates.append(hybrid_candidate)
+                
+                # E. Word-Aligned with ALL top beams (not just beam 0)
+                for beam in model_candidates[1:3]:  # Top 3 beams
+                    hybrid_beam = self.word_aligner.align_words(preprocessed_text, beam)
+                    if hybrid_beam not in candidates:
+                        candidates.append(hybrid_beam)
+            
+            # D2. Token-level Voting Candidate
+            # Majority-vote each token across all beams
+            if model_candidates and len(model_candidates) >= 3:
+                try:
+                    beam_word_lists = [c.split() for c in model_candidates]
+                    max_words = max(len(wl) for wl in beam_word_lists)
+                    voted_words = []
+                    for pos in range(max_words):
+                        words_at_pos = []
+                        for wl in beam_word_lists:
+                            if pos < len(wl):
+                                words_at_pos.append(wl[pos])
+                        if words_at_pos:
+                            most_common = Counter(words_at_pos).most_common(1)[0][0]
+                            voted_words.append(most_common)
+                    voted_candidate = ' '.join(voted_words)
+                    if voted_candidate not in candidates:
+                        candidates.append(voted_candidate)
+                except Exception:
+                    pass
         except Exception as e:
-            print(f"⚠️ Model inference failed: {e}")
+            logger.warning(f"Model inference failed: {e}")
         
         # Remove duplicates while preserving order
         unique_candidates = []
@@ -1963,6 +1825,8 @@ class ArabicSpellChecker:
                 unique_candidates.append(c)
                 seen.add(c)
         candidates = unique_candidates
+        
+
         
         # 4. Rerank Candidates
         best_candidate = preprocessed_text
@@ -1982,7 +1846,7 @@ class ArabicSpellChecker:
                 reason = "too_short"
 
             # ═══════════════════════════════════════════════════════════════════════════
-            # NEW: VOCABULARY-AWARE ACCEPTANCE (Phase 1 - Key Fix for Raw Wins)
+            # VOCABULARY-AWARE ACCEPTANCE
             # ═══════════════════════════════════════════════════════════════════════════
             # Logic: OOV→IV = ACCEPT (boost), IV→OOV = REJECT (penalize)
             # This prevents over-conservative validation from rejecting correct corrections
@@ -2029,26 +1893,35 @@ class ArabicSpellChecker:
                 try:
                     fluency_score = self.contextual.calculate_sentence_score(cand)
                 except Exception as e:
-                    print(f"⚠️ Scoring failed: {e}")
+                    logger.warning(f"Scoring failed: {e}")
                     fluency_score = 0.5 # Default fallback
             else:
                 fluency_score = 1.0 
             
-            # C. Similarity Score (Damerau-Levenshtein Distance - Phase 1 improvement)
-            # Penalize unnecessary changes. Using DL distance: transpositions = 1 edit (not 2)
-            # This helps cases like اقصتاديا→اقتصاديا (swap صت→تص counts as 1)
+            # C. Similarity Score (Damerau-Levenshtein Distance)
             dist = VocabularyManager.damerau_levenshtein_distance(preprocessed_text, cand)
-            # Using preprocessed_text as anchor because it has basic normalization.
-            # Comparison with 'original' might penalize fixing harakat/spelling.
-            
             max_len = max(len(preprocessed_text), len(cand), 1)
             similarity = 1.0 - (dist / max_len)
             
-            # Boost matches
+            # Boost exact matches
             if cand == preprocessed_text:
                 similarity = 1.0
             
-            # NEW: HIGH CONFIDENCE GATING (Phase 1/3 - Solution)
+            # Keyboard Proximity Bonus
+            # If changes between input and candidate are keyboard-adjacent,
+            # it's more likely a typo fix (give bonus)
+            keyboard_bonus = 1.0
+            input_words = preprocessed_text.split()
+            cand_words = cand.split()
+            if len(input_words) == len(cand_words):
+                for iw, cw in zip(input_words, cand_words):
+                    if iw != cw and len(iw) == len(cw):
+                        # Check char-by-char differences
+                        for ic, cc in zip(iw, cw):
+                            if ic != cc and RulesBasedCorrector.is_keyboard_neighbor(ic, cc):
+                                keyboard_bonus *= 1.05  # 5% bonus per keyboard-adjacent fix
+            
+            # HIGH CONFIDENCE GATING
             # If model is extremely confident (high fluency) and words are valid, relax validation
             # This allows correcting severe corruptions that fail strict edit distance
             if fluency_score > 0.85 and cand_oov_count == 0:
@@ -2060,24 +1933,16 @@ class ArabicSpellChecker:
                           vocab_boost *= 1.2  # Bonus for high confidence
                           validity_factor = 1.0  # Reset validity factor
             
-            # Final Score
-            # Fluency is roughly [0, 1] (prob). Similarity [0, 1].
-            # We want to balance staying close to original vs being fluent.
-            # If fluency is very low, it's garbage.
-            # If similarity is very low, it's hallucination.
+            # Final Score = (Fluency^0.3) * (Similarity^3.0) * Validity * VocabBoost * KeyboardBonus * BeamBoost
+            fluency_exp = 0.3
+            similarity_exp = 3.0
             
-            # Weighting:
-            # We value Similarity highly to be conservative.
-            # But we need Fluency to break ties or fix errors.
+            # Beam 0 Boost — model's top beam gets 15% priority
+            beam_boost = 1.0
+            if raw_model_output and cand == raw_model_output:
+                beam_boost = 1.15
             
-            # New Formula:
-            # Score = (Fluency^0.3) * (Similarity^2.0) * Validity * VocabBoost
-            # Using exponent to control trade-off. 
-            # High sim power -> prefers closer matches.
-            # Low fluency power -> flattens probability differences (since probs are small).
-            # VocabBoost: rewards OOV→IV, penalizes IV→OOV
-            
-            final_score = (fluency_score ** 0.3) * (similarity ** 3.0) * validity_factor * vocab_boost
+            final_score = (fluency_score ** fluency_exp) * (similarity ** similarity_exp) * validity_factor * vocab_boost * keyboard_bonus * beam_boost
             
             candidate_scores.append({
                 'text': cand,
@@ -2085,7 +1950,7 @@ class ArabicSpellChecker:
                 'reason': reason,
                 'fluency': fluency_score,
                 'similarity': similarity,
-                'vocab_boost': vocab_boost,  # NEW: Track vocab boost
+                'vocab_boost': vocab_boost,
                 'input_oov': input_oov_count,
                 'cand_oov': cand_oov_count,
                 'final_score': final_score
@@ -2095,32 +1960,265 @@ class ArabicSpellChecker:
                 best_score = final_score
                 best_candidate = cand
         
+        # ═══════════════════════════════════════════════════════════════════════════
+        # --- Output Quality Scoring (Minimum Score Threshold) ---
+        # If ALL candidates scored poorly, the correction is unreliable → keep input
+        # ═══════════════════════════════════════════════════════════════════════════
+        if best_candidate != preprocessed_text:
+            # Check: did the best candidate actually get a decent score?
+            # The preprocessed input (candidate 0) is always in the pool.
+            # If the best candidate barely beats preprocessed_text, it might not be trustworthy.
+            preprocessed_score = 0.0
+            for cs in candidate_scores:
+                if cs['text'] == preprocessed_text:
+                    preprocessed_score = cs['final_score']
+                    break
+            
+            # If best score is less than 1.05x the preprocessed score AND
+            # the best candidate introduced OOV words → fall back to preprocessed
+            if preprocessed_score > 0 and best_score < preprocessed_score * 1.05:
+                best_oov = self.vocab_manager.count_oov_words(best_candidate)
+                prep_oov = self.vocab_manager.count_oov_words(preprocessed_text)
+                if best_oov > prep_oov:
+                    best_candidate = preprocessed_text
+                    best_score = preprocessed_score
+        
+        # ═══════════════════════════════════════════════════════════════════════════
+        # --- Contextual Validation Layer ---
+        # Compare fluency of input vs best candidate
+        # If correction made text LESS fluent → reject the correction
+        # ═══════════════════════════════════════════════════════════════════════════
+        if best_candidate != preprocessed_text and self.use_contextual and self.contextual:
+            try:
+                input_fluency = self.contextual.calculate_sentence_score(preprocessed_text)
+                best_fluency = 0.0
+                for cs in candidate_scores:
+                    if cs['text'] == best_candidate:
+                        best_fluency = cs['fluency']
+                        break
+                
+                # If input is significantly more fluent than best candidate
+                # AND both have similar OOV counts → prefer input
+                if input_fluency > 0 and best_fluency > 0:
+                    if input_fluency > best_fluency * 1.5:  # Input 50% more fluent
+                        input_oov = self.vocab_manager.count_oov_words(preprocessed_text)
+                        best_oov = self.vocab_manager.count_oov_words(best_candidate)
+                        if input_oov <= best_oov:
+                            # Input is more fluent AND has fewer/equal OOV → keep input
+                            best_candidate = preprocessed_text
+            except Exception:
+                pass  # Contextual validation is optional
+        
         # 5. Postprocess Winner
         result = self.postprocess(best_candidate, original)
         
+        # 5.5 IV-Safe Postprocessing Check
+        # If postprocessing changed an IV word to OOV, revert that word
+        if result != best_candidate:
+            result_words = result.split()
+            best_words = best_candidate.split()
+            if len(result_words) == len(best_words):
+                fixed_words = []
+                input_words_pp = preprocessed_text.split()
+                for idx_fw, (rw, bw) in enumerate(zip(result_words, best_words)):
+                    if rw != bw:
+                        # Postprocessor changed this word
+                        bw_iv = self.vocab_manager.is_iv(bw)
+                        rw_iv = self.vocab_manager.is_iv(rw)
+                        if bw_iv and not rw_iv:
+                            # IV → OOV: revert to pre-postprocess version
+                            fixed_words.append(bw)
+                        elif bw_iv and rw_iv:
+                            # Postprocess Distance Guard
+                            # DISABLED: Caused word-level regression. When both are IV,
+                            # the postprocessor's choice (rw) is usually better because
+                            # it applies Arabic-specific rules (hamza, ta marbuta).
+                            fixed_words.append(rw)
+                        else:
+                            fixed_words.append(rw)
+                    else:
+                        fixed_words.append(rw)
+                result = ' '.join(fixed_words)
+        
         # 6. Contextual fine-tuning (BERT Masked Refinement)
-        # Note: Applying to full sentence (OOV-only mode caused regression due to lack of context)
+        # IV-Safe mode - pass vocab_manager to protect IV words
+        # BERT Kill Switch - also pass raw_model_output to protect model-confident words
         if self.use_contextual and self.contextual:
              if len(result) > 3:
-                 result = self.contextual.refine_sentence_with_mask(result)
+                 result = self.contextual.refine_sentence_with_mask(
+                     result, vocab_manager=self.vocab_manager,
+                     raw_model_output=raw_model_output
+                 )
         
-        # 7. Phase 2: Safe Split/Merge Post-processing
+        # 7. Safe Split/Merge Post-processing
         # Only apply merge_fragments (safe: only merges when result is IV)
-        # This fixes ta-marbuta detachment like السوري ة → السورية
         result = self.split_merge.merge_fragments(result)
+        
+        # ═══════════════════════════════════════════════════════════════════════════
+        # VALIDATION & QUALITY CHECKS
+        # ═══════════════════════════════════════════════════════════════════════════
+        
+        # 8. Output Stability Test (Solution 30)
+        # If correcting the output again changes it → unstable correction → reject
+        # Stable corrections are idempotent: correct(correct(x)) == correct(x)
+        if result != preprocessed_text and raw_model_output:
+            try:
+                # Quick stability check: run the result through preprocessing only
+                # (full model inference would be too slow)
+                re_preprocessed = self.preprocess(result)
+                
+                # If re-preprocessing changes the result significantly, it was unstable
+                stability_dist = VocabularyManager.damerau_levenshtein_distance(result, re_preprocessed)
+                result_len = max(len(result), 1)
+                
+                if stability_dist > 0:
+                    # Result is not stable under re-preprocessing
+                    stability_ratio = stability_dist / result_len
+                    
+                    if stability_ratio > 0.15:  # More than 15% changed → very unstable
+                        # Fall back to raw model output if it's more stable
+                        raw_re = self.preprocess(raw_model_output)
+                        raw_stability = VocabularyManager.damerau_levenshtein_distance(
+                            raw_model_output, raw_re
+                        ) / max(len(raw_model_output), 1)
+                        
+                        if raw_stability < stability_ratio:
+                            # Raw is more stable → use it
+                            raw_oov = self.vocab_manager.count_oov_words(raw_model_output)
+                            our_oov = self.vocab_manager.count_oov_words(result)
+                            if raw_oov <= our_oov:
+                                result = raw_model_output
+            except Exception:
+                pass  # Stability check is optional, don't break pipeline
+        
+        # 9. Bidirectional Word-Level Validation (Solution 24)
+        # Compare our result word-by-word with raw model output
+        # If we corrupted a word that the model got right, revert that word
+        if raw_model_output and result != raw_model_output:
+            result_words = result.split()
+            raw_words = raw_model_output.split()
+            
+            if len(result_words) == len(raw_words):
+                corrected_words = []
+                changed = False
+                
+                for rw, raw_w in zip(result_words, raw_words):
+                    if rw != raw_w:
+                        rw_iv = self.vocab_manager.is_iv(rw)
+                        raw_iv = self.vocab_manager.is_iv(raw_w)
+                        
+                        # Case 1: Our word is OOV but raw word is IV → take raw
+                        if not rw_iv and raw_iv:
+                            corrected_words.append(raw_w)
+                            changed = True
+                        # Case 2: Both IV but our word is further from input
+                        elif rw_iv and raw_iv:
+                            # Find corresponding input word
+                            input_words = preprocessed_text.split()
+                            idx = len(corrected_words)
+                            if idx < len(input_words):
+                                input_w = input_words[idx]
+                                rw_dist = Levenshtein.distance(input_w, rw)
+                                raw_dist = Levenshtein.distance(input_w, raw_w)
+                                # If raw is closer to input AND both are IV → prefer raw
+                                # (our pipeline likely introduced unnecessary change)
+                                if raw_dist < rw_dist:
+                                    corrected_words.append(raw_w)
+                                    changed = True
+                                else:
+                                    corrected_words.append(rw)
+                            else:
+                                corrected_words.append(rw)
+                        else:
+                            corrected_words.append(rw)
+                    else:
+                        corrected_words.append(rw)
+                
+                if changed:
+                    new_result = ' '.join(corrected_words)
+                    # Only accept if the new result doesn't increase OOV
+                    new_oov = self.vocab_manager.count_oov_words(new_result)
+                    old_oov = self.vocab_manager.count_oov_words(result)
+                    if new_oov <= old_oov:
+                        result = new_result
+        
+        # 10. SAFETY NET: Compare with raw model output (Conservative)
+        # Only switch to raw if raw is CLEARLY better
+        if raw_model_output and raw_model_output != result:
+            raw_oov = self.vocab_manager.count_oov_words(raw_model_output)
+            our_oov = self.vocab_manager.count_oov_words(result)
+            
+            # Case A: Raw all-IV, ours has OOV
+            if raw_oov == 0 and our_oov > 0:
+                is_valid, reason = self.validator.validate(original, raw_model_output, "mixed")
+                if is_valid or reason == "space_leniency_accept":
+                    result = raw_model_output
+            
+            # Case B: Both all-IV but raw is more similar to input
+            # Catches BERT/postprocess damage (word substitutions up to 5 char distance)
+            elif raw_oov == 0 and our_oov == 0:
+                raw_dist = VocabularyManager.damerau_levenshtein_distance(original, raw_model_output)
+                our_dist = VocabularyManager.damerau_levenshtein_distance(original, result)
+                result_vs_raw_dist = VocabularyManager.damerau_levenshtein_distance(result, raw_model_output)
+                # Threshold at 3 chars — covers single char edits and small substitutions
+                # (widening to 5 caused regression by reverting valid hybrid corrections)
+                if raw_dist < our_dist and result_vs_raw_dist <= 3:
+                    raw_valid, _ = self.validator.validate(original, raw_model_output, "mixed")
+                    if raw_valid:
+                        result = raw_model_output
+            
+            # Case C: Word count differs — raw might have correct splitting
+            # Catches: 'فيلق → في فيلق' (pipeline added word)
+            # or 'بلاكبيرن روفرز → بلاكبيرن روفر' (pipeline lost word ending)
+            elif raw_oov == 0:
+                raw_wc = len(raw_model_output.split())
+                our_wc = len(result.split())
+                if raw_wc != our_wc:
+                    raw_dist = VocabularyManager.damerau_levenshtein_distance(original, raw_model_output)
+                    our_dist = VocabularyManager.damerau_levenshtein_distance(original, result)
+                    if raw_dist < our_dist:
+                        raw_valid, _ = self.validator.validate(original, raw_model_output, "mixed")
+                        if raw_valid:
+                            result = raw_model_output
         
         return result
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# PUBLIC API
+# ═══════════════════════════════════════════════════════════════════════════════
 
-print("✅ All classes defined successfully!")
-print("   - ErrorType")
-print("   - AraSpellPostProcessor")
-print("   - ErrorClassifier")
-print("   - RulesBasedCorrector")
-print("   - OutputValidator")
-print("   - ContextualCorrector")
-print("   - ArabicSpellChecker")
+# Exported for use by benchmark.py and external consumers
+spell_checker = None  # Will be initialized on first import with __main__ or by benchmark
 
 
-print("✅ AraSpell classes loaded successfully")
+def initialize(use_contextual=True):
+    """Initialize the spell checker. Call once before using."""
+    global spell_checker
+    spell_checker = ArabicSpellChecker(model, tokenizer, device, use_contextual=use_contextual)
+    logger.info("Spell checker initialized")
+    return spell_checker
+
+
+if __name__ == "__main__":
+    sc = initialize(use_contextual=True)
+
+    # Quick demo
+    test_cases = [
+        "السلام عليكممم",
+        "فيالمدرسه",
+        "الطقص جميل اليومم",
+    ]
+
+    print("\n" + "=" * 60)
+    print("AraSpell Demo")
+    print("=" * 60)
+
+    for text in test_cases:
+        corrected = sc.correct(text)
+        print(f"\n  Input:     {text}")
+        print(f"  Corrected: {corrected}")
+
+    print("\n" + "=" * 60)
+    print("For full benchmark, run: python benchmark.py")
+    print("=" * 60)
 
