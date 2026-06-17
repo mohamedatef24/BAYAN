@@ -92,20 +92,28 @@ def load_models():
     
     loaded = []
     failed = []
+    
+    # Store startup errors for diagnostics
+    global _startup_errors
+    _startup_errors = []
 
-    # Load only the Summarization model locally (dev mode).
+    # Load only the Summarization model locally.
     try:
         logger.info(f"Loading summarization model from Hugging Face: {HUGGINGFACE_SUMMARIZATION_REPO}")
         try:
             summarization_model = SummarizationModel(HUGGINGFACE_SUMMARIZATION_REPO)
         except Exception as remote_error:
             logger.warning(f"Remote load failed, falling back to local model: {remote_error}")
+            _startup_errors.append(f"remote_load: {str(remote_error)[:200]}")
             logger.info(f"Loading summarization model from local path: {SUMMARIZATION_PATH}")
             summarization_model = SummarizationModel(SUMMARIZATION_PATH)
         loaded.append("summarization")
         logger.info("Summarization model loaded successfully")
     except Exception as e:
+        import traceback
+        err_detail = traceback.format_exc()
         failed.append(("summarization", str(e)))
+        _startup_errors.append(f"summarization_load_failed: {err_detail[-500:]}")
         logger.error(f"Failed to load summarization model: {str(e)}")
 
     logger.info(f"Models loaded: {loaded}")
@@ -113,6 +121,8 @@ def load_models():
         logger.warning(f"Models failed to load: {[f[0] for f in failed]}")
 
     return len(loaded) > 0
+
+_startup_errors = []
 
 
 @app.route('/')
@@ -178,16 +188,37 @@ def health_check():
 
 @app.route('/api/debug-models', methods=['GET'])
 def debug_models():
-    """Debug endpoint: test all HF models and return actual errors."""
-    if not USE_HF_API:
-        return jsonify({'error': 'Not in HF API mode', 'mode': 'local'}), 400
-    
+    """Debug endpoint: report model status and startup errors."""
     from hf_inference import debug_test_all_models
     results = debug_test_all_models()
+    
+    # Memory info
+    import os
+    try:
+        import resource
+        mem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+        mem_info = f"{mem} KB"
+    except Exception:
+        mem_info = "N/A"
+    
+    # /proc/meminfo on Linux
+    proc_mem = {}
+    try:
+        with open('/proc/meminfo', 'r') as f:
+            for line in f:
+                if any(k in line for k in ['MemTotal', 'MemFree', 'MemAvailable', 'SwapTotal']):
+                    parts = line.split()
+                    proc_mem[parts[0].rstrip(':')] = parts[1] + ' ' + (parts[2] if len(parts) > 2 else '')
+    except Exception:
+        proc_mem = {"error": "cannot read /proc/meminfo"}
+    
     return jsonify({
         'status': 'debug',
         'hf_api_token_set': bool(HF_API_TOKEN),
-        'hf_api_token_prefix': HF_API_TOKEN[:10] + '...' if HF_API_TOKEN else 'NOT SET',
+        'summarization_model_loaded': summarization_model is not None,
+        'startup_errors': _startup_errors,
+        'memory': mem_info,
+        'proc_meminfo': proc_mem,
         'models': results,
     }), 200
 
