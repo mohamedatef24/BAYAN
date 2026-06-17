@@ -37,10 +37,23 @@ from model_loader import (
     PUNCTUATION_PATH
 )
 
+# HuggingFace Inference API — used in production to avoid RAM limits
+from hf_inference import (
+    hf_summarize,
+    hf_correct_spelling,
+    hf_add_punctuation,
+    hf_autocomplete,
+    check_hf_api_available,
+)
+
 HUGGINGFACE_SUMMARIZATION_REPO = os.environ.get(
     "SUMMARIZATION_REPO_ID",
     "bayan10/summarization-model",
 )
+
+# When HF_API_TOKEN is set, use remote HF Inference API instead of local models.
+# This avoids loading 500MB+ models into RAM on the free tier.
+USE_HF_API = bool(os.environ.get('HF_API_TOKEN', ''))
 
 # Configure logging
 logging.basicConfig(
@@ -67,13 +80,18 @@ punctuation_model = None
 
 
 def load_models():
-    """Load only the summarization model."""
+    """Load models. In HF API mode, skip local loading entirely."""
     global summarization_model, spelling_model, autocomplete_model, grammar_model, punctuation_model
+    
+    if USE_HF_API:
+        logger.info("HF_API_TOKEN is set — using HuggingFace Inference API (no local models loaded)")
+        logger.info("Models will be called remotely: summarization, spelling, punctuation, autocomplete")
+        return True
     
     loaded = []
     failed = []
 
-    # Load only the Summarization model. This avoids heavy startup cost from other models.
+    # Load only the Summarization model locally (dev mode).
     try:
         logger.info(f"Loading summarization model from Hugging Face: {HUGGINGFACE_SUMMARIZATION_REPO}")
         try:
@@ -117,8 +135,27 @@ def index():
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """Health check endpoint for production monitoring."""
+    if USE_HF_API:
+        health = {
+            'status': 'healthy',
+            'mode': 'hf_inference_api',
+            'models': {
+                'summarization': True,
+                'spelling': True,
+                'autocomplete': True,
+                'grammar': True,
+                'punctuation': True
+            },
+            'supabase': {
+                'configured': bool(SUPABASE_URL and SUPABASE_ANON_KEY),
+            },
+            'environment': 'huggingface_spaces',
+        }
+        return jsonify(health), 200
+    
     health = {
         'status': 'healthy',
+        'mode': 'local_models',
         'models': {
             'summarization': summarization_model is not None,
             'spelling': spelling_model is not None,
@@ -147,7 +184,7 @@ def summarize():
         "full_text": true/false (whether to summarize full text or just first paragraph)
     }
     """
-    if summarization_model is None:
+    if not USE_HF_API and summarization_model is None:
         return jsonify({
             'error': 'Summarization model not loaded. Please check server logs.',
             'status': 'error'
@@ -198,7 +235,11 @@ def summarize():
         
         # Generate summary
         logger.info(f"Generating summary: length={length}, max_length={max_length}, text_length={len(text)}")
-        summary = summarization_model.summarize(text, max_length=max_length, min_length=max(10, max_length // 3))
+        
+        if USE_HF_API:
+            summary = hf_summarize(text, max_length=max_length, min_length=max(10, max_length // 3))
+        else:
+            summary = summarization_model.summarize(text, max_length=max_length, min_length=max(10, max_length // 3))
         
         return jsonify({
             'summary': summary,
@@ -234,7 +275,7 @@ def spelling_correction():
         "text": "Arabic text to correct"
     }
     """
-    if spelling_model is None:
+    if not USE_HF_API and spelling_model is None:
         return jsonify({
             'error': 'Spelling model not loaded. Please check server logs.',
             'status': 'error'
@@ -251,7 +292,10 @@ def spelling_correction():
             return jsonify({'error': 'Text is required', 'status': 'error'}), 400
         
         logger.info(f"Correcting spelling for text of length: {len(text)}")
-        corrected = spelling_model.correct(text)
+        if USE_HF_API:
+            corrected = hf_correct_spelling(text)
+        else:
+            corrected = spelling_model.correct(text)
         
         return jsonify({
             'corrected': corrected,
@@ -281,7 +325,7 @@ def autocomplete():
         "n": 5 (number of suggestions, optional)
     }
     """
-    if autocomplete_model is None:
+    if not USE_HF_API and autocomplete_model is None:
         return jsonify({
             'error': 'Autocomplete model not loaded. Please check server logs.',
             'status': 'error'
@@ -299,7 +343,10 @@ def autocomplete():
             return jsonify({'error': 'Text is required', 'status': 'error'}), 400
         
         logger.info(f"Getting autocomplete suggestions for: {text[:50]}...")
-        suggestions = autocomplete_model.predict(text, n=n)
+        if USE_HF_API:
+            suggestions = hf_autocomplete(text, n=n)
+        else:
+            suggestions = autocomplete_model.predict(text, n=n)
         logger.info(f"Autocomplete suggestions (n={n}): {suggestions}")
         
         return jsonify({
@@ -327,7 +374,7 @@ def grammar_correction():
         "text": "Arabic text to correct"
     }
     """
-    if grammar_model is None:
+    if not USE_HF_API and grammar_model is None:
         return jsonify({
             'error': 'Grammar model not loaded. Please check server logs.',
             'status': 'error'
@@ -344,7 +391,11 @@ def grammar_correction():
             return jsonify({'error': 'Text is required', 'status': 'error'}), 400
         
         logger.info(f"Correcting grammar for text of length: {len(text)}")
-        corrected = grammar_model.correct(text)
+        if USE_HF_API:
+            # Grammar uses spelling model as proxy (no dedicated grammar model yet)
+            corrected = hf_correct_spelling(text)
+        else:
+            corrected = grammar_model.correct(text)
         
         return jsonify({
             'corrected': corrected,
@@ -373,7 +424,7 @@ def add_punctuation():
         "text": "Arabic text without punctuation"
     }
     """
-    if punctuation_model is None:
+    if not USE_HF_API and punctuation_model is None:
         return jsonify({
             'error': 'Punctuation model not loaded. Please check server logs.',
             'status': 'error'
@@ -390,7 +441,10 @@ def add_punctuation():
             return jsonify({'error': 'Text is required', 'status': 'error'}), 400
         
         logger.info(f"Adding punctuation for text of length: {len(text)}")
-        punctuated = punctuation_model.add_punctuation(text)
+        if USE_HF_API:
+            punctuated = hf_add_punctuation(text)
+        else:
+            punctuated = punctuation_model.add_punctuation(text)
         
         return jsonify({
             'punctuated': punctuated,
@@ -569,11 +623,15 @@ def analyze_text():
             return curr_start, curr_end
 
         # 1. Spelling (with conservative post-filtering to avoid over-editing)
-        if spelling_model:
+        has_spelling = USE_HF_API or spelling_model
+        if has_spelling:
             try:
                 t0 = time.time()
                 logger.info(f"[ANALYZE] Step 1: Spelling correction starting...")
-                raw_corrected = spelling_model.correct(current_text)
+                if USE_HF_API:
+                    raw_corrected = hf_correct_spelling(current_text)
+                else:
+                    raw_corrected = spelling_model.correct(current_text)
                 logger.info(f"[ANALYZE] Step 1: Spelling done in {time.time()-t0:.2f}s")
 
                 if raw_corrected != current_text:
@@ -643,11 +701,15 @@ def analyze_text():
                 logger.error(f"[ANALYZE] Spelling failed: {e}")
 
         # 2. Grammar (runs on spelling-corrected text)
-        if grammar_model:
+        has_grammar = USE_HF_API or grammar_model
+        if has_grammar:
             try:
                 t0 = time.time()
                 logger.info(f"[ANALYZE] Step 2: Grammar correction starting...")
-                corrected_grammar = grammar_model.correct(current_text)
+                if USE_HF_API:
+                    corrected_grammar = hf_correct_spelling(current_text)
+                else:
+                    corrected_grammar = grammar_model.correct(current_text)
                 logger.info(f"[ANALYZE] Step 2: Grammar done in {time.time()-t0:.2f}s")
                 if corrected_grammar != current_text:
                     diffs = get_word_diffs(current_text, corrected_grammar)
@@ -666,11 +728,15 @@ def analyze_text():
                 logger.error(f"[ANALYZE] Grammar failed: {e}")
 
         # 3. Punctuation (runs on grammar-corrected text)
-        if punctuation_model:
+        has_punctuation = USE_HF_API or punctuation_model
+        if has_punctuation:
             try:
                 t0 = time.time()
                 logger.info(f"[ANALYZE] Step 3: Punctuation starting...")
-                corrected_punc = punctuation_model.add_punctuation(current_text)
+                if USE_HF_API:
+                    corrected_punc = hf_add_punctuation(current_text)
+                else:
+                    corrected_punc = punctuation_model.add_punctuation(current_text)
                 logger.info(f"[ANALYZE] Step 3: Punctuation done in {time.time()-t0:.2f}s")
                 if corrected_punc != current_text:
                     diffs = get_word_diffs(current_text, corrected_punc)
