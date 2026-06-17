@@ -1,8 +1,8 @@
 """
 HuggingFace Inference API client for Bayan models.
 
-Uses huggingface_hub.InferenceClient which works from within HF Spaces
-(handles internal routing / DNS automatically).
+Uses the `requests` library (via huggingface_hub's internal session)
+to call the HF Inference API from within HF Spaces.
 
 Models:
   - bayan10/summarization-model  (MBart, summarization pipeline)
@@ -15,23 +15,51 @@ import os
 import json
 import logging
 import time
+import requests
 
 logger = logging.getLogger(__name__)
 
 HF_API_TOKEN = os.environ.get("HF_API_TOKEN", "")
+HF_API_BASE = "https://api-inference.huggingface.co/models/"
+HF_TIMEOUT = 120  # seconds — accounts for cold starts
 
-# Lazy-initialized client (created on first use)
-_client = None
+
+def _headers():
+    """Build request headers with auth token."""
+    h = {"Content-Type": "application/json"}
+    if HF_API_TOKEN:
+        h["Authorization"] = "Bearer " + HF_API_TOKEN
+    return h
 
 
-def _get_client():
-    """Get or create the InferenceClient singleton."""
-    global _client
-    if _client is None:
-        from huggingface_hub import InferenceClient
-        _client = InferenceClient(token=HF_API_TOKEN if HF_API_TOKEN else None)
-        logger.info("HuggingFace InferenceClient initialized (token=%s)", "set" if HF_API_TOKEN else "not set")
-    return _client
+def _call_model(repo_id, payload):
+    """
+    Call any HF model via the Inference API.
+    Uses requests library + wait_for_model option.
+    Returns parsed JSON response.
+    """
+    url = HF_API_BASE + repo_id
+
+    # Tell HF to wait for the model to load instead of returning 503
+    if "options" not in payload:
+        payload["options"] = {"wait_for_model": True}
+
+    logger.info("HF API call: %s", repo_id)
+    resp = requests.post(url, headers=_headers(), json=payload, timeout=HF_TIMEOUT)
+
+    logger.info("HF API response for %s: HTTP %d, size=%d bytes",
+                repo_id, resp.status_code, len(resp.content))
+
+    if resp.status_code != 200:
+        logger.error("HF API error for %s: HTTP %d — %s",
+                     repo_id, resp.status_code, resp.text[:500])
+        raise RuntimeError("HF API error for {} (HTTP {}): {}".format(
+            repo_id, resp.status_code, resp.text[:300]))
+
+    result = resp.json()
+    logger.info("HF API result for %s: type=%s, preview=%s",
+                repo_id, type(result).__name__, str(result)[:150])
+    return result
 
 
 # ============================================================
@@ -45,117 +73,62 @@ AUTOCOMPLETE_REPO = os.environ.get("AUTOCOMPLETE_REPO_ID", "bayan10/AutoComplete
 
 
 # ============================================================
-# Generic low-level call (works for models without pipeline_tag)
-# ============================================================
-
-def _call_model_raw(repo_id, payload):
-    """
-    Call any HF model using the low-level .post() method.
-    This works even for models without a pipeline_tag configured.
-    Returns parsed JSON response.
-    """
-    client = _get_client()
-    logger.info("Calling HF model (raw): %s", repo_id)
-
-    response = client.post(
-        json=payload,
-        model=repo_id,
-    )
-
-    # response is bytes
-    result = json.loads(response)
-    logger.info("HF raw result for %s: type=%s, preview=%s",
-                repo_id, type(result).__name__, str(result)[:150])
-    return result
-
-
-# ============================================================
 # Model-specific wrappers
 # ============================================================
 
+def _extract_text(result, fallback=""):
+    """Extract generated text from various HF response formats."""
+    if isinstance(result, list) and len(result) > 0:
+        item = result[0]
+        if isinstance(item, dict):
+            return (item.get("summary_text")
+                    or item.get("generated_text")
+                    or item.get("translation_text")
+                    or fallback)
+        return str(item) if str(item).strip() else fallback
+
+    if isinstance(result, dict):
+        return (result.get("summary_text")
+                or result.get("generated_text")
+                or result.get("translation_text")
+                or fallback)
+
+    return str(result) if result else fallback
+
+
 def hf_summarize(text, max_length=128, min_length=30):
     """Summarize Arabic text via HF Inference API."""
-    logger.info("Calling HF summarization: %s (max_length=%d)", SUMMARIZATION_REPO, max_length)
-
-    # Use raw post since .summarization() has different kwargs
-    result = _call_model_raw(SUMMARIZATION_REPO, {
+    result = _call_model(SUMMARIZATION_REPO, {
         "inputs": text,
         "parameters": {
             "max_length": max_length,
             "min_length": min_length,
         }
     })
-
-    # HF summarization returns: [{"summary_text": "..."}]
-    if isinstance(result, list) and len(result) > 0:
-        item = result[0]
-        if isinstance(item, dict):
-            return item.get("summary_text", item.get("generated_text", str(item)))
-        return str(item)
-
-    if isinstance(result, dict):
-        return result.get("summary_text", result.get("generated_text", str(result)))
-
-    return str(result)
+    return _extract_text(result, text[:100])
 
 
 def hf_correct_spelling(text):
     """Correct spelling in Arabic text via HF Inference API."""
-    logger.info("Calling HF spelling correction: %s", SPELLING_REPO)
-
-    result = _call_model_raw(SPELLING_REPO, {
-        "inputs": text,
-    })
-
-    # Seq2seq/text2text models return: [{"generated_text": "..."}]
-    if isinstance(result, list) and len(result) > 0:
-        item = result[0]
-        if isinstance(item, dict):
-            return item.get("generated_text", item.get("translation_text", text))
-        return str(item) if str(item).strip() else text
-
-    if isinstance(result, dict):
-        return result.get("generated_text", result.get("translation_text", text))
-
-    return text
+    result = _call_model(SPELLING_REPO, {"inputs": text})
+    return _extract_text(result, text)
 
 
 def hf_add_punctuation(text):
     """Add punctuation to Arabic text via HF Inference API."""
-    logger.info("Calling HF punctuation: %s", PUNCTUATION_REPO)
-
-    result = _call_model_raw(PUNCTUATION_REPO, {
-        "inputs": text,
-    })
-
-    if isinstance(result, list) and len(result) > 0:
-        item = result[0]
-        if isinstance(item, dict):
-            return item.get("generated_text", item.get("translation_text", text))
-        return str(item) if str(item).strip() else text
-
-    if isinstance(result, dict):
-        return result.get("generated_text", result.get("translation_text", text))
-
-    return text
+    result = _call_model(PUNCTUATION_REPO, {"inputs": text})
+    return _extract_text(result, text)
 
 
 def hf_autocomplete(text, n=5):
     """Get autocomplete suggestions for Arabic text via HF Inference API."""
-    logger.info("Calling HF autocomplete: %s", AUTOCOMPLETE_REPO)
-
-    result = _call_model_raw(AUTOCOMPLETE_REPO, {
+    result = _call_model(AUTOCOMPLETE_REPO, {
         "inputs": text,
-        "parameters": {
-            "max_new_tokens": 20,
-        }
+        "parameters": {"max_new_tokens": 20}
     })
 
-    # Text generation returns: [{"generated_text": "..."}] or a string
     if isinstance(result, str):
-        completion = result
-        if completion.startswith(text):
-            completion = completion[len(text):].strip()
+        completion = result[len(text):].strip() if result.startswith(text) else result
         return [completion] if completion else [text]
 
     if isinstance(result, list):
@@ -174,8 +147,9 @@ def hf_autocomplete(text, n=5):
 def check_hf_api_available():
     """Quick check if HF Inference API is reachable."""
     try:
-        client = _get_client()
-        return client is not None
+        resp = requests.get(HF_API_BASE + SUMMARIZATION_REPO,
+                           headers=_headers(), timeout=10)
+        return resp.status_code == 200
     except Exception:
         return False
 
@@ -187,9 +161,10 @@ def debug_test_all_models():
     """
     results = {}
     test_text = "هذا نص تجريبي للاختبار"
+    long_text = (test_text + " ") * 5
 
     for name, fn, args in [
-        ("summarization", hf_summarize, (test_text + " " + test_text * 3, 30, 10)),
+        ("summarization", hf_summarize, (long_text, 30, 10)),
         ("spelling", hf_correct_spelling, (test_text,)),
         ("punctuation", hf_add_punctuation, (test_text,)),
         ("autocomplete", hf_autocomplete, (test_text, 3)),
