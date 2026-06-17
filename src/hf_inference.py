@@ -9,6 +9,7 @@ import os
 import json
 import logging
 import time
+import inspect
 
 logger = logging.getLogger(__name__)
 
@@ -36,47 +37,54 @@ AUTOCOMPLETE_REPO = os.environ.get("AUTOCOMPLETE_REPO_ID", "bayan10/AutoComplete
 def _call_model(repo_id, payload, task=None):
     """
     Call HF model using InferenceClient._inner_post.
-    This is the raw transport that all typed methods use internally.
+    Tries multiple calling conventions to match the version's signature.
     """
     client = _get_client()
 
     if "options" not in payload:
         payload["options"] = {"wait_for_model": True}
 
+    data_bytes = json.dumps(payload).encode("utf-8")
+
     logger.info("Calling HF model: %s (task=%s)", repo_id, task)
 
-    try:
-        # Use _inner_post — the internal transport in huggingface_hub 1.19.0
-        response = client._inner_post(
-            json=payload,
-            model=repo_id,
-            task=task,
-        )
+    # Try different calling conventions for _inner_post
+    attempts = [
+        # Attempt 1: data as bytes with model and task
+        lambda: client._inner_post(data=data_bytes, model=repo_id, task=task),
+        # Attempt 2: data as bytes with model only
+        lambda: client._inner_post(data=data_bytes, model=repo_id),
+        # Attempt 3: positional data with model kwarg
+        lambda: client._inner_post(data_bytes, model=repo_id, task=task),
+        # Attempt 4: just positional args
+        lambda: client._inner_post(data_bytes, repo_id),
+    ]
 
-        # response is bytes
-        if isinstance(response, bytes):
-            result = json.loads(response.decode("utf-8"))
-        elif isinstance(response, str):
-            result = json.loads(response)
-        else:
-            result = response
+    last_error = None
+    for i, attempt in enumerate(attempts):
+        try:
+            response = attempt()
+            # Parse response
+            if isinstance(response, bytes):
+                result = json.loads(response.decode("utf-8"))
+            elif isinstance(response, str):
+                result = json.loads(response)
+            else:
+                result = response
 
-        logger.info("HF result for %s: type=%s preview=%s",
-                    repo_id, type(result).__name__, str(result)[:200])
-        return result
+            logger.info("HF result for %s (attempt %d): type=%s preview=%s",
+                        repo_id, i+1, type(result).__name__, str(result)[:200])
+            return result
+        except TypeError as e:
+            logger.warning("_inner_post attempt %d failed: %s", i+1, e)
+            last_error = e
+            continue
+        except Exception as e:
+            # Non-TypeError means the call went through but the API returned an error
+            logger.error("_inner_post attempt %d API error: %s", i+1, e)
+            raise
 
-    except TypeError as e:
-        # If _inner_post has different signature, try without task
-        logger.warning("_inner_post with task failed: %s, retrying without task", e)
-        response = client._inner_post(
-            json=payload,
-            model=repo_id,
-        )
-        if isinstance(response, bytes):
-            return json.loads(response.decode("utf-8"))
-        elif isinstance(response, str):
-            return json.loads(response)
-        return response
+    raise RuntimeError("All _inner_post calling conventions failed. Last: " + str(last_error))
 
 
 def _extract_text(result, fallback=""):
@@ -104,7 +112,6 @@ def _extract_text(result, fallback=""):
 # ============================================================
 
 def hf_summarize(text, max_length=128, min_length=30):
-    """Summarize Arabic text."""
     result = _call_model(SUMMARIZATION_REPO, {
         "inputs": text,
         "parameters": {"max_length": max_length, "min_length": min_length},
@@ -113,19 +120,16 @@ def hf_summarize(text, max_length=128, min_length=30):
 
 
 def hf_correct_spelling(text):
-    """Correct spelling in Arabic text."""
     result = _call_model(SPELLING_REPO, {"inputs": text})
     return _extract_text(result, text)
 
 
 def hf_add_punctuation(text):
-    """Add punctuation to Arabic text."""
     result = _call_model(PUNCTUATION_REPO, {"inputs": text})
     return _extract_text(result, text)
 
 
 def hf_autocomplete(text, n=5):
-    """Get autocomplete suggestions."""
     result = _call_model(AUTOCOMPLETE_REPO, {
         "inputs": text,
         "parameters": {"max_new_tokens": 20},
@@ -159,12 +163,14 @@ def debug_test_all_models():
     test_text = "هذا نص تجريبي للاختبار"
     long_text = (test_text + " ") * 5
 
-    # Version info
+    # Inspect _inner_post signature
     try:
         import huggingface_hub
+        client = _get_client()
+        sig = str(inspect.signature(client._inner_post))
         results["_info"] = {
             "hf_hub_version": huggingface_hub.__version__,
-            "has__inner_post": hasattr(_get_client(), '_inner_post'),
+            "_inner_post_signature": sig,
         }
     except Exception as e:
         results["_info"] = {"error": repr(e)[:200]}
