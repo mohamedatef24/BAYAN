@@ -62,18 +62,27 @@ function updateWritingScore(spelling, grammar, punctuation) {
 function buildSuggestionCardHTML(suggestion, index) {
   const badgeClass = `badge-${suggestion.type}`;
   const label = TYPE_LABELS[suggestion.type] || suggestion.type;
+  const alts = suggestion.alternatives || [suggestion.correction, suggestion.original];
+
+  let altsHTML = '';
+  alts.forEach((alt, i) => {
+    const isKeep = alt === suggestion.original;
+    const isMain = i === 0;
+    const cls = isKeep ? 'alt-chip alt-chip--keep' : (isMain ? 'alt-chip alt-chip--main' : 'alt-chip');
+    const chipLabel = isKeep ? `${escapeHtml(alt)} ✓` : escapeHtml(alt);
+    altsHTML += `<button class="${cls}" data-card-alt="${escapeHtml(alt)}" data-card-index="${index}" type="button">${chipLabel}</button>`;
+  });
 
   return `
     <div class="suggestion-card" role="listitem" tabindex="0"
       data-suggestion-index="${index}"
       aria-label="${label}: ${suggestion.original} إلى ${suggestion.correction}">
-      <button class="suggestion-card-apply" data-apply-index="${index}" aria-label="تطبيق التصحيح">✓</button>
       <span class="suggestion-card-badge ${badgeClass}">${label}</span>
       <div class="suggestion-card-change">
         <span class="suggestion-card-original">${escapeHtml(suggestion.original)}</span>
         <span class="suggestion-card-arrow">←</span>
-        <span class="suggestion-card-fix">${escapeHtml(suggestion.correction)}</span>
       </div>
+      <div class="suggestion-card-alts">${altsHTML}</div>
     </div>`;
 }
 
@@ -121,7 +130,7 @@ function updateSuggestionsList(suggestions) {
 function bindSuggestionCardEvents(container) {
   container.querySelectorAll('.suggestion-card').forEach((card) => {
     card.addEventListener('click', (e) => {
-      if (e.target.closest('.suggestion-card-apply')) return;
+      if (e.target.closest('.alt-chip') || e.target.closest('.suggestion-card-apply')) return;
       const idx = parseInt(card.dataset.suggestionIndex, 10);
       scrollToSuggestion(idx);
       focusSuggestionInEditor(idx);
@@ -131,6 +140,24 @@ function bindSuggestionCardEvents(container) {
       if (e.key === 'Enter') {
         const idx = parseInt(card.dataset.suggestionIndex, 10);
         applySuggestionByIndex(idx);
+      }
+    });
+  });
+
+  // Alt chip clicks
+  container.querySelectorAll('.alt-chip').forEach((chip) => {
+    chip.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const idx = parseInt(chip.dataset.cardIndex, 10);
+      const altText = chip.dataset.cardAlt;
+      const suggestions = window.currentSuggestions || [];
+      const suggestion = suggestions[idx];
+      if (!suggestion) return;
+
+      if (altText === suggestion.original) {
+        dismissSuggestion(suggestion);
+      } else {
+        applyAlternativeCorrection(suggestion, altText);
       }
     });
   });

@@ -692,6 +692,29 @@ def analyze_text():
                 curr_end = mapper.map_offset(curr_end)
             return curr_start, curr_end
 
+        def _get_spelling_alternatives(original_word, best_correction, spell_checker, max_alts=3):
+            """Generate alternative spelling suggestions for a word."""
+            alts = []
+            seen = {best_correction, original_word}
+
+            # 1. Try edit distance 1 candidates from the spell checker's vocabulary
+            try:
+                clean_w = re.sub(r'[^\w]', '', original_word)
+                edit_cands = spell_checker.edit_corrector.known(spell_checker.edit_corrector.edits1(clean_w))
+                if edit_cands:
+                    ranked = sorted(list(edit_cands), key=lambda x: spell_checker.vocab_manager.get_frequency_rank(x))
+                    for c in ranked:
+                        if c not in seen and len(alts) < max_alts - 1:
+                            alts.append(c)
+                            seen.add(c)
+            except Exception:
+                pass
+
+            # 2. Always include 'keep as-is' as the last alternative
+            # Return: [best_correction, alt1, alt2, ..., original_word(keep)]
+            result = [best_correction] + alts + [original_word]
+            return result[:max_alts + 1]  # cap at max_alts + keep-as-is
+
         # 1. Spelling (with conservative post-filtering to avoid over-editing)
         has_spelling = True  # Always available via lazy-loaded araspell_service
         if has_spelling:
@@ -737,6 +760,7 @@ def analyze_text():
                                         'original': o_word,
                                         'correction': c_word,
                                         'type': 'spelling',
+                                        'alternatives': _get_spelling_alternatives(o_word, c_word, spell_checker),
                                     })
                                 else:
                                     new_words.append(current_text[start_idx:end_idx])
@@ -752,6 +776,7 @@ def analyze_text():
                                         'original': o_word,
                                         'correction': corr_str,
                                         'type': 'spelling',
+                                        'alternatives': [corr_str, o_word],
                                     })
                                 else:
                                     new_words.append(current_text[start_idx:end_idx])
@@ -776,6 +801,7 @@ def analyze_text():
                                                 'original': o_word,
                                                 'correction': c_word,
                                                 'type': 'spelling',
+                                                'alternatives': _get_spelling_alternatives(o_word, c_word, spell_checker),
                                             })
                                             ci += 1
                                         # Check if this is a 1→N word split
@@ -800,6 +826,7 @@ def analyze_text():
                                                     'original': o_word,
                                                     'correction': corr_str,
                                                     'type': 'spelling',
+                                                    'alternatives': [corr_str, o_word],
                                                 })
                                                 ci = temp_ci
                                             else:

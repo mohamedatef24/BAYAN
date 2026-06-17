@@ -214,7 +214,8 @@ function showTooltip(element) {
   if (!tooltip) return;
 
   const typeEl = document.getElementById('tooltip-type');
-  const suggestionEl = document.getElementById('tooltip-suggestion');
+  const originalEl = document.getElementById('tooltip-original');
+  const alternativesEl = document.getElementById('tooltip-alternatives');
 
   const typeMap = {
     spelling: 'خطأ إملائي',
@@ -227,8 +228,36 @@ function showTooltip(element) {
     typeEl.className = `popover-type popover-type--${suggestion.type}`;
   }
 
-  if (suggestionEl) {
-    suggestionEl.textContent = suggestion.correction;
+  if (originalEl) {
+    originalEl.textContent = suggestion.original;
+  }
+
+  // Render alternatives
+  if (alternativesEl) {
+    const alts = suggestion.alternatives || [suggestion.correction, suggestion.original];
+    let html = '';
+    alts.forEach((alt, i) => {
+      const isKeep = alt === suggestion.original;
+      const isMain = i === 0;
+      const btnClass = isKeep ? 'popover-alt-btn popover-alt-keep' : (isMain ? 'popover-alt-btn popover-alt-main' : 'popover-alt-btn');
+      const label = isKeep ? `${escapeHtml(alt)} ✓ إبقاء` : escapeHtml(alt);
+      html += `<button class="${btnClass}" data-alt-correction="${escapeHtml(alt)}" type="button">${label}</button>`;
+    });
+    alternativesEl.innerHTML = html;
+
+    // Bind click events
+    alternativesEl.querySelectorAll('.popover-alt-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const correctionText = btn.dataset.altCorrection;
+        if (correctionText === suggestion.original) {
+          // "Keep as-is" — just dismiss the suggestion
+          dismissSuggestion(suggestion);
+        } else {
+          // Apply this alternative correction
+          applyAlternativeCorrection(suggestion, correctionText);
+        }
+      });
+    });
   }
 
   const rect = element.getBoundingClientRect();
@@ -273,6 +302,40 @@ function applySuggestionAtOffsets(suggestion) {
 function applyCorrection() {
   if (!window.currentApplySuggestion) return;
   applySuggestionAtOffsets(window.currentApplySuggestion);
+}
+
+function applyAlternativeCorrection(suggestion, correctionText) {
+  const text = getEditorText();
+  const before = text.substring(0, suggestion.start);
+  const after = text.substring(suggestion.end);
+  const newText = before + correctionText + after;
+  setEditorHTML(escapeHtml(newText));
+  hideTooltip();
+  analyzeTextDelayed();
+}
+
+function dismissSuggestion(suggestion) {
+  // Remove this suggestion from the list (keep the word as-is)
+  if (window.currentSuggestions) {
+    window.currentSuggestions = window.currentSuggestions.filter(
+      s => !(s.start === suggestion.start && s.end === suggestion.end)
+    );
+    // Re-render without this suggestion
+    const text = getEditorText();
+    const highlightedHtml = render({
+      text: text,
+      suggestions: window.currentSuggestions
+    });
+    setEditorHTML(highlightedHtml);
+    
+    const spellingCount = window.currentSuggestions.filter(s => s.type === 'spelling').length;
+    const grammarCount = window.currentSuggestions.filter(s => s.type === 'grammar').length;
+    const punctuationCount = window.currentSuggestions.filter(s => s.type === 'punctuation').length;
+    updateSuggestionCounts(spellingCount, grammarCount, punctuationCount);
+    updateWritingScore(spellingCount, grammarCount, punctuationCount);
+    updateSuggestionsList(window.currentSuggestions);
+  }
+  hideTooltip();
 }
 
 function applySuggestionByIndex(index) {
