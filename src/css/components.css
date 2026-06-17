@@ -486,30 +486,74 @@
 .popover-type--grammar { color: var(--color-warning); }
 .popover-type--punctuation { color: var(--color-success); }
 
-.popover-correction {
-  font-size: var(--font-size-h3);
-  font-weight: var(--font-weight-bold);
+.popover-original-word {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
   margin-bottom: var(--spacing-sm);
-  text-align: center;
-  color: var(--color-text-primary);
+  text-align: right;
 }
 
-.popover-apply {
-  width: 100%;
-  padding: var(--spacing-sm);
-  border: none;
-  border-radius: var(--radius-md);
-  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
-  color: var(--color-text-inverse);
+.popover-original-word .popover-label {
   font-weight: var(--font-weight-bold);
+}
+
+#tooltip-original {
+  text-decoration: line-through;
+  color: var(--color-error);
+}
+
+.popover-alternatives {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: var(--spacing-sm);
+}
+
+.popover-alt-btn {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
   font-family: inherit;
-  min-height: 44px;
-  transition: opacity var(--transition-base);
+  font-size: var(--font-size-base);
+  text-align: right;
+  transition: all var(--transition-base);
+  min-height: 40px;
 }
 
-.popover-apply:hover {
+.popover-alt-btn:hover {
+  background: var(--color-surface-elevated);
+  border-color: var(--color-primary);
+  transform: translateX(-2px);
+}
+
+.popover-alt-main {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  color: var(--color-text-inverse);
+  border-color: transparent;
+  font-weight: var(--font-weight-bold);
+}
+
+.popover-alt-main:hover {
   opacity: 0.92;
+  transform: translateX(-2px);
+  border-color: transparent;
+}
+
+.popover-alt-keep {
+  background: transparent;
+  border-style: dashed;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.popover-alt-keep:hover {
+  color: var(--color-text-primary);
+  border-color: var(--color-text-secondary);
 }
 
 .popover-hint {
@@ -517,6 +561,54 @@
   color: var(--color-text-muted);
   text-align: center;
   margin-top: var(--spacing-sm);
+}
+
+/* ── Alt chips in suggestion cards ── */
+.suggestion-card-alts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.alt-chip {
+  padding: 4px 10px;
+  border-radius: 100px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-label);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all var(--transition-base);
+}
+
+.alt-chip:hover {
+  border-color: var(--color-primary);
+  color: var(--color-text-primary);
+  background: var(--color-surface-elevated);
+}
+
+.alt-chip--main {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  color: var(--color-text-inverse);
+  border-color: transparent;
+  font-weight: var(--font-weight-bold);
+}
+
+.alt-chip--main:hover {
+  opacity: 0.9;
+  border-color: transparent;
+}
+
+.alt-chip--keep {
+  border-style: dashed;
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+}
+
+.alt-chip--keep:hover {
+  color: var(--color-text-primary);
 }
 
 /* ── Suggestion cards ── */
