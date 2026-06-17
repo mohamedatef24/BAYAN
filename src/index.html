@@ -490,9 +490,9 @@
           <p id="editor-hint" class="sr-only">اكتب نصاً عربياً. ستظهر الاقتراحات تلقائياً.</p>
           <div id="editor-tooltip" class="suggestion-popover" role="dialog" aria-label="اقتراح تصحيح">
            <div id="tooltip-type" class="popover-type">خطأ</div>
-           <div id="tooltip-suggestion" class="popover-correction"></div>
-           <button class="popover-apply" onclick="applyCorrection()" type="button">تطبيق التصحيح</button>
-           <p class="popover-hint">Enter للتطبيق · Escape للإغلاق</p>
+           <div class="popover-original-word"><span class="popover-label">الكلمة:</span> <span id="tooltip-original"></span></div>
+           <div id="tooltip-alternatives" class="popover-alternatives"></div>
+           <p class="popover-hint">اختر التصحيح المناسب · Escape للإغلاق</p>
           </div>
          </div>
          <div id="summarize-area" class="summarize-panel is-hidden">
