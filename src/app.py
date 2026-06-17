@@ -756,7 +756,60 @@ def analyze_text():
                                 else:
                                     new_words.append(current_text[start_idx:end_idx])
                             else:
-                                new_words.extend([current_text[orig_word_positions[idx][1]:orig_word_positions[idx][2]] for idx in range(i1, i2)])
+                                # N→M replacement: process each original word individually
+                                # Build a mapping by trying to match original words to corrected words
+                                corr_joined = " ".join(c_segment)
+                                ci = 0  # cursor into c_segment
+                                for oi in range(i1, i2):
+                                    o_word = orig_word_strings[oi]
+                                    o_start = orig_word_positions[oi][1]
+                                    o_end = orig_word_positions[oi][2]
+
+                                    if ci < len(c_segment):
+                                        c_word = c_segment[ci]
+                                        # Check if this is a 1→1 small edit
+                                        if _is_small_spelling_change(o_word, c_word):
+                                            new_words.append(c_word)
+                                            suggestions.append({
+                                                'start': o_start,
+                                                'end': o_end,
+                                                'original': o_word,
+                                                'correction': c_word,
+                                                'type': 'spelling',
+                                            })
+                                            ci += 1
+                                        # Check if this is a 1→N word split
+                                        elif len(o_word) >= 5 and ci + 1 < len(c_segment):
+                                            # Try to consume multiple corrected words for this one original word
+                                            split_parts = [c_segment[ci]]
+                                            temp_ci = ci + 1
+                                            joined = c_segment[ci]
+                                            while temp_ci < len(c_segment) and len(joined) < len(o_word) + 2:
+                                                joined += c_segment[temp_ci]
+                                                split_parts.append(c_segment[temp_ci])
+                                                temp_ci += 1
+                                            # Check if the joined parts roughly match the original
+                                            corr_str = " ".join(split_parts)
+                                            joined_no_space = "".join(split_parts)
+                                            dist = _levenshtein(o_word, joined_no_space)
+                                            if dist <= 3 and len(split_parts) > 1:
+                                                new_words.append(corr_str)
+                                                suggestions.append({
+                                                    'start': o_start,
+                                                    'end': o_end,
+                                                    'original': o_word,
+                                                    'correction': corr_str,
+                                                    'type': 'spelling',
+                                                })
+                                                ci = temp_ci
+                                            else:
+                                                new_words.append(current_text[o_start:o_end])
+                                                ci += 1
+                                        else:
+                                            new_words.append(current_text[o_start:o_end])
+                                            ci += 1
+                                    else:
+                                        new_words.append(current_text[o_start:o_end])
                         elif tag == 'delete':
                             for idx in range(i1, i2):
                                 new_words.append(current_text[orig_word_positions[idx][1]:orig_word_positions[idx][2]])
