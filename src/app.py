@@ -855,9 +855,8 @@ def _ensure_models_loaded():
     if not load_models():
         logger.error("Failed to load any models. Server will start but functionality will be limited.")
 
-# Load models on import (gunicorn) — guarded by flag to prevent double-load
-if os.environ.get('RENDER') or os.environ.get('GUNICORN_LOADED'):
-    _ensure_models_loaded()
+# Load models on import (gunicorn imports this module, __name__ != '__main__')
+_ensure_models_loaded()
 
 
 if __name__ == '__main__':
