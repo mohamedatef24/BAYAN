@@ -80,7 +80,7 @@ def get_spelling_model():
         # 6. Initialize the spell checker pipeline (contextual=False to save RAM)
         from nlp.spelling.araspell_rules import ArabicSpellChecker
         _spell_checker = ArabicSpellChecker(
-            model, tokenizer, device, use_contextual=False
+            model, tokenizer, device, use_contextual=True
         )
 
         elapsed = time.time() - t0
