@@ -12,6 +12,7 @@ Models:
 """
 
 import os
+import json
 import logging
 import time
 
@@ -44,99 +45,119 @@ AUTOCOMPLETE_REPO = os.environ.get("AUTOCOMPLETE_REPO_ID", "bayan10/AutoComplete
 
 
 # ============================================================
+# Generic low-level call (works for models without pipeline_tag)
+# ============================================================
+
+def _call_model_raw(repo_id, payload):
+    """
+    Call any HF model using the low-level .post() method.
+    This works even for models without a pipeline_tag configured.
+    Returns parsed JSON response.
+    """
+    client = _get_client()
+    logger.info("Calling HF model (raw): %s", repo_id)
+
+    response = client.post(
+        json=payload,
+        model=repo_id,
+    )
+
+    # response is bytes
+    result = json.loads(response)
+    logger.info("HF raw result for %s: type=%s, preview=%s",
+                repo_id, type(result).__name__, str(result)[:150])
+    return result
+
+
+# ============================================================
 # Model-specific wrappers
 # ============================================================
 
 def hf_summarize(text, max_length=128, min_length=30):
     """Summarize Arabic text via HF Inference API."""
-    client = _get_client()
     logger.info("Calling HF summarization: %s (max_length=%d)", SUMMARIZATION_REPO, max_length)
-    
-    result = client.summarization(
-        text,
-        model=SUMMARIZATION_REPO,
-        parameters={"max_length": max_length, "min_length": min_length},
-    )
-    
-    logger.info("Summarization result type: %s", type(result).__name__)
-    
-    # Result is a SummarizationOutput with .summary_text
-    if hasattr(result, 'summary_text'):
-        return result.summary_text
-    
-    # Fallback for dict responses
+
+    # Use raw post since .summarization() has different kwargs
+    result = _call_model_raw(SUMMARIZATION_REPO, {
+        "inputs": text,
+        "parameters": {
+            "max_length": max_length,
+            "min_length": min_length,
+        }
+    })
+
+    # HF summarization returns: [{"summary_text": "..."}]
+    if isinstance(result, list) and len(result) > 0:
+        item = result[0]
+        if isinstance(item, dict):
+            return item.get("summary_text", item.get("generated_text", str(item)))
+        return str(item)
+
     if isinstance(result, dict):
         return result.get("summary_text", result.get("generated_text", str(result)))
-    
+
     return str(result)
 
 
 def hf_correct_spelling(text):
     """Correct spelling in Arabic text via HF Inference API."""
-    client = _get_client()
     logger.info("Calling HF spelling correction: %s", SPELLING_REPO)
-    
-    # Use text_generation since model has no pipeline_tag
-    result = client.text_generation(
-        text,
-        model=SPELLING_REPO,
-        max_new_tokens=len(text) + 50,
-    )
-    
-    logger.info("Spelling result type: %s, value: %s", type(result).__name__, str(result)[:100])
-    
-    if isinstance(result, str):
-        return result if result.strip() else text
-    
+
+    result = _call_model_raw(SPELLING_REPO, {
+        "inputs": text,
+    })
+
+    # Seq2seq/text2text models return: [{"generated_text": "..."}]
+    if isinstance(result, list) and len(result) > 0:
+        item = result[0]
+        if isinstance(item, dict):
+            return item.get("generated_text", item.get("translation_text", text))
+        return str(item) if str(item).strip() else text
+
     if isinstance(result, dict):
-        return result.get("generated_text", text)
-    
+        return result.get("generated_text", result.get("translation_text", text))
+
     return text
 
 
 def hf_add_punctuation(text):
     """Add punctuation to Arabic text via HF Inference API."""
-    client = _get_client()
     logger.info("Calling HF punctuation: %s", PUNCTUATION_REPO)
-    
-    # PuncAra is an encoder-decoder model
-    result = client.text_generation(
-        text,
-        model=PUNCTUATION_REPO,
-        max_new_tokens=len(text) + 50,
-    )
-    
-    logger.info("Punctuation result type: %s, value: %s", type(result).__name__, str(result)[:100])
-    
-    if isinstance(result, str):
-        return result if result.strip() else text
-    
+
+    result = _call_model_raw(PUNCTUATION_REPO, {
+        "inputs": text,
+    })
+
+    if isinstance(result, list) and len(result) > 0:
+        item = result[0]
+        if isinstance(item, dict):
+            return item.get("generated_text", item.get("translation_text", text))
+        return str(item) if str(item).strip() else text
+
     if isinstance(result, dict):
-        return result.get("generated_text", text)
-    
+        return result.get("generated_text", result.get("translation_text", text))
+
     return text
 
 
 def hf_autocomplete(text, n=5):
     """Get autocomplete suggestions for Arabic text via HF Inference API."""
-    client = _get_client()
     logger.info("Calling HF autocomplete: %s", AUTOCOMPLETE_REPO)
-    
-    result = client.text_generation(
-        text,
-        model=AUTOCOMPLETE_REPO,
-        max_new_tokens=20,
-    )
-    
-    logger.info("Autocomplete result type: %s, value: %s", type(result).__name__, str(result)[:100])
-    
+
+    result = _call_model_raw(AUTOCOMPLETE_REPO, {
+        "inputs": text,
+        "parameters": {
+            "max_new_tokens": 20,
+        }
+    })
+
+    # Text generation returns: [{"generated_text": "..."}] or a string
     if isinstance(result, str):
-        # Result includes the input + completion
         completion = result
         if completion.startswith(text):
             completion = completion[len(text):].strip()
         return [completion] if completion else [text]
-    
+
     if isinstance(result, list):
         suggestions = []
         for item in result:
@@ -146,7 +167,7 @@ def hf_autocomplete(text, n=5):
             if gen:
                 suggestions.append(gen)
         return suggestions if suggestions else [text]
-    
+
     return [text]
 
 
@@ -154,7 +175,6 @@ def check_hf_api_available():
     """Quick check if HF Inference API is reachable."""
     try:
         client = _get_client()
-        # Just check if the client can be created
         return client is not None
     except Exception:
         return False
@@ -186,7 +206,8 @@ def debug_test_all_models():
         except Exception as e:
             results[name] = {
                 "status": "error",
-                "error": str(e)[:500],
+                "error_type": type(e).__name__,
+                "error": str(e)[:500] if str(e) else repr(e)[:500],
             }
 
     return results
