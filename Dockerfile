@@ -33,14 +33,16 @@ print('Summarization model cached!'); \
 # 2. Spelling model (AraSpell — AraBERT encoder-decoder + checkpoint)
 RUN python -c "\
 from huggingface_hub import hf_hub_download; \
-from transformers import AutoTokenizer, EncoderDecoderModel; \
+from transformers import AutoTokenizer, EncoderDecoderModel, AutoModelForMaskedLM; \
 print('Downloading AraSpell checkpoint...'); \
 hf_hub_download(repo_id='bayan10/AraSpell-Model', filename='last_model.pt'); \
 print('Downloading AraBERT tokenizer...'); \
 AutoTokenizer.from_pretrained('aubmindlab/bert-base-arabertv02'); \
 print('Downloading AraBERT encoder-decoder...'); \
 EncoderDecoderModel.from_encoder_decoder_pretrained('aubmindlab/bert-base-arabertv02', 'aubmindlab/bert-base-arabertv02'); \
-print('Spelling model cached!'); \
+print('Downloading AraBERT MLM (for ContextualCorrector)...'); \
+AutoModelForMaskedLM.from_pretrained('aubmindlab/bert-base-arabertv02'); \
+print('Spelling model + MLM cached!'); \
 "
 
 # Copy application code
