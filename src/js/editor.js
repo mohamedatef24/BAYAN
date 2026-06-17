@@ -4,7 +4,7 @@
 let analyzeTimeout;
 let analyzeAbortController = null;
 let _lastInputTime = 0;
-const ANALYZE_DEBOUNCE_MS = 1500;
+const ANALYZE_DEBOUNCE_MS = 1000;
 const MAX_ANALYZE_LENGTH = 5000;
 
 /**
