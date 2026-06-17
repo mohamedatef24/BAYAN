@@ -3,7 +3,8 @@
 
 let analyzeTimeout;
 let analyzeAbortController = null;
-const ANALYZE_DEBOUNCE_MS = 500;
+let _lastInputTime = 0;
+const ANALYZE_DEBOUNCE_MS = 1500;
 const MAX_ANALYZE_LENGTH = 5000;
 
 /**
@@ -27,6 +28,9 @@ function initEditor() {
   } catch (e) {}
 
   editor.addEventListener('input', () => {
+    _lastInputTime = Date.now();
+    updateEditorStats();
+    updatePlaceholder();
     analyzeTextDelayed();
     try {
       localStorage.setItem('bayan_editor_draft', editor.innerHTML);
@@ -83,8 +87,16 @@ function updatePlaceholder() {
 
 function analyzeTextDelayed() {
   clearTimeout(analyzeTimeout);
+  // Abort any in-flight request so it doesn't overwrite while user types
+  if (analyzeAbortController) {
+    analyzeAbortController.abort();
+  }
   analyzeTimeout = setTimeout(() => {
-    analyzeText();
+    // Double-check user hasn't typed in the last DEBOUNCE period
+    const timeSinceLastInput = Date.now() - _lastInputTime;
+    if (timeSinceLastInput >= ANALYZE_DEBOUNCE_MS - 100) {
+      analyzeText();
+    }
   }, ANALYZE_DEBOUNCE_MS);
 }
 
