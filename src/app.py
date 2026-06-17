@@ -153,7 +153,7 @@ def health_check():
             'mode': 'hf_spaces_local',
             'models': {
                 'summarization': summarization_model is not None,
-                'spelling': False,
+                'spelling': _spelling_available(),
                 'autocomplete': False,
                 'grammar': False,
                 'punctuation': False
@@ -221,6 +221,74 @@ def debug_models():
         'proc_meminfo': proc_mem,
         'models': results,
     }), 200
+
+
+def _spelling_available():
+    """Check if spelling model is loaded (without triggering lazy load)."""
+    try:
+        from nlp.spelling.araspell_service import is_loaded
+        return is_loaded()
+    except Exception:
+        return False
+
+
+@app.route('/api/spelling', methods=['POST'])
+def spelling_correction():
+    """
+    Correct spelling in Arabic text.
+    
+    Request JSON:
+    {
+        "text": "Arabic text with spelling errors"
+    }
+    
+    Response JSON:
+    {
+        "original_text": "...",
+        "corrected_text": "...",
+        "status": "success"
+    }
+    """
+    try:
+        if not request.is_json:
+            return jsonify({'error': 'Request must be JSON', 'status': 'error'}), 400
+        
+        data = request.get_json()
+        text = data.get('text', '').strip()
+        
+        if not text:
+            return jsonify({'error': 'Text is required', 'status': 'error'}), 400
+        
+        if len(text) > MAX_TEXT_LENGTH:
+            return jsonify({
+                'error': f'Text too long. Maximum {MAX_TEXT_LENGTH} characters.',
+                'status': 'error'
+            }), 400
+        
+        logger.info(f"Spelling correction request: text_length={len(text)}")
+        
+        from nlp.spelling.araspell_service import get_spelling_model
+        checker = get_spelling_model()
+        corrected = checker.correct(text)
+        
+        return jsonify({
+            'original_text': text,
+            'corrected_text': corrected,
+            'status': 'success'
+        }), 200
+    
+    except RuntimeError as e:
+        logger.error(f"Spelling model error: {e}")
+        return jsonify({
+            'error': f'Spelling model unavailable: {str(e)[:200]}',
+            'status': 'error'
+        }), 503
+    except Exception as e:
+        logger.error(f"Spelling correction error: {e}")
+        return jsonify({
+            'error': f'Spelling correction failed: {str(e)[:200]}',
+            'status': 'error'
+        }), 500
 
 
 @app.route('/api/summarize', methods=['POST'])
