@@ -53,7 +53,8 @@ HUGGINGFACE_SUMMARIZATION_REPO = os.environ.get(
 
 # When HF_API_TOKEN is set, use remote HF Inference API instead of local models.
 # This avoids loading 500MB+ models into RAM on the free tier.
-USE_HF_API = bool(os.environ.get('HF_API_TOKEN', ''))
+HF_API_TOKEN = os.environ.get('HF_API_TOKEN', '')
+USE_HF_API = bool(HF_API_TOKEN)
 
 # Configure logging
 logging.basicConfig(
@@ -170,6 +171,22 @@ def health_check():
     }
     status_code = 200 if health['models']['summarization'] else 503
     return jsonify(health), status_code
+
+
+@app.route('/api/debug-models', methods=['GET'])
+def debug_models():
+    """Debug endpoint: test all HF models and return actual errors."""
+    if not USE_HF_API:
+        return jsonify({'error': 'Not in HF API mode', 'mode': 'local'}), 400
+    
+    from hf_inference import debug_test_all_models
+    results = debug_test_all_models()
+    return jsonify({
+        'status': 'debug',
+        'hf_api_token_set': bool(HF_API_TOKEN),
+        'hf_api_token_prefix': HF_API_TOKEN[:10] + '...' if HF_API_TOKEN else 'NOT SET',
+        'models': results,
+    }), 200
 
 
 @app.route('/api/summarize', methods=['POST'])
