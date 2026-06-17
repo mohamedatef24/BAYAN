@@ -1,8 +1,8 @@
 """
 HuggingFace Inference API client for Bayan models.
 
-Uses huggingface_hub.InferenceClient._inner_post (v1.19.0) which handles
-internal routing inside HF Spaces.
+Uses huggingface_hub.InferenceClient._inner_post with RequestParameters
+(v1.19.0) for internal routing inside HF Spaces.
 """
 
 import os
@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 HF_API_TOKEN = os.environ.get("HF_API_TOKEN", "")
 
 _client = None
+_RequestParameters = None
 
 
 def _get_client():
@@ -23,8 +24,15 @@ def _get_client():
     if _client is None:
         from huggingface_hub import InferenceClient
         _client = InferenceClient(token=HF_API_TOKEN if HF_API_TOKEN else None)
-        logger.info("InferenceClient v1.19.0 initialized")
     return _client
+
+
+def _get_request_params_class():
+    global _RequestParameters
+    if _RequestParameters is None:
+        from huggingface_hub.inference._common import RequestParameters
+        _RequestParameters = RequestParameters
+    return _RequestParameters
 
 
 # Repository IDs
@@ -36,55 +44,55 @@ AUTOCOMPLETE_REPO = os.environ.get("AUTOCOMPLETE_REPO_ID", "bayan10/AutoComplete
 
 def _call_model(repo_id, payload, task=None):
     """
-    Call HF model using InferenceClient._inner_post.
-    Tries multiple calling conventions to match the version's signature.
+    Call HF model using _inner_post with RequestParameters.
     """
     client = _get_client()
+    RP = _get_request_params_class()
 
     if "options" not in payload:
         payload["options"] = {"wait_for_model": True}
 
     data_bytes = json.dumps(payload).encode("utf-8")
-
     logger.info("Calling HF model: %s (task=%s)", repo_id, task)
 
-    # Try different calling conventions for _inner_post
-    attempts = [
-        # Attempt 1: data as bytes with model and task
-        lambda: client._inner_post(data=data_bytes, model=repo_id, task=task),
-        # Attempt 2: data as bytes with model only
-        lambda: client._inner_post(data=data_bytes, model=repo_id),
-        # Attempt 3: positional data with model kwarg
-        lambda: client._inner_post(data_bytes, model=repo_id, task=task),
-        # Attempt 4: just positional args
-        lambda: client._inner_post(data_bytes, repo_id),
-    ]
+    # Construct RequestParameters - try with fields we know
+    try:
+        # Inspect what fields RequestParameters accepts
+        sig = inspect.signature(RP)
+        params = sig.parameters
+        logger.info("RequestParameters fields: %s", list(params.keys()))
 
-    last_error = None
-    for i, attempt in enumerate(attempts):
-        try:
-            response = attempt()
-            # Parse response
-            if isinstance(response, bytes):
-                result = json.loads(response.decode("utf-8"))
-            elif isinstance(response, str):
-                result = json.loads(response)
-            else:
-                result = response
+        # Build kwargs based on what's available
+        rp_kwargs = {}
+        if "model" in params:
+            rp_kwargs["model"] = repo_id
+        if "task" in params and task:
+            rp_kwargs["task"] = task
+        if "data" in params:
+            rp_kwargs["data"] = data_bytes
+        if "json" in params:
+            rp_kwargs["json"] = payload
 
-            logger.info("HF result for %s (attempt %d): type=%s preview=%s",
-                        repo_id, i+1, type(result).__name__, str(result)[:200])
-            return result
-        except TypeError as e:
-            logger.warning("_inner_post attempt %d failed: %s", i+1, e)
-            last_error = e
-            continue
-        except Exception as e:
-            # Non-TypeError means the call went through but the API returned an error
-            logger.error("_inner_post attempt %d API error: %s", i+1, e)
-            raise
+        rp = RP(**rp_kwargs)
+        response = client._inner_post(rp)
 
-    raise RuntimeError("All _inner_post calling conventions failed. Last: " + str(last_error))
+    except Exception as e:
+        logger.warning("RequestParameters construction failed: %s", e)
+        # Last resort: try creating with just positional arg
+        rp = RP(data_bytes)
+        response = client._inner_post(rp)
+
+    # Parse response
+    if isinstance(response, bytes):
+        result = json.loads(response.decode("utf-8"))
+    elif isinstance(response, str):
+        result = json.loads(response)
+    else:
+        result = response
+
+    logger.info("HF result for %s: type=%s preview=%s",
+                repo_id, type(result).__name__, str(result)[:200])
+    return result
 
 
 def _extract_text(result, fallback=""):
@@ -163,17 +171,18 @@ def debug_test_all_models():
     test_text = "هذا نص تجريبي للاختبار"
     long_text = (test_text + " ") * 5
 
-    # Inspect _inner_post signature
     try:
         import huggingface_hub
-        client = _get_client()
-        sig = str(inspect.signature(client._inner_post))
+        RP = _get_request_params_class()
+        rp_sig = str(inspect.signature(RP))
+        rp_fields = list(inspect.signature(RP).parameters.keys())
         results["_info"] = {
             "hf_hub_version": huggingface_hub.__version__,
-            "_inner_post_signature": sig,
+            "RequestParameters_signature": rp_sig[:300],
+            "RequestParameters_fields": rp_fields,
         }
     except Exception as e:
-        results["_info"] = {"error": repr(e)[:200]}
+        results["_info"] = {"error": repr(e)[:300]}
 
     for name, fn, args in [
         ("summarization", hf_summarize, (long_text, 30, 10)),
