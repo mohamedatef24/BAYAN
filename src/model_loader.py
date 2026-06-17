@@ -185,7 +185,7 @@ class SummarizationModel:
                         config=config,
                         local_files_only=True,
                         trust_remote_code=False,
-                        torch_dtype=torch.float32
+                        torch_dtype=torch.float16
                     )
                 except Exception as e:
                     logger.warning(f"Failed to load with config: {str(e)}")
@@ -194,7 +194,7 @@ class SummarizationModel:
                         self.model_source,
                         local_files_only=True,
                         trust_remote_code=False,
-                        torch_dtype=torch.float32
+                        torch_dtype=torch.float16
                     )
             except Exception as e:
                 logger.warning(f"Failed to load config: {str(e)}")
@@ -204,7 +204,7 @@ class SummarizationModel:
                         self.model_source,
                         local_files_only=True,
                         trust_remote_code=False,
-                        torch_dtype=torch.float32
+                        torch_dtype=torch.float16
                     )
                 except Exception as e2:
                     logger.warning(f"Failed to load with local_files_only: {str(e2)}")
@@ -212,7 +212,7 @@ class SummarizationModel:
                     self.model = MBartForConditionalGeneration.from_pretrained(
                         self.model_source,
                         trust_remote_code=False,
-                        torch_dtype=torch.float32
+                        torch_dtype=torch.float16
                     )
             
             # Move model to device
