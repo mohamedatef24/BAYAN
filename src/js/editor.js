@@ -137,7 +137,6 @@ async function analyzeText() {
 
   try {
     const savedSelection = saveSelection();
-    const currentCaretOffset = getCaretOffset();
 
     const response = await fetch('/api/analyze', {
       method: 'POST',
@@ -161,17 +160,12 @@ async function analyzeText() {
 
     window.currentSuggestions = sortSuggestions(data.suggestions || []);
 
-    const highlightedHtml = render({
-      text: text,
-      suggestions: window.currentSuggestions
-    });
-
-    setEditorHTML(highlightedHtml);
+    // Use DOM overlay instead of innerHTML replacement to preserve formatting
+    const editor = getEditorElement();
+    overlaySuggestions(editor, window.currentSuggestions);
 
     if (savedSelection) {
       restoreSelection(savedSelection);
-    } else {
-      setCaretOffset(currentCaretOffset);
     }
 
     const spellingCount = window.currentSuggestions.filter((s) => s.type === 'spelling').length;
@@ -193,7 +187,8 @@ async function analyzeText() {
 function renderWithoutSuggestions(text) {
   const editor = getEditorElement();
   if (!editor) return;
-  editor.textContent = text;
+  // Just clear overlays, don't replace content (preserves formatting)
+  clearOverlays(editor);
   updatePlaceholder();
 }
 
@@ -302,11 +297,23 @@ function hideTooltip() {
 }
 
 function applySuggestionAtOffsets(suggestion) {
-  const text = getEditorText();
-  const before = text.substring(0, suggestion.start);
-  const after = text.substring(suggestion.end);
-  const newText = before + suggestion.correction + after;
-  setEditorHTML(escapeHtml(newText));
+  // Find the error span in the DOM and replace its text content
+  // This preserves formatting (bold, italic, etc.) around/inside the span
+  const idx = (window.currentSuggestions || []).indexOf(suggestion);
+  const errorSpan = idx >= 0 ? document.querySelector(`[data-suggestion-id="${idx}"]`) : null;
+
+  if (errorSpan) {
+    // Replace the error span with the corrected text node
+    const correctedNode = document.createTextNode(suggestion.correction);
+    errorSpan.replaceWith(correctedNode);
+  } else {
+    // Fallback: use offset-based replacement
+    const text = getEditorText();
+    const before = text.substring(0, suggestion.start);
+    const after = text.substring(suggestion.end);
+    const newText = before + suggestion.correction + after;
+    setEditorHTML(escapeHtml(newText));
+  }
   hideTooltip();
   analyzeTextDelayed();
 }
@@ -317,29 +324,43 @@ function applyCorrection() {
 }
 
 function applyAlternativeCorrection(suggestion, correctionText) {
-  const text = getEditorText();
-  const before = text.substring(0, suggestion.start);
-  const after = text.substring(suggestion.end);
-  const newText = before + correctionText + after;
-  setEditorHTML(escapeHtml(newText));
+  const idx = (window.currentSuggestions || []).indexOf(suggestion);
+  const errorSpan = idx >= 0 ? document.querySelector(`[data-suggestion-id="${idx}"]`) : null;
+
+  if (errorSpan) {
+    const correctedNode = document.createTextNode(correctionText);
+    errorSpan.replaceWith(correctedNode);
+  } else {
+    const text = getEditorText();
+    const before = text.substring(0, suggestion.start);
+    const after = text.substring(suggestion.end);
+    const newText = before + correctionText + after;
+    setEditorHTML(escapeHtml(newText));
+  }
   hideTooltip();
   analyzeTextDelayed();
 }
 
 function dismissSuggestion(suggestion) {
-  // Remove this suggestion from the list (keep the word as-is)
+  // Remove the error highlight but keep the text as-is
+  const idx = (window.currentSuggestions || []).indexOf(suggestion);
+  const errorSpan = idx >= 0 ? document.querySelector(`[data-suggestion-id="${idx}"]`) : null;
+
+  if (errorSpan) {
+    // Unwrap: replace span with its text content
+    const parent = errorSpan.parentNode;
+    while (errorSpan.firstChild) {
+      parent.insertBefore(errorSpan.firstChild, errorSpan);
+    }
+    parent.removeChild(errorSpan);
+    parent.normalize();
+  }
+
   if (window.currentSuggestions) {
     window.currentSuggestions = window.currentSuggestions.filter(
       s => !(s.start === suggestion.start && s.end === suggestion.end)
     );
-    // Re-render without this suggestion
-    const text = getEditorText();
-    const highlightedHtml = render({
-      text: text,
-      suggestions: window.currentSuggestions
-    });
-    setEditorHTML(highlightedHtml);
-    
+
     const spellingCount = window.currentSuggestions.filter(s => s.type === 'spelling').length;
     const grammarCount = window.currentSuggestions.filter(s => s.type === 'grammar').length;
     const punctuationCount = window.currentSuggestions.filter(s => s.type === 'punctuation').length;
