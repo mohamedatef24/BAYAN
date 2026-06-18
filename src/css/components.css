@@ -961,6 +961,9 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+  scrollbar-width: thin;
 }
 
 .sidebar-card {
@@ -968,7 +971,7 @@
 }
 
 .suggestions-scroll {
-  max-height: 420px;
+  max-height: 320px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -2235,8 +2238,9 @@ input[type="range"]::-webkit-slider-thumb {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: var(--font-size-label);
-  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  color: var(--color-text-secondary, var(--color-text-muted));
+  opacity: 0.85;
 }
 
 .stat-item--sep {
