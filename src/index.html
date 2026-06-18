@@ -997,9 +997,7 @@
 
     // Summarization functions
     function updateSummaryLength() {
-      const value = document.getElementById('summary-length').value;
-      const text = ['طويل', 'متوسط', 'قصير'][value - 1];
-      document.getElementById('summary-length-text').textContent = text;
+      // Slider moves but label stays fixed as متوسط
     }
 
     async function generateSummary(event) {
