@@ -856,19 +856,37 @@
      </div>
     </section>
    </div><!-- Footer -->
-   <footer class="py-12 border-t footer-bar">
-    <div class="max-w-7xl mx-auto px-6">
-     <div class="flex flex-col md:flex-row items-center justify-between gap-6">
-      <div class="flex items-center gap-3">
-       <div class="w-10 h-10 rounded-xl flex items-center justify-center gradient-accent"><span class="text-white text-xl font-bold">ب</span>
-       </div><span id="footer-brand" class="text-2xl font-bold text-gradient">بيان</span>
+<footer class="py-16 border-t footer-bar">
+     <div class="max-w-7xl mx-auto px-6">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12" dir="rtl">
+       <div>
+        <div class="flex items-center gap-3 mb-4">
+         <div class="w-10 h-10 rounded-xl flex items-center justify-center gradient-accent"><span class="text-white text-xl font-bold">ب</span></div>
+         <span id="footer-brand" class="text-2xl font-bold text-gradient">بيان</span>
+        </div>
+        <p class="text-sm leading-relaxed" style="color: var(--text-secondary); line-height: 1.8;">مساعد ذكي للكتابة العربية. يصحح الإملاء والنحو وعلامات الترقيم ويُلخّص النصوص بدقة عالية.</p>
+       </div>
+       <div>
+        <h4 class="text-base font-bold mb-4">المنتج</h4>
+        <ul class="space-y-3">
+         <li><button onclick="showPage('editor')" class="text-sm transition-colors hover:text-white" style="color: var(--text-secondary); background: none; border: none; cursor: pointer; font-family: inherit;">المحرر</button></li>
+         <li><button onclick="showPage('features')" class="text-sm transition-colors hover:text-white" style="color: var(--text-secondary); background: none; border: none; cursor: pointer; font-family: inherit;">الميزات</button></li>
+         <li><button onclick="showPage('pricing')" class="text-sm transition-colors hover:text-white" style="color: var(--text-secondary); background: none; border: none; cursor: pointer; font-family: inherit;">الأسعار</button></li>
+        </ul>
+       </div>
+       <div>
+        <h4 class="text-base font-bold mb-4">المزيد</h4>
+        <ul class="space-y-3">
+         <li><a href="https://bayyinah-alpha.vercel.app/" class="footer-external-link text-sm transition-colors" target="_blank" rel="noopener noreferrer">بَيِّنَة — القرآن والحديث</a></li>
+         <li><a href="https://github.com/mohamedatef24/BAYAN" class="text-sm transition-colors hover:text-white" style="color: var(--text-secondary);" target="_blank" rel="noopener noreferrer">GitHub</a></li>
+        </ul>
+       </div>
       </div>
-      <div class="flex flex-wrap items-center justify-center gap-6 md:gap-8"><a href="#" class="text-base transition-colors hover:text-white" style="color: var(--text-secondary);">الخصوصية</a> <a href="#" class="text-base transition-colors hover:text-white" style="color: var(--text-secondary);">الشروط</a> <a href="#" class="text-base transition-colors hover:text-white" style="color: var(--text-secondary);">تواصل معنا</a> <a href="https://bayyinah-alpha.vercel.app/" class="footer-external-link text-base transition-colors" target="_blank" rel="noopener noreferrer" aria-label="بَيِّنَة — مساعد ذكي للإجابة عن أسئلة القرآن والحديث وقصص الأنبياء">بَيِّنَة — القرآن والحديث والسيرة</a>
+      <div class="pt-8 border-t" style="border-color: var(--color-border);">
+       <p class="text-sm text-center" style="color: var(--text-secondary);">© ٢٠٢٦ بيان. جميع الحقوق محفوظة.</p>
       </div>
-      <p class="text-base" style="color: var(--text-secondary);">© ٢٠٢٦ بيان. جميع الحقوق محفوظة.</p>
      </div>
-    </div>
-   </footer>
+    </footer>
    <!-- Toast Container -->
    <div id="toast-container" class="toast-container"></div>
    <!-- Scroll to Top -->
