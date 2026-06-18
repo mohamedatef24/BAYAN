@@ -858,16 +858,47 @@ def analyze_text():
                 corrected_grammar = correct_grammar(current_text)
                 logger.info(f"[ANALYZE] Step 2: Grammar done in {time.time()-t0:.2f}s")
                 if corrected_grammar != current_text:
-                    diffs = get_word_diffs(current_text, corrected_grammar)
-                    for d in diffs:
-                        orig_start, orig_end = map_range_to_original(d['start'], d['end'])
-                        suggestions.append({
-                            'start': orig_start,
-                            'end': orig_end,
-                            'original': text[orig_start:orig_end],
-                            'correction': d['correction'],
-                            'type': 'grammar'
-                        })
+                    # Word-level grammar diffs (individual words, not chunks)
+                    g_orig_words = get_word_positions(current_text)
+                    g_corr_words = get_word_positions(corrected_grammar)
+                    g_matcher = difflib.SequenceMatcher(
+                        None,
+                        [w[0] for w in g_orig_words],
+                        [w[0] for w in g_corr_words]
+                    )
+
+                    for tag, i1, i2, j1, j2 in g_matcher.get_opcodes():
+                        if tag == 'replace':
+                            # Process each original word individually
+                            for k in range(i1, i2):
+                                ck = j1 + (k - i1)
+                                if ck < j2:
+                                    o_word = g_orig_words[k][0]
+                                    c_word = g_corr_words[ck][0]
+                                    if o_word != c_word:
+                                        g_start = g_orig_words[k][1]
+                                        g_end = g_orig_words[k][2]
+                                        orig_start, orig_end = map_range_to_original(g_start, g_end)
+
+                                        # Skip if overlaps with existing spelling suggestion
+                                        overlaps = False
+                                        for existing in suggestions:
+                                            if existing['type'] == 'spelling':
+                                                if not (orig_end <= existing['start'] or orig_start >= existing['end']):
+                                                    overlaps = True
+                                                    break
+                                        if overlaps:
+                                            continue
+
+                                        suggestions.append({
+                                            'start': orig_start,
+                                            'end': orig_end,
+                                            'original': text[orig_start:orig_end],
+                                            'correction': c_word,
+                                            'type': 'grammar',
+                                            'alternatives': [c_word, text[orig_start:orig_end]],
+                                        })
+
                     mappers.append(OffsetMapper(current_text, corrected_grammar))
                     current_text = corrected_grammar
             except Exception as e:
