@@ -920,6 +920,26 @@ def analyze_text():
                 logger.error(f"[ANALYZE] Punctuation failed: {e}")
 
         total_time = time.time() - total_start
+
+        # ── Deduplicate overlapping suggestions ──
+        # If grammar and spelling both flag the same position, grammar wins.
+        # This prevents double-highlighting on words like "يعملوا" which are
+        # grammar errors (not spelling errors).
+        grammar_positions = set()
+        for s in suggestions:
+            if s['type'] == 'grammar':
+                grammar_positions.add((s['start'], s['end']))
+
+        if grammar_positions:
+            before_count = len(suggestions)
+            suggestions = [
+                s for s in suggestions
+                if s['type'] != 'spelling' or (s['start'], s['end']) not in grammar_positions
+            ]
+            removed = before_count - len(suggestions)
+            if removed > 0:
+                logger.info(f"[ANALYZE] Removed {removed} spelling suggestions that overlap with grammar")
+
         logger.info(f"[ANALYZE] Total analysis time: {total_time:.2f}s | Suggestions: {len(suggestions)}")
 
         return jsonify({
