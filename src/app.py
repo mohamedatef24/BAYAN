@@ -11,7 +11,6 @@ from flask_cors import CORS
 from pathlib import Path
 import traceback
 import difflib
-from difflib import SequenceMatcher
 import re
 
 # Load .env file from project root (one level up from src/)
@@ -682,8 +681,6 @@ def analyze_text():
 
         current_text = text
         suggestions = []
-        spelling_changed_originals = set()
-        spell_checker = None
         mappers = []
         total_start = time.time()
 
@@ -846,51 +843,13 @@ def analyze_text():
                             continue
 
                     safe_text = " ".join(new_words)
-                    # Track which original words were changed by spelling
-                    for s in suggestions:
-                        spelling_changed_originals.add(s['original'])
+                    mappers.append(OffsetMapper(current_text, safe_text))
                     current_text = safe_text
             except Exception as e:
                 logger.error(f"[ANALYZE] Spelling failed: {e}")
 
-        # Build word position map for original text (needed for grammar mapping)
-        orig_word_positions = get_word_positions(text)
-
-        # Build mapping: corrected_text word index → original_text word index
-        # This handles word splits (1 orig word → N corrected words)
-        spelling_word_map = []  # spelling_word_map[j] = original word index
-        orig_words_list = text.split()
-        corrected_words_list = current_text.split()
-
-        if current_text != text:
-            sm_map = SequenceMatcher(None, orig_words_list, corrected_words_list)
-            for tag, i1, i2, j1, j2 in sm_map.get_opcodes():
-                if tag == 'equal':
-                    for k in range(j1, j2):
-                        spelling_word_map.append(i1 + (k - j1))
-                elif tag == 'replace':
-                    # Map corrected words proportionally to original words
-                    o_count = i2 - i1
-                    c_count = j2 - j1
-                    for k in range(j1, j2):
-                        # Map proportionally
-                        orig_idx = i1 + min(int((k - j1) * o_count / c_count), o_count - 1)
-                        spelling_word_map.append(orig_idx)
-                elif tag == 'insert':
-                    for k in range(j1, j2):
-                        # Inserted words map to the nearest original word
-                        spelling_word_map.append(min(i1, len(orig_words_list) - 1))
-                elif tag == 'delete':
-                    pass  # deleted original words have no corrected counterpart
-        else:
-            # No spelling changes — 1:1 mapping
-            spelling_word_map = list(range(len(orig_words_list)))
-
-        # Save text after spelling for grammar diff
-        text_after_spelling = current_text
-
         # 2. Grammar (runs on spelling-corrected text)
-        has_grammar = True
+        has_grammar = True  # Always available via lazy-loaded grammar_service
         if has_grammar:
             try:
                 t0 = time.time()
@@ -899,104 +858,17 @@ def analyze_text():
                 corrected_grammar = correct_grammar(current_text)
                 logger.info(f"[ANALYZE] Step 2: Grammar done in {time.time()-t0:.2f}s")
                 if corrected_grammar != current_text:
-                    # Word-by-word diff: spelling-corrected vs grammar-corrected
-                    spell_words = current_text.split()
-                    grammar_words = corrected_grammar.split()
-
-                    # Existing spelling suggestion positions (for overlap check)
-                    spelling_ranges = [(s['start'], s['end']) for s in suggestions]
-
-                    sm_grammar = SequenceMatcher(None, spell_words, grammar_words)
-                    for tag, i1, i2, j1, j2 in sm_grammar.get_opcodes():
-                        if tag != 'replace':
-                            continue
-
-                        o_count = i2 - i1
-                        c_count = j2 - j1
-
-                        # If word counts match, process EACH word individually
-                        if o_count == c_count:
-                            for offset in range(o_count):
-                                sw = spell_words[i1 + offset]
-                                gw = grammar_words[j1 + offset]
-                                if sw == gw:
-                                    continue  # no change at this position
-
-                                # Map to original text position
-                                spell_idx = i1 + offset
-                                if spell_idx >= len(spelling_word_map):
-                                    continue
-                                orig_idx = spelling_word_map[spell_idx]
-                                if orig_idx >= len(orig_word_positions):
-                                    continue
-
-                                orig_start = orig_word_positions[orig_idx][1]
-                                orig_end = orig_word_positions[orig_idx][2]
-                                original_word = text[orig_start:orig_end]
-
-                                if original_word == gw:
-                                    continue
-
-                                # Overlap check
-                                overlaps = any(
-                                    not (orig_end <= sr_s or orig_start >= sr_e)
-                                    for sr_s, sr_e in spelling_ranges
-                                )
-                                if overlaps:
-                                    continue
-
-                                suggestions.append({
-                                    'start': orig_start,
-                                    'end': orig_end,
-                                    'original': original_word,
-                                    'correction': gw,
-                                    'type': 'grammar'
-                                })
-                        else:
-                            # Word count differs — create one grouped suggestion
-                            # but only if it's a small block (max 3 words)
-                            if o_count > 3 or c_count > 3:
-                                continue  # skip large blocks (likely hallucination)
-
-                            g_segment = grammar_words[j1:j2]
-                            correction_text = " ".join(g_segment)
-
-                            orig_indices = set()
-                            for k in range(i1, i2):
-                                if k < len(spelling_word_map):
-                                    orig_indices.add(spelling_word_map[k])
-
-                            if not orig_indices:
-                                continue
-
-                            min_orig = min(orig_indices)
-                            max_orig = max(orig_indices)
-
-                            if min_orig >= len(orig_word_positions) or max_orig >= len(orig_word_positions):
-                                continue
-
-                            orig_start = orig_word_positions[min_orig][1]
-                            orig_end = orig_word_positions[max_orig][2]
-                            original_span = text[orig_start:orig_end]
-
-                            if original_span == correction_text:
-                                continue
-
-                            overlaps = any(
-                                not (orig_end <= sr_s or orig_start >= sr_e)
-                                for sr_s, sr_e in spelling_ranges
-                            )
-                            if overlaps:
-                                continue
-
-                            suggestions.append({
-                                'start': orig_start,
-                                'end': orig_end,
-                                'original': original_span,
-                                'correction': correction_text,
-                                'type': 'grammar'
-                            })
-
+                    diffs = get_word_diffs(current_text, corrected_grammar)
+                    for d in diffs:
+                        orig_start, orig_end = map_range_to_original(d['start'], d['end'])
+                        suggestions.append({
+                            'start': orig_start,
+                            'end': orig_end,
+                            'original': text[orig_start:orig_end],
+                            'correction': d['correction'],
+                            'type': 'grammar'
+                        })
+                    mappers.append(OffsetMapper(current_text, corrected_grammar))
                     current_text = corrected_grammar
             except Exception as e:
                 logger.error(f"[ANALYZE] Grammar failed: {e}")
@@ -1013,6 +885,16 @@ def analyze_text():
                     corrected_punc = punctuation_model.add_punctuation(current_text)
                 logger.info(f"[ANALYZE] Step 3: Punctuation done in {time.time()-t0:.2f}s")
                 if corrected_punc != current_text:
+                    diffs = get_word_diffs(current_text, corrected_punc)
+                    for d in diffs:
+                        orig_start, orig_end = map_range_to_original(d['start'], d['end'])
+                        suggestions.append({
+                            'start': orig_start,
+                            'end': orig_end,
+                            'original': text[orig_start:orig_end],
+                            'correction': d['correction'],
+                            'type': 'punctuation'
+                        })
                     current_text = corrected_punc
             except Exception as e:
                 logger.error(f"[ANALYZE] Punctuation failed: {e}")
