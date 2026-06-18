@@ -718,6 +718,7 @@ def analyze_text():
         suggestions = []
         mappers = []
         total_start = time.time()
+        timing_ms = {'spelling_ms': 0, 'grammar_ms': 0, 'punctuation_ms': 0, 'total_ms': 0}
 
         def map_range_to_original(start, end):
             curr_start, curr_end = start, end
@@ -749,16 +750,25 @@ def analyze_text():
             result = [best_correction] + alts + [original_word]
             return result[:max_alts + 1]  # cap at max_alts + keep-as-is
 
+        # ── Smart Text Processing Strategy ──
+        # Short (0-300 chars): full pipeline (Spelling + Grammar + Punctuation)
+        # Medium (300-1000 chars): Grammar + Punctuation only (skip AraSpell)
+        # Large (1000+ chars): Grammar + Punctuation only
+        text_len = len(current_text)
+        run_spelling = text_len <= 300
+        if not run_spelling:
+            logger.info(f"[ANALYZE] Text length {text_len} > 300 — skipping AraSpell for performance")
+
         # 1. Spelling (with conservative post-filtering to avoid over-editing)
-        has_spelling = True  # Always available via lazy-loaded araspell_service
-        if has_spelling:
+        if run_spelling:
             try:
                 t0 = time.time()
                 logger.info(f"[ANALYZE] Step 1: Spelling correction starting...")
                 from nlp.spelling.araspell_service import get_spelling_model
                 spell_checker = get_spelling_model()
                 raw_corrected = spell_checker.correct(current_text)
-                logger.info(f"[ANALYZE] Step 1: Spelling done in {time.time()-t0:.2f}s")
+                timing_ms['spelling_ms'] = int((time.time() - t0) * 1000)
+                logger.info(f"[ANALYZE] Step 1: Spelling done in {timing_ms['spelling_ms']}ms")
 
                 if raw_corrected != current_text:
                     orig_word_positions = get_word_positions(current_text)
@@ -890,7 +900,8 @@ def analyze_text():
             from nlp.grammar.grammar_service import get_grammar_model
             grammar_checker = get_grammar_model()
             corrected_grammar = grammar_checker.correct(current_text)
-            logger.info(f"[ANALYZE] Step 2: Grammar done in {time.time()-t0:.2f}s")
+            timing_ms['grammar_ms'] = int((time.time() - t0) * 1000)
+            logger.info(f"[ANALYZE] Step 2: Grammar done in {timing_ms['grammar_ms']}ms")
             if corrected_grammar != current_text:
                 diffs = get_word_diffs(current_text, corrected_grammar)
                 for d in diffs:
@@ -914,7 +925,8 @@ def analyze_text():
             from nlp.punctuation.punctuation_service import get_punctuation_model
             punc_checker = get_punctuation_model()
             corrected_punc = punc_checker.correct(current_text)
-            logger.info(f"[ANALYZE] Step 3: Punctuation done in {time.time()-t0:.2f}s")
+            timing_ms['punctuation_ms'] = int((time.time() - t0) * 1000)
+            logger.info(f"[ANALYZE] Step 3: Punctuation done in {timing_ms['punctuation_ms']}ms")
             if corrected_punc != current_text:
                 diffs = get_word_diffs(current_text, corrected_punc)
                 for d in diffs:
@@ -932,32 +944,60 @@ def analyze_text():
             logger.error(f"[ANALYZE] Punctuation failed: {e}")
 
         total_time = time.time() - total_start
+        timing_ms['total_ms'] = int(total_time * 1000)
 
-        # ── Deduplicate overlapping suggestions ──
-        # If grammar and spelling both flag the same position, grammar wins.
-        # This prevents double-highlighting on words like "يعملوا" which are
-        # grammar errors (not spelling errors).
-        grammar_positions = set()
+        # ══════════════════════════════════════════════════════════
+        # GLOBAL OVERLAP RESOLVER — NLP-3.5 Hardening
+        # ══════════════════════════════════════════════════════════
+        # Priority: grammar(3) > punctuation(2) > spelling(1) > autocomplete(0)
+        # Rules:
+        #   - Higher priority ALWAYS wins
+        #   - One span = one highlight (no stacking)
+        #   - Partial overlaps: higher priority span kept, lower dropped
+        PRIORITY = {'grammar': 3, 'punctuation': 2, 'spelling': 1, 'autocomplete': 0}
+
+        # Sort suggestions by priority (highest first)
+        suggestions.sort(key=lambda s: PRIORITY.get(s['type'], 0), reverse=True)
+
+        # Build a set of "claimed" character positions
+        claimed_ranges = []  # list of (start, end, type)
+        resolved = []
+
         for s in suggestions:
-            if s['type'] == 'grammar':
-                grammar_positions.add((s['start'], s['end']))
+            s_start, s_end = s['start'], s['end']
+            s_priority = PRIORITY.get(s['type'], 0)
 
-        if grammar_positions:
-            before_count = len(suggestions)
-            suggestions = [
-                s for s in suggestions
-                if s['type'] != 'spelling' or (s['start'], s['end']) not in grammar_positions
-            ]
-            removed = before_count - len(suggestions)
-            if removed > 0:
-                logger.info(f"[ANALYZE] Removed {removed} spelling suggestions that overlap with grammar")
+            # Check if this span overlaps with any already-claimed higher-priority span
+            overlaps = False
+            for (c_start, c_end, c_type) in claimed_ranges:
+                # Two spans overlap if one starts before the other ends
+                if s_start < c_end and s_end > c_start:
+                    overlaps = True
+                    break
 
-        logger.info(f"[ANALYZE] Total analysis time: {total_time:.2f}s | Suggestions: {len(suggestions)}")
+            if not overlaps:
+                resolved.append(s)
+                claimed_ranges.append((s_start, s_end, s['type']))
+            else:
+                logger.info(f"[OVERLAP] Dropped {s['type']} [{s_start}:{s_end}] "
+                           f"'{s.get('original','')}' — conflicts with higher-priority span")
+
+        dropped = len(suggestions) - len(resolved)
+        if dropped > 0:
+            logger.info(f"[OVERLAP] Resolved {dropped} overlapping suggestions")
+        suggestions = resolved
+
+        logger.info(f"[ANALYZE] Total: {timing_ms['total_ms']}ms | "
+                    f"Spelling: {timing_ms['spelling_ms']}ms | "
+                    f"Grammar: {timing_ms['grammar_ms']}ms | "
+                    f"Punctuation: {timing_ms['punctuation_ms']}ms | "
+                    f"Suggestions: {len(suggestions)}")
 
         return jsonify({
             'original': text,
             'corrected': current_text,
             'suggestions': suggestions,
+            'timing_ms': timing_ms,
             'status': 'success'
         })
 
