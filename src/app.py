@@ -697,6 +697,19 @@ def _is_small_spelling_change(orig_word, corr_word):
     # AraSpell has its own validation pipeline, so we can be more permissive here
     return dist <= 3 and (dist / max_len) <= 0.5
 
+# ── Punctuation Guard ──
+# Characters that ONLY the Punctuation model should touch.
+# Grammar and Spelling must never produce suggestions that only
+# add, remove, or change these characters.
+_PUNC_CHARS = set('،؛؟!.,:;?»«()[]{}…–—\u060C\u061B\u061F')
+
+def _is_punctuation_only_change(original, correction):
+    """Return True if the only difference is punctuation marks.
+    If True, this suggestion belongs to the Punctuation model exclusively."""
+    orig_stripped = ''.join(c for c in original if c not in _PUNC_CHARS and not c.isspace())
+    corr_stripped = ''.join(c for c in correction if c not in _PUNC_CHARS and not c.isspace())
+    return orig_stripped == corr_stripped
+
 
 @app.route('/api/analyze', methods=['POST'])
 def analyze_text():
@@ -803,7 +816,7 @@ def analyze_text():
                                 # 1-word → 1-word: accept only small edits (typos)
                                 o_word = o_segment[0]
                                 c_word = c_segment[0]
-                                if _is_small_spelling_change(o_word, c_word):
+                                if _is_small_spelling_change(o_word, c_word) and not _is_punctuation_only_change(o_word, c_word):
                                     new_words.append(c_word)
                                     suggestions.append({
                                         'start': start_idx,
@@ -818,7 +831,7 @@ def analyze_text():
                             elif len(o_segment) == 1 and len(c_segment) > 1:
                                 # 1-word → N words: accept word splits (e.g. فيالمدرسة → في المدرسة)
                                 o_word = o_segment[0]
-                                if len(o_word) >= 5 and ' ' not in o_word:
+                                if len(o_word) >= 5 and ' ' not in o_word and not _is_punctuation_only_change(o_word, " ".join(c_segment)):
                                     corr_str = " ".join(c_segment)
                                     new_words.append(corr_str)
                                     suggestions.append({
@@ -844,7 +857,7 @@ def analyze_text():
                                     if ci < len(c_segment):
                                         c_word = c_segment[ci]
                                         # Check if this is a 1→1 small edit
-                                        if _is_small_spelling_change(o_word, c_word):
+                                        if _is_small_spelling_change(o_word, c_word) and not _is_punctuation_only_change(o_word, c_word):
                                             new_words.append(c_word)
                                             suggestions.append({
                                                 'start': o_start,
@@ -921,7 +934,6 @@ def analyze_text():
                 diffs = get_word_diffs(current_text, corrected_grammar)
                 # Punctuation characters that Grammar should NOT touch
                 # These are the domain of the Punctuation model only
-                _PUNC_CHARS = set('،؛؟!.,:;?»«()[]{}…–—\u060C\u061B\u061F')
 
                 for d in diffs:
                     orig_start, orig_end = map_range_to_original(d['start'], d['end'])
@@ -930,10 +942,7 @@ def analyze_text():
 
                     # Filter: if the only difference is punctuation marks,
                     # skip this suggestion — let Punctuation model handle it.
-                    orig_stripped = ''.join(c for c in original_word if c not in _PUNC_CHARS and not c.isspace())
-                    corr_stripped = ''.join(c for c in correction if c not in _PUNC_CHARS and not c.isspace())
-
-                    if orig_stripped == corr_stripped:
+                    if _is_punctuation_only_change(original_word, correction):
                         logger.info(f"[GRAMMAR] Dropped punctuation-only change: "
                                    f"'{original_word}' → '{correction}' — belongs to Punctuation stage")
                         continue
