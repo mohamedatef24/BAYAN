@@ -519,6 +519,26 @@
   outline: none;
 }
 
+/* Indent (blockquote) styling inside editor */
+.editor-surface blockquote {
+  margin: 0;
+  padding-right: 2rem;
+  border-right: 3px solid var(--color-primary);
+  border-left: none;
+}
+
+/* List styling inside editor */
+.editor-surface ul,
+.editor-surface ol {
+  margin: 0.5em 0;
+  padding-right: 2rem;
+  padding-left: 0;
+}
+
+.editor-surface li {
+  margin-bottom: 0.25em;
+}
+
 .editor-surface[data-empty="true"]::before {
   content: attr(data-placeholder);
   color: var(--color-placeholder);
