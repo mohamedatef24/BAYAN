@@ -705,9 +705,10 @@ _PUNC_CHARS = set('،؛؟!.,:;?»«()[]{}…–—\u060C\u061B\u061F')
 
 def _is_punctuation_only_change(original, correction):
     """Return True if the only difference is punctuation marks.
-    If True, this suggestion belongs to the Punctuation model exclusively."""
-    orig_stripped = ''.join(c for c in original if c not in _PUNC_CHARS and not c.isspace())
-    corr_stripped = ''.join(c for c in correction if c not in _PUNC_CHARS and not c.isspace())
+    If True, this suggestion belongs to the Punctuation model exclusively.
+    Note: space changes (word splitting) are NOT considered punctuation-only."""
+    orig_stripped = ''.join(c for c in original if c not in _PUNC_CHARS)
+    corr_stripped = ''.join(c for c in correction if c not in _PUNC_CHARS)
     return orig_stripped == corr_stripped
 
 
