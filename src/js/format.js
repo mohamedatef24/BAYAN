@@ -3,11 +3,23 @@
 
 /**
  * Execute a formatting command on the current selection
+ * @param {string} command - execCommand name
+ * @param {string} [value] - optional value
+ * @param {boolean} [keepSelection] - if true, don't collapse selection
  */
-function execFormat(command, value) {
-  document.execCommand(command, false, value || null);
+function execFormat(command, value, keepSelection) {
+  document.execCommand(command, false, value !== undefined ? value : null);
   const editor = getEditorElement();
   if (editor) editor.focus();
+  
+  // Collapse selection after formatting so text doesn't stay highlighted
+  if (!keepSelection) {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
+      sel.collapseToEnd();
+    }
+  }
+  
   updateFormatState();
 }
 
@@ -18,10 +30,10 @@ function formatUnderline() { execFormat('underline'); }
 function formatStrikethrough() { execFormat('strikethrough'); }
 
 /* ── Undo / Redo (handles both typing and formatting) ── */
-function formatUndo() { execFormat('undo'); }
-function formatRedo() { execFormat('redo'); }
+function formatUndo() { execFormat('undo', undefined, true); }
+function formatRedo() { execFormat('redo', undefined, true); }
 
-/* ── Alignment (applies to paragraph containing selection) ── */
+/* ── Alignment (applies to paragraph containing selection/cursor) ── */
 function formatAlignRight() { execFormat('justifyRight'); }
 function formatAlignCenter() { execFormat('justifyCenter'); }
 function formatAlignLeft() { execFormat('justifyLeft'); }
