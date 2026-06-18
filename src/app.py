@@ -11,6 +11,7 @@ from flask_cors import CORS
 from pathlib import Path
 import traceback
 import difflib
+from difflib import SequenceMatcher
 import re
 
 # Load .env file from project root (one level up from src/)
