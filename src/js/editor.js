@@ -362,14 +362,8 @@ function applyAllSuggestions() {
   if (suggestions.length === 0) return;
 
   let text = getEditorText();
-  // Track applied ranges to skip overlapping suggestions
-  const appliedRanges = [];
   suggestions.forEach((s) => {
-    // Check if this suggestion overlaps with any already-applied one
-    const overlaps = appliedRanges.some(([rs, re]) => !(s.end <= rs || s.start >= re));
-    if (overlaps) return; // skip overlapping
     text = text.substring(0, s.start) + s.correction + text.substring(s.end);
-    appliedRanges.push([s.start, s.end]);
   });
 
   setEditorHTML(escapeHtml(text));
