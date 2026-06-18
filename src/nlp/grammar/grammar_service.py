@@ -14,7 +14,7 @@ _device = None
 
 MODEL_ID = "bayan10/Bayan_Arabic_Grammar"
 
-# Generation parameters — ORIGINAL WORKING VALUES
+# Generation parameters
 MAX_INPUT_LENGTH = 512
 MAX_OUTPUT_LENGTH = 512
 NUM_BEAMS = 4
@@ -89,7 +89,7 @@ def correct_grammar(text: str) -> str:
         )
         inputs = {k: v.to(device) for k, v in inputs.items()}
 
-        # Generate correction — ORIGINAL WORKING PARAMS
+        # Generate correction
         with torch.no_grad():
             outputs = model.generate(
                 **inputs,
@@ -102,12 +102,13 @@ def correct_grammar(text: str) -> str:
         # Decode output
         corrected = tokenizer.decode(outputs[0], skip_special_tokens=True)
 
-        # Log for debugging
-        logger.info(f"[GRAMMAR-RAW] input({len(text)}): '{text}'")
-        logger.info(f"[GRAMMAR-RAW] output({len(corrected)}): '{corrected}'")
-
-        # Safety: if model returns empty, keep original
+        # Safety: if model returns empty or much shorter, keep original
         if not corrected or not corrected.strip():
+            return text
+
+        # If the correction is drastically different (>80% changed), keep original
+        if len(corrected) < len(text) * 0.3:
+            logger.warning(f"Grammar output too short ({len(corrected)} vs {len(text)}), keeping original")
             return text
 
         return corrected.strip()

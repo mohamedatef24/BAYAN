@@ -857,57 +857,29 @@ def analyze_text():
                 from nlp.grammar.grammar_service import correct_grammar
                 corrected_grammar = correct_grammar(current_text)
                 logger.info(f"[ANALYZE] Step 2: Grammar done in {time.time()-t0:.2f}s")
-                logger.info(f"[GRAMMAR] Input:  '{current_text}'")
-                logger.info(f"[GRAMMAR] Output: '{corrected_grammar}'")
                 if corrected_grammar != current_text:
-                    # Word-level grammar diffs (individual words, not chunks)
-                    g_orig_words = get_word_positions(current_text)
-                    g_corr_words = get_word_positions(corrected_grammar)
-                    g_matcher = difflib.SequenceMatcher(
-                        None,
-                        [w[0] for w in g_orig_words],
-                        [w[0] for w in g_corr_words]
-                    )
-
-                    for tag, i1, i2, j1, j2 in g_matcher.get_opcodes():
-                        logger.info(f"[GRAMMAR] opcode: {tag} orig[{i1}:{i2}]={[w[0] for w in g_orig_words[i1:i2]]} → corr[{j1}:{j2}]={[w[0] for w in g_corr_words[j1:j2]]}")
-                        if tag == 'replace':
-                            # Process each original word individually
-                            for k in range(i1, i2):
-                                ck = j1 + (k - i1)
-                                if ck < j2:
-                                    o_word = g_orig_words[k][0]
-                                    c_word = g_corr_words[ck][0]
-                                    if o_word != c_word:
-                                        g_start = g_orig_words[k][1]
-                                        g_end = g_orig_words[k][2]
-                                        orig_start, orig_end = map_range_to_original(g_start, g_end)
-
-                                        # Skip if overlaps with existing spelling suggestion
-                                        overlaps = False
-                                        for existing in suggestions:
-                                            if existing['type'] == 'spelling':
-                                                if not (orig_end <= existing['start'] or orig_start >= existing['end']):
-                                                    overlaps = True
-                                                    logger.info(f"[GRAMMAR] SKIP '{o_word}'→'{c_word}' (overlaps with spelling '{existing['original']}'→'{existing['correction']}')")
-                                                    break
-                                        if overlaps:
-                                            continue
-
-                                        logger.info(f"[GRAMMAR] ADD suggestion: '{o_word}' → '{c_word}' at orig[{orig_start}:{orig_end}]")
-                                        suggestions.append({
-                                            'start': orig_start,
-                                            'end': orig_end,
-                                            'original': text[orig_start:orig_end],
-                                            'correction': c_word,
-                                            'type': 'grammar',
-                                            'alternatives': [c_word, text[orig_start:orig_end]],
-                                        })
-
+                    # Collect existing suggestion ranges to avoid overlaps
+                    existing_ranges = [(s['start'], s['end']) for s in suggestions]
+                    diffs = get_word_diffs(current_text, corrected_grammar)
+                    for d in diffs:
+                        orig_start, orig_end = map_range_to_original(d['start'], d['end'])
+                        # Skip if this range overlaps with any existing suggestion
+                        overlaps = any(
+                            not (orig_end <= es or orig_start >= ee)
+                            for es, ee in existing_ranges
+                        )
+                        if overlaps:
+                            logger.debug(f"[ANALYZE] Skipping grammar suggestion at {orig_start}-{orig_end} (overlaps spelling)")
+                            continue
+                        suggestions.append({
+                            'start': orig_start,
+                            'end': orig_end,
+                            'original': text[orig_start:orig_end],
+                            'correction': d['correction'],
+                            'type': 'grammar'
+                        })
                     mappers.append(OffsetMapper(current_text, corrected_grammar))
                     current_text = corrected_grammar
-                else:
-                    logger.info(f"[GRAMMAR] No changes — grammar output == input")
             except Exception as e:
                 logger.error(f"[ANALYZE] Grammar failed: {e}")
 
