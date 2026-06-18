@@ -36,8 +36,10 @@ function initDocumentsCloud() {
     if (state === 'saving') {
       saveBtn.title = 'جاري الحفظ...';
       saveBtn.classList.add('is-saving');
+      if (typeof showAutoSaveStatus === 'function') showAutoSaveStatus('جاري الحفظ...');
     } else if (state === 'saved') {
       saveBtn.title = 'تم الحفظ';
+      if (typeof showAutoSaveStatus === 'function') showAutoSaveStatus('✓ تم الحفظ');
       saveBtn.classList.remove('is-saving', 'doc-save-btn--dirty');
       saveBtn.classList.add('is-saved');
       setTimeout(() => {

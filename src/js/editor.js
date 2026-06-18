@@ -82,6 +82,23 @@ function updateEditorStats() {
   if (wordCountEl) {
     wordCountEl.textContent = words.toLocaleString('ar-EG');
   }
+
+  // Word count goal
+  const goalEl = document.getElementById('word-goal-indicator');
+  if (goalEl) {
+    try {
+      const goal = parseInt(localStorage.getItem('bayan_word_goal') || '0', 10);
+      if (goal > 0) {
+        const pct = Math.min(Math.round((words / goal) * 100), 100);
+        goalEl.style.display = 'inline-block';
+        goalEl.textContent = `${pct}% من ${goal.toLocaleString('ar-EG')}`;
+        goalEl.classList.toggle('goal-reached', pct >= 100);
+      } else {
+        goalEl.style.display = 'none';
+      }
+    } catch(e) { goalEl.style.display = 'none'; }
+  }
+
   // Item 4: Enhanced stats
   if (typeof updateEnhancedStats === 'function') {
     updateEnhancedStats();
