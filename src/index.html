@@ -86,7 +86,7 @@
         </div>
        </div>
        <button id="theme-toggle" class="theme-toggle" aria-label="تبديل السمة" aria-pressed="true" type="button"></button>
-       <button id="nav-cta" onclick="showPage('editor')" class="hidden sm:inline-flex px-4 md:px-6 py-2.5 rounded-xl text-sm md:text-base font-bold text-white gradient-accent transition-all">ابدأ الكتابة</button>
+
       </div>
      </div>
     </div>
@@ -113,14 +113,17 @@
    <div id="auth-offline-banner" class="auth-offline-banner is-hidden" role="status" aria-live="polite">
     تعذر الاتصال بخدمة المصادقة. يمكنك متابعة استخدام المحرر والمحاولة لاحقاً.
    </div>
-   <!-- Phase 6.1 — Docs Sidebar -->
+   <!-- Phase 6.1 — Docs Sidebar (mobile only overlay) -->
    <div id="docs-sidebar" class="docs-sidebar" role="complementary" aria-label="مستنداتي">
     <div class="docs-sidebar__header">
-     <span class="docs-sidebar__title">📁 مستنداتي</span>
+     <span class="docs-sidebar__title">مستنداتي</span>
     </div>
     <div class="docs-sidebar__body">
-     <button id="docs-new-btn" class="docs-new-btn" type="button" aria-label="مستند جديد">＋ مستند جديد</button>
-     <div id="docs-list" role="list" aria-label="قائمة المستندات"></div>
+     <button id="docs-new-btn-mobile" class="docs-new-btn" type="button" aria-label="مستند جديد">
+      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      مستند جديد
+     </button>
+     <div id="docs-list-mobile" role="list" aria-label="قائمة المستندات"></div>
     </div>
    </div>
    <!-- Auth Gate -->
@@ -446,31 +449,34 @@
     <section class="pt-16 md:pt-20 min-h-screen page-bg">
      <div class="max-w-[1600px] mx-auto">
       <div class="editor-layout">
-       <!-- Main Editor -->
+       <!-- RIGHT: Documents Panel (always visible on desktop) -->
+       <div class="docs-panel docs-panel-desktop">
+        <div class="docs-panel__header">
+         <svg class="docs-panel__icon" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+         <span class="docs-panel__title">مستنداتي</span>
+        </div>
+        <div class="docs-panel__body">
+         <button id="docs-new-btn" class="docs-new-btn" type="button" aria-label="مستند جديد">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          مستند جديد
+         </button>
+         <div id="docs-list" role="list" aria-label="قائمة المستندات"></div>
+        </div>
+       </div>
+       <!-- CENTER: Main Editor -->
        <div>
         <div class="editor-shell">
          <div class="editor-toolbar">
           <div class="flex items-center gap-2 flex-wrap">
            <button id="write-tab" onclick="switchTab('write')" class="editor-tab active" type="button">كتابة</button>
            <button id="summarize-tab" onclick="switchTab('summarize')" class="editor-tab" type="button">تلخيص</button>
-           <div class="doc-toolbar-actions doc-toolbar-actions--desktop">
-            <button id="doc-import-btn" class="btn-ghost doc-dropdown__trigger" type="button" aria-label="استيراد ملف نصي أو Word">استيراد</button>
-            <div class="doc-dropdown">
-             <button id="doc-export-trigger" class="btn-ghost doc-dropdown__trigger" type="button" aria-label="تصدير المستند" aria-haspopup="true" aria-expanded="false">تصدير ▾</button>
-             <div id="doc-export-menu" class="doc-dropdown__menu" role="menu" aria-label="خيارات التصدير">
-              <button type="button" class="doc-dropdown__item" role="menuitem" data-export-format="txt">ملف نصي (.txt)</button>
-              <button type="button" class="doc-dropdown__item" role="menuitem" data-export-format="docx">Word (.docx)</button>
-              <button type="button" class="doc-dropdown__item" role="menuitem" data-export-format="pdf">PDF (.pdf)</button>
-             </div>
-            </div>
-            <!-- Phase 6.1: Docs sidebar toggle + save -->
-            <button id="docs-sidebar-toggle" class="docs-sidebar-toggle btn-ghost" type="button" aria-label="مستنداتي" aria-expanded="false" aria-controls="docs-sidebar">📁 مستنداتي</button>
-            <button id="doc-save-btn" class="doc-save-btn" type="button" aria-label="حفظ المستند" title="حفظ">💾</button>
-           </div>
-           <!-- Doc title bar -->
+           <div class="toolbar-separator"></div>
            <div class="doc-title-bar">
             <span id="doc-current-title" class="doc-current-title">مستند جديد</span>
            </div>
+           <button id="docs-sidebar-toggle" class="docs-sidebar-toggle-mobile btn-ghost lg:hidden" type="button" aria-label="مستنداتي" aria-expanded="false" aria-controls="docs-sidebar">
+            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+           </button>
           </div>
           <div class="flex items-center gap-4 flex-wrap">
            <div id="analyzing-indicator" class="analyzing-indicator" aria-live="polite">
@@ -478,6 +484,9 @@
             <span>جاري التحليل...</span>
            </div>
            <span class="text-sm text-secondary">عدد الكلمات: <span id="word-count" class="font-bold">٠</span></span>
+           <button id="doc-save-btn" class="doc-save-btn-icon btn-ghost" type="button" aria-label="حفظ المستند" title="حفظ">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+           </button>
           </div>
          </div>
          <input type="file" id="doc-import-input" class="sr-only" accept=".txt,.docx,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document" aria-hidden="true">
@@ -529,10 +538,6 @@
            <div class="flex items-center gap-2"><span class="stat-dot stat-dot--punctuation" aria-hidden="true"></span><span class="text-sm text-secondary"><span id="punctuation-count">٠</span> ترقيم</span></div>
           </div>
           <div class="editor-actions">
-           <div class="doc-mobile-actions sm:hidden">
-            <button id="doc-import-btn-mobile" class="btn-ghost flex-1" type="button" aria-label="استيراد ملف">استيراد</button>
-            <button id="doc-mobile-export-trigger" class="btn-ghost flex-1" type="button" aria-label="تصدير المستند" aria-expanded="false">تصدير</button>
-           </div>
            <button onclick="clearEditor()" class="btn-ghost" type="button">مسح الكل</button>
            <button onclick="copyText()" class="btn-primary" type="button">نسخ النص</button>
           </div>
@@ -543,7 +548,7 @@
          <span aria-hidden="true">▲</span>
         </button>
        </div>
-       <!-- Sidebar -->
+       <!-- LEFT: Sidebar (score + suggestions + import/export) -->
        <div class="sidebar-panel sidebar-desktop">
         <div class="surface-card sidebar-card">
          <h3 class="text-xl font-bold mb-4 text-right">تقييم الكتابة</h3>
@@ -560,7 +565,27 @@
         <div class="surface-card sidebar-card">
          <h3 class="text-xl font-bold mb-4 text-right">الاقتراحات</h3>
          <div id="suggestions-list" class="suggestions-scroll" role="list" aria-live="polite" aria-label="اقتراحات التصحيح"></div>
-         <!-- apply-all removed: conflicts with multi-step spelling+grammar pipeline -->
+         <button id="apply-all-btn" class="btn-primary apply-all-btn is-hidden" type="button">تطبيق الكل</button>
+        </div>
+        <div class="surface-card sidebar-card sidebar-io">
+         <h3 class="sidebar-io__title text-right">استيراد وتصدير</h3>
+         <div class="sidebar-io__actions">
+          <button id="doc-import-btn" class="sidebar-io__btn" type="button" aria-label="استيراد ملف">
+           <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+           استيراد
+          </button>
+          <div class="doc-dropdown sidebar-io__dropdown">
+           <button id="doc-export-trigger" class="sidebar-io__btn" type="button" aria-label="تصدير المستند" aria-haspopup="true" aria-expanded="false">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            تصدير
+           </button>
+           <div id="doc-export-menu" class="doc-dropdown__menu" role="menu" aria-label="خيارات التصدير">
+            <button type="button" class="doc-dropdown__item" role="menuitem" data-export-format="txt">نصي (.txt)</button>
+            <button type="button" class="doc-dropdown__item" role="menuitem" data-export-format="docx">Word (.docx)</button>
+            <button type="button" class="doc-dropdown__item" role="menuitem" data-export-format="pdf">PDF (.pdf)</button>
+           </div>
+          </div>
+         </div>
         </div>
        </div>
       </div>
@@ -577,7 +602,7 @@
       <button id="bottom-sheet-close" class="btn-ghost" type="button" aria-label="إغلاق">إغلاق</button>
      </div>
      <div id="bottom-sheet-list" class="suggestions-scroll" role="list" aria-live="polite"></div>
-     <!-- apply-all removed: conflicts with multi-step spelling+grammar pipeline -->
+     <button id="apply-all-sheet" class="btn-primary apply-all-btn mt-4 is-hidden" type="button">تطبيق الكل</button>
     </div>
    </div>
    <!-- Mobile export sheet (documents) -->
