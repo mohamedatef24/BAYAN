@@ -45,6 +45,16 @@ AutoModelForMaskedLM.from_pretrained('aubmindlab/bert-base-arabertv02'); \
 print('Spelling model + MLM cached!'); \
 "
 
+# 3. Grammar model (T5ForConditionalGeneration)
+RUN python -c "\
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM; \
+print('Downloading Grammar tokenizer...'); \
+AutoTokenizer.from_pretrained('bayan10/Bayan_Arabic_Grammar'); \
+print('Downloading Grammar T5 model...'); \
+AutoModelForSeq2SeqLM.from_pretrained('bayan10/Bayan_Arabic_Grammar'); \
+print('Grammar model cached!'); \
+"
+
 # Copy application code
 COPY src/ ./src/
 COPY .env* ./
