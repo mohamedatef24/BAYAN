@@ -7,6 +7,17 @@ let _lastInputTime = 0;
 const ANALYZE_DEBOUNCE_MS = 1000;
 const MAX_ANALYZE_LENGTH = 5000;
 
+// Dismissed words whitelist — words the user chose to keep as-is
+const _dismissedWords = new Set(
+  JSON.parse(localStorage.getItem('bayan_dismissed_words') || '[]')
+);
+
+function _saveDismissedWords() {
+  try {
+    localStorage.setItem('bayan_dismissed_words', JSON.stringify([..._dismissedWords]));
+  } catch (e) {}
+}
+
 /**
  * Initialize the editor
  */
@@ -162,7 +173,11 @@ async function analyzeText() {
       return;
     }
 
-    window.currentSuggestions = sortSuggestions(data.suggestions || []);
+    // Filter out dismissed (whitelisted) words
+    const rawSuggestions = sortSuggestions(data.suggestions || []);
+    window.currentSuggestions = rawSuggestions.filter(
+      s => !_dismissedWords.has(s.original)
+    );
 
     // Use DOM overlay instead of innerHTML replacement to preserve formatting
     const editor = getEditorElement();
@@ -385,6 +400,12 @@ function applyAlternativeCorrection(suggestion, correctionText) {
 }
 
 function dismissSuggestion(suggestion) {
+  // Add the word to dismissed whitelist so it's never flagged again
+  if (suggestion.original) {
+    _dismissedWords.add(suggestion.original);
+    _saveDismissedWords();
+  }
+
   // Remove the error highlight but keep the text as-is
   const idx = (window.currentSuggestions || []).indexOf(suggestion);
   const errorSpan = idx >= 0 ? document.querySelector(`[data-suggestion-id="${idx}"]`) : null;
