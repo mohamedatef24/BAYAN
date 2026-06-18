@@ -504,21 +504,17 @@ function loadDocumentText(text, options = {}) {
 
 function copyText() {
   const text = getEditorText();
-  navigator.clipboard.writeText(text).catch(() => {
+  navigator.clipboard.writeText(text).then(() => {
+    if (typeof showToast === 'function') showToast('✓ تم نسخ النص');
+  }).catch(() => {
     const temp = document.createElement('textarea');
     temp.value = text;
     document.body.appendChild(temp);
     temp.select();
     document.execCommand('copy');
     document.body.removeChild(temp);
+    if (typeof showToast === 'function') showToast('✓ تم نسخ النص');
   });
-
-  const btn = event?.target;
-  if (btn) {
-    const originalText = btn.textContent;
-    btn.textContent = 'تم النسخ!';
-    setTimeout(() => { btn.textContent = originalText; }, 2000);
-  }
 }
 
 if (typeof module !== 'undefined' && module.exports) {

@@ -168,20 +168,28 @@
         <div class="flex items-center gap-8 justify-center lg:justify-start">
          <div class="text-center">
           <div class="text-3xl font-bold text-gradient">
-          <div class="text-3xl font-bold text-gradient">
-           ٩٩٪
+           ٣ أنواع
           </div>
           <div class="text-sm mt-1" style="color: var(--text-secondary);">
-           دقة التصحيح
+           تصحيح ذكي
           </div>
          </div>
          <div class="w-px h-12" style="background: rgba(255, 255, 255, 0.2);"></div>
          <div class="text-center">
           <div class="text-3xl font-bold text-gradient">
-           +٥٠ ألف
+           فوري
           </div>
           <div class="text-sm mt-1" style="color: var(--text-secondary);">
-           مستخدم نشط
+           تحليل أثناء الكتابة
+          </div>
+         </div>
+         <div class="w-px h-12" style="background: rgba(255, 255, 255, 0.2);"></div>
+         <div class="text-center">
+          <div class="text-3xl font-bold text-gradient">
+           مجاني
+          </div>
+          <div class="text-sm mt-1" style="color: var(--text-secondary);">
+           بدون تسجيل
           </div>
          </div>
         </div>
@@ -197,14 +205,14 @@
           <div class="w-20"></div>
          </div><!-- Mock Editor Content -->
          <div class="p-8 editor-content text-right text-lg" dir="rtl" style="background: var(--surface-color); color: var(--text-color); min-height: 300px;">
-          <p class="mb-4">مرحباً بكم في <span class="spelling-error">محرر بيان</span> للكتابة العربية<span class="punctuation-suggestion">.</span></p>
-          <p class="mb-4">نحن <span class="grammar-error">نساعدك</span> على كتابة نصوص عربية صحيحة وواضحة بفضل الذكاء الاصطناعي المتقدم<span class="punctuation-suggestion">.</span></p>
+          <p class="mb-4">الكتابه <span class="spelling-error">الصحيحه</span> مهمة جداً في التواصل الفعّال<span class="punctuation-suggestion">.</span></p>
+          <p class="mb-4">الطلاب <span class="grammar-error">ذهبوا</span> <span class="spelling-error">الى</span> المدرسة صباحاً<span class="punctuation-suggestion">.</span></p>
           <p>جرّب المحرر الآن وشاهد كيف يمكن أن تصبح كتابتك أفضل!</p>
          </div><!-- Mock Stats Bar -->
          <div class="flex items-center justify-between p-4 border-t" style="border-color: rgba(255, 255, 255, 0.1);">
           <div class="flex items-center gap-6">
            <div class="flex items-center gap-2">
-            <div class="w-3 h-3 rounded-full" style="background: #ef4444;"></div><span class="text-sm" style="color: var(--text-secondary);">١ إملائي</span>
+            <div class="w-3 h-3 rounded-full" style="background: #ef4444;"></div><span class="text-sm" style="color: var(--text-secondary);">٢ إملائي</span>
            </div>
            <div class="flex items-center gap-2">
             <div class="w-3 h-3 rounded-full" style="background: #fbbf24;"></div><span class="text-sm" style="color: var(--text-secondary);">١ نحوي</span>
@@ -213,10 +221,9 @@
             <div class="w-3 h-3 rounded-full" style="background: #22c55e;"></div><span class="text-sm" style="color: var(--text-secondary);">٢ ترقيم</span>
            </div>
           </div>
-          <div class="flex items-center gap-2"><span class="text-2xl font-bold text-gradient">٩٢</span> <span class="text-sm" style="color: var(--text-secondary);">التقييم</span>
+          <div class="flex items-center gap-2"><span class="text-2xl font-bold text-gradient">٨٥</span> <span class="text-sm" style="color: var(--text-secondary);">التقييم</span>
           </div>
          </div>
-        </div><!-- Floating Suggestion Card -->
         <div class="absolute -bottom-6 -left-6 p-4 rounded-2xl shadow-xl animate-fade-in" style="background: var(--surface-color); border: 1px solid rgba(34, 197, 94, 0.3); max-width: 280px;">
          <div class="flex items-start gap-3">
           <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: rgba(34, 197, 94, 0.15);"><span style="color: #22c55e; font-size: 20px;">✓</span>
@@ -808,7 +815,7 @@
           </svg><span class="text-base">تلخيص النصوص بالذكاء الاصطناعي</span></li>
          <li class="flex items-center gap-3">
           <svg class="w-5 h-5" style="color: #22c55e;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-          </svg><span class="text-base">إضافة المتصفح</span></li>
+          </svg><span class="text-base">تصدير PDF و Word</span></li>
         </ul><button onclick="showPage('editor')" class="w-full py-4 rounded-2xl text-lg font-bold text-white gradient-accent transition-all hover:scale-105 hover:shadow-2xl"> الترقية للاحترافي </button>
        </div><!-- Enterprise Plan -->
        <div class="p-8 rounded-3xl transition-all hover:scale-105" style="background: var(--surface-color); border: 1px solid rgba(255, 255, 255, 0.08);">
@@ -861,8 +868,41 @@
      </div>
     </div>
    </footer>
+   <!-- Toast Container -->
+   <div id="toast-container" class="toast-container"></div>
+   <!-- Scroll to Top -->
+   <button id="scroll-top-btn" class="scroll-top-btn" type="button" aria-label="العودة للأعلى">
+    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+   </button>
   </div>
   <script>
+    // Toast notification system
+    function showToast(message, type = 'success', duration = 2500) {
+      const container = document.getElementById('toast-container');
+      if (!container) return;
+      const toast = document.createElement('div');
+      toast.className = 'toast toast--' + type;
+      toast.textContent = message;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.classList.add('toast-out');
+        setTimeout(() => toast.remove(), 300);
+      }, duration);
+    }
+
+    // Scroll to top
+    (function() {
+      const btn = document.getElementById('scroll-top-btn');
+      const scrollContainer = document.querySelector('.h-full.overflow-auto');
+      if (!btn || !scrollContainer) return;
+      scrollContainer.addEventListener('scroll', () => {
+        btn.classList.toggle('visible', scrollContainer.scrollTop > 400);
+      });
+      btn.addEventListener('click', () => {
+        scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    })();
+
     // Default configuration
     const defaultConfig = {
       brand_name: 'بيان',
@@ -1028,6 +1068,7 @@
         if (btn) {
           const originalText = btn.textContent;
           btn.textContent = 'تم النسخ!';
+          if (typeof showToast === 'function') showToast('✓ تم نسخ الملخص');
           setTimeout(() => btn.textContent = originalText, 2000);
         }
       }).catch(() => {
