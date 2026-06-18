@@ -71,6 +71,10 @@ function updateEditorStats() {
   if (wordCountEl) {
     wordCountEl.textContent = words.toLocaleString('ar-EG');
   }
+  // Item 4: Enhanced stats
+  if (typeof updateEnhancedStats === 'function') {
+    updateEnhancedStats();
+  }
 }
 
 function updatePlaceholder() {

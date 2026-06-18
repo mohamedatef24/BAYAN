@@ -86,7 +86,10 @@
          </div>
         </div>
        </div>
-       <button id="theme-toggle" class="theme-toggle" aria-label="تبديل السمة" aria-pressed="true" type="button"></button>
+       <button id="theme-toggle" class="theme-toggle-animated" aria-label="تبديل السمة" aria-pressed="true" type="button">
+        <svg class="theme-icon-sun" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+        <svg class="theme-icon-moon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+       </button>
 
       </div>
      </div>
@@ -461,6 +464,10 @@
           <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
           مستند جديد
          </button>
+         <div class="docs-search">
+          <svg class="docs-search__icon" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          <input type="text" class="docs-search__input" id="docs-search-input" placeholder="بحث في المستندات..." autocomplete="off">
+         </div>
          <div id="docs-list" role="list" aria-label="قائمة المستندات"></div>
         </div>
        </div>
@@ -556,6 +563,51 @@
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 10H11a5 5 0 00-5 5v2M21 10l-4-4M21 10l-4 4"/></svg>
            </button>
           </div>
+          <div class="fmt-divider"></div>
+          <!-- Item 8: Color pickers -->
+          <div class="fmt-group fmt-group--font">
+           <div class="fmt-dropdown" id="fmt-textcolor-wrap">
+            <button class="fmt-color-btn" type="button" id="fmt-textcolor-trigger" title="لون النص">
+             <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M11 2L5.5 16h2.25l1.12-3h6.25l1.12 3h2.25L13 2h-2zm-1.38 9L12 4.67 14.38 11H9.62z"/></svg>
+             <span class="fmt-color-indicator" id="fmt-textcolor-bar" style="background:#ECEEF2"></span>
+            </button>
+            <div class="fmt-dropdown__menu" id="fmt-textcolor-menu" role="menu">
+             <div class="fmt-color-grid" id="fmt-textcolor-grid"></div>
+            </div>
+           </div>
+           <div class="fmt-dropdown" id="fmt-highlight-wrap">
+            <button class="fmt-color-btn" type="button" id="fmt-highlight-trigger" title="لون التظليل">
+             <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M16.56 8.94L7.62 0 6.21 1.41l2.38 2.38-5.15 5.15a1.49 1.49 0 000 2.12l5.5 5.5c.29.29.68.44 1.06.44s.77-.15 1.06-.44l5.5-5.5c.59-.58.59-1.53 0-2.12zM5.21 10L10 5.21 14.79 10H5.21zM19 11.5s-2 2.17-2 3.5c0 1.1.9 2 2 2s2-.9 2-2c0-1.33-2-3.5-2-3.5zM2 20h20v4H2v-4z"/></svg>
+             <span class="fmt-color-indicator" id="fmt-highlight-bar" style="background:transparent"></span>
+            </button>
+            <div class="fmt-dropdown__menu" id="fmt-highlight-menu" role="menu">
+             <div class="fmt-color-grid" id="fmt-highlight-grid"></div>
+            </div>
+           </div>
+          </div>
+          <div class="fmt-divider"></div>
+          <!-- Item 9: Lists + Indent -->
+          <div class="fmt-group">
+           <button class="fmt-btn" onclick="execFormat('insertUnorderedList')" type="button" title="قائمة نقطية">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M4 6h2v2H4V6zm4 0h12v2H8V6zM4 11h2v2H4v-2zm4 0h12v2H8v-2zm-4 5h2v2H4v-2zm4 0h12v2H8v-2z"/></svg>
+           </button>
+           <button class="fmt-btn" onclick="execFormat('insertOrderedList')" type="button" title="قائمة مرقمة">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M2 17h2v.5H3v1h1v.5H2v1h3v-4H2v1zm1-9h1V4H2v1h1v3zm-1 3h1.8L2 13.1v.9h3v-1H3.2L5 10.9V10H2v1zm5-6v2h14V5H7zm0 14h14v-2H7v2zm0-6h14v-2H7v2z"/></svg>
+           </button>
+           <button class="fmt-btn" onclick="execFormat('indent')" type="button" title="مسافة بادئة">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M3 21h18v-2H3v2zM3 8v8l4-4-4-4zm8 9h10v-2H11v2zM3 3v2h18V3H3zm8 6h10V7H11v2zm0 4h10v-2H11v2z"/></svg>
+           </button>
+           <button class="fmt-btn" onclick="execFormat('outdent')" type="button" title="إزالة المسافة البادئة">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M11 17h10v-2H11v2zm-8-5l4 4V8l-4 4zm0 9h18v-2H3v2zM3 3v2h18V3H3zm8 6h10V7H11v2zm0 4h10v-2H11v2z"/></svg>
+           </button>
+          </div>
+          <div class="fmt-divider"></div>
+          <!-- Clear formatting -->
+          <div class="fmt-group">
+           <button class="fmt-btn" onclick="execFormat('removeFormat')" type="button" title="مسح التنسيق">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2L2 22h20L12 2z"/><path stroke-linecap="round" stroke-width="2" d="M4 4l16 16"/></svg>
+           </button>
+          </div>
          </div>
          <input type="file" id="doc-import-input" class="sr-only" accept=".txt,.docx,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document" aria-hidden="true">
          <div id="write-area">
@@ -573,6 +625,17 @@
           </div>
          </div>
          <div id="summarize-area" class="summarize-panel is-hidden">
+          <!-- Item 11: Mode Toggle -->
+          <div class="summary-mode-toggle">
+           <button type="button" class="summary-mode-btn active" id="summary-mode-paragraph" onclick="setSummaryMode('paragraph')">
+            <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M3 5h18v2H3V5zm0 8h18v2H3v-2zm0 4h12v2H3v-2z"/></svg>
+            فقرة
+           </button>
+           <button type="button" class="summary-mode-btn" id="summary-mode-bullets" onclick="setSummaryMode('bullets')">
+            <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M4 6h2v2H4V6zm4 0h12v2H8V6zM4 11h2v2H4v-2zm4 0h12v2H8v-2zm-4 5h2v2H4v-2zm4 0h12v2H8v-2z"/></svg>
+            نقاط
+           </button>
+          </div>
           <div class="mb-6">
            <label class="block text-base font-bold mb-3" for="summary-length">طول الملخص</label>
            <div class="flex items-center gap-4">
@@ -591,6 +654,11 @@
           <button id="generate-summary-btn" onclick="generateSummary(event)" class="btn-primary w-full py-4 text-lg mb-6" type="button">توليد الملخص</button>
           <div id="summary-preview" class="summary-preview">
            <div class="summary-card">
+            <!-- Item 6: Summary Stats -->
+            <div id="summary-stats" class="summary-stats" style="display:none">
+             <div class="summary-stat"><span>كلمات الملخص:</span> <span class="summary-stat__value" id="summary-word-count">0</span></div>
+             <div class="summary-stat"><span>نسبة الاختصار:</span> <span class="summary-stat__value" id="summary-compression">0%</span></div>
+            </div>
             <div class="flex items-center justify-between mb-4">
              <h3 class="text-lg font-bold summary-card__title">الملخص</h3>
              <button onclick="copySummary()" class="btn-ghost" type="button">نسخ</button>
@@ -600,14 +668,23 @@
           </div>
          </div>
          <div class="editor-footer">
-          <div class="editor-stats" role="status" aria-label="إحصائيات الأخطاء">
+          <div class="editor-stats" role="status" aria-label="إحصائيات">
            <div class="flex items-center gap-2"><span class="stat-dot stat-dot--spelling" aria-hidden="true"></span><span class="text-sm text-secondary"><span id="spelling-count">٠</span> إملائي</span></div>
            <div class="flex items-center gap-2"><span class="stat-dot stat-dot--grammar" aria-hidden="true"></span><span class="text-sm text-secondary"><span id="grammar-count">٠</span> نحوي</span></div>
            <div class="flex items-center gap-2"><span class="stat-dot stat-dot--punctuation" aria-hidden="true"></span><span class="text-sm text-secondary"><span id="punctuation-count">٠</span> ترقيم</span></div>
+           <span class="stat-item--sep"></span>
+           <span class="stat-item"><span id="char-count">٠</span> حرف</span>
+           <span class="stat-item"><span id="sentence-count">٠</span> جملة</span>
+           <span class="stat-item--sep"></span>
+           <span class="stat-item">⏱ <span id="reading-time">٠</span> د قراءة</span>
           </div>
           <div class="editor-actions">
-           <button onclick="clearEditor()" class="btn-ghost" type="button">مسح الكل</button>
-           <button onclick="copyText()" class="btn-primary" type="button">نسخ النص</button>
+           <button onclick="clearEditor()" class="btn-ghost" type="button" title="مسح الكل">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+           </button>
+           <button onclick="copyText()" class="btn-ghost" type="button" title="نسخ النص">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+           </button>
           </div>
          </div>
         </div>
@@ -926,10 +1003,32 @@
         }
         
         if (data.status === 'success' && data.summary) {
-          const p = document.createElement('p');
-          p.textContent = data.summary;
-          summaryText.textContent = '';
-          summaryText.appendChild(p);
+          let summaryContent = data.summary;
+          
+          // Item 11: Bullet mode
+          if (window._summaryMode === 'bullets') {
+            const sentences = summaryContent.split(/[.،؛]\s*/).filter(s => s.trim().length > 2);
+            const ul = document.createElement('ul');
+            ul.style.cssText = 'list-style: disc; padding-right: 1.5rem; direction: rtl; text-align: right;';
+            sentences.forEach(s => {
+              const li = document.createElement('li');
+              li.textContent = s.trim();
+              li.style.marginBottom = '8px';
+              ul.appendChild(li);
+            });
+            summaryText.textContent = '';
+            summaryText.appendChild(ul);
+          } else {
+            const p = document.createElement('p');
+            p.textContent = summaryContent;
+            summaryText.textContent = '';
+            summaryText.appendChild(p);
+          }
+          
+          // Item 6: Summary stats
+          if (typeof updateSummaryStats === 'function') {
+            updateSummaryStats(summaryContent);
+          }
         } else {
           throw new Error(data.error || 'لم يتم توليد ملخص');
         }
@@ -1065,6 +1164,7 @@
       initUI();
       initEditor();
       if (typeof initFormatToolbar === 'function') initFormatToolbar();
+      if (typeof initDocSearch === 'function') initDocSearch();
       initDocuments();
       updateSuggestionsList([]);
       // Phase 7 — Sync System
