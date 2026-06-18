@@ -307,16 +307,35 @@ function applySuggestionAtOffsets(suggestion) {
   const errorSpan = idx >= 0 ? document.querySelector(`[data-suggestion-id="${idx}"]`) : null;
 
   if (errorSpan) {
-    // Replace the error span with the corrected text node
+    // Replace the error span's text content with the correction
+    // while keeping it inside its formatting parent
+    const parent = errorSpan.parentNode;
     const correctedNode = document.createTextNode(suggestion.correction);
-    errorSpan.replaceWith(correctedNode);
+    parent.insertBefore(correctedNode, errorSpan);
+    parent.removeChild(errorSpan);
+    parent.normalize();
   } else {
-    // Fallback: use offset-based replacement
-    const text = getEditorText();
-    const before = text.substring(0, suggestion.start);
-    const after = text.substring(suggestion.end);
-    const newText = before + suggestion.correction + after;
-    setEditorHTML(escapeHtml(newText));
+    // Fallback: find span by matching original text
+    const allErrorSpans = document.querySelectorAll('.spelling-error, .grammar-error, .punctuation-suggestion');
+    let found = false;
+    allErrorSpans.forEach(span => {
+      if (!found && span.textContent === suggestion.original) {
+        const p = span.parentNode;
+        const correctedNode = document.createTextNode(suggestion.correction);
+        p.insertBefore(correctedNode, span);
+        p.removeChild(span);
+        p.normalize();
+        found = true;
+      }
+    });
+    if (!found) {
+      // Last resort: offset-based replacement
+      const text = getEditorText();
+      const before = text.substring(0, suggestion.start);
+      const after = text.substring(suggestion.end);
+      const newText = before + suggestion.correction + after;
+      setEditorHTML(escapeHtml(newText));
+    }
   }
   hideTooltip();
   analyzeTextDelayed();
@@ -332,14 +351,31 @@ function applyAlternativeCorrection(suggestion, correctionText) {
   const errorSpan = idx >= 0 ? document.querySelector(`[data-suggestion-id="${idx}"]`) : null;
 
   if (errorSpan) {
+    const parent = errorSpan.parentNode;
     const correctedNode = document.createTextNode(correctionText);
-    errorSpan.replaceWith(correctedNode);
+    parent.insertBefore(correctedNode, errorSpan);
+    parent.removeChild(errorSpan);
+    parent.normalize();
   } else {
-    const text = getEditorText();
-    const before = text.substring(0, suggestion.start);
-    const after = text.substring(suggestion.end);
-    const newText = before + correctionText + after;
-    setEditorHTML(escapeHtml(newText));
+    const allErrorSpans = document.querySelectorAll('.spelling-error, .grammar-error, .punctuation-suggestion');
+    let found = false;
+    allErrorSpans.forEach(span => {
+      if (!found && span.textContent === suggestion.original) {
+        const p = span.parentNode;
+        const correctedNode = document.createTextNode(correctionText);
+        p.insertBefore(correctedNode, span);
+        p.removeChild(span);
+        p.normalize();
+        found = true;
+      }
+    });
+    if (!found) {
+      const text = getEditorText();
+      const before = text.substring(0, suggestion.start);
+      const after = text.substring(suggestion.end);
+      const newText = before + correctionText + after;
+      setEditorHTML(escapeHtml(newText));
+    }
   }
   hideTooltip();
   analyzeTextDelayed();

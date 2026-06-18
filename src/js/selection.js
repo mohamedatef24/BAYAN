@@ -187,7 +187,9 @@ function setCaretOffset(offset) {
 function getEditorText() {
   const editor = document.getElementById('editor-container');
   if (!editor) return '';
-  return editor.innerText || editor.textContent || '';
+  // MUST use textContent to match the offset calculation in overlaySuggestions
+  // innerText adds '\n' for block elements which causes offset mismatch
+  return editor.textContent || '';
 }
 
 /**
