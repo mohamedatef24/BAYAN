@@ -2747,13 +2747,13 @@ input[type="range"]::-moz-range-thumb {
 .sidebar-desktop.collapsed {
   display: none !important;
 }
-.editor-main-layout.editor-fullscreen .sidebar-panel.sidebar-desktop,
-.editor-main-layout.editor-fullscreen .docs-sidebar {
-  display: none !important;
+.editor-layout.editor-fullscreen {
+  grid-template-columns: 1fr !important;
 }
-.editor-main-layout.editor-fullscreen .editor-center {
-  max-width: 100% !important;
-  flex: 1 !important;
+.editor-layout.editor-fullscreen .sidebar-panel.sidebar-desktop,
+.editor-layout.editor-fullscreen .docs-panel,
+.editor-layout.editor-fullscreen .docs-panel-desktop {
+  display: none !important;
 }
 
 /* ── Fix #20: Light mode improvements ── */
