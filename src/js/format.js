@@ -259,9 +259,18 @@ function initColorPicker(prefix, command, barId) {
 function updateEnhancedStats() {
   const text = getEditorText();
   const charCount = text.length;
-  const sentences = text.split(/[.!?。؟!\.]+/).filter(s => s.trim().length > 0).length;
+  
+  // Count sentences: split on Arabic/Latin sentence endings + newlines
   const words = text.trim().split(/\s+/).filter(w => w.length > 0).length;
-  const readingTimeMinutes = Math.max(1, Math.ceil(words / 200));
+  let sentences = 0;
+  if (text.trim().length > 0) {
+    // Split by: . ! ? ؟ ، ؛ and newlines
+    sentences = text.split(/[.!?؟\n]+/).filter(s => s.trim().length > 2).length;
+    if (sentences === 0) sentences = 1; // at least 1 if there's text
+  }
+  
+  // Reading time: ~180 words/min for Arabic, show actual minutes
+  const readingTimeMinutes = words === 0 ? 0 : Math.max(1, Math.round(words / 180));
 
   const charEl = document.getElementById('char-count');
   const sentEl = document.getElementById('sentence-count');
