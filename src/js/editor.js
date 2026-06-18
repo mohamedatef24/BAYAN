@@ -92,15 +92,15 @@ function initEditor() {
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') hideTooltip();
+  });
 
-    // Custom Undo/Redo — capture phase on document fires BEFORE browser native undo
-    // Must be on document (not editor) so it works after tooltip clicks steal focus
+  // Custom Undo/Redo — on editor only, capture phase to beat browser native undo
+  editor.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
       if (_undoStack.length > 0) {
         e.preventDefault();
         e.stopImmediatePropagation();
         editorUndo();
-        editor.focus();
         return;
       }
     }
@@ -109,7 +109,6 @@ function initEditor() {
         e.preventDefault();
         e.stopImmediatePropagation();
         editorRedo();
-        editor.focus();
         return;
       }
     }
@@ -433,6 +432,8 @@ function applySuggestionAtOffsets(suggestion) {
     }
   }
   hideTooltip();
+  // Re-focus editor so Ctrl+Z works immediately after tooltip correction
+  const _ed = getEditorElement(); if (_ed) _ed.focus();
   analyzeTextDelayed();
 }
 
@@ -475,6 +476,8 @@ function applyAlternativeCorrection(suggestion, correctionText) {
     }
   }
   hideTooltip();
+  // Re-focus editor so Ctrl+Z works immediately after tooltip correction
+  const _ed2 = getEditorElement(); if (_ed2) _ed2.focus();
   analyzeTextDelayed();
 }
 
@@ -513,6 +516,8 @@ function dismissSuggestion(suggestion) {
     updateSuggestionsList(window.currentSuggestions);
   }
   hideTooltip();
+  // Re-focus editor so Ctrl+Z works immediately
+  const _ed3 = getEditorElement(); if (_ed3) _ed3.focus();
 }
 
 function applySuggestionByIndex(index) {
