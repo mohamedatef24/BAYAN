@@ -857,6 +857,8 @@ def analyze_text():
                 from nlp.grammar.grammar_service import correct_grammar
                 corrected_grammar = correct_grammar(current_text)
                 logger.info(f"[ANALYZE] Step 2: Grammar done in {time.time()-t0:.2f}s")
+                logger.info(f"[GRAMMAR] Input:  '{current_text}'")
+                logger.info(f"[GRAMMAR] Output: '{corrected_grammar}'")
                 if corrected_grammar != current_text:
                     # Word-level grammar diffs (individual words, not chunks)
                     g_orig_words = get_word_positions(current_text)
@@ -868,6 +870,7 @@ def analyze_text():
                     )
 
                     for tag, i1, i2, j1, j2 in g_matcher.get_opcodes():
+                        logger.info(f"[GRAMMAR] opcode: {tag} orig[{i1}:{i2}]={[w[0] for w in g_orig_words[i1:i2]]} → corr[{j1}:{j2}]={[w[0] for w in g_corr_words[j1:j2]]}")
                         if tag == 'replace':
                             # Process each original word individually
                             for k in range(i1, i2):
@@ -886,10 +889,12 @@ def analyze_text():
                                             if existing['type'] == 'spelling':
                                                 if not (orig_end <= existing['start'] or orig_start >= existing['end']):
                                                     overlaps = True
+                                                    logger.info(f"[GRAMMAR] SKIP '{o_word}'→'{c_word}' (overlaps with spelling '{existing['original']}'→'{existing['correction']}')")
                                                     break
                                         if overlaps:
                                             continue
 
+                                        logger.info(f"[GRAMMAR] ADD suggestion: '{o_word}' → '{c_word}' at orig[{orig_start}:{orig_end}]")
                                         suggestions.append({
                                             'start': orig_start,
                                             'end': orig_end,
@@ -901,6 +906,8 @@ def analyze_text():
 
                     mappers.append(OffsetMapper(current_text, corrected_grammar))
                     current_text = corrected_grammar
+                else:
+                    logger.info(f"[GRAMMAR] No changes — grammar output == input")
             except Exception as e:
                 logger.error(f"[ANALYZE] Grammar failed: {e}")
 
