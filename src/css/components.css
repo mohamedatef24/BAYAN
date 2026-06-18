@@ -286,12 +286,19 @@
 /* ── Formatting Toolbar ── */
 .format-toolbar {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 6px;
   padding: 8px var(--spacing-md);
   border-bottom: 1px solid var(--color-border);
   background: var(--color-surface);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.format-toolbar::-webkit-scrollbar {
+  display: none;
 }
 
 .fmt-group {
@@ -475,7 +482,7 @@
   background: var(--color-editor);
   color: var(--color-text-primary);
   min-height: 50vh;
-  padding: var(--spacing-lg);
+  padding: var(--spacing-lg) var(--spacing-xl);
   font-size: var(--font-size-editor);
   font-weight: var(--font-weight-regular);
   line-height: var(--line-height-editor);
@@ -485,11 +492,13 @@
   white-space: pre-wrap;
   word-wrap: break-word;
   overflow-y: auto;
-  border-radius: var(--radius-md);
-  margin: var(--spacing-md);
-  border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-editor);
-  transition: box-shadow var(--transition-base), border-color var(--transition-base);
+  border-radius: 0;
+  margin: 0;
+  border: none;
+  border-top: 1px solid var(--color-border);
+  box-shadow: none;
+  transition: none;
+  flex: 1;
 }
 
 @media (min-width: 768px) {
@@ -502,8 +511,6 @@
 
 .editor-surface:focus {
   outline: none;
-  border-color: var(--color-border-strong);
-  box-shadow: var(--shadow-editor), 0 0 0 3px var(--focus-ring);
 }
 
 .editor-surface[data-empty="true"]::before {
@@ -515,7 +522,7 @@
 }
 
 .editor-surface.analyzing {
-  opacity: 0.88;
+  opacity: 0.92;
 }
 
 .editor-footer {
@@ -2102,5 +2109,356 @@ input[type="range"]::-webkit-slider-thumb {
 
 .save-summary-btn {
   margin-top: var(--spacing-sm);
+}
+
+/* ── Item 2: Custom Summary Slider ── */
+.summarize-panel input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--color-border);
+  outline: none;
+  direction: ltr;
+  cursor: pointer;
+}
+
+.summarize-panel input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  cursor: pointer;
+  border: 3px solid var(--color-surface);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  transition: transform 0.15s ease;
+}
+
+.summarize-panel input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+.summarize-panel input[type="range"]::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  cursor: pointer;
+  border: 3px solid var(--color-surface);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+}
+
+/* ── Item 3: Empty States ── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl) var(--spacing-md);
+  text-align: center;
+  gap: var(--spacing-md);
+}
+
+.empty-state__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--color-surface-elevated);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+}
+
+.empty-state__title {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+}
+
+.empty-state__desc {
+  font-size: var(--font-size-label);
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+/* ── Item 4: Enhanced Status Bar ── */
+.editor-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--font-size-label);
+  color: var(--color-text-muted);
+}
+
+.stat-item--sep {
+  width: 1px;
+  height: 14px;
+  background: var(--color-border);
+}
+
+/* ── Item 6: Summary Stats ── */
+.summary-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) 0;
+  margin-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.summary-stat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-label);
+  color: var(--color-text-secondary);
+}
+
+.summary-stat__value {
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
+}
+
+/* ── Item 7: Document Search ── */
+.docs-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  margin-bottom: var(--spacing-md);
+  transition: border-color 0.15s ease;
+}
+
+.docs-search:focus-within {
+  border-color: var(--color-primary);
+}
+
+.docs-search__input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--color-text-primary);
+  font-family: inherit;
+  font-size: var(--font-size-caption);
+  outline: none;
+  direction: rtl;
+}
+
+.docs-search__input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.docs-search__icon {
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.doc-item-meta {
+  font-size: 0.65rem;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+/* ── Item 8: Color Picker ── */
+.fmt-color-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: none;
+  background: var(--color-surface);
+  cursor: pointer;
+  position: relative;
+  transition: background 0.15s ease;
+}
+
+.fmt-color-btn:hover {
+  background: var(--color-surface-elevated);
+}
+
+.fmt-color-indicator {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+}
+
+.fmt-color-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+  padding: 8px;
+}
+
+.fmt-color-swatch {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.12s ease, border-color 0.12s ease;
+}
+
+.fmt-color-swatch:hover {
+  transform: scale(1.15);
+  border-color: var(--color-text-primary);
+}
+
+.fmt-color-swatch--active {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary);
+}
+
+/* ── Item 10: Animated Theme Toggle ── */
+.theme-toggle-animated {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-surface-elevated);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.3s ease, color 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.theme-toggle-animated:hover {
+  background: var(--color-primary);
+  color: #fff;
+  transform: rotate(15deg);
+}
+
+.theme-toggle-animated svg {
+  transition: transform 0.4s ease, opacity 0.3s ease;
+}
+
+.theme-toggle-animated .theme-icon-sun,
+.theme-toggle-animated .theme-icon-moon {
+  position: absolute;
+  transition: transform 0.4s ease, opacity 0.3s ease;
+}
+
+[data-theme="dark"] .theme-icon-sun {
+  transform: rotate(90deg) scale(0);
+  opacity: 0;
+}
+
+[data-theme="dark"] .theme-icon-moon {
+  transform: rotate(0) scale(1);
+  opacity: 1;
+}
+
+[data-theme="light"] .theme-icon-moon {
+  transform: rotate(-90deg) scale(0);
+  opacity: 0;
+}
+
+[data-theme="light"] .theme-icon-sun {
+  transform: rotate(0) scale(1);
+  opacity: 1;
+}
+
+/* ── Item 11: Summary Mode Toggle ── */
+.summary-mode-toggle {
+  display: flex;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: var(--spacing-md);
+}
+
+.summary-mode-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-family: inherit;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.summary-mode-btn.active {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  color: #fff;
+}
+
+.summary-mode-btn:hover:not(.active) {
+  background: var(--color-surface-elevated);
+}
+
+/* ── Item 12: Print Styles ── */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  #editor-container,
+  #editor-container * {
+    visibility: visible;
+  }
+
+  #editor-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    min-height: auto;
+    padding: 2cm;
+    font-size: 14pt;
+    line-height: 2;
+    color: #000;
+    background: #fff;
+    border: none;
+    box-shadow: none;
+  }
+
+  .spelling-error,
+  .grammar-error,
+  .punctuation-suggestion {
+    border: none;
+    background: transparent;
+    text-decoration: none;
+  }
+
+  .site-nav,
+  .format-toolbar,
+  .editor-toolbar,
+  .editor-footer,
+  .sidebar-panel,
+  .docs-sidebar,
+  .bottom-sheet,
+  .suggestion-popover,
+  #analyzing-indicator {
+    display: none !important;
+  }
 }
 

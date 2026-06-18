@@ -101,12 +101,13 @@ function updateSuggestionsList(suggestions) {
   if (!suggestions || suggestions.length === 0) {
     const emptyHTML = `
       <div class="empty-state">
-        <svg class="empty-state-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-        </svg>
-        <p class="text-base font-semibold">لا توجد اقتراحات</p>
-        <p class="text-sm mt-1">ابدأ بكتابة جملة عربية</p>
+        <div class="empty-state__icon">
+          <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </div>
+        <div class="empty-state__title">لا توجد اقتراحات</div>
+        <div class="empty-state__desc">ابدأ بكتابة نص عربي وسيتم تحليله تلقائياً</div>
       </div>`;
 
     lists.forEach((el) => { el.innerHTML = emptyHTML; });
