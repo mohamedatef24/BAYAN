@@ -457,6 +457,11 @@ function applyAllSuggestions() {
 }
 
 function clearEditor() {
+  // Don't prompt if editor is already empty
+  const text = getEditorText();
+  if (text.trim().length > 0) {
+    if (!confirm('هل أنت متأكد من مسح كل المحتوى؟')) return;
+  }
   setEditorHTML('');
   window.currentSuggestions = [];
   updateSuggestionCounts(0, 0, 0);
