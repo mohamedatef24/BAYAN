@@ -50,9 +50,16 @@
   font-size: 0.85em;
   opacity: 0.7;
   position: static;
-  width: auto;
+  width: auto !important;
   height: auto;
   background: none;
+  transition: none;
+}
+
+.nav-link-external:hover::after {
+  width: auto !important;
+  background: none;
+  opacity: 1;
 }
 
 .mobile-drawer-link-external {
