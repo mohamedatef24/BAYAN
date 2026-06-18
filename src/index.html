@@ -33,6 +33,7 @@
   <script src="/js/ui.js"></script>
   <script src="/js/documents/doc-utils.js"></script>
   <script src="/js/editor.js"></script>
+  <script src="/js/format.js"></script>
   <script src="/js/documents/import.js"></script>
   <script src="/js/documents/export.js?v=20260615d"></script>
   <script src="/js/documents/documents.js"></script>
@@ -487,6 +488,56 @@
            <button id="doc-save-btn" class="doc-save-btn-icon btn-ghost" type="button" aria-label="حفظ المستند" title="حفظ">
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
            </button>
+          </div>
+         </div>
+         <!-- Formatting Toolbar -->
+         <div class="format-toolbar" id="format-toolbar">
+          <div class="fmt-group">
+           <button id="fmt-bold" class="fmt-btn" onclick="formatBold()" type="button" title="غامق (Ctrl+B)"><b>B</b></button>
+           <button id="fmt-italic" class="fmt-btn" onclick="formatItalic()" type="button" title="مائل (Ctrl+I)"><i>I</i></button>
+           <button id="fmt-underline" class="fmt-btn" onclick="formatUnderline()" type="button" title="تحته خط (Ctrl+U)"><u>U</u></button>
+           <button id="fmt-strikethrough" class="fmt-btn" onclick="formatStrikethrough()" type="button" title="يتوسطه خط"><s>S</s></button>
+          </div>
+          <div class="fmt-divider"></div>
+          <div class="fmt-group">
+           <button id="fmt-align-right" class="fmt-btn" onclick="formatAlignRight()" type="button" title="محاذاة لليمين">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M3 5h18v2H3V5zm4 4h14v2H7V9zm-4 4h18v2H3v-2zm4 4h14v2H7v-2z"/></svg>
+           </button>
+           <button id="fmt-align-center" class="fmt-btn" onclick="formatAlignCenter()" type="button" title="توسيط">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M3 5h18v2H3V5zm3 4h12v2H6V9zm-3 4h18v2H3v-2zm3 4h12v2H6v-2z"/></svg>
+           </button>
+           <button id="fmt-align-left" class="fmt-btn" onclick="formatAlignLeft()" type="button" title="محاذاة لليسار">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M3 5h18v2H3V5zm0 4h14v2H3V9zm0 4h18v2H3v-2zm0 4h14v2H3v-2z"/></svg>
+           </button>
+          </div>
+          <div class="fmt-divider"></div>
+          <div class="fmt-group">
+           <button class="fmt-btn" onclick="formatUndo()" type="button" title="تراجع (Ctrl+Z)">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a5 5 0 015 5v2M3 10l4-4M3 10l4 4"/></svg>
+           </button>
+           <button class="fmt-btn" onclick="formatRedo()" type="button" title="إعادة (Ctrl+Y)">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 10H11a5 5 0 00-5 5v2M21 10l-4-4M21 10l-4 4"/></svg>
+           </button>
+          </div>
+          <div class="fmt-divider"></div>
+          <div class="fmt-group">
+           <select id="fmt-font-family" class="fmt-select" title="نوع الخط">
+            <option value="Cairo" selected>Cairo</option>
+            <option value="Arial">Arial</option>
+            <option value="Times New Roman">Times New Roman</option>
+            <option value="Courier New">Courier New</option>
+            <option value="Tahoma">Tahoma</option>
+            <option value="Simplified Arabic">Simplified Arabic</option>
+            <option value="Traditional Arabic">Traditional Arabic</option>
+           </select>
+           <select id="fmt-font-size" class="fmt-select fmt-select--size" title="حجم الخط">
+            <option value="12px">صغير</option>
+            <option value="16px" selected>عادي</option>
+            <option value="20px">فوق المتوسط</option>
+            <option value="24px">كبير</option>
+            <option value="32px">كبير جداً</option>
+            <option value="48px">الأقصى</option>
+           </select>
           </div>
          </div>
          <input type="file" id="doc-import-input" class="sr-only" accept=".txt,.docx,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document" aria-hidden="true">
@@ -996,6 +1047,7 @@
       initTheme();
       initUI();
       initEditor();
+      if (typeof initFormatToolbar === 'function') initFormatToolbar();
       initDocuments();
       updateSuggestionsList([]);
       // Phase 7 — Sync System
@@ -1005,12 +1057,6 @@
       await initSettingsSync();
       initDocumentsCloud();
       initSummaries();
-
-      const mobileImport = document.getElementById('doc-import-btn-mobile');
-      const importInput = document.getElementById('doc-import-input');
-      if (mobileImport && importInput) {
-        mobileImport.addEventListener('click', () => importInput.click());
-      }
 
       try {
         const savedPage = sessionStorage.getItem('bayan_current_page');
