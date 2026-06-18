@@ -200,6 +200,151 @@ function render(input) {
   return renderHighlightedText(text, suggestions);
 }
 
+/**
+ * Walk all text nodes in a DOM subtree in document order
+ */
+function walkTextNodes(root, callback) {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
+  let node;
+  while ((node = walker.nextNode())) {
+    callback(node);
+  }
+}
+
+/**
+ * Remove existing error highlight spans without destroying content
+ * Unwraps the spans back to plain text nodes
+ */
+function clearOverlays(editor) {
+  const errorSpans = editor.querySelectorAll('.spelling-error, .grammar-error, .punctuation-suggestion');
+  errorSpans.forEach(span => {
+    const parent = span.parentNode;
+    while (span.firstChild) {
+      parent.insertBefore(span.firstChild, span);
+    }
+    parent.removeChild(span);
+  });
+  editor.normalize(); // merge adjacent text nodes
+}
+
+/**
+ * Overlay suggestion highlights on the editor DOM without replacing innerHTML.
+ * This preserves all formatting (bold, italic, underline, font, etc.)
+ *
+ * @param {HTMLElement} editor - The editor element
+ * @param {Array} suggestions - Sorted array of suggestions with { start, end, original, correction, type }
+ */
+function overlaySuggestions(editor, suggestions) {
+  // 1. Clear old overlays
+  clearOverlays(editor);
+
+  if (!suggestions || suggestions.length === 0) return;
+
+  // 2. Collect text nodes with their character offsets
+  const textNodes = [];
+  let offset = 0;
+  walkTextNodes(editor, (node) => {
+    textNodes.push({ node, start: offset, end: offset + node.length });
+    offset += node.length;
+  });
+
+  if (textNodes.length === 0) return;
+
+  // 3. Process suggestions in REVERSE order to avoid offset shifts
+  const sorted = [...suggestions].sort((a, b) => b.start - a.start);
+
+  sorted.forEach((suggestion, reverseIdx) => {
+    const realIdx = suggestions.length - 1 - reverseIdx;
+    const { start, end } = suggestion;
+    const errorClass = getErrorClass(suggestion.type);
+
+    // Find text nodes that overlap with this suggestion range
+    const overlapping = textNodes.filter(tn => tn.start < end && tn.end > start);
+    if (overlapping.length === 0) return;
+
+    // Create the wrapper span
+    const wrapper = document.createElement('span');
+    wrapper.className = errorClass;
+    wrapper.dataset.suggestionId = String(realIdx);
+    wrapper.dataset.original = suggestion.original || '';
+    wrapper.dataset.correction = suggestion.correction || '';
+    wrapper.dataset.type = suggestion.type || 'spelling';
+    wrapper.title = `${suggestion.type}: ${suggestion.correction}`;
+
+    if (overlapping.length === 1) {
+      // Simple case: suggestion falls within a single text node
+      const tn = overlapping[0];
+      const localStart = Math.max(0, start - tn.start);
+      const localEnd = Math.min(tn.node.length, end - tn.start);
+
+      // Split the text node
+      const textContent = tn.node.textContent;
+      const beforeText = textContent.slice(0, localStart);
+      const errorText = textContent.slice(localStart, localEnd);
+      const afterText = textContent.slice(localEnd);
+
+      const parent = tn.node.parentNode;
+      const errorTextNode = document.createTextNode(errorText);
+      wrapper.appendChild(errorTextNode);
+
+      // Replace the original text node
+      if (afterText) {
+        parent.insertBefore(document.createTextNode(afterText), tn.node.nextSibling);
+      }
+      parent.insertBefore(wrapper, tn.node.nextSibling || null);
+      if (beforeText) {
+        parent.insertBefore(document.createTextNode(beforeText), wrapper);
+      }
+      parent.removeChild(tn.node);
+
+    } else {
+      // Complex case: suggestion spans multiple text nodes
+      // We use a Range to extract and wrap the content
+      try {
+        const range = document.createRange();
+
+        const firstTN = overlapping[0];
+        const lastTN = overlapping[overlapping.length - 1];
+        const rangeStart = Math.max(0, start - firstTN.start);
+        const rangeEnd = Math.min(lastTN.node.length, end - lastTN.start);
+
+        range.setStart(firstTN.node, rangeStart);
+        range.setEnd(lastTN.node, rangeEnd);
+
+        range.surroundContents(wrapper);
+      } catch (e) {
+        // surroundContents can fail if the range crosses element boundaries
+        // In that case, just wrap the text of the first overlapping node
+        const tn = overlapping[0];
+        const localStart = Math.max(0, start - tn.start);
+        const localEnd = Math.min(tn.node.length, end - tn.start);
+
+        if (localEnd > localStart) {
+          const textContent = tn.node.textContent;
+          const beforeText = textContent.slice(0, localStart);
+          const errorText = textContent.slice(localStart, localEnd);
+          const afterText = textContent.slice(localEnd);
+
+          const parent = tn.node.parentNode;
+          wrapper.appendChild(document.createTextNode(errorText));
+          if (afterText) parent.insertBefore(document.createTextNode(afterText), tn.node.nextSibling);
+          parent.insertBefore(wrapper, tn.node.nextSibling || null);
+          if (beforeText) parent.insertBefore(document.createTextNode(beforeText), wrapper);
+          parent.removeChild(tn.node);
+        }
+      }
+    }
+
+    // Rebuild textNodes array after modification (for next iteration)
+    textNodes.length = 0;
+    offset = 0;
+    walkTextNodes(editor, (node) => {
+      textNodes.push({ node, start: offset, end: offset + node.length });
+      offset += node.length;
+    });
+  });
+}
+
 // Export for use in modules (if using ES6 modules)
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
@@ -208,6 +353,8 @@ if (typeof module !== 'undefined' && module.exports) {
     escapeHtml,
     createSegments,
     sortSuggestions,
-    getErrorClass
+    getErrorClass,
+    overlaySuggestions,
+    clearOverlays
   };
 }
