@@ -216,16 +216,17 @@ async function _createNewDocument() {
     return;
   }
 
-  const content = getEditorText();
   const titleInput = prompt('اسم المستند الجديد:', 'مستند جديد');
   if (titleInput === null) return; // User pressed Cancel
   const title = titleInput.trim() || 'مستند جديد';
-  const doc = await createDocument(title, content);
+  const doc = await createDocument(title, '');
   if (!doc) {
     if (typeof showDocToast === 'function') showDocToast('تعذّر إنشاء المستند', 'error');
     return;
   }
 
+  // Clear the editor for the new empty document
+  loadDocumentText('', { analyze: false });
   setDocState({
     currentDocumentId: doc.id,
     currentDocumentTitle: doc.title,
