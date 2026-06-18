@@ -362,6 +362,7 @@ function applySuggestionAtOffsets(suggestion) {
 function applyCorrection() {
   if (!window.currentApplySuggestion) return;
   applySuggestionAtOffsets(window.currentApplySuggestion);
+  if (typeof showToast === 'function') showToast('✓ تم التصحيح');
 }
 
 function applyAlternativeCorrection(suggestion, correctionText) {
@@ -445,6 +446,7 @@ function applySuggestionByIndex(index) {
 function applyAllSuggestions() {
   const suggestions = [...(window.currentSuggestions || [])].sort((a, b) => b.start - a.start);
   if (suggestions.length === 0) return;
+  if (!confirm('هل تريد تطبيق جميع التصحيحات (' + suggestions.length + ')؟')) return;
 
   let text = getEditorText();
   suggestions.forEach((s) => {
@@ -454,6 +456,7 @@ function applyAllSuggestions() {
   setEditorHTML(escapeHtml(text));
   hideTooltip();
   analyzeTextDelayed();
+  if (typeof showToast === 'function') showToast('✓ تم تطبيق ' + suggestions.length + ' تصحيح');
 }
 
 function clearEditor() {

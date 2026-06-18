@@ -99,15 +99,17 @@ function updateSuggestionsList(suggestions) {
   const applyAllSheet = document.getElementById('apply-all-sheet');
 
   if (!suggestions || suggestions.length === 0) {
+    const editorText = typeof getEditorText === 'function' ? getEditorText().trim() : '';
+    const hasText = editorText.length > 0;
     const emptyHTML = `
       <div class="empty-state">
-        <div class="empty-state__icon">
+        <div class="empty-state__icon" style="color: ${hasText ? '#22c55e' : 'var(--text-secondary)'}">
           <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${hasText ? 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' : 'M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z'}"/>
           </svg>
         </div>
-        <div class="empty-state__title">لا توجد اقتراحات</div>
-        <div class="empty-state__desc">ابدأ بكتابة نص عربي وسيتم تحليله تلقائياً</div>
+        <div class="empty-state__title">${hasText ? 'نصك ممتاز!' : 'لا توجد اقتراحات'}</div>
+        <div class="empty-state__desc">${hasText ? 'لم نجد أي أخطاء — أحسنت! ✨' : 'ابدأ بكتابة نص عربي وسيتم تحليله تلقائياً'}</div>
       </div>`;
 
     lists.forEach((el) => { el.innerHTML = emptyHTML; });
