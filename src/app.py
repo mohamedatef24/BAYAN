@@ -681,6 +681,8 @@ def analyze_text():
 
         current_text = text
         suggestions = []
+        spelling_changed_originals = set()
+        spell_checker = None
         mappers = []
         total_start = time.time()
 
@@ -843,13 +845,19 @@ def analyze_text():
                             continue
 
                     safe_text = " ".join(new_words)
+                    # Track which original words were changed by spelling
+                    for s in suggestions:
+                        spelling_changed_originals.add(s['original'])
                     mappers.append(OffsetMapper(current_text, safe_text))
                     current_text = safe_text
             except Exception as e:
                 logger.error(f"[ANALYZE] Spelling failed: {e}")
 
+        # Save the spelling-only suggestions and the text after spelling
+        spelling_suggestions = list(suggestions)
+
         # 2. Grammar (runs on spelling-corrected text)
-        has_grammar = True  # Always available via lazy-loaded grammar_service
+        has_grammar = True
         if has_grammar:
             try:
                 t0 = time.time()
@@ -858,27 +866,6 @@ def analyze_text():
                 corrected_grammar = correct_grammar(current_text)
                 logger.info(f"[ANALYZE] Step 2: Grammar done in {time.time()-t0:.2f}s")
                 if corrected_grammar != current_text:
-                    # Collect existing suggestion ranges to avoid overlaps
-                    existing_ranges = [(s['start'], s['end']) for s in suggestions]
-                    diffs = get_word_diffs(current_text, corrected_grammar)
-                    for d in diffs:
-                        orig_start, orig_end = map_range_to_original(d['start'], d['end'])
-                        # Skip if this range overlaps with any existing suggestion
-                        overlaps = any(
-                            not (orig_end <= es or orig_start >= ee)
-                            for es, ee in existing_ranges
-                        )
-                        if overlaps:
-                            logger.debug(f"[ANALYZE] Skipping grammar suggestion at {orig_start}-{orig_end} (overlaps spelling)")
-                            continue
-                        suggestions.append({
-                            'start': orig_start,
-                            'end': orig_end,
-                            'original': text[orig_start:orig_end],
-                            'correction': d['correction'],
-                            'type': 'grammar'
-                        })
-                    mappers.append(OffsetMapper(current_text, corrected_grammar))
                     current_text = corrected_grammar
             except Exception as e:
                 logger.error(f"[ANALYZE] Grammar failed: {e}")
@@ -895,19 +882,97 @@ def analyze_text():
                     corrected_punc = punctuation_model.add_punctuation(current_text)
                 logger.info(f"[ANALYZE] Step 3: Punctuation done in {time.time()-t0:.2f}s")
                 if corrected_punc != current_text:
-                    diffs = get_word_diffs(current_text, corrected_punc)
-                    for d in diffs:
-                        orig_start, orig_end = map_range_to_original(d['start'], d['end'])
-                        suggestions.append({
-                            'start': orig_start,
-                            'end': orig_end,
-                            'original': text[orig_start:orig_end],
-                            'correction': d['correction'],
-                            'type': 'punctuation'
-                        })
                     current_text = corrected_punc
             except Exception as e:
                 logger.error(f"[ANALYZE] Punctuation failed: {e}")
+
+        # === UNIFIED DIFF: original text vs final text ===
+        # This produces ONE clean set of non-overlapping suggestions
+        final_text = current_text
+        suggestions = []  # rebuild from scratch
+
+        if final_text != text:
+            # Get word-level diffs between original and final
+            orig_words = text.split()
+            final_words = final_text.split()
+
+            # Build position map for original words
+            orig_positions = []
+            pos = 0
+            for w in orig_words:
+                start = text.index(w, pos)
+                orig_positions.append((w, start, start + len(w)))
+                pos = start + len(w)
+
+            # Use SequenceMatcher on word lists
+            sm = SequenceMatcher(None, orig_words, final_words)
+            for tag, i1, i2, j1, j2 in sm.get_opcodes():
+                if tag == 'equal':
+                    continue
+                elif tag == 'replace':
+                    # Words i1..i2 in original → words j1..j2 in final
+                    o_segment = orig_words[i1:i2]
+                    c_segment = final_words[j1:j2]
+
+                    start_idx = orig_positions[i1][1]
+                    end_idx = orig_positions[i2-1][2]
+                    original_span = text[start_idx:end_idx]
+                    correction_span = " ".join(c_segment)
+
+                    if original_span == correction_span:
+                        continue
+
+                    # Determine type: if any word in spelling_changed_originals, it's spelling
+                    # Otherwise it's grammar
+                    is_spelling = any(w in spelling_changed_originals for w in o_segment)
+
+                    # For spelling suggestions, try to process word-by-word
+                    if is_spelling and len(o_segment) == 1 and len(c_segment) == 1:
+                        o_word = o_segment[0]
+                        c_word = c_segment[0]
+                        if _is_small_spelling_change(o_word, c_word):
+                            suggestions.append({
+                                'start': start_idx,
+                                'end': end_idx,
+                                'original': o_word,
+                                'correction': c_word,
+                                'type': 'spelling',
+                                'alternatives': _get_spelling_alternatives(o_word, c_word, spell_checker) if spell_checker else [c_word, o_word],
+                            })
+                        else:
+                            suggestions.append({
+                                'start': start_idx,
+                                'end': end_idx,
+                                'original': original_span,
+                                'correction': correction_span,
+                                'type': 'grammar',
+                            })
+                    elif is_spelling and len(o_segment) == 1 and len(c_segment) > 1:
+                        # Word split
+                        suggestions.append({
+                            'start': start_idx,
+                            'end': end_idx,
+                            'original': original_span,
+                            'correction': correction_span,
+                            'type': 'spelling',
+                            'alternatives': [correction_span, original_span],
+                        })
+                    else:
+                        # Grammar or multi-word change
+                        stype = 'spelling' if is_spelling else 'grammar'
+                        suggestions.append({
+                            'start': start_idx,
+                            'end': end_idx,
+                            'original': original_span,
+                            'correction': correction_span,
+                            'type': stype,
+                        })
+                elif tag == 'delete':
+                    # Words deleted — skip (don't suggest deleting words)
+                    continue
+                elif tag == 'insert':
+                    # Words inserted — skip for now
+                    continue
 
         total_time = time.time() - total_start
         logger.info(f"[ANALYZE] Total analysis time: {total_time:.2f}s | Suggestions: {len(suggestions)}")
