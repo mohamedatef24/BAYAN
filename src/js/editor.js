@@ -92,20 +92,25 @@ function initEditor() {
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') hideTooltip();
-    // Custom Undo/Redo for corrections
+  });
+
+  // Custom Undo/Redo — use capture phase on editor to intercept BEFORE browser native undo
+  editor.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
       if (_undoStack.length > 0) {
         e.preventDefault();
+        e.stopPropagation();
         editorUndo();
       }
     }
     if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
       if (_redoStack.length > 0) {
         e.preventDefault();
+        e.stopPropagation();
         editorRedo();
       }
     }
-  });
+  }, true);
 
   document.addEventListener('click', (e) => {
     const popover = document.getElementById('editor-tooltip');
