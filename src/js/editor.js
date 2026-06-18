@@ -92,22 +92,25 @@ function initEditor() {
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') hideTooltip();
-  });
 
-  // Custom Undo/Redo — use capture phase on editor to intercept BEFORE browser native undo
-  editor.addEventListener('keydown', (e) => {
+    // Custom Undo/Redo — capture phase on document fires BEFORE browser native undo
+    // Must be on document (not editor) so it works after tooltip clicks steal focus
     if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
       if (_undoStack.length > 0) {
         e.preventDefault();
-        e.stopPropagation();
+        e.stopImmediatePropagation();
         editorUndo();
+        editor.focus();
+        return;
       }
     }
     if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
       if (_redoStack.length > 0) {
         e.preventDefault();
-        e.stopPropagation();
+        e.stopImmediatePropagation();
         editorRedo();
+        editor.focus();
+        return;
       }
     }
   }, true);
