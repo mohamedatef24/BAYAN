@@ -45,6 +45,9 @@ AutoModelForMaskedLM.from_pretrained('aubmindlab/bert-base-arabertv02'); \
 print('Spelling model + MLM cached!'); \
 "
 
+# 3. Grammar — camel-tools MLE disambiguator data
+RUN camel_data -i light
+
 # Copy application code
 COPY src/ ./src/
 COPY .env* ./

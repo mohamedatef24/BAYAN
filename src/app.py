@@ -155,7 +155,7 @@ def health_check():
                 'summarization': summarization_model is not None,
                 'spelling': _spelling_available(),
                 'autocomplete': False,
-                'grammar': False,
+                'grammar': _grammar_available(),
                 'punctuation': False
             },
             'note': 'Free tier: summarization local, other models return input unchanged',
@@ -227,6 +227,15 @@ def _spelling_available():
     """Check if spelling model is loaded (without triggering lazy load)."""
     try:
         from nlp.spelling.araspell_service import is_loaded
+        return is_loaded()
+    except Exception:
+        return False
+
+
+def _grammar_available():
+    """Check if grammar model is loaded (without triggering lazy load)."""
+    try:
+        from nlp.grammar.grammar_service import is_loaded
         return is_loaded()
     except Exception:
         return False
@@ -438,17 +447,18 @@ def grammar_correction():
     """
     Correct grammar in Arabic text.
     
-    Expected JSON payload:
+    Request JSON:
     {
-        "text": "Arabic text to correct"
+        "text": "Arabic text with grammar errors"
+    }
+    
+    Response JSON:
+    {
+        "original_text": "...",
+        "corrected_text": "...",
+        "status": "success"
     }
     """
-    if not USE_HF_API and grammar_model is None:
-        return jsonify({
-            'error': 'Grammar model not loaded. Please check server logs.',
-            'status': 'error'
-        }), 503
-    
     try:
         if not request.is_json:
             return jsonify({'error': 'Request must be JSON', 'status': 'error'}), 400
@@ -459,20 +469,30 @@ def grammar_correction():
         if not text:
             return jsonify({'error': 'Text is required', 'status': 'error'}), 400
         
-        logger.info(f"Correcting grammar for text of length: {len(text)}")
-        if USE_HF_API:
-            # Grammar uses spelling model as proxy (no dedicated grammar model yet)
-            corrected = hf_correct_spelling(text)
-        else:
-            corrected = grammar_model.correct(text)
+        if len(text) > MAX_TEXT_LENGTH:
+            return jsonify({
+                'error': f'Text too long. Maximum {MAX_TEXT_LENGTH} characters.',
+                'status': 'error'
+            }), 400
+        
+        logger.info(f"Grammar correction request: text_length={len(text)}")
+        
+        from nlp.grammar.grammar_service import get_grammar_model
+        checker = get_grammar_model()
+        corrected = checker.correct(text)
         
         return jsonify({
-            'corrected': corrected,
-            'status': 'success',
-            'original_length': len(text),
-            'corrected_length': len(corrected)
-        })
+            'original_text': text,
+            'corrected_text': corrected,
+            'status': 'success'
+        }), 200
     
+    except RuntimeError as e:
+        logger.error(f"Grammar model error: {e}")
+        return jsonify({
+            'error': f'Grammar model unavailable: {str(e)[:200]}',
+            'status': 'error'
+        }), 503
     except Exception as e:
         logger.error(f"Error during grammar correction: {str(e)}")
         logger.error(traceback.format_exc())
@@ -849,32 +869,29 @@ def analyze_text():
             except Exception as e:
                 logger.error(f"[ANALYZE] Spelling failed: {e}")
 
-        # 2. Grammar (runs on spelling-corrected text)
-        has_grammar = USE_HF_API or grammar_model
-        if has_grammar:
-            try:
-                t0 = time.time()
-                logger.info(f"[ANALYZE] Step 2: Grammar correction starting...")
-                if USE_HF_API:
-                    corrected_grammar = hf_correct_spelling(current_text)
-                else:
-                    corrected_grammar = grammar_model.correct(current_text)
-                logger.info(f"[ANALYZE] Step 2: Grammar done in {time.time()-t0:.2f}s")
-                if corrected_grammar != current_text:
-                    diffs = get_word_diffs(current_text, corrected_grammar)
-                    for d in diffs:
-                        orig_start, orig_end = map_range_to_original(d['start'], d['end'])
-                        suggestions.append({
-                            'start': orig_start,
-                            'end': orig_end,
-                            'original': text[orig_start:orig_end],
-                            'correction': d['correction'],
-                            'type': 'grammar'
-                        })
-                    mappers.append(OffsetMapper(current_text, corrected_grammar))
-                    current_text = corrected_grammar
-            except Exception as e:
-                logger.error(f"[ANALYZE] Grammar failed: {e}")
+        # 2. Grammar (runs on spelling-corrected text — word-level dependency)
+        try:
+            t0 = time.time()
+            logger.info(f"[ANALYZE] Step 2: Grammar correction starting...")
+            from nlp.grammar.grammar_service import get_grammar_model
+            grammar_checker = get_grammar_model()
+            corrected_grammar = grammar_checker.correct(current_text)
+            logger.info(f"[ANALYZE] Step 2: Grammar done in {time.time()-t0:.2f}s")
+            if corrected_grammar != current_text:
+                diffs = get_word_diffs(current_text, corrected_grammar)
+                for d in diffs:
+                    orig_start, orig_end = map_range_to_original(d['start'], d['end'])
+                    suggestions.append({
+                        'start': orig_start,
+                        'end': orig_end,
+                        'original': text[orig_start:orig_end],
+                        'correction': d['correction'],
+                        'type': 'grammar'
+                    })
+                mappers.append(OffsetMapper(current_text, corrected_grammar))
+                current_text = corrected_grammar
+        except Exception as e:
+            logger.error(f"[ANALYZE] Grammar failed: {e}")
 
         # 3. Punctuation (runs on grammar-corrected text)
         has_punctuation = USE_HF_API or punctuation_model
