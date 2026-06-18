@@ -155,7 +155,7 @@ def health_check():
                 'summarization': summarization_model is not None,
                 'spelling': _spelling_available(),
                 'autocomplete': False,
-                'grammar': False,
+                'grammar': _grammar_available(),
                 'punctuation': False
             },
             'note': 'Free tier: summarization local, other models return input unchanged',
@@ -228,6 +228,15 @@ def _spelling_available():
     try:
         from nlp.spelling.araspell_service import is_loaded
         return is_loaded()
+    except Exception:
+        return False
+
+
+def _grammar_available():
+    """Check if grammar model is loaded (without triggering lazy load)."""
+    try:
+        from nlp.grammar.grammar_service import _grammar_model
+        return _grammar_model is not None
     except Exception:
         return False
 
@@ -443,12 +452,6 @@ def grammar_correction():
         "text": "Arabic text to correct"
     }
     """
-    if not USE_HF_API and grammar_model is None:
-        return jsonify({
-            'error': 'Grammar model not loaded. Please check server logs.',
-            'status': 'error'
-        }), 503
-    
     try:
         if not request.is_json:
             return jsonify({'error': 'Request must be JSON', 'status': 'error'}), 400
@@ -460,17 +463,13 @@ def grammar_correction():
             return jsonify({'error': 'Text is required', 'status': 'error'}), 400
         
         logger.info(f"Correcting grammar for text of length: {len(text)}")
-        if USE_HF_API:
-            # Grammar uses spelling model as proxy (no dedicated grammar model yet)
-            corrected = hf_correct_spelling(text)
-        else:
-            corrected = grammar_model.correct(text)
+        from nlp.grammar.grammar_service import correct_grammar
+        corrected = correct_grammar(text)
         
         return jsonify({
-            'corrected': corrected,
-            'status': 'success',
-            'original_length': len(text),
-            'corrected_length': len(corrected)
+            'original_text': text,
+            'corrected_text': corrected,
+            'status': 'success'
         })
     
     except Exception as e:
@@ -850,15 +849,13 @@ def analyze_text():
                 logger.error(f"[ANALYZE] Spelling failed: {e}")
 
         # 2. Grammar (runs on spelling-corrected text)
-        has_grammar = USE_HF_API or grammar_model
+        has_grammar = True  # Always available via lazy-loaded grammar_service
         if has_grammar:
             try:
                 t0 = time.time()
                 logger.info(f"[ANALYZE] Step 2: Grammar correction starting...")
-                if USE_HF_API:
-                    corrected_grammar = hf_correct_spelling(current_text)
-                else:
-                    corrected_grammar = grammar_model.correct(current_text)
+                from nlp.grammar.grammar_service import correct_grammar
+                corrected_grammar = correct_grammar(current_text)
                 logger.info(f"[ANALYZE] Step 2: Grammar done in {time.time()-t0:.2f}s")
                 if corrected_grammar != current_text:
                     diffs = get_word_diffs(current_text, corrected_grammar)
