@@ -327,9 +327,9 @@ function initDocSearch() {
 
   searchInput.addEventListener('input', () => {
     const query = searchInput.value.trim().toLowerCase();
-    const items = document.querySelectorAll('.doc-item');
+    const items = document.querySelectorAll('.doc-list-item');
     items.forEach(item => {
-      const title = (item.textContent || '').toLowerCase();
+      const title = (item.querySelector('.doc-list-item__title')?.textContent || '').toLowerCase();
       item.style.display = title.includes(query) || !query ? '' : 'none';
     });
   });
