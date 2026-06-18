@@ -488,8 +488,7 @@
             <span class="analyzing-spinner" aria-hidden="true"></span>
             <span>جاري التحليل...</span>
            </div>
-           <span class="text-sm text-secondary">عدد الكلمات: <span id="word-count" class="font-bold">٠</span><span id="word-goal-indicator" class="word-goal-badge" style="display:none"></span></span>
-           <span id="auto-save-status" class="text-xs text-secondary" style="opacity:0;transition:opacity 0.3s;"></span>
+                      <span id="auto-save-status" class="text-xs text-secondary" style="opacity:0;transition:opacity 0.3s;"></span>
             <button id="doc-save-btn" class="doc-save-btn-icon btn-ghost" type="button" aria-label="حفظ المستند" title="حفظ">
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
            </button>
@@ -658,6 +657,8 @@
            <span class="stat-item--sep"></span>
            <span class="stat-item"><span id="char-count">٠</span> حرف</span>
            <span class="stat-item"><span id="sentence-count">٠</span> جملة</span>
+            <span class="stat-item" style="cursor:pointer;" onclick="setWordGoalUI()" title="اضغط لتحديد هدف عدد الكلمات"><span id="word-count" class="font-bold">٠</span> كلمة</span>
+            <span id="word-goal-indicator" class="word-goal-badge" style="display:none;cursor:pointer;" onclick="setWordGoalUI()" title="اضغط لتغيير الهدف"></span>
            <span class="stat-item--sep"></span>
            <span class="stat-item">⏱ <span id="reading-time">٠</span> د قراءة</span>
           </div>
@@ -1140,6 +1141,24 @@
       el.style.opacity = '1';
       clearTimeout(el._timer);
       el._timer = setTimeout(() => { el.style.opacity = '0'; }, 3000);
+    }
+
+    // Word count goal UI
+    function setWordGoalUI() {
+      const current = localStorage.getItem('bayan_word_goal') || '0';
+      const input = prompt('حدد هدف عدد الكلمات (أدخل ٠ لإلغاء الهدف):', current);
+      if (input === null) return;
+      const goal = parseInt(input, 10);
+      if (isNaN(goal) || goal < 0) return;
+      localStorage.setItem('bayan_word_goal', String(goal));
+      if (typeof updateEditorStats === 'function') updateEditorStats();
+      if (goal > 0) {
+        if (typeof showToast === 'function') showToast('✓ تم تحديد الهدف: ' + goal + ' كلمة');
+      } else {
+        if (typeof showToast === 'function') showToast('تم إلغاء هدف الكلمات');
+        const el = document.getElementById('word-goal-indicator');
+        if (el) el.style.display = 'none';
+      }
     }
 
     // Element SDK Integration
