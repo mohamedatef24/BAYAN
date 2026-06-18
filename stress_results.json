@@ -1,0 +1,85 @@
+[
+  {
+    "chars": 50,
+    "latency_s": 8.7,
+    "http": 200,
+    "suggestions": 2,
+    "types": [
+      "punctuation",
+      "grammar"
+    ],
+    "spelling_ms": 4767,
+    "grammar_ms": 2294,
+    "punctuation_ms": 867,
+    "total_ms": 7929
+  },
+  {
+    "chars": 100,
+    "latency_s": 12.9,
+    "http": 200,
+    "suggestions": 1,
+    "types": [
+      "punctuation"
+    ],
+    "spelling_ms": 9236,
+    "grammar_ms": 1650,
+    "punctuation_ms": 1410,
+    "total_ms": 12299
+  },
+  {
+    "chars": 250,
+    "latency_s": 37.0,
+    "http": 200,
+    "suggestions": 11,
+    "types": [
+      "punctuation",
+      "grammar"
+    ],
+    "spelling_ms": 26000,
+    "grammar_ms": 6351,
+    "punctuation_ms": 4007,
+    "total_ms": 36360
+  },
+  {
+    "chars": 500,
+    "latency_s": 28.2,
+    "http": 200,
+    "suggestions": 8,
+    "types": [
+      "punctuation",
+      "grammar"
+    ],
+    "spelling_ms": 0,
+    "grammar_ms": 17122,
+    "punctuation_ms": 10496,
+    "total_ms": 27622
+  },
+  {
+    "chars": 1000,
+    "latency_s": 28.1,
+    "http": 200,
+    "suggestions": 4,
+    "types": [
+      "punctuation",
+      "grammar"
+    ],
+    "spelling_ms": 0,
+    "grammar_ms": 15678,
+    "punctuation_ms": 11619,
+    "total_ms": 27304
+  },
+  {
+    "chars": 2000,
+    "latency_s": 33.8,
+    "http": 200,
+    "suggestions": 4,
+    "types": [
+      "punctuation",
+      "grammar"
+    ],
+    "spelling_ms": 0,
+    "grammar_ms": 18505,
+    "punctuation_ms": 11765,
+    "total_ms": 30284
+  }
+]
