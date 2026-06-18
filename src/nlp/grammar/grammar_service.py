@@ -102,16 +102,54 @@ def correct_grammar(text: str) -> str:
         # Decode output
         corrected = tokenizer.decode(outputs[0], skip_special_tokens=True)
 
-        # Safety: if model returns empty or much shorter, keep original
+        # === VALIDATION ===
+
+        # 1. Empty check
         if not corrected or not corrected.strip():
             return text
 
-        # If the correction is drastically different (>80% changed), keep original
+        corrected = corrected.strip()
+
+        # 2. Length check: too short = hallucination
         if len(corrected) < len(text) * 0.3:
             logger.warning(f"Grammar output too short ({len(corrected)} vs {len(text)}), keeping original")
             return text
 
-        return corrected.strip()
+        # 3. Length check: too long = repetition/hallucination
+        if len(corrected) > len(text) * 2.0:
+            logger.warning(f"Grammar output too long ({len(corrected)} vs {len(text)}), keeping original")
+            return text
+
+        # 4. Word count check: grammar shouldn't drastically change word count
+        orig_wc = len(text.split())
+        corr_wc = len(corrected.split())
+        if orig_wc > 0:
+            ratio = corr_wc / orig_wc
+            if ratio < 0.5 or ratio > 2.0:
+                logger.warning(f"Grammar word count mismatch ({corr_wc} vs {orig_wc}), keeping original")
+                return text
+
+        # 5. Repetition detection: reject if output has excessive repeated words
+        corr_words = corrected.split()
+        if len(corr_words) >= 4:
+            consecutive_repeats = 0
+            for i in range(1, len(corr_words)):
+                if corr_words[i] == corr_words[i-1]:
+                    consecutive_repeats += 1
+            if consecutive_repeats >= 2:
+                logger.warning(f"Grammar output has excessive repetition ({consecutive_repeats} repeats), keeping original")
+                return text
+
+        # 6. Character overlap check: grammar should preserve most of the content
+        orig_chars = set(text.replace(' ', ''))
+        corr_chars = set(corrected.replace(' ', ''))
+        if orig_chars:
+            overlap = len(orig_chars & corr_chars) / len(orig_chars)
+            if overlap < 0.5:
+                logger.warning(f"Grammar output low char overlap ({overlap:.2f}), keeping original")
+                return text
+
+        return corrected
 
     except Exception as e:
         logger.error(f"Grammar correction failed: {e}")
