@@ -7,6 +7,44 @@ let _lastInputTime = 0;
 const ANALYZE_DEBOUNCE_MS = 1000;
 const MAX_ANALYZE_LENGTH = 5000;
 
+// ── Custom Undo/Redo Stack ──
+const _undoStack = [];
+const _redoStack = [];
+const _MAX_UNDO = 50;
+
+function pushUndoState() {
+  const editor = getEditorElement();
+  if (!editor) return;
+  const html = editor.innerHTML;
+  // Avoid duplicate consecutive entries
+  if (_undoStack.length > 0 && _undoStack[_undoStack.length - 1] === html) return;
+  _undoStack.push(html);
+  if (_undoStack.length > _MAX_UNDO) _undoStack.shift();
+  _redoStack.length = 0; // Clear redo on new action
+}
+
+function editorUndo() {
+  const editor = getEditorElement();
+  if (!editor || _undoStack.length === 0) return false;
+  _redoStack.push(editor.innerHTML);
+  editor.innerHTML = _undoStack.pop();
+  updateEditorStats();
+  updatePlaceholder();
+  analyzeTextDelayed();
+  return true;
+}
+
+function editorRedo() {
+  const editor = getEditorElement();
+  if (!editor || _redoStack.length === 0) return false;
+  _undoStack.push(editor.innerHTML);
+  editor.innerHTML = _redoStack.pop();
+  updateEditorStats();
+  updatePlaceholder();
+  analyzeTextDelayed();
+  return true;
+}
+
 // Dismissed words whitelist — words the user chose to keep as-is
 const _dismissedWords = new Set(
   JSON.parse(localStorage.getItem('bayan_dismissed_words') || '[]')
@@ -54,6 +92,19 @@ function initEditor() {
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') hideTooltip();
+    // Custom Undo/Redo for corrections
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+      if (_undoStack.length > 0) {
+        e.preventDefault();
+        editorUndo();
+      }
+    }
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+      if (_redoStack.length > 0) {
+        e.preventDefault();
+        editorRedo();
+      }
+    }
   });
 
   document.addEventListener('click', (e) => {
@@ -336,6 +387,7 @@ function hideTooltip() {
 }
 
 function applySuggestionAtOffsets(suggestion) {
+  pushUndoState(); // Save state before correction
   // Find the error span in the DOM and replace its text content
   // This preserves formatting (bold, italic, etc.) around/inside the span
   const idx = (window.currentSuggestions || []).indexOf(suggestion);
@@ -383,6 +435,7 @@ function applyCorrection() {
 }
 
 function applyAlternativeCorrection(suggestion, correctionText) {
+  pushUndoState(); // Save state before correction
   const idx = (window.currentSuggestions || []).indexOf(suggestion);
   const errorSpan = idx >= 0 ? document.querySelector(`[data-suggestion-id="${idx}"]`) : null;
 
@@ -418,6 +471,7 @@ function applyAlternativeCorrection(suggestion, correctionText) {
 }
 
 function dismissSuggestion(suggestion) {
+  pushUndoState(); // Save state before dismiss
   // Add the word to dismissed whitelist so it's never flagged again
   if (suggestion.original) {
     _dismissedWords.add(suggestion.original);
@@ -464,6 +518,7 @@ function applyAllSuggestions() {
   const suggestions = [...(window.currentSuggestions || [])].sort((a, b) => b.start - a.start);
   if (suggestions.length === 0) return;
   if (!confirm('هل تريد تطبيق جميع التصحيحات (' + suggestions.length + ')؟')) return;
+  pushUndoState(); // Save state before applying all
 
   let text = getEditorText();
   suggestions.forEach((s) => {
