@@ -38,6 +38,21 @@ function formatAlignRight() { execFormat('justifyRight'); }
 function formatAlignCenter() { execFormat('justifyCenter'); }
 function formatAlignLeft() { execFormat('justifyLeft'); }
 
+/* ── Lists (need temporary white-space switch for pre-wrap editors) ── */
+function formatList(command) {
+  const editor = getEditorElement();
+  if (!editor) return;
+  // pre-wrap blocks list creation, temporarily switch to normal
+  editor.style.whiteSpace = 'normal';
+  document.execCommand(command, false, null);
+  // Restore pre-wrap after browser processes the command
+  requestAnimationFrame(() => {
+    editor.style.whiteSpace = '';
+  });
+  editor.focus();
+  updateFormatState();
+}
+
 /* ── Font family ── */
 function formatFont(fontName) {
   execFormat('fontName', fontName);
