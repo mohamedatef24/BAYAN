@@ -48,6 +48,17 @@ print('Spelling model + MLM cached!'); \
 # 3. Grammar — camel-tools MLE disambiguator data
 RUN camel_data -i light
 
+# 4. Punctuation model (PuncAra-v1 — EncoderDecoderModel)
+RUN python -c "\
+from transformers import EncoderDecoderModel, AutoTokenizer; \
+repo = 'bayan10/PuncAra-v1'; \
+print('Downloading PuncAra-v1 tokenizer...'); \
+AutoTokenizer.from_pretrained(repo); \
+print('Downloading PuncAra-v1 model...'); \
+EncoderDecoderModel.from_pretrained(repo); \
+print('PuncAra-v1 cached!'); \
+"
+
 # Copy application code
 COPY src/ ./src/
 COPY .env* ./
@@ -61,4 +72,5 @@ ENV PYTHONUNBUFFERED=1
 EXPOSE 7860
 
 # Start the app with gunicorn (single worker to minimize RAM)
-CMD ["gunicorn", "--chdir", "src", "app:app", "--bind", "0.0.0.0:7860", "--timeout", "120", "--workers", "1"]
+# Timeout 300s: full pipeline (spelling ~50s + grammar ~8s + punctuation ~30s + cold start)
+CMD ["gunicorn", "--chdir", "src", "app:app", "--bind", "0.0.0.0:7860", "--timeout", "300", "--workers", "1"]
