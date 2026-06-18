@@ -86,6 +86,44 @@ function initEditor() {
     } catch (e) {}
   });
 
+  // Strip formatting on paste — prevent rich HTML (colors, opacity, fonts)
+  // from being carried over when pasting from chat, web pages, etc.
+  editor.addEventListener('paste', (e) => {
+    e.preventDefault();
+    const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+    if (!text) return;
+
+    // Insert plain text at cursor position
+    const selection = window.getSelection();
+    if (!selection.rangeCount) return;
+
+    const range = selection.getRangeAt(0);
+    range.deleteContents();
+
+    // Split by newlines to preserve paragraph structure
+    const lines = text.split(/\r?\n/);
+    const fragment = document.createDocumentFragment();
+    lines.forEach((line, i) => {
+      if (i > 0) fragment.appendChild(document.createElement('br'));
+      fragment.appendChild(document.createTextNode(line));
+    });
+
+    range.insertNode(fragment);
+
+    // Move cursor to end of pasted content
+    range.collapse(false);
+    selection.removeAllRanges();
+    selection.addRange(range);
+
+    // Trigger editor update
+    updateEditorStats();
+    updatePlaceholder();
+    analyzeTextDelayed();
+    try {
+      localStorage.setItem('bayan_editor_draft', editor.innerHTML);
+    } catch (e) {}
+  });
+
   editor.addEventListener('click', (e) => {
     handleEditorClick(e);
   });
