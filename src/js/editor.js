@@ -472,6 +472,32 @@ function applySuggestionAtOffsets(suggestion) {
   hideTooltip();
   // Re-focus editor so Ctrl+Z works immediately after tooltip correction
   const _ed = getEditorElement(); if (_ed) _ed.focus();
+
+  // Remove applied suggestion from list and re-index remaining spans
+  if (window.currentSuggestions) {
+    window.currentSuggestions = window.currentSuggestions.filter(
+      s => !(s.start === suggestion.start && s.end === suggestion.end && s.type === suggestion.type)
+    );
+
+    // Re-index remaining error spans to match updated array indices
+    const remainingSpans = document.querySelectorAll('.spelling-error, .grammar-error, .punctuation-suggestion');
+    remainingSpans.forEach(span => {
+      const newIdx = window.currentSuggestions.findIndex(s => {
+        return span.textContent === s.original && span.dataset.type === s.type;
+      });
+      if (newIdx >= 0) {
+        span.dataset.suggestionId = newIdx;
+      }
+    });
+
+    const spellingCount = window.currentSuggestions.filter(s => s.type === 'spelling').length;
+    const grammarCount = window.currentSuggestions.filter(s => s.type === 'grammar').length;
+    const punctuationCount = window.currentSuggestions.filter(s => s.type === 'punctuation').length;
+    updateSuggestionCounts(spellingCount, grammarCount, punctuationCount);
+    updateWritingScore(spellingCount, grammarCount, punctuationCount);
+    updateSuggestionsList(window.currentSuggestions);
+  }
+
   analyzeTextDelayed();
 }
 
@@ -516,6 +542,29 @@ function applyAlternativeCorrection(suggestion, correctionText) {
   hideTooltip();
   // Re-focus editor so Ctrl+Z works immediately after tooltip correction
   const _ed2 = getEditorElement(); if (_ed2) _ed2.focus();
+  // Remove applied suggestion from list and re-index remaining spans
+  if (window.currentSuggestions) {
+    window.currentSuggestions = window.currentSuggestions.filter(
+      s => !(s.start === suggestion.start && s.end === suggestion.end && s.type === suggestion.type)
+    );
+
+    const remainingSpans = document.querySelectorAll('.spelling-error, .grammar-error, .punctuation-suggestion');
+    remainingSpans.forEach(span => {
+      const newIdx = window.currentSuggestions.findIndex(s => {
+        return span.textContent === s.original && span.dataset.type === s.type;
+      });
+      if (newIdx >= 0) {
+        span.dataset.suggestionId = newIdx;
+      }
+    });
+
+    const spellingCount = window.currentSuggestions.filter(s => s.type === 'spelling').length;
+    const grammarCount = window.currentSuggestions.filter(s => s.type === 'grammar').length;
+    const punctuationCount = window.currentSuggestions.filter(s => s.type === 'punctuation').length;
+    updateSuggestionCounts(spellingCount, grammarCount, punctuationCount);
+    updateWritingScore(spellingCount, grammarCount, punctuationCount);
+    updateSuggestionsList(window.currentSuggestions);
+  }
   analyzeTextDelayed();
 }
 
