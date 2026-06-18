@@ -247,13 +247,16 @@ function showTooltip(element) {
   if (alternativesEl) {
     const alts = suggestion.alternatives || [suggestion.correction, suggestion.original];
     let html = '';
+    // Render corrections first (non-keep)
     alts.forEach((alt, i) => {
       const isKeep = alt === suggestion.original;
+      if (isKeep) return; // render keep button last
       const isMain = i === 0;
-      const btnClass = isKeep ? 'popover-alt-btn popover-alt-keep' : (isMain ? 'popover-alt-btn popover-alt-main' : 'popover-alt-btn');
-      const label = isKeep ? `${escapeHtml(alt)} ✓ إبقاء` : escapeHtml(alt);
-      html += `<button class="${btnClass}" data-alt-correction="${escapeHtml(alt)}" type="button">${label}</button>`;
+      const btnClass = isMain ? 'popover-alt-btn popover-alt-main' : 'popover-alt-btn';
+      html += `<button class="${btnClass}" data-alt-correction="${escapeHtml(alt)}" type="button">${escapeHtml(alt)}</button>`;
     });
+    // Render keep button at end
+    html += `<button class="popover-alt-btn popover-alt-keep" data-alt-correction="${escapeHtml(suggestion.original)}" type="button">إبقاء كما هي</button>`;
     alternativesEl.innerHTML = html;
 
     // Bind click events
