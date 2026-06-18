@@ -151,13 +151,14 @@ class ArabicGrammarGuard:
     def fix_prepositions_advanced(self, text):
         # Allow conjunctions (و، ف) before prepositions
         # (في المهندسون) -> (في المهندسين)
-        text = re.sub(r'\b([وف]?(?:في|من|إلى|على|عن|حتى))\s+([أ-ي]{2,})(ون|ان)\b', r'\1 \2ين', text)
+        # Require stem >= 4 chars to avoid matching root-level ان endings (الامتحان, الإنسان, etc.)
+        text = re.sub(r'\b([وف]?(?:في|من|إلى|على|عن|حتى))\s+([أ-ي]{4,})(ون|ان)\b', r'\1 \2ين', text)
 
         # (وبالمبرمجون) -> (وبالمبرمجين)
-        text = re.sub(r'\b([وف]?[بلكف])ال([أ-ي]{2,})(ون|ان)\b', r'\1ال\2ين', text)
+        text = re.sub(r'\b([وف]?[بلكف])ال([أ-ي]{4,})(ون|ان)\b', r'\1ال\2ين', text)
 
         # (ولمهندسون) -> (ولمهندسين)
-        text = re.sub(r'\b([وف]?ل)([أ-ي]{2,})(ون|ان)\b', r'\1\2ين', text)
+        text = re.sub(r'\b([وف]?ل)([أ-ي]{4,})(ون|ان)\b', r'\1\2ين', text)
         return text
 
     def regex_rules_fallback(self, text):
