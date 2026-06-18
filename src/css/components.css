@@ -495,8 +495,9 @@
   letter-spacing: var(--letter-spacing-arabic);
   direction: rtl;
   text-align: right;
-  white-space: pre-wrap;
+  white-space: normal;
   word-wrap: break-word;
+  word-break: break-word;
   overflow-y: auto;
   border-radius: 0;
   margin: 0;
@@ -767,14 +768,20 @@
 
 .popover-alt-keep {
   background: transparent;
-  border-style: dashed;
+  border: 1px dashed var(--color-border);
   color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  text-align: center;
+  min-height: 36px;
+  padding: 6px 12px;
+  margin-top: 2px;
 }
 
 .popover-alt-keep:hover {
   color: var(--color-text-primary);
   border-color: var(--color-text-secondary);
+  background: var(--color-surface-elevated);
 }
 
 .popover-hint {
