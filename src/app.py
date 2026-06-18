@@ -156,7 +156,7 @@ def health_check():
                 'spelling': _spelling_available(),
                 'autocomplete': False,
                 'grammar': _grammar_available(),
-                'punctuation': False
+                'punctuation': _punctuation_available()
             },
             'note': 'Free tier: summarization local, other models return input unchanged',
             'supabase': {
@@ -236,6 +236,15 @@ def _grammar_available():
     """Check if grammar model is loaded (without triggering lazy load)."""
     try:
         from nlp.grammar.grammar_service import is_loaded
+        return is_loaded()
+    except Exception:
+        return False
+
+
+def _punctuation_available():
+    """Check if punctuation model is loaded (without triggering lazy load)."""
+    try:
+        from nlp.punctuation.punctuation_service import is_loaded
         return is_loaded()
     except Exception:
         return False
@@ -506,42 +515,47 @@ def grammar_correction():
 @app.route('/api/punctuation', methods=['POST'])
 def add_punctuation():
     """
-    Add punctuation to Arabic text.
-    
-    Expected JSON payload:
+    Add punctuation to Arabic text using PuncAra-v1.
+
+    Request JSON:
     {
         "text": "Arabic text without punctuation"
     }
+
+    Response JSON:
+    {
+        "status": "success",
+        "original_text": "...",
+        "corrected_text": "..."
+    }
     """
-    if not USE_HF_API and punctuation_model is None:
-        return jsonify({
-            'error': 'Punctuation model not loaded. Please check server logs.',
-            'status': 'error'
-        }), 503
-    
     try:
         if not request.is_json:
             return jsonify({'error': 'Request must be JSON', 'status': 'error'}), 400
-        
+
         data = request.get_json()
         text = data.get('text', '').strip()
-        
+
         if not text:
             return jsonify({'error': 'Text is required', 'status': 'error'}), 400
-        
+
         logger.info(f"Adding punctuation for text of length: {len(text)}")
-        if USE_HF_API:
-            punctuated = hf_add_punctuation(text)
-        else:
-            punctuated = punctuation_model.add_punctuation(text)
-        
+        from nlp.punctuation.punctuation_service import get_punctuation_model
+        punc_checker = get_punctuation_model()
+        punctuated = punc_checker.correct(text)
+
         return jsonify({
-            'punctuated': punctuated,
-            'status': 'success',
-            'original_length': len(text),
-            'punctuated_length': len(punctuated)
+            'original_text': text,
+            'corrected_text': punctuated,
+            'status': 'success'
         })
-    
+
+    except RuntimeError as e:
+        logger.error(f"Punctuation model error: {e}")
+        return jsonify({
+            'error': f'Punctuation model unavailable: {str(e)[:200]}',
+            'status': 'error'
+        }), 503
     except Exception as e:
         logger.error(f"Error during punctuation: {str(e)}")
         logger.error(traceback.format_exc())
@@ -893,31 +907,29 @@ def analyze_text():
         except Exception as e:
             logger.error(f"[ANALYZE] Grammar failed: {e}")
 
-        # 3. Punctuation (runs on grammar-corrected text)
-        has_punctuation = USE_HF_API or punctuation_model
-        if has_punctuation:
-            try:
-                t0 = time.time()
-                logger.info(f"[ANALYZE] Step 3: Punctuation starting...")
-                if USE_HF_API:
-                    corrected_punc = hf_add_punctuation(current_text)
-                else:
-                    corrected_punc = punctuation_model.add_punctuation(current_text)
-                logger.info(f"[ANALYZE] Step 3: Punctuation done in {time.time()-t0:.2f}s")
-                if corrected_punc != current_text:
-                    diffs = get_word_diffs(current_text, corrected_punc)
-                    for d in diffs:
-                        orig_start, orig_end = map_range_to_original(d['start'], d['end'])
-                        suggestions.append({
-                            'start': orig_start,
-                            'end': orig_end,
-                            'original': text[orig_start:orig_end],
-                            'correction': d['correction'],
-                            'type': 'punctuation'
-                        })
-                    current_text = corrected_punc
-            except Exception as e:
-                logger.error(f"[ANALYZE] Punctuation failed: {e}")
+        # 3. Punctuation (runs on grammar-corrected text — PuncAra-v1 local model)
+        try:
+            t0 = time.time()
+            logger.info(f"[ANALYZE] Step 3: Punctuation starting...")
+            from nlp.punctuation.punctuation_service import get_punctuation_model
+            punc_checker = get_punctuation_model()
+            corrected_punc = punc_checker.correct(current_text)
+            logger.info(f"[ANALYZE] Step 3: Punctuation done in {time.time()-t0:.2f}s")
+            if corrected_punc != current_text:
+                diffs = get_word_diffs(current_text, corrected_punc)
+                for d in diffs:
+                    orig_start, orig_end = map_range_to_original(d['start'], d['end'])
+                    suggestions.append({
+                        'start': orig_start,
+                        'end': orig_end,
+                        'original': text[orig_start:orig_end],
+                        'correction': d['correction'],
+                        'type': 'punctuation'
+                    })
+                mappers.append(OffsetMapper(current_text, corrected_punc))
+                current_text = corrected_punc
+        except Exception as e:
+            logger.error(f"[ANALYZE] Punctuation failed: {e}")
 
         total_time = time.time() - total_start
 
