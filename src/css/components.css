@@ -948,15 +948,150 @@ input[type="range"]::-webkit-slider-thumb {
 
 @media (min-width: 1024px) {
   .editor-layout {
-    grid-template-columns: 1fr 340px;
+    grid-template-columns: 220px 1fr 340px;
     padding: var(--spacing-lg);
   }
 }
 
 @media (min-width: 1280px) {
   .editor-layout {
-    grid-template-columns: 1fr 380px;
+    grid-template-columns: 240px 1fr 380px;
   }
+}
+
+/* ── Documents Panel (inline, always visible on desktop) ── */
+.docs-panel {
+  display: none;
+}
+
+.docs-panel-desktop {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .docs-panel-desktop {
+    display: flex;
+    flex-direction: column;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    max-height: calc(100vh - 100px);
+    position: sticky;
+    top: 80px;
+  }
+}
+
+.docs-panel__header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.docs-panel__icon {
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+
+.docs-panel__title {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.docs-panel__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-sm);
+}
+
+/* ── Toolbar separator ── */
+.toolbar-separator {
+  width: 1px;
+  height: 20px;
+  background: var(--color-border-strong);
+  margin: 0 var(--spacing-xs);
+}
+
+/* ── Save button (icon only) ── */
+.doc-save-btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: var(--radius-md);
+  min-height: 32px;
+  min-width: 32px;
+}
+
+/* ── Mobile docs toggle (hide on desktop where panel is inline) ── */
+.docs-sidebar-toggle-mobile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  min-height: 32px;
+  min-width: 32px;
+}
+
+@media (min-width: 1024px) {
+  .docs-sidebar-toggle-mobile {
+    display: none;
+  }
+}
+
+/* ── Sidebar Import/Export card ── */
+.sidebar-io {
+  padding: var(--spacing-md) var(--spacing-lg);
+}
+
+.sidebar-io__title {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: var(--spacing-sm);
+}
+
+.sidebar-io__actions {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.sidebar-io__btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-family: inherit;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  min-height: 40px;
+}
+
+.sidebar-io__btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-text-primary);
+  background: var(--color-surface-elevated);
+}
+
+.sidebar-io__dropdown {
+  flex: 1;
+  position: relative;
 }
 
 /* ── Marketing token utilities ── */
