@@ -200,6 +200,21 @@ function setAnalyzingState(isAnalyzing) {
   if (indicator) {
     indicator.classList.toggle('active', isAnalyzing);
   }
+
+  // Show skeleton loading in suggestions panel
+  if (isAnalyzing) {
+    const lists = [
+      document.getElementById('suggestions-list'),
+      document.getElementById('bottom-sheet-list')
+    ].filter(Boolean);
+    const skeletonHTML = `
+      <div style="padding: 16px;">
+        <div class="skeleton skeleton-line" style="width:80%"></div>
+        <div class="skeleton skeleton-line" style="width:100%"></div>
+        <div class="skeleton skeleton-line" style="width:65%"></div>
+      </div>`;
+    lists.forEach(el => { el.innerHTML = skeletonHTML; });
+  }
 }
 
 /* ── Mobile navigation ── */
