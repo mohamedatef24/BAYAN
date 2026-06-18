@@ -3,7 +3,6 @@ Grammar correction service using Bayan_Arabic_Grammar (T5).
 Lazy-loads the model on first request, keeps it resident in memory.
 """
 import logging
-import re
 import torch
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
@@ -15,8 +14,10 @@ _device = None
 
 MODEL_ID = "bayan10/Bayan_Arabic_Grammar"
 
-# Generation parameters
+# Generation parameters — ORIGINAL WORKING VALUES
 MAX_INPUT_LENGTH = 512
+MAX_OUTPUT_LENGTH = 512
+NUM_BEAMS = 4
 
 
 def get_grammar_model():
@@ -50,6 +51,7 @@ def get_grammar_model():
 
     except Exception as e:
         logger.error(f"Failed to load grammar model: {e}")
+        # Try without local_files_only as fallback
         try:
             logger.info("Retrying without local_files_only...")
             _grammar_tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
@@ -64,48 +66,6 @@ def get_grammar_model():
             raise
 
     return _grammar_model, _grammar_tokenizer, _device
-
-
-def _is_hallucinated(original: str, corrected: str) -> bool:
-    """
-    Check if the grammar output is hallucinated / garbled.
-    Returns True if output should be discarded.
-    """
-    orig_words = re.findall(r'[\u0600-\u06FF]+', original)
-    corr_words = re.findall(r'[\u0600-\u06FF]+', corrected)
-
-    # 1. Output too long (grammar corrections are minor edits)
-    if len(corrected) > len(original) * 1.5:
-        logger.warning(f"Hallucination: output too long ({len(corrected)} vs {len(original)} chars)")
-        return True
-
-    # 2. Output too short
-    if len(corrected) < len(original) * 0.5:
-        logger.warning(f"Hallucination: output too short ({len(corrected)} vs {len(original)} chars)")
-        return True
-
-    # 3. Too many words added
-    if len(corr_words) > len(orig_words) * 1.4:
-        logger.warning(f"Hallucination: too many words ({len(corr_words)} vs {len(orig_words)})")
-        return True
-
-    # 4. Check for duplicated 2-word phrases (bigrams)
-    if len(corr_words) > 4:
-        bigrams = [f"{corr_words[i]} {corr_words[i+1]}" for i in range(len(corr_words)-1)]
-        if len(bigrams) != len(set(bigrams)):
-            logger.warning("Hallucination: repeated bigrams detected")
-            return True
-
-    # 5. Sentence start rearranged (grammar shouldn't move first word to end)
-    if orig_words and corr_words:
-        # Check if first 2 original words appear in first 4 corrected words
-        orig_head = set(orig_words[:2])
-        corr_head = set(corr_words[:4])
-        if len(orig_head) > 0 and not orig_head.intersection(corr_head):
-            logger.warning("Hallucination: sentence start completely rearranged")
-            return True
-
-    return False
 
 
 def correct_grammar(text: str) -> str:
@@ -129,37 +89,28 @@ def correct_grammar(text: str) -> str:
         )
         inputs = {k: v.to(device) for k, v in inputs.items()}
 
-        # Dynamic max_length: close to input to prevent hallucination
-        input_len = inputs['input_ids'].shape[1]
-        dynamic_max_len = min(int(input_len * 1.3) + 5, MAX_INPUT_LENGTH)
-
-        # Strategy: greedy decoding (most stable for grammar correction)
+        # Generate correction — ORIGINAL WORKING PARAMS
         with torch.no_grad():
             outputs = model.generate(
                 **inputs,
-                max_length=dynamic_max_len,
-                num_beams=1,          # Greedy decoding — most stable
-                do_sample=False,
-                repetition_penalty=2.0,  # Strong penalty against repeating
+                max_length=MAX_OUTPUT_LENGTH,
+                num_beams=NUM_BEAMS,
+                early_stopping=True,
+                no_repeat_ngram_size=3,
             )
 
         # Decode output
-        raw_output = tokenizer.decode(outputs[0], skip_special_tokens=True)
+        corrected = tokenizer.decode(outputs[0], skip_special_tokens=True)
+
+        # Log for debugging
         logger.info(f"[GRAMMAR-RAW] input({len(text)}): '{text}'")
-        logger.info(f"[GRAMMAR-RAW] output({len(raw_output)}): '{raw_output}'")
+        logger.info(f"[GRAMMAR-RAW] output({len(corrected)}): '{corrected}'")
 
         # Safety: if model returns empty, keep original
-        if not raw_output or not raw_output.strip():
-            logger.warning("Grammar returned empty output")
+        if not corrected or not corrected.strip():
             return text
 
-        corrected = raw_output.strip()
-
-        # Check for hallucination
-        if _is_hallucinated(text, corrected):
-            return text
-
-        return corrected
+        return corrected.strip()
 
     except Exception as e:
         logger.error(f"Grammar correction failed: {e}")
