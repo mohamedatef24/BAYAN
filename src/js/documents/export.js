@@ -196,32 +196,27 @@ async function exportPdfFile() {
     return;
   }
 
+  // Show loading indicator
+  if (typeof showToast === 'function') showToast('جاري تصدير PDF...');
+
   const html = buildPdfHtmlString(text);
 
   await waitForPdfFonts();
-  await new Promise((resolve) => setTimeout(resolve, 150));
+  // Let the UI update before heavy processing
+  await new Promise((resolve) => setTimeout(resolve, 50));
 
-  // Try foreignObject first (correct Arabic shaping), then legacy canvas path
-  const attempts = [
-    { foreignObjectRendering: true, scale: 2 },
-    { foreignObjectRendering: false, scale: 1 }
-  ];
+  try {
+    // Use non-foreignObject rendering (faster, avoids freeze on large texts)
+    await html2pdf()
+      .set(getPdfExportOptions({ foreignObjectRendering: false, scale: 1.5 }))
+      .from(html, 'string')
+      .save();
 
-  for (let i = 0; i < attempts.length; i++) {
-    try {
-      await html2pdf()
-        .set(getPdfExportOptions(attempts[i]))
-        .from(html, 'string')
-        .save();
-
-      showDocToast('تم تصدير PDF', 'success');
-      return;
-    } catch (err) {
-      console.warn(`PDF export attempt ${i + 1} failed:`, err);
-    }
+    showDocToast('تم تصدير PDF', 'success');
+  } catch (err) {
+    console.warn('PDF export failed:', err);
+    showDocToast('تعذر تصدير PDF', 'error');
   }
-
-  showDocToast('تعذر تصدير PDF', 'error');
 }
 
 /**
