@@ -919,13 +919,30 @@ def analyze_text():
             logger.info(f"[ANALYZE] Step 2: Grammar done in {timing_ms['grammar_ms']}ms")
             if corrected_grammar != current_text:
                 diffs = get_word_diffs(current_text, corrected_grammar)
+                # Punctuation characters that Grammar should NOT touch
+                # These are the domain of the Punctuation model only
+                _PUNC_CHARS = set('،؛؟!.,:;?»«()[]{}…–—\u060C\u061B\u061F')
+
                 for d in diffs:
                     orig_start, orig_end = map_range_to_original(d['start'], d['end'])
+                    original_word = text[orig_start:orig_end]
+                    correction = d['correction']
+
+                    # Filter: if the only difference is punctuation marks,
+                    # skip this suggestion — let Punctuation model handle it.
+                    orig_stripped = ''.join(c for c in original_word if c not in _PUNC_CHARS and not c.isspace())
+                    corr_stripped = ''.join(c for c in correction if c not in _PUNC_CHARS and not c.isspace())
+
+                    if orig_stripped == corr_stripped:
+                        logger.info(f"[GRAMMAR] Dropped punctuation-only change: "
+                                   f"'{original_word}' → '{correction}' — belongs to Punctuation stage")
+                        continue
+
                     suggestions.append({
                         'start': orig_start,
                         'end': orig_end,
-                        'original': text[orig_start:orig_end],
-                        'correction': d['correction'],
+                        'original': original_word,
+                        'correction': correction,
                         'type': 'grammar'
                     })
                 mappers.append(OffsetMapper(current_text, corrected_grammar))
