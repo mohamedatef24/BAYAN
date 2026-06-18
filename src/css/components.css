@@ -288,8 +288,8 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
-  padding: 6px var(--spacing-md);
+  gap: 6px;
+  padding: 8px var(--spacing-md);
   border-bottom: 1px solid var(--color-border);
   background: var(--color-surface);
 }
@@ -297,23 +297,32 @@
 .fmt-group {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 1px;
+  background: var(--color-border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.fmt-group--font {
+  background: transparent;
+  gap: 6px;
+  overflow: visible;
 }
 
 .fmt-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border: none;
-  border-radius: var(--radius-sm, 4px);
-  background: transparent;
+  background: var(--color-surface);
   color: var(--color-text-secondary);
   cursor: pointer;
   font-family: 'Georgia', 'Times New Roman', serif;
   font-size: 14px;
-  transition: all var(--transition-base);
+  transition: all 0.15s ease;
+  position: relative;
 }
 
 .fmt-btn:hover {
@@ -322,9 +331,8 @@
 }
 
 .fmt-btn.fmt-active {
-  background: var(--color-primary);
-  color: var(--color-text-inverse);
-  border-radius: var(--radius-sm, 4px);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  color: #fff;
 }
 
 .fmt-btn svg {
@@ -333,33 +341,134 @@
 
 .fmt-divider {
   width: 1px;
-  height: 24px;
+  height: 28px;
   background: var(--color-border);
-  margin: 0 4px;
+  margin: 0 2px;
+  flex-shrink: 0;
 }
 
-.fmt-select {
-  padding: 4px 8px;
+/* ── Custom Dropdowns ── */
+.fmt-dropdown {
+  position: relative;
+}
+
+.fmt-dropdown__trigger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm, 4px);
+  border-radius: 6px;
   background: var(--color-surface);
   color: var(--color-text-primary);
   font-family: inherit;
-  font-size: var(--font-size-label, 12px);
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
-  height: 32px;
-  min-width: 100px;
-  transition: border-color var(--transition-base);
+  height: 34px;
+  min-width: 120px;
+  transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
-.fmt-select:hover,
-.fmt-select:focus {
+.fmt-dropdown__trigger:hover {
   border-color: var(--color-primary);
-  outline: none;
+  background: var(--color-surface-elevated);
 }
 
-.fmt-select--size {
-  min-width: 80px;
+.fmt-dropdown__trigger--size {
+  min-width: 56px;
+  justify-content: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.fmt-dropdown__icon {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+}
+
+.fmt-dropdown__chevron {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+  transition: transform 0.2s ease;
+  margin-inline-start: auto;
+}
+
+.fmt-dropdown.open .fmt-dropdown__chevron {
+  transform: rotate(180deg);
+}
+
+.fmt-dropdown__menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 180px;
+  max-height: 280px;
+  overflow-y: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  padding: 4px;
+  z-index: 100;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px);
+  transition: all 0.2s ease;
+}
+
+.fmt-dropdown.open .fmt-dropdown__menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.fmt-dropdown__menu--size {
+  min-width: 100px;
+}
+
+.fmt-dropdown__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-primary);
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.12s ease;
+  text-align: right;
+}
+
+.fmt-dropdown__item:hover {
+  background: var(--color-surface-elevated);
+}
+
+.fmt-dropdown__item--active {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  color: #fff;
+}
+
+.fmt-dropdown__item--active:hover {
+  opacity: 0.9;
+}
+
+.fmt-size-preview {
+  display: inline-block;
+  width: 24px;
+  text-align: center;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  line-height: 1;
+}
+
+.fmt-dropdown__item--active .fmt-size-preview {
+  color: #fff;
 }
 
 .editor-surface {
