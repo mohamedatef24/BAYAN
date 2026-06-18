@@ -1,0 +1,62 @@
+{
+  "C.1 Supabase configured": {
+    "passed": true,
+    "detail": ""
+  },
+  "C.2 Supabase client in frontend": {
+    "passed": true,
+    "detail": ""
+  },
+  "C.3 DB tables referenced in code": {
+    "passed": true,
+    "detail": "Found: ['documents', 'summaries', 'settings']"
+  },
+  "C.4 RLS blocks unauthenticated": {
+    "passed": true,
+    "detail": "HTTP 401"
+  },
+  "C.5 Invalid JWT blocked": {
+    "passed": true,
+    "detail": "HTTP 401"
+  },
+  "K.1u health concurrent": {
+    "passed": true,
+    "detail": "1/1 ok, avg=0.59s, max=0.59s, err=0%"
+  },
+  "K.3u health concurrent": {
+    "passed": true,
+    "detail": "3/3 ok, avg=0.65s, max=0.74s, err=0%"
+  },
+  "K.5u health concurrent": {
+    "passed": true,
+    "detail": "5/5 ok, avg=0.79s, max=0.99s, err=0%"
+  },
+  "K.1u analyze concurrent": {
+    "passed": true,
+    "detail": "1/1 ok, avg=4.4s, max=4.4s"
+  },
+  "K.3u analyze concurrent": {
+    "passed": true,
+    "detail": "3/3 ok, avg=8.5s, max=12.2s"
+  },
+  "L.1 API handles missing 'text' field": {
+    "passed": true,
+    "detail": ""
+  },
+  "L.2 long text": {
+    "passed": false,
+    "detail": "HTTPSConnectionPool(host='bayan10-bayan-api.hf.space', port=443): Read timed out. (read timeout=60)"
+  },
+  "L.3 XSS prevention": {
+    "passed": false,
+    "detail": "HTTPSConnectionPool(host='bayan10-bayan-api.hf.space', port=443): Read timed out. (read timeout=60)"
+  },
+  "L.4 SQL injection": {
+    "passed": false,
+    "detail": "HTTPSConnectionPool(host='bayan10-bayan-api.hf.space', port=443): Read timed out. (read timeout=30)"
+  },
+  "L.5 CORS configured": {
+    "passed": false,
+    "detail": "CORS: "
+  }
+}
