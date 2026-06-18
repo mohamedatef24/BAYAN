@@ -36,6 +36,17 @@ function initDocuments() {
     });
   }
 
+  // Summary export dropdown
+  const summExportTrigger = document.getElementById('summary-export-trigger');
+  const summExportMenu = document.getElementById('summary-export-menu');
+  if (summExportTrigger && summExportMenu) {
+    summExportTrigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const open = summExportMenu.classList.toggle('is-open');
+      summExportTrigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  }
+
   if (mobileExportTrigger && exportSheet) {
     mobileExportTrigger.addEventListener('click', () => {
       exportSheet.classList.add('open');
@@ -94,4 +105,9 @@ function closeExportMenu() {
   const trigger = document.getElementById('doc-export-trigger');
   if (menu) menu.classList.remove('is-open');
   if (trigger) trigger.setAttribute('aria-expanded', 'false');
+  // Also close summary export menu
+  const summMenu = document.getElementById('summary-export-menu');
+  const summTrigger = document.getElementById('summary-export-trigger');
+  if (summMenu) summMenu.classList.remove('is-open');
+  if (summTrigger) summTrigger.setAttribute('aria-expanded', 'false');
 }

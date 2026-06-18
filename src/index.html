@@ -622,17 +622,11 @@
           <div class="mb-6">
            <label class="block text-base font-bold mb-3" for="summary-length">طول الملخص</label>
            <div class="flex items-center gap-4">
-            <span class="text-sm text-secondary">قصير</span>
-            <input type="range" id="summary-length" min="1" max="3" value="2" onchange="updateSummaryLength()" aria-valuetext="متوسط">
             <span class="text-sm text-secondary">طويل</span>
+            <input type="range" id="summary-length" min="1" max="3" value="2" onchange="updateSummaryLength()" aria-valuetext="متوسط">
+            <span class="text-sm text-secondary">قصير</span>
            </div>
            <div class="text-center mt-2"><span id="summary-length-text" class="text-sm font-bold text-brand">متوسط</span></div>
-          </div>
-          <div class="mb-6">
-           <label class="flex items-center gap-3 cursor-pointer">
-            <label class="toggle-switch"><input type="checkbox" id="full-text-summary"><span class="toggle-slider"></span></label>
-            <span class="text-base font-bold">تلخيص النص كاملاً</span>
-           </label>
           </div>
           <button id="generate-summary-btn" onclick="generateSummary(event)" class="btn-primary w-full py-4 text-lg mb-6" type="button">توليد الملخص</button>
           <div id="summary-preview" class="summary-preview">
@@ -644,8 +638,17 @@
             </div>
             <div class="flex items-center justify-between mb-4">
              <h3 class="text-lg font-bold summary-card__title">الملخص</h3>
-             <button onclick="copySummary()" class="btn-ghost" type="button">نسخ</button>
-              <button onclick="exportSummaryAsTxt()" class="btn-ghost" type="button">تصدير</button>
+             <div class="flex items-center gap-2">
+               <button onclick="copySummary()" class="btn-ghost" type="button">نسخ</button>
+               <div class="doc-dropdown" style="display:inline-block;">
+                <button id="summary-export-trigger" class="btn-ghost" type="button" aria-haspopup="true" aria-expanded="false">تصدير ▾</button>
+                <div id="summary-export-menu" class="doc-dropdown__menu" role="menu">
+                 <button type="button" class="doc-dropdown__item" role="menuitem" onclick="exportSummaryAs('txt')">نصي (.txt)</button>
+                 <button type="button" class="doc-dropdown__item" role="menuitem" onclick="exportSummaryAs('docx')">Word (.docx)</button>
+                 <button type="button" class="doc-dropdown__item" role="menuitem" onclick="exportSummaryAs('pdf')">PDF (.pdf)</button>
+                </div>
+               </div>
+              </div>
             </div>
             <div id="summary-text" class="text-right text-lg editor-content" dir="rtl"></div>
            </div>
@@ -973,17 +976,20 @@
       const summarizeTab = document.getElementById('summarize-tab');
       const writeArea = document.getElementById('write-area');
       const summarizeArea = document.getElementById('summarize-area');
+      const formatToolbar = document.getElementById('format-toolbar');
 
       if (tab === 'write') {
         writeTab.classList.add('active');
         summarizeTab.classList.remove('active');
         writeArea.classList.remove('is-hidden');
         summarizeArea.classList.add('is-hidden');
+        if (formatToolbar) formatToolbar.style.display = '';
       } else {
         summarizeTab.classList.add('active');
         writeTab.classList.remove('active');
         writeArea.classList.add('is-hidden');
         summarizeArea.classList.remove('is-hidden');
+        if (formatToolbar) formatToolbar.style.display = 'none';
       }
     }
     
@@ -992,7 +998,7 @@
     // Summarization functions
     function updateSummaryLength() {
       const value = document.getElementById('summary-length').value;
-      const text = ['قصير', 'متوسط', 'طويل'][value - 1];
+      const text = ['طويل', 'متوسط', 'قصير'][value - 1];
       document.getElementById('summary-length-text').textContent = text;
     }
 
@@ -1007,7 +1013,7 @@
       }
       
       const lengthValue = document.getElementById('summary-length').value;
-      const isFullText = document.getElementById('full-text-summary').checked;
+      const isFullText = false;
       const generateButton = event ? event.target : document.getElementById('generate-summary-btn');
       const summaryText = document.getElementById('summary-text');
       const summaryPreview = document.getElementById('summary-preview');
@@ -1113,21 +1119,85 @@
     }
 
     function exportSummaryAsTxt() {
-      const text = document.getElementById('summary-text')?.innerText;
-      if (!text || !text.trim()) {
+      exportSummaryAs('txt');
+    }
+
+    function getSummaryText() {
+      return (document.getElementById('summary-text')?.innerText || '').trim();
+    }
+
+    async function exportSummaryAs(format) {
+      const text = getSummaryText();
+      if (!text) {
         if (typeof showToast === 'function') showToast('لا يوجد ملخص للتصدير', 'error');
         return;
       }
-      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'ملخص-بيان.txt';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      if (typeof showToast === 'function') showToast('✓ تم تصدير الملخص');
+
+      if (format === 'txt') {
+        const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'ملخص-بيان.txt';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        if (typeof showToast === 'function') showToast('✓ تم تصدير الملخص');
+      } else if (format === 'docx') {
+        if (typeof docx === 'undefined') {
+          if (typeof showToast === 'function') showToast('مكتبة Word غير محمّلة', 'error');
+          return;
+        }
+        try {
+          const paragraphs = text.split(/\n+/).filter(p => p.trim());
+          const children = paragraphs.map(block =>
+            new docx.Paragraph({
+              bidirectional: true,
+              alignment: docx.AlignmentType.RIGHT,
+              children: [new docx.TextRun({ text: block, rightToLeft: true, font: 'Arial' })]
+            })
+          );
+          const doc = new docx.Document({ sections: [{ properties: { rightToLeft: true }, children }] });
+          const blob = await docx.Packer.toBlob(doc);
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'ملخص-بيان.docx';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          if (typeof showToast === 'function') showToast('✓ تم تصدير الملخص كـ Word');
+        } catch (err) {
+          console.error('Summary DOCX export error:', err);
+          if (typeof showToast === 'function') showToast('تعذر تصدير ملف Word', 'error');
+        }
+      } else if (format === 'pdf') {
+        if (typeof html2pdf === 'undefined') {
+          if (typeof showToast === 'function') showToast('مكتبة PDF غير محمّلة', 'error');
+          return;
+        }
+        try {
+          if (typeof showToast === 'function') showToast('جاري تصدير PDF...');
+          const html = buildPdfHtmlString(text);
+          await html2pdf().set({
+            margin: [15, 15, 15, 15],
+            filename: 'ملخص-بيان.pdf',
+            image: { type: 'jpeg', quality: 0.95 },
+            html2canvas: { scale: 1.5, useCORS: true, backgroundColor: '#ffffff', logging: false, foreignObjectRendering: false },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+          }).from(html, 'string').save();
+          if (typeof showToast === 'function') showToast('✓ تم تصدير الملخص كـ PDF');
+        } catch (err) {
+          console.error('Summary PDF export error:', err);
+          if (typeof showToast === 'function') showToast('تعذر تصدير PDF', 'error');
+        }
+      }
+
+      // Close dropdown
+      const menu = document.getElementById('summary-export-menu');
+      if (menu) menu.classList.remove('show');
     }
 
     // Auto-save indicator
