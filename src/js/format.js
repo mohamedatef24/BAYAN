@@ -38,17 +38,90 @@ function formatAlignRight() { execFormat('justifyRight'); }
 function formatAlignCenter() { execFormat('justifyCenter'); }
 function formatAlignLeft() { execFormat('justifyLeft'); }
 
-/* ── Lists (need temporary white-space switch for pre-wrap editors) ── */
+/* ── Lists (manual DOM creation — execCommand doesn't work with pre-wrap) ── */
 function formatList(command) {
   const editor = getEditorElement();
   if (!editor) return;
-  // pre-wrap blocks list creation, temporarily switch to normal
-  editor.style.whiteSpace = 'normal';
-  document.execCommand(command, false, null);
-  // Restore pre-wrap after browser processes the command
-  requestAnimationFrame(() => {
-    editor.style.whiteSpace = '';
+
+  const sel = window.getSelection();
+  if (!sel.rangeCount) { editor.focus(); return; }
+
+  const isOrdered = command === 'insertOrderedList';
+
+  // Check if we're already inside a list — if so, remove it (toggle off)
+  const existingList = sel.anchorNode && sel.anchorNode.closest
+    ? sel.anchorNode.closest(isOrdered ? 'ol' : 'ul')
+    : (sel.anchorNode.parentElement ? sel.anchorNode.parentElement.closest(isOrdered ? 'ol' : 'ul') : null);
+
+  if (existingList && editor.contains(existingList)) {
+    // Unwrap: convert list items back to text lines
+    const items = existingList.querySelectorAll('li');
+    const fragment = document.createDocumentFragment();
+    items.forEach((li, i) => {
+      if (i > 0) fragment.appendChild(document.createElement('br'));
+      fragment.appendChild(document.createTextNode(li.textContent));
+    });
+    existingList.replaceWith(fragment);
+    editor.normalize();
+    editor.focus();
+    return;
+  }
+
+  // Get selected text or grab the current line
+  const range = sel.getRangeAt(0);
+  let text = '';
+
+  if (!range.collapsed) {
+    text = range.toString();
+  } else {
+    // No selection — use the text content of the current block/node
+    const node = sel.anchorNode;
+    if (node && node.nodeType === Node.TEXT_NODE) {
+      text = node.textContent;
+    }
+  }
+
+  if (!text.trim()) {
+    // Empty — insert an empty list with one item
+    const list = document.createElement(isOrdered ? 'ol' : 'ul');
+    const li = document.createElement('li');
+    li.innerHTML = '<br>';
+    list.appendChild(li);
+    range.insertNode(list);
+    // Place cursor inside the li
+    const newRange = document.createRange();
+    newRange.setStart(li, 0);
+    newRange.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(newRange);
+    editor.focus();
+    return;
+  }
+
+  // Split text into lines and create list
+  const lines = text.split(/\n/).filter(l => l.trim().length > 0);
+  const list = document.createElement(isOrdered ? 'ol' : 'ul');
+  lines.forEach(line => {
+    const li = document.createElement('li');
+    li.textContent = line.trim();
+    list.appendChild(li);
   });
+
+  // Replace the selection with the list
+  range.deleteContents();
+  range.insertNode(list);
+
+  // Place cursor at end of last li
+  const lastLi = list.querySelector('li:last-child');
+  if (lastLi) {
+    const newRange = document.createRange();
+    newRange.selectNodeContents(lastLi);
+    newRange.collapse(false);
+    sel.removeAllRanges();
+    sel.addRange(newRange);
+  }
+
+  editor.normalize();
   editor.focus();
   updateFormatState();
 }
