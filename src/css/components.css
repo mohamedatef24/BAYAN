@@ -991,6 +991,13 @@
   background: var(--color-surface);
   border: 1px solid var(--color-summary-accent-border);
   box-shadow: var(--shadow-card);
+  overflow: visible;
+}
+
+/* Summary export dropdown opens upward */
+.summary-card .doc-dropdown__menu {
+  top: auto;
+  bottom: calc(100% + 6px);
 }
 
 .summary-card__title {
@@ -1030,6 +1037,7 @@
 
 .summary-preview.show {
   max-height: 500px;
+  overflow: visible;
 }
 
 /* ── Mobile bottom sheet ── */
