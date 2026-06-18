@@ -508,6 +508,19 @@ function dismissSuggestion(suggestion) {
       s => !(s.start === suggestion.start && s.end === suggestion.end)
     );
 
+    // Re-index remaining error spans to match updated array indices
+    const remainingSpans = document.querySelectorAll('.spelling-error, .grammar-error, .punctuation-suggestion');
+    remainingSpans.forEach(span => {
+      const oldId = parseInt(span.dataset.suggestionId, 10);
+      // Find this span's suggestion in the updated array by matching start/end
+      const newIdx = window.currentSuggestions.findIndex(s => {
+        return span.textContent === s.original;
+      });
+      if (newIdx >= 0) {
+        span.dataset.suggestionId = newIdx;
+      }
+    });
+
     const spellingCount = window.currentSuggestions.filter(s => s.type === 'spelling').length;
     const grammarCount = window.currentSuggestions.filter(s => s.type === 'grammar').length;
     const punctuationCount = window.currentSuggestions.filter(s => s.type === 'punctuation').length;
