@@ -720,6 +720,12 @@ def analyze_text():
         total_start = time.time()
         timing_ms = {'spelling_ms': 0, 'grammar_ms': 0, 'punctuation_ms': 0, 'total_ms': 0}
 
+        # ── Stage Lock Manager (DANG: Directed Acyclic NLP Graph) ──
+        # Enforces one-way pipeline: Spelling → Grammar → Punctuation
+        # No backward flow. Each stage output is immutable.
+        from nlp.stage_lock import StageLockManager
+        lock_manager = StageLockManager()
+
         def map_range_to_original(start, end):
             curr_start, curr_end = start, end
             for mapper in reversed(mappers):
@@ -762,6 +768,7 @@ def analyze_text():
         # 1. Spelling (with conservative post-filtering to avoid over-editing)
         if run_spelling:
             try:
+                lock_manager.begin_stage('spelling')
                 t0 = time.time()
                 logger.info(f"[ANALYZE] Step 1: Spelling correction starting...")
                 from nlp.spelling.araspell_service import get_spelling_model
@@ -892,9 +899,17 @@ def analyze_text():
                     current_text = safe_text
             except Exception as e:
                 logger.error(f"[ANALYZE] Spelling failed: {e}")
+            finally:
+                lock_manager.end_stage('spelling')
+                # Lock all spelling-modified spans
+                for s in suggestions:
+                    if s['type'] == 'spelling':
+                        lock_manager.lock_span(s['start'], s['end'], 'spelling')
+                logger.info(f"[DANG] Spelling stage LOCKED — {len(lock_manager.get_locked_spans())} spans frozen")
 
         # 2. Grammar (runs on spelling-corrected text — word-level dependency)
         try:
+            lock_manager.begin_stage('grammar')
             t0 = time.time()
             logger.info(f"[ANALYZE] Step 2: Grammar correction starting...")
             from nlp.grammar.grammar_service import get_grammar_model
@@ -917,9 +932,16 @@ def analyze_text():
                 current_text = corrected_grammar
         except Exception as e:
             logger.error(f"[ANALYZE] Grammar failed: {e}")
+        finally:
+            lock_manager.end_stage('grammar')
+            for s in suggestions:
+                if s['type'] == 'grammar':
+                    lock_manager.lock_span(s['start'], s['end'], 'grammar')
+            logger.info(f"[DANG] Grammar stage LOCKED — {len(lock_manager.get_locked_spans())} spans frozen")
 
         # 3. Punctuation (runs on grammar-corrected text — PuncAra-v1 local model)
         try:
+            lock_manager.begin_stage('punctuation')
             t0 = time.time()
             logger.info(f"[ANALYZE] Step 3: Punctuation starting...")
             from nlp.punctuation.punctuation_service import get_punctuation_model
@@ -942,6 +964,13 @@ def analyze_text():
                 current_text = corrected_punc
         except Exception as e:
             logger.error(f"[ANALYZE] Punctuation failed: {e}")
+        finally:
+            lock_manager.end_stage('punctuation')
+            for s in suggestions:
+                if s['type'] == 'punctuation':
+                    lock_manager.lock_span(s['start'], s['end'], 'punctuation')
+            logger.info(f"[DANG] Punctuation stage LOCKED — {len(lock_manager.get_locked_spans())} spans frozen")
+            logger.info(f"[DANG] Pipeline complete: {lock_manager.get_stage_summary()['completed_stages']}")
 
         total_time = time.time() - total_start
         timing_ms['total_ms'] = int(total_time * 1000)
@@ -998,6 +1027,11 @@ def analyze_text():
             'corrected': current_text,
             'suggestions': suggestions,
             'timing_ms': timing_ms,
+            'pipeline': {
+                'stages_completed': list(lock_manager._completed_stages),
+                'locked_spans': len(lock_manager.get_locked_spans()),
+                'flow': 'spelling → grammar → punctuation',
+            },
             'status': 'success'
         })
 
