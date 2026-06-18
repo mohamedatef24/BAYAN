@@ -471,12 +471,8 @@
        <!-- CENTER: Main Editor -->
        <div>
         <div class="editor-shell">
-<div class="editor-toolbar" style="flex-direction: row-reverse;">
+<div class="editor-toolbar">
            <div class="flex items-center gap-2 flex-wrap">
-            <button id="doc-save-btn" class="doc-save-btn-icon btn-ghost" type="button" aria-label="حفظ المستند" title="حفظ">
-             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
-            </button>
-            <span id="auto-save-status" class="text-xs text-secondary" style="opacity:0;transition:opacity 0.3s;"></span>
             <div class="doc-title-bar">
              <span id="doc-current-title" class="doc-current-title">مستند جديد</span>
             </div>
@@ -491,6 +487,12 @@
             <div id="analyzing-indicator" class="analyzing-indicator" aria-live="polite">
              <span class="analyzing-spinner" aria-hidden="true"></span>
              <span>جاري التحليل...</span>
+            </div>
+            <span id="auto-save-status" class="text-xs text-secondary" style="opacity:0;transition:opacity 0.3s;"></span>
+            <div class="window-dots" aria-hidden="true">
+             <span class="dot dot--red"></span>
+             <span class="dot dot--yellow"></span>
+             <span class="dot dot--green"></span>
             </div>
            </div>
           </div>
@@ -663,6 +665,9 @@
            <span class="stat-item">⏱ <span id="reading-time">٠</span> د قراءة</span>
           </div>
           <div class="editor-actions">
+            <button id="doc-save-btn" class="doc-save-btn-icon btn-ghost" type="button" aria-label="حفظ المستند" title="حفظ">
+             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+            </button>
            <button onclick="clearEditor()" class="btn-ghost" type="button" title="مسح الكل">
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
            </button>

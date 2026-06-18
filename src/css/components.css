@@ -2643,3 +2643,29 @@ input[type="range"]::-moz-range-thumb {
   background: rgba(34, 197, 94, 0.15);
   color: #22c55e;
 }
+
+/* ── Window Dots (macOS style) ── */
+.window-dots {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.window-dots .dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.window-dots .dot--red {
+  background: #ef4444;
+}
+
+.window-dots .dot--yellow {
+  background: #eab308;
+}
+
+.window-dots .dot--green {
+  background: #22c55e;
+}
