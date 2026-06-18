@@ -56,6 +56,26 @@ function _saveDismissedWords() {
   } catch (e) {}
 }
 
+// Applied corrections cache — tracks recently-applied corrections to prevent
+// re-suggestion oscillation (e.g., punctuation model re-suggesting after user applies)
+// Key: correction text, Value: timestamp
+const _appliedCorrections = new Map();
+const APPLIED_CORRECTIONS_TTL = 30000; // 30 seconds
+
+function _trackAppliedCorrection(correctionText) {
+  _appliedCorrections.set(correctionText, Date.now());
+}
+
+function _isRecentlyApplied(originalText) {
+  const ts = _appliedCorrections.get(originalText);
+  if (!ts) return false;
+  if (Date.now() - ts > APPLIED_CORRECTIONS_TTL) {
+    _appliedCorrections.delete(originalText);
+    return false;
+  }
+  return true;
+}
+
 /**
  * Initialize the editor
  */
@@ -286,10 +306,10 @@ async function analyzeText() {
       return;
     }
 
-    // Filter out dismissed (whitelisted) words
+    // Filter out dismissed (whitelisted) words AND recently-applied corrections
     const rawSuggestions = sortSuggestions(data.suggestions || []);
     window.currentSuggestions = rawSuggestions.filter(
-      s => !_dismissedWords.has(s.original)
+      s => !_dismissedWords.has(s.original) && !_isRecentlyApplied(s.original)
     );
 
     // Use DOM overlay instead of innerHTML replacement to preserve formatting
@@ -516,6 +536,8 @@ function applyAlternativeCorrection(suggestion, correctionText) {
   hideTooltip();
   // Re-focus editor so Ctrl+Z works immediately after tooltip correction
   const _ed2 = getEditorElement(); if (_ed2) _ed2.focus();
+  // Track this correction to prevent re-suggestion on re-analysis
+  _trackAppliedCorrection(correctionText);
   analyzeTextDelayed();
 }
 

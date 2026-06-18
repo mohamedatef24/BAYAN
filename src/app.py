@@ -704,12 +704,29 @@ def _is_small_spelling_change(orig_word, corr_word):
 _PUNC_CHARS = set('،؛؟!.,:;?»«()[]{}…–—\u060C\u061B\u061F')
 
 def _is_punctuation_only_change(original, correction):
-    """Return True if the only difference is punctuation marks.
+    """Return True if the only difference is punctuation marks or spacing around them.
     If True, this suggestion belongs to the Punctuation model exclusively.
-    Note: space changes (word splitting) are NOT considered punctuation-only."""
-    orig_stripped = ''.join(c for c in original if c not in _PUNC_CHARS)
-    corr_stripped = ''.join(c for c in correction if c not in _PUNC_CHARS)
-    return orig_stripped == corr_stripped
+
+    Catches:
+      - "اليوم،" → "اليوم"     (removing punctuation)
+      - "اليوم"  → "اليوم،"    (adding punctuation)
+      - "اليوم،" → "اليوم ،"   (spacing around punctuation)
+
+    Does NOT block:
+      - "والمعلمون" → "و المعلمون"  (word splitting, no punctuation involved)
+      - "يعملوا"   → "يعملون"      (morphological change)
+    """
+    # Strip punctuation AND spaces from both
+    orig_letters = ''.join(c for c in original if c not in _PUNC_CHARS and not c.isspace())
+    corr_letters = ''.join(c for c in correction if c not in _PUNC_CHARS and not c.isspace())
+
+    if orig_letters != corr_letters:
+        return False  # Real letter change — not punctuation-only
+
+    # Letters are the same. Now check: is punctuation actually involved?
+    # If neither side has punctuation, this is just a spacing change (word split) → allow it
+    has_punc = any(c in _PUNC_CHARS for c in original) or any(c in _PUNC_CHARS for c in correction)
+    return has_punc
 
 
 @app.route('/api/analyze', methods=['POST'])
