@@ -492,6 +492,7 @@
 }
 
 .editor-surface {
+  position: relative;
   background: var(--color-editor);
   color: var(--color-text-primary);
   min-height: 50vh;
@@ -531,9 +532,15 @@
 .editor-surface[data-empty="true"]::before {
   content: attr(data-placeholder);
   color: var(--color-placeholder);
-  font-style: italic;
+  opacity: 0.5;
+  font-weight: 300;
   pointer-events: none;
-  display: block;
+  position: absolute;
+  top: var(--spacing-lg);
+  right: var(--spacing-xl);
+  left: var(--spacing-xl);
+  text-align: right;
+  direction: rtl;
 }
 
 .editor-surface.analyzing {
@@ -2717,12 +2724,7 @@ input[type="range"]::-moz-range-thumb {
   vertical-align: middle;
 }
 
-/* ── Fix #8: Editor placeholder alignment ── */
-.editor-surface[data-empty="true"]::before {
-  text-align: right;
-  direction: rtl;
-  padding-top: 2rem;
-}
+/* ── Fix #8: Editor placeholder alignment (Removed hack) ── */
 
 /* ── Fix #11: Pricing cards equal heights ── */
 #page-pricing .grid > div {
