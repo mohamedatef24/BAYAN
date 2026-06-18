@@ -911,49 +911,91 @@ def analyze_text():
                         if tag != 'replace':
                             continue
 
-                        # Process each changed word individually
-                        g_segment = grammar_words[j1:j2]
-                        correction_text = " ".join(g_segment)
+                        o_count = i2 - i1
+                        c_count = j2 - j1
 
-                        # Map back to original text positions
-                        # Find the earliest and latest original word indices
-                        orig_indices = set()
-                        for k in range(i1, i2):
-                            if k < len(spelling_word_map):
-                                orig_indices.add(spelling_word_map[k])
+                        # If word counts match, process EACH word individually
+                        if o_count == c_count:
+                            for offset in range(o_count):
+                                sw = spell_words[i1 + offset]
+                                gw = grammar_words[j1 + offset]
+                                if sw == gw:
+                                    continue  # no change at this position
 
-                        if not orig_indices:
-                            continue
+                                # Map to original text position
+                                spell_idx = i1 + offset
+                                if spell_idx >= len(spelling_word_map):
+                                    continue
+                                orig_idx = spelling_word_map[spell_idx]
+                                if orig_idx >= len(orig_word_positions):
+                                    continue
 
-                        min_orig = min(orig_indices)
-                        max_orig = max(orig_indices)
+                                orig_start = orig_word_positions[orig_idx][1]
+                                orig_end = orig_word_positions[orig_idx][2]
+                                original_word = text[orig_start:orig_end]
 
-                        if min_orig >= len(orig_word_positions) or max_orig >= len(orig_word_positions):
-                            continue
+                                if original_word == gw:
+                                    continue
 
-                        orig_start = orig_word_positions[min_orig][1]
-                        orig_end = orig_word_positions[max_orig][2]
-                        original_span = text[orig_start:orig_end]
+                                # Overlap check
+                                overlaps = any(
+                                    not (orig_end <= sr_s or orig_start >= sr_e)
+                                    for sr_s, sr_e in spelling_ranges
+                                )
+                                if overlaps:
+                                    continue
 
-                        # Skip if the correction is the same as original
-                        if original_span == correction_text:
-                            continue
+                                suggestions.append({
+                                    'start': orig_start,
+                                    'end': orig_end,
+                                    'original': original_word,
+                                    'correction': gw,
+                                    'type': 'grammar'
+                                })
+                        else:
+                            # Word count differs — create one grouped suggestion
+                            # but only if it's a small block (max 3 words)
+                            if o_count > 3 or c_count > 3:
+                                continue  # skip large blocks (likely hallucination)
 
-                        # Skip if this overlaps with any spelling suggestion
-                        overlaps = any(
-                            not (orig_end <= sr_start or orig_start >= sr_end)
-                            for sr_start, sr_end in spelling_ranges
-                        )
-                        if overlaps:
-                            continue
+                            g_segment = grammar_words[j1:j2]
+                            correction_text = " ".join(g_segment)
 
-                        suggestions.append({
-                            'start': orig_start,
-                            'end': orig_end,
-                            'original': original_span,
-                            'correction': correction_text,
-                            'type': 'grammar'
-                        })
+                            orig_indices = set()
+                            for k in range(i1, i2):
+                                if k < len(spelling_word_map):
+                                    orig_indices.add(spelling_word_map[k])
+
+                            if not orig_indices:
+                                continue
+
+                            min_orig = min(orig_indices)
+                            max_orig = max(orig_indices)
+
+                            if min_orig >= len(orig_word_positions) or max_orig >= len(orig_word_positions):
+                                continue
+
+                            orig_start = orig_word_positions[min_orig][1]
+                            orig_end = orig_word_positions[max_orig][2]
+                            original_span = text[orig_start:orig_end]
+
+                            if original_span == correction_text:
+                                continue
+
+                            overlaps = any(
+                                not (orig_end <= sr_s or orig_start >= sr_e)
+                                for sr_s, sr_e in spelling_ranges
+                            )
+                            if overlaps:
+                                continue
+
+                            suggestions.append({
+                                'start': orig_start,
+                                'end': orig_end,
+                                'original': original_span,
+                                'correction': correction_text,
+                                'type': 'grammar'
+                            })
 
                     current_text = corrected_grammar
             except Exception as e:
