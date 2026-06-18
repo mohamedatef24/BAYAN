@@ -13,3 +13,4 @@ jellyfish
 python-Levenshtein
 gunicorn
 python-dotenv
+gradio_client
