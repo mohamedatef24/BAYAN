@@ -160,7 +160,7 @@ function updateAuthUI(user) {
     if (menuWrap) menuWrap.classList.remove('is-hidden');
     if (nameEl) nameEl.textContent = 'ضيف';
     if (providerEl) providerEl.textContent = 'ضيف';
-    if (avatarEl) avatarEl.textContent = 'ض';
+    if (avatarEl) avatarEl.innerHTML = '<svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>';
     if (drawerName) drawerName.textContent = 'ضيف';
     if (drawerProvider) drawerProvider.textContent = '';
     // Show Google sign-in option, hide logout
@@ -193,7 +193,11 @@ function updateAuthUI(user) {
       img.referrerPolicy = 'no-referrer';
       avatarEl.appendChild(img);
     } else {
-      avatarEl.textContent = isGuestUser(user) ? 'ض' : displayName.charAt(0).toUpperCase();
+      if (isGuestUser(user)) {
+        avatarEl.innerHTML = '<svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>';
+      } else {
+        avatarEl.textContent = displayName.charAt(0).toUpperCase();
+      }
     }
   }
 
