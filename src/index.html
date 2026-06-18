@@ -58,8 +58,7 @@
        <button id="mobile-menu-btn" class="mobile-menu-btn md:hidden" aria-label="فتح القائمة" aria-expanded="false" aria-controls="mobile-drawer">
         <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
        </button>
-       <div class="w-10 h-10 rounded-xl flex items-center justify-center gradient-accent" aria-hidden="true"><span class="text-white text-xl font-bold">ب</span></div>
-       <span id="nav-brand" class="text-xl md:text-2xl font-bold text-gradient">بيان</span>
+       <button onclick="showPage('home')" class="flex items-center gap-3" style="background:none;border:none;cursor:pointer;" aria-label="الرئيسية"><img src="/favicon.svg" alt="بيان" width="40" height="40" class="rounded-xl"><span id="nav-brand" class="text-xl md:text-2xl font-bold text-gradient">بيان</span></button>
       </div>
       <div class="hidden md:flex items-center gap-8">
        <button onclick="showPage('home')" class="nav-link active text-base font-medium" data-page="home">الرئيسية</button>
@@ -164,7 +163,7 @@
         </div>
         <h1 id="hero-headline" class="text-5xl lg:text-7xl font-bold leading-tight mb-6" style="line-height: 1.3;">اكتب العربية<br><span class="text-gradient">بثقة واحتراف</span></h1>
         <p id="hero-subheadline" class="text-xl lg:text-2xl leading-relaxed mb-10" style="color: var(--text-secondary); line-height: 1.9;">مساعد ذكي يصحح الإملاء والنحو وعلامات الترقيم ويُلخّص النصوص العربية بدقة عالية.</p>
-        <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-12"><button id="hero-cta-primary" onclick="showPage('editor')" class="px-8 py-4 rounded-2xl text-lg font-bold text-white gradient-accent transition-all hover:scale-105 hover:shadow-2xl"> جربه الآن مجاناً </button> <button onclick="showPage('features')" class="px-8 py-4 rounded-2xl text-lg font-bold transition-all hover:scale-105 border-2" style="border-color: rgba(255, 255, 255, 0.2); color: var(--text-color);"> استكشف الميزات </button>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-12"><button id="hero-cta-primary" onclick="showPage('editor')" class="px-8 py-4 rounded-2xl text-lg font-bold text-white gradient-accent transition-all hover:scale-105 hover:shadow-2xl"> جربه الآن مجاناً ←</button> <button onclick="showPage('features')" class="px-8 py-4 rounded-2xl text-lg font-bold transition-all hover:scale-105 border-2" style="border-color: rgba(255, 255, 255, 0.2); color: var(--text-color);"> استكشف الميزات</button>
         </div><!-- Stats -->
         <div class="flex items-center gap-8 justify-center lg:justify-start">
          <div class="text-center">
@@ -489,8 +488,9 @@
             <span class="analyzing-spinner" aria-hidden="true"></span>
             <span>جاري التحليل...</span>
            </div>
-           <span class="text-sm text-secondary">عدد الكلمات: <span id="word-count" class="font-bold">٠</span></span>
-           <button id="doc-save-btn" class="doc-save-btn-icon btn-ghost" type="button" aria-label="حفظ المستند" title="حفظ">
+           <span class="text-sm text-secondary">عدد الكلمات: <span id="word-count" class="font-bold">٠</span><span id="word-goal-indicator" class="word-goal-badge" style="display:none"></span></span>
+           <span id="auto-save-status" class="text-xs text-secondary" style="opacity:0;transition:opacity 0.3s;"></span>
+            <button id="doc-save-btn" class="doc-save-btn-icon btn-ghost" type="button" aria-label="حفظ المستند" title="حفظ">
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
            </button>
           </div>
@@ -644,6 +644,7 @@
             <div class="flex items-center justify-between mb-4">
              <h3 class="text-lg font-bold summary-card__title">الملخص</h3>
              <button onclick="copySummary()" class="btn-ghost" type="button">نسخ</button>
+              <button onclick="exportSummaryAsTxt()" class="btn-ghost" type="button">تصدير</button>
             </div>
             <div id="summary-text" class="text-right text-lg editor-content" dir="rtl"></div>
            </div>
@@ -853,6 +854,16 @@
         </ul><button onclick="showPage('editor')" class="w-full py-4 rounded-2xl text-lg font-bold border-2 transition-all hover:scale-105" style="border-color: rgba(255, 255, 255, 0.2); color: var(--text-color);"> تواصل مع المبيعات </button>
        </div>
       </div>
+     </div>
+    </section>
+   </div><!-- 404 Page -->
+   <div id="page-404" class="page">
+    <section class="gradient-bg min-h-screen pt-28 pb-20 flex items-center justify-center">
+     <div class="text-center">
+      <div class="text-8xl font-bold text-gradient mb-6">٤٠٤</div>
+      <h2 class="text-3xl font-bold mb-4">الصفحة غير موجودة</h2>
+      <p class="text-lg mb-8" style="color: var(--text-secondary);">يبدو أن الصفحة التي تبحث عنها غير متاحة.</p>
+      <button onclick="showPage('home')" class="px-8 py-4 rounded-2xl text-lg font-bold text-white gradient-accent transition-all hover:scale-105">العودة للرئيسية ←</button>
      </div>
     </section>
    </div><!-- Footer -->
@@ -1101,6 +1112,34 @@
         document.execCommand('copy');
         document.body.removeChild(ta);
       });
+    }
+
+    function exportSummaryAsTxt() {
+      const text = document.getElementById('summary-text')?.innerText;
+      if (!text || !text.trim()) {
+        if (typeof showToast === 'function') showToast('لا يوجد ملخص للتصدير', 'error');
+        return;
+      }
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'ملخص-بيان.txt';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      if (typeof showToast === 'function') showToast('✓ تم تصدير الملخص');
+    }
+
+    // Auto-save indicator
+    function showAutoSaveStatus(msg) {
+      const el = document.getElementById('auto-save-status');
+      if (!el) return;
+      el.textContent = msg;
+      el.style.opacity = '1';
+      clearTimeout(el._timer);
+      el._timer = setTimeout(() => { el.style.opacity = '0'; }, 3000);
     }
 
     // Element SDK Integration
