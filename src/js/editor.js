@@ -630,7 +630,6 @@ function applySuggestionByIndex(index) {
 function applyAllSuggestions() {
   const suggestions = [...(window.currentSuggestions || [])].sort((a, b) => b.start - a.start);
   if (suggestions.length === 0) return;
-  if (!confirm('هل تريد تطبيق جميع التصحيحات (' + suggestions.length + ')؟')) return;
   pushUndoState(); // Save state before applying all
 
   let text = getEditorText();
@@ -640,6 +639,16 @@ function applyAllSuggestions() {
 
   setEditorHTML(escapeHtml(text));
   hideTooltip();
+
+  // Track all applied corrections
+  suggestions.forEach(s => _trackAppliedCorrection(s.correction));
+
+  // Clear suggestions
+  window.currentSuggestions = [];
+  updateSuggestionCounts(0, 0, 0);
+  updateWritingScore(0, 0, 0);
+  updateSuggestionsList([]);
+
   analyzeTextDelayed();
   if (typeof showToast === 'function') showToast('✓ تم تطبيق ' + suggestions.length + ' تصحيح');
 }
