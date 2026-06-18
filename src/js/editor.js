@@ -91,7 +91,7 @@ function updateEditorStats() {
       if (goal > 0) {
         const pct = Math.min(Math.round((words / goal) * 100), 100);
         goalEl.style.display = 'inline-block';
-        goalEl.textContent = `${pct}% من ${goal.toLocaleString('ar-EG')}`;
+        goalEl.textContent = `${pct.toLocaleString('ar-EG')}% من ${goal.toLocaleString('ar-EG')}`;
         goalEl.classList.toggle('goal-reached', pct >= 100);
       } else {
         goalEl.style.display = 'none';
