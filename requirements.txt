@@ -1,3 +1,4 @@
+huggingface_hub>=0.20.0
 transformers
 torch
 datasets
@@ -8,3 +9,8 @@ numpy
 pandas
 flask
 flask-cors
+jellyfish
+python-Levenshtein
+gunicorn
+python-dotenv
+gradio_client

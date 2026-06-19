@@ -1,0 +1,77 @@
+name: Bayan CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-validate:
+    name: Validate Code
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install flask flask-cors python-dotenv
+
+      - name: Validate Flask app imports
+        run: |
+          cd src && python -c "
+          import sys; sys.path.insert(0, '.')
+          from app import app
+          print('✅ Flask app imports successfully')
+          # Check critical routes exist
+          rules = [rule.rule for rule in app.url_map.iter_rules()]
+          assert '/api/health' in rules, '/api/health route missing'
+          assert '/api/summarize' in rules, '/api/summarize route missing'
+          assert '/api/analyze' in rules, '/api/analyze route missing'
+          print('✅ All critical API routes registered')
+          "
+
+      - name: Validate build script
+        env:
+          SUPABASE_URL: "https://test.supabase.co"
+          SUPABASE_ANON_KEY: "test-key-1234"
+        run: python build.py
+
+      - name: Verify index.html was modified
+        run: |
+          grep -q "https://test.supabase.co" src/index.html && echo "✅ Supabase URL injected" || exit 1
+          grep -q "test-key-1234" src/index.html && echo "✅ Supabase key injected" || exit 1
+
+  health-check:
+    name: Post-Deploy Health Check
+    needs: lint-and-validate
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for HuggingFace Spaces to deploy
+        run: sleep 120
+
+      - name: Check backend health
+        run: |
+          HEALTH_URL="${{ secrets.BACKEND_URL }}/api/health"
+          if [ -z "${{ secrets.BACKEND_URL }}" ]; then
+            HEALTH_URL="https://bayan10-bayan-api.hf.space/api/health"
+          fi
+          echo "Checking: $HEALTH_URL"
+          response=$(curl -s -w "\n%{http_code}" "$HEALTH_URL")
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | head -n -1)
+          echo "Status: $http_code"
+          echo "Body: $body"
+          if [ "$http_code" = "200" ] || [ "$http_code" = "503" ]; then
+            echo "✅ Backend is responding"
+          else
+            echo "❌ Backend health check failed"
+            exit 1
+          fi
+
