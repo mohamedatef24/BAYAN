@@ -15,11 +15,14 @@ Model + rules loaded on first request and kept in memory.
 import logging
 import time
 
+import threading
+
 logger = logging.getLogger(__name__)
 
 # ── Lazy-loaded singletons ──
 _grammar_checker = None
 _load_error = None
+_load_lock = threading.Lock()
 
 GRADIO_SPACE = "mohammedahmedezz2004/bayan_arabic_grammarly_correction"
 
@@ -51,29 +54,29 @@ class GrammarChecker:
         if self.client is not None:
             try:
                 result = self.client.predict(
-                    text=text,
-                    api_name="/correct_grammar"
-                )
-                if result and result.strip():
-                    model_output = result
-                    logger.info(
-                        f"Grammar model output: '{model_output[:80]}' "
-                        f"(input: '{text[:80]}')"
+                        text=text,
+                        api_name="/correct_grammar"
                     )
-                else:
-                    logger.warning("Grammar model returned empty output, using rules-only")
-            except Exception as e:
-                logger.warning(f"Grammar Gradio call failed ({e}), falling back to rules-only")
-                model_output = text  # rules will still run on original
+                    if result and result.strip():
+                        model_output = result
+                        logger.info(
+                            f"Grammar model output: '{model_output[:80]}' "
+                            f"(input: '{text[:80]}')"
+                        )
+                    else:
+                        logger.warning("Grammar model returned empty output, using rules-only")
+                except Exception as e:
+                    logger.warning(f"Grammar Gradio call failed ({e}), falling back to rules-only")
+                    model_output = text  # rules will still run on original
 
         # 2. Rule-based post-processing (always runs)
         try:
             corrected = self.rules.process(text, model_output)
-            logger.info(f"Grammar rules output: '{corrected[:80]}'")
-            return corrected
-        except Exception as e:
-            logger.error(f"Grammar rules failed: {e}")
-            return model_output  # return model output or original
+                logger.info(f"Grammar rules output: '{corrected[:80]}'")
+                return corrected
+            except Exception as e:
+                logger.error(f"Grammar rules failed: {e}")
+                return model_output  # return model output or original
 
 
 def get_grammar_model():
@@ -81,14 +84,18 @@ def get_grammar_model():
     Lazy-load the grammar model on first call.
     Returns a GrammarChecker (always succeeds — falls back to rules-only).
     """
-    global _grammar_checker, _load_error
+    global _grammar_checker, _load_error, _load_lock
 
     if _grammar_checker is not None:
         return _grammar_checker
 
-    try:
+    with _load_lock:
+        if _grammar_checker is not None:
+            return _grammar_checker
+
+        try:
         t0 = time.time()
-        logger.info("Loading Grammar model (lazy init)...")
+            logger.info("Loading Grammar model (lazy init)...")
 
         # 1. Load rule-based post-processor (camel-tools) — required
         logger.info("Loading ArabicGrammarGuard (camel-tools MLE disambiguator)...")
@@ -100,16 +107,16 @@ def get_grammar_model():
         client = None
         try:
             logger.info(f"Connecting to Gradio Space: {GRADIO_SPACE}")
-            from gradio_client import Client
-            # Short timeout so we don't block startup
-            client = Client(GRADIO_SPACE, verbose=False)
-            logger.info("Gradio Client connected successfully")
-        except Exception as e:
-            logger.warning(
-                f"Gradio client unavailable ({e}). "
-                f"Grammar will use rules-only mode (no seq2seq model)."
-            )
-            client = None  # rules-only fallback
+                from gradio_client import Client
+                # Short timeout so we don't block startup
+                client = Client(GRADIO_SPACE, verbose=False)
+                logger.info("Gradio Client connected successfully")
+            except Exception as e:
+                logger.warning(
+                    f"Gradio client unavailable ({e}). "
+                    f"Grammar will use rules-only mode (no seq2seq model)."
+                )
+                client = None  # rules-only fallback
 
         # 3. Create GrammarChecker instance
         _grammar_checker = GrammarChecker(client, rules)

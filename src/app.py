@@ -952,17 +952,19 @@ def analyze_text():
             except Exception as e:
                 logger.error(f"[ANALYZE] Spelling failed: {e}")
 
-        # 2. Grammar (runs on spelling-corrected text — word-level dependency)
+        normalized_text = current_text
+
+        # 2. Grammar (runs on normalized text — word-level dependency)
         try:
             t0 = time.time()
             logger.info(f"[ANALYZE] Step 2: Grammar correction starting...")
             from nlp.grammar.grammar_service import get_grammar_model
             grammar_checker = get_grammar_model()
-            corrected_grammar = grammar_checker.correct(current_text)
+            corrected_grammar = grammar_checker.correct(normalized_text)
             timing_ms['grammar_ms'] = int((time.time() - t0) * 1000)
             logger.info(f"[ANALYZE] Step 2: Grammar done in {timing_ms['grammar_ms']}ms")
-            if corrected_grammar != current_text:
-                diffs = get_word_diffs(current_text, corrected_grammar)
+            if corrected_grammar != normalized_text:
+                diffs = get_word_diffs(normalized_text, corrected_grammar)
                 for d in diffs:
                     orig_start, orig_end = map_range_to_original(d['start'], d['end'])
                     original_word = text[orig_start:orig_end]
@@ -976,22 +978,20 @@ def analyze_text():
                         # Grammar alternatives: corrected form + keep-as-is
                         'alternatives': [correction_word, original_word] if correction_word else [original_word]
                     })
-                mappers.append(OffsetMapper(current_text, corrected_grammar))
-                current_text = corrected_grammar
         except Exception as e:
             logger.error(f"[ANALYZE] Grammar failed: {e}")
 
-        # 3. Punctuation (runs on grammar-corrected text — PuncAra-v1 local model)
+        # 3. Punctuation (runs on normalized text)
         try:
             t0 = time.time()
             logger.info(f"[ANALYZE] Step 3: Punctuation starting...")
             from nlp.punctuation.punctuation_service import get_punctuation_model
             punc_checker = get_punctuation_model()
-            corrected_punc = punc_checker.correct(current_text)
+            corrected_punc = punc_checker.correct(normalized_text)
             timing_ms['punctuation_ms'] = int((time.time() - t0) * 1000)
             logger.info(f"[ANALYZE] Step 3: Punctuation done in {timing_ms['punctuation_ms']}ms")
-            if corrected_punc != current_text:
-                diffs = get_word_diffs(current_text, corrected_punc)
+            if corrected_punc != normalized_text:
+                diffs = get_word_diffs(normalized_text, corrected_punc)
                 for d in diffs:
                     orig_start, orig_end = map_range_to_original(d['start'], d['end'])
                     suggestions.append({
@@ -1001,13 +1001,31 @@ def analyze_text():
                         'correction': d['correction'],
                         'type': 'punctuation'
                     })
-                mappers.append(OffsetMapper(current_text, corrected_punc))
-                current_text = corrected_punc
         except Exception as e:
             logger.error(f"[ANALYZE] Punctuation failed: {e}")
 
         total_time = time.time() - total_start
         timing_ms['total_ms'] = int(total_time * 1000)
+
+        # ══════════════════════════════════════════════════════════
+        # SUGGESTION CONSISTENCY LAYER
+        # ══════════════════════════════════════════════════════════
+        valid_suggestions = []
+        for s in suggestions:
+            # 1. Invalid or reversed ranges
+            if s.get('start', 0) < 0 or s.get('end', 0) < 0 or s.get('start', 0) >= s.get('end', 0):
+                continue
+            # 2. Out of bounds
+            if s.get('end', 0) > len(text):
+                continue
+            # 3. Empty replacements
+            if not s.get('correction') or str(s.get('correction')).strip() == '':
+                continue
+            # 4. Identical replacements
+            if s.get('original') == s.get('correction'):
+                continue
+            valid_suggestions.append(s)
+        suggestions = valid_suggestions
 
         # ══════════════════════════════════════════════════════════
         # GLOBAL OVERLAP RESOLVER — NLP-3.5 Hardening

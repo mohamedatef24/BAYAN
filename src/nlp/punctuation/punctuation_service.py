@@ -13,11 +13,14 @@ import time
 import torch
 import re
 
+import threading
+
 logger = logging.getLogger(__name__)
 
 # ── Lazy-loaded singletons ──
 _punctuation_checker = None
 _load_error = None
+_load_lock = threading.Lock()
 
 HF_REPO_ID = "bayan10/PuncAra-v1"
 
@@ -131,15 +134,19 @@ def get_punctuation_model():
     Lazy-load the punctuation model on first call.
     Returns the PunctuationChecker instance, or raises RuntimeError if loading fails.
     """
-    global _punctuation_checker, _load_error
+    global _punctuation_checker, _load_error, _load_lock
 
     if _punctuation_checker is not None:
         return _punctuation_checker
 
-    if _load_error is not None:
-        raise RuntimeError(f"Punctuation model previously failed to load: {_load_error}")
+    with _load_lock:
+        if _punctuation_checker is not None:
+            return _punctuation_checker
 
-    try:
+        if _load_error is not None:
+            raise RuntimeError(f"Punctuation model previously failed to load: {_load_error}")
+
+        try:
         t0 = time.time()
         logger.info("Loading PuncAra-v1 punctuation model (lazy init)...")
 

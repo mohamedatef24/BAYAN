@@ -10,11 +10,14 @@ import logging
 import time
 import torch
 
+import threading
+
 logger = logging.getLogger(__name__)
 
 # ── Lazy-loaded singletons ──
 _spell_checker = None
 _load_error = None
+_load_lock = threading.Lock()
 
 # Model identifiers
 MODEL_REPO = 'bayan10/AraSpell-Model'
@@ -27,16 +30,20 @@ def get_spelling_model():
     Lazy-load the spelling model on first call.
     Returns the ArabicSpellChecker instance, or raises RuntimeError if loading fails.
     """
-    global _spell_checker, _load_error
+    global _spell_checker, _load_error, _load_lock
 
     if _spell_checker is not None:
         return _spell_checker
 
-    if _load_error is not None:
-        raise RuntimeError(f"Spelling model previously failed to load: {_load_error}")
+    with _load_lock:
+        if _spell_checker is not None:
+            return _spell_checker
 
-    try:
-        t0 = time.time()
+        if _load_error is not None:
+            raise RuntimeError(f"Spelling model previously failed to load: {_load_error}")
+
+        try:
+            t0 = time.time()
         logger.info("Loading AraSpell spelling model (lazy init)...")
 
         from huggingface_hub import hf_hub_download
@@ -87,7 +94,7 @@ def get_spelling_model():
         logger.info(f"AraSpell ready in {elapsed:.1f}s")
         return _spell_checker
 
-    except Exception as e:
+        except Exception as e:
         import traceback
         _load_error = str(e)
         logger.error(f"Failed to load spelling model: {e}")
@@ -97,7 +104,7 @@ def get_spelling_model():
 
 def is_loaded() -> bool:
     """Check if the spelling model is loaded."""
-    return _spell_checker is not None
+        return _spell_checker is not None
 
 
 def get_load_error() -> str:

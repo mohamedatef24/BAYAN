@@ -13,11 +13,14 @@ import time
 import re
 import os
 
+import threading
+
 logger = logging.getLogger(__name__)
 
 # ── Lazy-loaded singletons ─────────────────────────────────────────────────
 _autocomplete_engine = None
 _load_error = None
+_load_lock = threading.Lock()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -227,36 +230,40 @@ def get_autocomplete_model() -> AutocompleteService:
     - Otherwise: uses instant rule-based engine (no network required)
     Always returns a working service — never raises.
     """
-    global _autocomplete_engine, _load_error
+    global _autocomplete_engine, _load_error, _load_lock
 
     if _autocomplete_engine is not None:
         return _autocomplete_engine
 
-    t0 = time.time()
-    logger.info("[Autocomplete] Initializing service (lazy)...")
+    with _load_lock:
+        if _autocomplete_engine is not None:
+            return _autocomplete_engine
 
-    hybrid_engine = None
-    load_hybrid = os.environ.get("LOAD_AUTOCOMPLETE", "false").lower() == "true"
+        t0 = time.time()
+        logger.info("[Autocomplete] Initializing service (lazy)...")
 
-    if load_hybrid:
-        try:
-            logger.info("[Autocomplete] LOAD_AUTOCOMPLETE=true — loading Hybrid engine...")
-            hybrid_engine = HybridAutocompleteEngine()
-        except Exception as e:
-            _load_error = str(e)
-            logger.warning(f"[Autocomplete] Hybrid load failed: {e} — falling back to rule-based")
-            hybrid_engine = None
-    else:
-        logger.info("[Autocomplete] LOAD_AUTOCOMPLETE not set — using rule-based engine")
+        hybrid_engine = None
+        load_hybrid = os.environ.get("LOAD_AUTOCOMPLETE", "false").lower() == "true"
 
-    _autocomplete_engine = AutocompleteService(
-        hybrid_engine=hybrid_engine,
-        fallback=RuleBasedAutocomplete()
-    )
+        if load_hybrid:
+            try:
+                logger.info("[Autocomplete] LOAD_AUTOCOMPLETE=true — loading Hybrid engine...")
+                hybrid_engine = HybridAutocompleteEngine()
+            except Exception as e:
+                _load_error = str(e)
+                logger.warning(f"[Autocomplete] Hybrid load failed: {e} — falling back to rule-based")
+                hybrid_engine = None
+        else:
+            logger.info("[Autocomplete] LOAD_AUTOCOMPLETE not set — using rule-based engine")
 
-    elapsed = time.time() - t0
-    logger.info(f"[Autocomplete] Service ready in {elapsed:.2f}s")
-    return _autocomplete_engine
+        _autocomplete_engine = AutocompleteService(
+            hybrid_engine=hybrid_engine,
+            fallback=RuleBasedAutocomplete()
+        )
+
+        elapsed = time.time() - t0
+        logger.info(f"[Autocomplete] Service ready in {elapsed:.2f}s")
+        return _autocomplete_engine
 
 
 def is_loaded() -> bool:

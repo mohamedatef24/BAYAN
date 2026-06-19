@@ -431,6 +431,19 @@ function hideTooltip() {
   window.currentSuggestionElement = null;
 }
 
+function shiftOffsets(delta, position) {
+  if (!window.currentSuggestions || delta === 0) return;
+  window.currentSuggestions.forEach(s => {
+    if (s.start > position) {
+      s.start += delta;
+      s.end += delta;
+    } else if (s.end > position) {
+      // Edit happened inside the suggestion
+      s.end += delta;
+    }
+  });
+}
+
 function applySuggestionAtOffsets(suggestion) {
   pushUndoState(); // Save state before correction
   // Find the error span in the DOM and replace its text content
@@ -498,7 +511,8 @@ function applySuggestionAtOffsets(suggestion) {
     updateSuggestionsList(window.currentSuggestions);
   }
 
-  analyzeTextDelayed();
+  const delta = suggestion.correction.length - suggestion.original.length;
+  shiftOffsets(delta, suggestion.start);
 }
 
 function applyCorrection() {
@@ -565,7 +579,9 @@ function applyAlternativeCorrection(suggestion, correctionText) {
     updateWritingScore(spellingCount, grammarCount, punctuationCount);
     updateSuggestionsList(window.currentSuggestions);
   }
-  analyzeTextDelayed();
+
+  const delta = correctionText.length - suggestion.original.length;
+  shiftOffsets(delta, suggestion.start);
 }
 
 function dismissSuggestion(suggestion) {
@@ -649,7 +665,6 @@ function applyAllSuggestions() {
   updateWritingScore(0, 0, 0);
   updateSuggestionsList([]);
 
-  analyzeTextDelayed();
   if (typeof showToast === 'function') showToast('✓ تم تطبيق ' + suggestions.length + ' تصحيح');
 }
 
