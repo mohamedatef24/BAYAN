@@ -2794,3 +2794,167 @@ input[type="range"]::-moz-range-thumb {
   box-shadow: 0 4px 16px rgba(26, 29, 33, 0.15);
 }
 
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   AUTOCOMPLETE DROPDOWN — Arabic word completion
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+#autocomplete-dropdown {
+  position: fixed;
+  z-index: 9999;
+  direction: rtl;
+  text-align: right;
+
+  /* Glass card */
+  background: var(--color-surface-elevated, #1e2229);
+  border: 1px solid var(--color-border-strong, rgba(255,255,255,0.15));
+  border-radius: 12px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255,255,255,0.06);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+
+  /* Layout */
+  min-width: 220px;
+  max-width: 320px;
+  padding: 6px;
+  overflow: hidden;
+
+  /* Hidden by default */
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px) scale(0.97);
+  transform-origin: top right;
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease,
+    visibility 0s linear 0.18s;
+
+  pointer-events: none;
+}
+
+#autocomplete-dropdown.ac-visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease,
+    visibility 0s linear 0s;
+  pointer-events: auto;
+}
+
+/* ── Each suggestion row ── */
+.ac-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
+
+  color: var(--color-text-primary, #e6eaf2);
+  font-size: 15px;
+  font-weight: 500;
+  font-family: inherit;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  user-select: none;
+}
+
+.ac-item:hover {
+  background: rgba(var(--color-primary-rgb, 99, 102, 241), 0.12);
+}
+
+/* Active (keyboard-focused) row */
+.ac-item--active {
+  background: linear-gradient(
+    135deg,
+    var(--color-primary, #6366f1),
+    var(--color-secondary, #8b5cf6)
+  );
+  color: #fff;
+  box-shadow: 0 2px 12px rgba(99, 102, 241, 0.35);
+}
+
+.ac-item--active:hover {
+  opacity: 0.94;
+}
+
+/* ── Word text ── */
+.ac-word {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.01em;
+}
+
+/* Highlighted matching prefix */
+.ac-match {
+  color: var(--color-primary, #6366f1);
+  font-weight: 700;
+}
+
+.ac-item--active .ac-match {
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 800;
+}
+
+/* ── Keyboard hint chip ── */
+.ac-tab-hint {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-text-muted, #6b7280);
+  background: var(--color-surface, rgba(255,255,255,0.06));
+  border: 1px solid var(--color-border, rgba(255,255,255,0.1));
+  border-radius: 5px;
+  padding: 2px 6px;
+  letter-spacing: 0.05em;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.ac-item:first-child .ac-tab-hint,
+.ac-item--active .ac-tab-hint {
+  opacity: 1;
+}
+
+.ac-item--active .ac-tab-hint {
+  background: rgba(255,255,255,0.2);
+  border-color: rgba(255,255,255,0.25);
+  color: rgba(255,255,255,0.9);
+}
+
+/* ── Light theme overrides ── */
+[data-theme="light"] #autocomplete-dropdown {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .ac-item {
+  color: #1a1d21;
+}
+
+[data-theme="light"] .ac-tab-hint {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.1);
+  color: #6b7280;
+}
+
+[data-theme="light"] .ac-item--active .ac-tab-hint {
+  background: rgba(255,255,255,0.25);
+  border-color: rgba(255,255,255,0.3);
+  color: #fff;
+}

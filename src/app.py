@@ -41,6 +41,7 @@ from model_loader import (
 from hf_inference import (
     hf_summarize,
     hf_correct_spelling,
+    hf_correct_grammar,
     hf_add_punctuation,
     hf_autocomplete,
     check_hf_api_available,
@@ -81,14 +82,15 @@ punctuation_model = None
 
 
 def load_models():
-    """Load models. In HF API mode, load summarization locally; other models gracefully degrade."""
+    """Load models. Summarization loads eagerly; NLP services (spelling/grammar/punctuation/autocomplete)
+    are lazy-loaded on first request. We warm them up here in background threads so they are
+    ready by the time users start typing."""
     global summarization_model, spelling_model, autocomplete_model, grammar_model, punctuation_model
     
     if USE_HF_API:
         logger.info("HF_API_TOKEN is set — HF API mode enabled")
         logger.info("NOTE: HF Spaces free tier has NO outbound DNS. Loading summarization model locally.")
-        logger.info("Spelling, punctuation, autocomplete will gracefully degrade (return input unchanged).")
-        # Fall through to load summarization model locally
+        logger.info("NLP services will use local models / graceful fallbacks.")
     
     loaded = []
     failed = []
@@ -97,7 +99,7 @@ def load_models():
     global _startup_errors
     _startup_errors = []
 
-    # Load only the Summarization model locally.
+    # ── 1. Summarization model (eager, blocking) ──
     try:
         logger.info(f"Loading summarization model from Hugging Face: {HUGGINGFACE_SUMMARIZATION_REPO}")
         try:
@@ -116,7 +118,52 @@ def load_models():
         _startup_errors.append(f"summarization_load_failed: {err_detail[-500:]}")
         logger.error(f"Failed to load summarization model: {str(e)}")
 
-    logger.info(f"Models loaded: {loaded}")
+    # ── 2. NLP services warm-up (non-blocking, lazy singletons) ──
+    # These trigger lazy loading so models are ready before users type.
+    import threading
+
+    def _warmup_spelling():
+        try:
+            from nlp.spelling.araspell_service import get_spelling_model
+            get_spelling_model()
+            logger.info("[Warmup] Spelling model ready")
+        except Exception as e:
+            logger.warning(f"[Warmup] Spelling model failed to load: {e}")
+            _startup_errors.append(f"spelling_warmup: {str(e)[:200]}")
+
+    def _warmup_grammar():
+        try:
+            from nlp.grammar.grammar_service import get_grammar_model
+            get_grammar_model()
+            logger.info("[Warmup] Grammar model ready")
+        except Exception as e:
+            logger.warning(f"[Warmup] Grammar model failed to load: {e}")
+            _startup_errors.append(f"grammar_warmup: {str(e)[:200]}")
+
+    def _warmup_punctuation():
+        try:
+            from nlp.punctuation.punctuation_service import get_punctuation_model
+            get_punctuation_model()
+            logger.info("[Warmup] Punctuation model ready")
+        except Exception as e:
+            logger.warning(f"[Warmup] Punctuation model failed to load: {e}")
+            _startup_errors.append(f"punctuation_warmup: {str(e)[:200]}")
+
+    def _warmup_autocomplete():
+        try:
+            from nlp.autocomplete.autocomplete_service import get_autocomplete_model
+            get_autocomplete_model()
+            logger.info("[Warmup] Autocomplete service ready")
+        except Exception as e:
+            logger.warning(f"[Warmup] Autocomplete service failed: {e}")
+            _startup_errors.append(f"autocomplete_warmup: {str(e)[:200]}")
+
+    # Launch warmup threads (daemon so they don't block shutdown)
+    for fn in [_warmup_spelling, _warmup_grammar, _warmup_punctuation, _warmup_autocomplete]:
+        t = threading.Thread(target=fn, daemon=True)
+        t.start()
+
+    logger.info(f"Models loaded: {loaded} | NLP service warm-up threads launched")
     if failed:
         logger.warning(f"Models failed to load: {[f[0] for f in failed]}")
 
@@ -147,6 +194,8 @@ def index():
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """Health check endpoint for production monitoring."""
+    from nlp.autocomplete.autocomplete_service import is_loaded as _autocomplete_loaded
+
     if USE_HF_API:
         health = {
             'status': 'healthy',
@@ -154,11 +203,11 @@ def health_check():
             'models': {
                 'summarization': summarization_model is not None,
                 'spelling': _spelling_available(),
-                'autocomplete': False,
+                'autocomplete': _autocomplete_loaded(),
                 'grammar': _grammar_available(),
                 'punctuation': _punctuation_available()
             },
-            'note': 'Free tier: summarization local, other models return input unchanged',
+            'note': 'Free tier: summarization local, NLP services use lazy models + fallbacks',
             'supabase': {
                 'configured': bool(SUPABASE_URL and SUPABASE_ANON_KEY),
             },
@@ -172,10 +221,10 @@ def health_check():
         'mode': 'local_models',
         'models': {
             'summarization': summarization_model is not None,
-            'spelling': spelling_model is not None,
-            'autocomplete': autocomplete_model is not None,
-            'grammar': grammar_model is not None,
-            'punctuation': punctuation_model is not None
+            'spelling': _spelling_available(),
+            'autocomplete': _autocomplete_loaded(),
+            'grammar': _grammar_available(),
+            'punctuation': _punctuation_available()
         },
         'supabase': {
             'configured': bool(SUPABASE_URL and SUPABASE_ANON_KEY),
@@ -411,13 +460,10 @@ def autocomplete():
         "text": "Arabic text prefix",
         "n": 5 (number of suggestions, optional)
     }
-    """
-    if not USE_HF_API and autocomplete_model is None:
-        return jsonify({
-            'error': 'Autocomplete model not loaded. Please check server logs.',
-            'status': 'error'
-        }), 503
     
+    Always attempts to serve via autocomplete_service (GPT-2 or rule-based fallback).
+    Never returns 503 — worst case returns an empty list.
+    """
     try:
         if not request.is_json:
             return jsonify({'error': 'Request must be JSON', 'status': 'error'}), 400
@@ -429,12 +475,13 @@ def autocomplete():
         if not text:
             return jsonify({'error': 'Text is required', 'status': 'error'}), 400
         
-        logger.info(f"Getting autocomplete suggestions for: {text[:50]}...")
-        if USE_HF_API:
-            suggestions = hf_autocomplete(text, n=n)
-        else:
-            suggestions = autocomplete_model.predict(text, n=n)
-        logger.info(f"Autocomplete suggestions (n={n}): {suggestions}")
+        logger.info(f"Autocomplete request: text_tail='{text[-40:]}' n={n}")
+
+        # Use the unified autocomplete service (GPT-2 + rule-based fallback)
+        from nlp.autocomplete.autocomplete_service import get_autocomplete_model as _get_ac
+        ac_service = _get_ac()
+        suggestions = ac_service.predict(text, n=n)
+        logger.info(f"Autocomplete suggestions returned: {suggestions}")
         
         return jsonify({
             'suggestions': suggestions,
@@ -445,10 +492,10 @@ def autocomplete():
         logger.error(f"Error during autocomplete: {str(e)}")
         logger.error(traceback.format_exc())
         return jsonify({
-            'error': 'An error occurred during autocomplete.',
+            'suggestions': [],
             'status': 'error',
-            'details': str(e) if app.debug else None
-        }), 500
+            'error': str(e)[:200] if app.debug else 'Autocomplete unavailable'
+        }), 200  # Return 200 so frontend doesn't show an error toast
 
 
 @app.route('/api/grammar', methods=['POST'])
@@ -733,15 +780,27 @@ def analyze_text():
             seen = {best_correction, original_word}
 
             # 1. Try edit distance 1 candidates from the spell checker's vocabulary
+            # NOTE: the corrector is stored as 'edit_distance_corrector' on ArabicSpellChecker
             try:
                 clean_w = re.sub(r'[^\w]', '', original_word)
-                edit_cands = spell_checker.edit_corrector.known(spell_checker.edit_corrector.edits1(clean_w))
-                if edit_cands:
-                    ranked = sorted(list(edit_cands), key=lambda x: spell_checker.vocab_manager.get_frequency_rank(x))
-                    for c in ranked:
-                        if c not in seen and len(alts) < max_alts - 1:
-                            alts.append(c)
-                            seen.add(c)
+                # Support both attribute names for robustness
+                ed_corrector = getattr(spell_checker, 'edit_distance_corrector',
+                                       getattr(spell_checker, 'edit_corrector', None))
+                if ed_corrector is not None:
+                    edit_cands = ed_corrector.known(ed_corrector.edits1(clean_w))
+                    if edit_cands:
+                        vm = getattr(spell_checker, 'vocab_manager', None)
+                        if vm:
+                            ranked = sorted(
+                                list(edit_cands),
+                                key=lambda x: vm.get_frequency_rank(x)
+                            )
+                        else:
+                            ranked = sorted(list(edit_cands))
+                        for c in ranked:
+                            if c not in seen and len(alts) < max_alts - 1:
+                                alts.append(c)
+                                seen.add(c)
             except Exception:
                 pass
 
@@ -906,12 +965,16 @@ def analyze_text():
                 diffs = get_word_diffs(current_text, corrected_grammar)
                 for d in diffs:
                     orig_start, orig_end = map_range_to_original(d['start'], d['end'])
+                    original_word = text[orig_start:orig_end]
+                    correction_word = d['correction']
                     suggestions.append({
                         'start': orig_start,
                         'end': orig_end,
-                        'original': text[orig_start:orig_end],
-                        'correction': d['correction'],
-                        'type': 'grammar'
+                        'original': original_word,
+                        'correction': correction_word,
+                        'type': 'grammar',
+                        # Grammar alternatives: corrected form + keep-as-is
+                        'alternatives': [correction_word, original_word] if correction_word else [original_word]
                     })
                 mappers.append(OffsetMapper(current_text, corrected_grammar))
                 current_text = corrected_grammar
@@ -1052,7 +1115,7 @@ if __name__ == '__main__':
     # Load models on startup (development)
     _ensure_models_loaded()
     
-    # Run the app
+
     port = int(os.environ.get('PORT', 5000))
     debug = os.environ.get('DEBUG', 'False').lower() == 'true'
     

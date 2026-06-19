@@ -49,6 +49,17 @@ def hf_correct_spelling(text):
     return text
 
 
+def hf_correct_grammar(text):
+    """
+    Correct grammar — graceful degradation (returns input unchanged).
+    Grammar correction requires either Gradio space access or local model files.
+    On HF Spaces free tier (no outbound DNS), this returns original text.
+    The grammar_service.py rules-only fallback handles offline correction.
+    """
+    logger.info("Grammar correction unavailable (no network). Returning original text.")
+    return text
+
+
 def hf_add_punctuation(text):
     """
     Add punctuation — graceful degradation (returns input unchanged).
@@ -65,6 +76,7 @@ def hf_autocomplete(text, n=5):
     """
     logger.info("Autocomplete unavailable (no network). Returning empty.")
     return []
+
 
 
 def check_hf_api_available():

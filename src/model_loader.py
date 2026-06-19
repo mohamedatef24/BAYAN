@@ -860,6 +860,13 @@ class PunctuationModel:
             logger.error(f"Error loading punctuation model: {str(e)}")
             raise RuntimeError(f"Failed to load punctuation model: {str(e)}")
     
+    def correct(self, text):
+        """
+        Alias for add_punctuation() — called by punctuation_service.py.
+        Delegates to add_punctuation() for backward compatibility.
+        """
+        return self.add_punctuation(text)
+
     def add_punctuation(self, text):
         """
         Add punctuation to Arabic text.
