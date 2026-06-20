@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="ar" dir="rtl" class="h-full">
  <head>
   <meta charset="UTF-8">
@@ -248,7 +248,7 @@
        <h2 class="text-4xl lg:text-5xl font-bold mb-6">ميزات <span class="text-gradient">قوية ومتقدمة</span></h2>
        <p class="text-xl max-w-3xl mx-auto" style="color: var(--text-secondary); line-height: 1.9;">كل ما تحتاجه لكتابة نصوص عربية احترافية وخالية من الأخطاء</p>
       </div>
-      <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6"><!-- Feature 1: Spelling -->
+      <div class="grid md:grid-cols-2 lg:grid-cols-5 gap-6"><!-- Feature 1: Spelling -->
        <div class="card-hover p-8 rounded-3xl" style="background: var(--surface-color); border: 1px solid rgba(255, 255, 255, 0.08);">
         <div class="feature-icon mb-6" style="background: rgba(239, 68, 68, 0.15); color: #ef4444;">
          <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -276,7 +276,14 @@
         </div>
         <h3 class="text-xl font-bold mb-3">تلخيص النصوص العربية</h3>
         <p class="text-sm leading-relaxed" style="color: var(--text-secondary); line-height: 1.8;">الحفاظ على المعنى والأسلوب مع تقليل طول النص بذكاء</p>
-       </div>
+        </div><!-- Feature 5: Autocomplete -->
+        <div class="card-hover p-8 rounded-3xl" style="background: var(--surface-color); border: 1px solid rgba(255, 255, 255, 0.08);">
+         <div class="feature-icon mb-6" style="background: rgba(236, 72, 153, 0.15); color: #ec4899;">
+          <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+         </div>
+         <h3 class="text-xl font-bold mb-3">الإكمال التلقائي الذكي</h3>
+         <p class="text-sm leading-relaxed" style="color: var(--text-secondary); line-height: 1.8;">اقتراحات فورية لإكمال الجمل والعبارات أثناء الكتابة بذكاء اصطناعي</p>
+        </div>
       </div>
       <div class="text-center mt-12"><button onclick="showPage('features')" class="px-8 py-4 rounded-2xl text-lg font-bold border-2 transition-all hover:scale-105" style="border-color: var(--primary-color); color: var(--primary-color);"> استكشف جميع الميزات ← </button>
       </div>
@@ -440,6 +447,35 @@
            <p style="color: var(--text-color);">التكنولوجيا الحديثة أحدثت ثورة في حياتنا اليومية، حيث سهّلت التواصل والتعلم والعمل، مما أدى إلى تطور المجتمعات وتحسين جودة الحياة.</p>
           </div>
          </div>
+        </div>
+       </div>
+       </div><!-- Feature 5: Autocomplete -->
+       <div class="grid lg:grid-cols-2 gap-16 items-center mt-32">
+        <div class="order-2 lg:order-1">
+         <div class="p-8 rounded-3xl" style="background: var(--surface-color); border: 1px solid rgba(255, 255, 255, 0.08);">
+          <div class="text-right text-xl editor-content" dir="rtl" style="color: var(--text-color); line-height: 2;">
+           <p class="mb-4">اللغة العربية هي لغة <span style="color: var(--text-secondary); opacity: 0.5;">|</span></p>
+           <div class="mt-6 p-4 rounded-xl" style="background: rgba(236, 72, 153, 0.1); border-right: 4px solid #ec4899;">
+            <div class="text-sm font-bold mb-3" style="color: #ec4899;">⚡ اقتراحات الإكمال</div>
+            <div class="space-y-2">
+             <div class="p-3 rounded-lg" style="background: rgba(236, 72, 153, 0.15); border: 1px solid rgba(236, 72, 153, 0.3);"><span class="text-base" style="color: var(--text-color);">القرآن الكريم والحضارة الإسلامية</span></div>
+             <div class="p-3 rounded-lg" style="background: rgba(255, 255, 255, 0.05);"><span class="text-base" style="color: var(--text-secondary);">الضاد وأقدم اللغات السامية</span></div>
+             <div class="p-3 rounded-lg" style="background: rgba(255, 255, 255, 0.05);"><span class="text-base" style="color: var(--text-secondary);">العلم والأدب والشعر العربي</span></div>
+            </div>
+            <div class="text-xs mt-3" style="color: var(--text-secondary);">اضغط <kbd style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; font-size: 11px;">Tab</kbd> لقبول الاقتراح</div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="order-1 lg:order-2 text-right">
+         <div class="feature-icon mb-6" style="background: rgba(236, 72, 153, 0.15); color: #ec4899; width: 64px; height: 64px; font-size: 32px;"><svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg></div>
+         <h2 class="text-4xl font-bold mb-6">الإكمال التلقائي الذكي</h2>
+         <p class="text-lg mb-8 leading-relaxed" style="color: var(--text-secondary); line-height: 2;">محرك ذكي يقترح إكمال الجمل والعبارات أثناء الكتابة، مدعوم بنماذج لغوية متقدمة تفهم السياق العربي.</p>
+         <ul class="space-y-4">
+          <li class="flex items-center gap-4"><div class="w-6 h-6 rounded-full flex items-center justify-center" style="background: rgba(34, 197, 94, 0.2);"><span style="color: #22c55e; font-size: 14px;">✓</span></div><span class="text-base">اقتراحات ذكية حسب السياق</span></li>
+          <li class="flex items-center gap-4"><div class="w-6 h-6 rounded-full flex items-center justify-center" style="background: rgba(34, 197, 94, 0.2);"><span style="color: #22c55e; font-size: 14px;">✓</span></div><span class="text-base">قبول بضغطة زر واحدة (Tab)</span></li>
+          <li class="flex items-center gap-4"><div class="w-6 h-6 rounded-full flex items-center justify-center" style="background: rgba(34, 197, 94, 0.2);"><span style="color: #22c55e; font-size: 14px;">✓</span></div><span class="text-base">تسريع الكتابة بنسبة تصل إلى ٤٠٪</span></li>
+         </ul>
         </div>
        </div>
       </div>
