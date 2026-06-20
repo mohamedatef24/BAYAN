@@ -13,6 +13,10 @@ import traceback
 import difflib
 import re
 
+# Pipeline hardening modules
+from nlp.pipeline_context import PipelineContext
+from nlp.punctuation.punctuation_rules import validate_punctuation_diff
+
 # Load .env file from project root (one level up from src/)
 try:
     from dotenv import load_dotenv
@@ -578,30 +582,87 @@ def get_word_positions(text):
 
 
 class OffsetMapper:
-    def __init__(self, original, modified):
-        self.original = original
-        self.modified = modified
-        self.mapping = []  # list of (mod_start, mod_end, orig_start, orig_end)
-        self._build_mapping()
-        
-    def _build_mapping(self):
-        s = difflib.SequenceMatcher(None, self.original, self.modified)
+    """
+    Single source of truth for coordinate transformations between
+    two consecutive versions of CURRENT_TEXT.
+
+    CONTRACT:
+      Input:  text_before (str), text_after (str)
+              — two consecutive states of CURRENT_TEXT
+      Stores: Internal diff operations (PRIVATE)
+      API:
+        reverse_map_offset(pos)       → text_after pos → text_before pos
+        forward_map_range(start, end) → text_before range → text_after range
+
+    TERMINOLOGY:
+      text_before = CURRENT_TEXT before this stage's mutation
+      text_after  = CURRENT_TEXT after this stage's mutation
+      forward     = text_before → text_after
+      reverse     = text_after  → text_before
+
+    RULES:
+      All external code uses reverse_map_offset() or forward_map_range().
+      ._opcodes is PRIVATE — no external access.
+    """
+
+    def __init__(self, text_before, text_after):
+        self._text_before = text_before
+        self._text_after = text_after
+        self._opcodes = []  # PRIVATE — (i1, i2, j1, j2) tuples
+        self._build()
+
+    def _build(self):
+        s = difflib.SequenceMatcher(None, self._text_before, self._text_after)
         for tag, i1, i2, j1, j2 in s.get_opcodes():
-            self.mapping.append((j1, j2, i1, i2))
-            
-    def map_offset(self, mod_offset):
+            self._opcodes.append((i1, i2, j1, j2))
+
+    def reverse_map_offset(self, pos_in_after):
         """
-        Given a character offset in the modified text, return the corresponding
-        character offset in the original text.
+        Map a single position from text_after → text_before.
+        (CURRENT_TEXT after mutation → CURRENT_TEXT before mutation)
+
+        Used by PipelineContext.map_to_original() to walk the mapper
+        chain in reverse, ultimately reaching ORIGINAL_TEXT coordinates.
         """
-        for j1, j2, i1, i2 in self.mapping:
-            if j1 <= mod_offset <= j2:
+        for i1, i2, j1, j2 in self._opcodes:
+            if j1 <= pos_in_after <= j2:
                 if j2 == j1:  # insertion point
                     return i1
-                # Proportional mapping inside the block
-                ratio = (mod_offset - j1) / (j2 - j1)
+                ratio = (pos_in_after - j1) / (j2 - j1)
                 return int(i1 + ratio * (i2 - i1))
-        return len(self.original)
+        return len(self._text_before)
+
+    def forward_map_range(self, start_in_before, end_in_before):
+        """
+        Map a range from text_before → text_after.
+        (CURRENT_TEXT before mutation → CURRENT_TEXT after mutation)
+
+        Used ONLY by StageLocker.update_via_mapper() to shift locked
+        spans after a text mutation.
+
+        MONOTONICITY GUARD: If independent point mapping produces an
+        inverted range (start > end) due to non-monotonic edits,
+        the end is clamped to max(new_start, new_end).
+        """
+        new_start = self._forward_map_pos(start_in_before)
+        new_end = self._forward_map_pos(end_in_before)
+        # Monotonicity guard: prevent inverted ranges
+        new_end = max(new_start, new_end)
+        return new_start, new_end
+
+    def _forward_map_pos(self, pos):
+        """Map a single position text_before → text_after. PRIVATE."""
+        for i1, i2, j1, j2 in self._opcodes:
+            if i1 <= pos <= i2:
+                if i2 == i1:
+                    return j1
+                ratio = (pos - i1) / (i2 - i1)
+                return int(j1 + ratio * (j2 - j1))
+        if self._opcodes:
+            last = self._opcodes[-1]
+            return last[3] + (pos - last[1])
+        return pos
+
 
 
 def get_word_diffs(original, corrected):
@@ -714,18 +775,17 @@ def analyze_text():
         if not text:
             return jsonify({'error': 'Text is required', 'status': 'error'}), 400
 
-        current_text = text
-        suggestions = []
-        mappers = []
+        # Pipeline state — PipelineContext carries all shared state
+        ctx = PipelineContext(text)
+        current_text = text  # Local alias (updated alongside ctx.current_text)
+        suggestions = []     # Legacy — will be replaced by ctx.patches at response time
+        mappers = []         # Legacy — will be replaced by ctx._offset_mappers
         total_start = time.time()
         timing_ms = {'spelling_ms': 0, 'grammar_ms': 0, 'punctuation_ms': 0, 'total_ms': 0}
 
         def map_range_to_original(start, end):
-            curr_start, curr_end = start, end
-            for mapper in reversed(mappers):
-                curr_start = mapper.map_offset(curr_start)
-                curr_end = mapper.map_offset(curr_end)
-            return curr_start, curr_end
+            """Legacy wrapper — delegates to PipelineContext."""
+            return ctx.map_to_original(start, end)
 
         def _get_spelling_alternatives(original_word, best_correction, spell_checker, max_alts=3):
             """Generate alternative spelling suggestions for a word."""
@@ -770,8 +830,8 @@ def analyze_text():
                 timing_ms['spelling_ms'] = int((time.time() - t0) * 1000)
                 logger.info(f"[ANALYZE] Step 1: Spelling done in {timing_ms['spelling_ms']}ms")
 
-                if raw_corrected != current_text:
-                    orig_word_positions = get_word_positions(current_text)
+                if raw_corrected != ctx.current_text:
+                    orig_word_positions = get_word_positions(ctx.current_text)
                     corr_word_positions = get_word_positions(raw_corrected)
 
                     orig_word_strings = [w[0] for w in orig_word_positions]
@@ -798,14 +858,11 @@ def analyze_text():
                                 c_word = c_segment[0]
                                 if _is_small_spelling_change(o_word, c_word):
                                     new_words.append(c_word)
-                                    suggestions.append({
-                                        'start': start_idx,
-                                        'end': end_idx,
-                                        'original': o_word,
-                                        'correction': c_word,
-                                        'type': 'spelling',
-                                        'alternatives': _get_spelling_alternatives(o_word, c_word, spell_checker),
-                                    })
+                                    ctx.add_patch(
+                                        'spelling', start_idx, end_idx,
+                                        c_word, confidence=0.9,
+                                        alternatives=_get_spelling_alternatives(o_word, c_word, spell_checker),
+                                    )
                                 else:
                                     new_words.append(current_text[start_idx:end_idx])
                             elif len(o_segment) == 1 and len(c_segment) > 1:
@@ -814,14 +871,11 @@ def analyze_text():
                                 if len(o_word) >= 5 and ' ' not in o_word:
                                     corr_str = " ".join(c_segment)
                                     new_words.append(corr_str)
-                                    suggestions.append({
-                                        'start': start_idx,
-                                        'end': end_idx,
-                                        'original': o_word,
-                                        'correction': corr_str,
-                                        'type': 'spelling',
-                                        'alternatives': [corr_str, o_word],
-                                    })
+                                    ctx.add_patch(
+                                        'spelling', start_idx, end_idx,
+                                        corr_str, confidence=0.85,
+                                        alternatives=[corr_str, o_word],
+                                    )
                                 else:
                                     new_words.append(current_text[start_idx:end_idx])
                             else:
@@ -839,14 +893,11 @@ def analyze_text():
                                         # Check if this is a 1→1 small edit
                                         if _is_small_spelling_change(o_word, c_word):
                                             new_words.append(c_word)
-                                            suggestions.append({
-                                                'start': o_start,
-                                                'end': o_end,
-                                                'original': o_word,
-                                                'correction': c_word,
-                                                'type': 'spelling',
-                                                'alternatives': _get_spelling_alternatives(o_word, c_word, spell_checker),
-                                            })
+                                            ctx.add_patch(
+                                                'spelling', o_start, o_end,
+                                                c_word, confidence=0.9,
+                                                alternatives=_get_spelling_alternatives(o_word, c_word, spell_checker),
+                                            )
                                             ci += 1
                                         # Check if this is a 1→N word split
                                         elif len(o_word) >= 5 and ci + 1 < len(c_segment):
@@ -864,14 +915,11 @@ def analyze_text():
                                             dist = _levenshtein(o_word, joined_no_space)
                                             if dist <= 3 and len(split_parts) > 1:
                                                 new_words.append(corr_str)
-                                                suggestions.append({
-                                                    'start': o_start,
-                                                    'end': o_end,
-                                                    'original': o_word,
-                                                    'correction': corr_str,
-                                                    'type': 'spelling',
-                                                    'alternatives': [corr_str, o_word],
-                                                })
+                                                ctx.add_patch(
+                                                    'spelling', o_start, o_end,
+                                                    corr_str, confidence=0.85,
+                                                    alternatives=[corr_str, o_word],
+                                                )
                                                 ci = temp_ci
                                             else:
                                                 new_words.append(current_text[o_start:o_end])
@@ -888,8 +936,8 @@ def analyze_text():
                             continue
 
                     safe_text = " ".join(new_words)
-                    mappers.append(OffsetMapper(current_text, safe_text))
-                    current_text = safe_text
+                    ctx.mutate_text(safe_text, OffsetMapper)
+                    current_text = ctx.current_text
             except Exception as e:
                 logger.error(f"[ANALYZE] Spelling failed: {e}")
 
@@ -899,22 +947,25 @@ def analyze_text():
             logger.info(f"[ANALYZE] Step 2: Grammar correction starting...")
             from nlp.grammar.grammar_service import get_grammar_model
             grammar_checker = get_grammar_model()
-            corrected_grammar = grammar_checker.correct(current_text)
+            corrected_grammar = grammar_checker.correct(ctx.current_text)
             timing_ms['grammar_ms'] = int((time.time() - t0) * 1000)
             logger.info(f"[ANALYZE] Step 2: Grammar done in {timing_ms['grammar_ms']}ms")
-            if corrected_grammar != current_text:
-                diffs = get_word_diffs(current_text, corrected_grammar)
+            if corrected_grammar != ctx.current_text:
+                diffs = get_word_diffs(ctx.current_text, corrected_grammar)
                 for d in diffs:
-                    orig_start, orig_end = map_range_to_original(d['start'], d['end'])
-                    suggestions.append({
-                        'start': orig_start,
-                        'end': orig_end,
-                        'original': text[orig_start:orig_end],
-                        'correction': d['correction'],
-                        'type': 'grammar'
-                    })
-                mappers.append(OffsetMapper(current_text, corrected_grammar))
-                current_text = corrected_grammar
+                    # StageLocker: skip diffs that overlap with locked ranges
+                    if ctx.stage_locker.is_locked(d['start'], d['end']):
+                        logger.info(
+                            f"[LOCK] Grammar blocked on [{d['start']}:{d['end']}] "
+                            f"'{d.get('original','')}' — locked by previous stage"
+                        )
+                        continue
+                    ctx.add_patch(
+                        'grammar', d['start'], d['end'],
+                        d['correction'], confidence=1.0
+                    )
+                ctx.mutate_text(corrected_grammar, OffsetMapper)
+                current_text = ctx.current_text
         except Exception as e:
             logger.error(f"[ANALYZE] Grammar failed: {e}")
 
@@ -924,22 +975,32 @@ def analyze_text():
             logger.info(f"[ANALYZE] Step 3: Punctuation starting...")
             from nlp.punctuation.punctuation_service import get_punctuation_model
             punc_checker = get_punctuation_model()
-            corrected_punc = punc_checker.correct(current_text)
+            corrected_punc = punc_checker.correct(ctx.current_text)
             timing_ms['punctuation_ms'] = int((time.time() - t0) * 1000)
             logger.info(f"[ANALYZE] Step 3: Punctuation done in {timing_ms['punctuation_ms']}ms")
-            if corrected_punc != current_text:
-                diffs = get_word_diffs(current_text, corrected_punc)
+            if corrected_punc != ctx.current_text:
+                diffs = get_word_diffs(ctx.current_text, corrected_punc)
                 for d in diffs:
-                    orig_start, orig_end = map_range_to_original(d['start'], d['end'])
-                    suggestions.append({
-                        'start': orig_start,
-                        'end': orig_end,
-                        'original': text[orig_start:orig_end],
-                        'correction': d['correction'],
-                        'type': 'punctuation'
-                    })
-                mappers.append(OffsetMapper(current_text, corrected_punc))
-                current_text = corrected_punc
+                    # StageLocker: skip diffs that overlap with locked ranges
+                    if ctx.stage_locker.is_locked(d['start'], d['end']):
+                        logger.info(
+                            f"[LOCK] Punctuation blocked on [{d['start']}:{d['end']}] "
+                            f"'{d.get('original','')}' — locked by previous stage"
+                        )
+                        continue
+                    # Punctuation safety layer: reject non-punctuation changes
+                    if not validate_punctuation_diff(d):
+                        logger.info(
+                            f"[PUNC-SAFETY] Rejected diff [{d['start']}:{d['end']}] "
+                            f"'{d.get('original','')}' → '{d.get('correction','')}' — not a safe punctuation change"
+                        )
+                        continue
+                    ctx.add_patch(
+                        'punctuation', d['start'], d['end'],
+                        d['correction'], confidence=0.8
+                    )
+                ctx.mutate_text(corrected_punc, OffsetMapper)
+                current_text = ctx.current_text
         except Exception as e:
             logger.error(f"[ANALYZE] Punctuation failed: {e}")
 
@@ -947,45 +1008,12 @@ def analyze_text():
         timing_ms['total_ms'] = int(total_time * 1000)
 
         # ══════════════════════════════════════════════════════════
-        # GLOBAL OVERLAP RESOLVER — NLP-3.5 Hardening
+        # OVERLAP RESOLUTION — Pipeline Hardening v3.3
         # ══════════════════════════════════════════════════════════
-        # Priority: grammar(3) > punctuation(2) > spelling(1) > autocomplete(0)
-        # Rules:
-        #   - Higher priority ALWAYS wins
-        #   - One span = one highlight (no stacking)
-        #   - Partial overlaps: higher priority span kept, lower dropped
-        PRIORITY = {'grammar': 3, 'punctuation': 2, 'spelling': 1, 'autocomplete': 0}
-
-        # Sort suggestions by priority (highest first)
-        suggestions.sort(key=lambda s: PRIORITY.get(s['type'], 0), reverse=True)
-
-        # Build a set of "claimed" character positions
-        claimed_ranges = []  # list of (start, end, type)
-        resolved = []
-
-        for s in suggestions:
-            s_start, s_end = s['start'], s['end']
-            s_priority = PRIORITY.get(s['type'], 0)
-
-            # Check if this span overlaps with any already-claimed higher-priority span
-            overlaps = False
-            for (c_start, c_end, c_type) in claimed_ranges:
-                # Two spans overlap if one starts before the other ends
-                if s_start < c_end and s_end > c_start:
-                    overlaps = True
-                    break
-
-            if not overlaps:
-                resolved.append(s)
-                claimed_ranges.append((s_start, s_end, s['type']))
-            else:
-                logger.info(f"[OVERLAP] Dropped {s['type']} [{s_start}:{s_end}] "
-                           f"'{s.get('original','')}' — conflicts with higher-priority span")
-
-        dropped = len(suggestions) - len(resolved)
-        if dropped > 0:
-            logger.info(f"[OVERLAP] Resolved {dropped} overlapping suggestions")
-        suggestions = resolved
+        # PatchSet handles deterministic overlap resolution:
+        #   Sort: priority DESC → confidence DESC → start ASC → id ASC
+        #   One range = one owner. No stacking.
+        suggestions = ctx.patches.to_list()
 
         logger.info(f"[ANALYZE] Total: {timing_ms['total_ms']}ms | "
                     f"Spelling: {timing_ms['spelling_ms']}ms | "
@@ -995,7 +1023,7 @@ def analyze_text():
 
         return jsonify({
             'original': text,
-            'corrected': current_text,
+            'corrected': ctx.current_text,
             'suggestions': suggestions,
             'timing_ms': timing_ms,
             'status': 'success'
