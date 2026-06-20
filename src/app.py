@@ -1612,6 +1612,22 @@ def analyze_text():
                     stage_label = 'grammar'
                     if _is_spelling_only_change(orig_text, corr_text):
                         stage_label = 'spelling'
+
+                    # ── Directional blocks for grammar (mirrors spelling filter) ──
+                    # Prevents grammar from making meaning-changing corrections
+                    # like كان→كأن ("was" → "as if").
+                    _GRAMMAR_BLOCKS = {
+                        'كان': {'كأن'}, 'كأن': {'كان'},
+                        'هذه': {'هذة'}, 'هذا': {'هذة', 'هذه'},
+                        'إلى': {'على', 'علي'}, 'على': {'إلى', 'علي'},
+                        'لكن': {'لاكن'}, 'ذلك': {'ذالك'},
+                    }
+                    if corr_text in _GRAMMAR_BLOCKS.get(orig_text, set()):
+                        logger.info(
+                            f"[GRAMMAR] Blocked directional: '{orig_text}'→'{corr_text}'"
+                        )
+                        continue
+
                     ctx.add_patch(
                         stage_label, d['start'], d['end'],
                         corr_text, confidence=1.0
@@ -1674,6 +1690,20 @@ def analyze_text():
                             f"'{d.get('original','')}' \u2192 '{d.get('correction','')}' "
                             f"(locked by {owner}[{ls}:{le}])"
                         )
+                    # ── Mid-word split guard ──
+                    # Reject punctuation diffs where the original is NOT a complete
+                    # word — i.e., the character after the diff end is still Arabic.
+                    # This catches cases like الدفتر being split into الدفت.ر
+                    d_end = d['end']
+                    if d_end < len(ctx.current_text):
+                        next_ch = ctx.current_text[d_end]
+                        if '\u0600' <= next_ch <= '\u06FF':
+                            logger.info(
+                                f"[PUNC-SAFETY] Rejected mid-word split [{d['start']}:{d_end}] "
+                                f"'{d.get('original','')}' → '{d.get('correction','')}' "
+                                f"(next char '{next_ch}' is Arabic — word was split)"
+                            )
+                            continue
                     # Punctuation safety layer: reject non-punctuation changes
                     if not validate_punctuation_diff(d):
                         logger.info(
