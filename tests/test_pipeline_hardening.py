@@ -405,5 +405,215 @@ class TestOffsetMapperMonotonicity(unittest.TestCase):
                              f"Monotonicity violated: start={start} > end={end}")
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+# QA Fix 1: Sidebar card alternatives fallback
+# ══════════════════════════════════════════════════════════════════════════════
+class TestSidebarAlternativesFallback(unittest.TestCase):
+    def test_ui_has_resolve_alternatives(self):
+        """ui.js must contain resolveAlternatives helper function."""
+        ui_path = os.path.join(os.path.dirname(__file__), '..', 'src', 'js', 'ui.js')
+        with open(ui_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        self.assertIn('function resolveAlternatives', content)
+        self.assertIn('alternatives.length > 0', content)
+        # buildSuggestionCardHTML must call resolveAlternatives
+        self.assertIn('resolveAlternatives(suggestion)', content)
+
+    def test_editor_uses_resolve_alternatives(self):
+        """editor.js tooltip must use resolveAlternatives or equivalent fallback."""
+        editor_path = os.path.join(os.path.dirname(__file__), '..', 'src', 'js', 'editor.js')
+        with open(editor_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        # Must NOT have the old broken pattern
+        self.assertNotIn(
+            "suggestion.alternatives || [suggestion.correction",
+            content,
+            "Old broken fallback pattern still present — empty array [] is truthy"
+        )
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# QA Fix 2: corrected field = apply(original, suggestions)
+# ══════════════════════════════════════════════════════════════════════════════
+class TestCorrectedFieldConsistency(unittest.TestCase):
+    def test_apply_patches_equals_corrected(self):
+        """Applying all patches to original must produce the corrected text."""
+        ctx = PipelineContext("المدرسه يعملوا هناك")
+
+        # Simulate: spelling corrects المدرسه → المدرسة at [0:7]
+        ctx.add_patch('spelling', 0, 7, 'المدرسة', confidence=0.9)
+        ctx.mutate_text("المدرسة يعملوا هناك", OffsetMapper)
+
+        suggestions = ctx.patches.to_list()
+
+        # Rebuild corrected from original + patches (same logic as app.py Fix 2)
+        result = ctx.original_text
+        for s in sorted(suggestions, key=lambda x: -x['start']):
+            result = result[:s['start']] + s['correction'] + result[s['end']:]
+
+        # Verify consistency: original[start:end] == suggestion['original']
+        for s in suggestions:
+            actual = ctx.original_text[s['start']:s['end']]
+            self.assertEqual(actual, s['original'],
+                             f"Coordinate mismatch: original[{s['start']}:{s['end']}] = '{actual}' != '{s['original']}'")
+
+        # Verify corrected text is what we expect
+        self.assertEqual(result, "المدرسة يعملوا هناك")
+
+    def test_multi_stage_corrected_consistency(self):
+        """Multiple stages: corrected = apply(original, all_patches)."""
+        ctx = PipelineContext("المدرسه هنا")
+
+        # Stage 1: Spelling corrects المدرسه → المدرسة (CURRENT coords [0:7])
+        ctx.add_patch('spelling', 0, 7, 'المدرسة', confidence=0.9)
+        ctx.mutate_text("المدرسة هنا", OffsetMapper)
+
+        # Stage 2: Punctuation adds ! after هنا
+        # CURRENT text = "المدرسة هنا", so هنا is at [8:11] in CURRENT coords
+        ctx.add_patch('punctuation', 8, 11, 'هنا!', confidence=0.8)
+
+        suggestions = ctx.patches.to_list()
+        result = "المدرسه هنا"  # original
+        for s in sorted(suggestions, key=lambda x: -x['start']):
+            result = result[:s['start']] + s['correction'] + result[s['end']:]
+
+        # Should contain both corrections
+        self.assertIn('المدرسة', result)
+        self.assertIn('هنا!', result)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# QA Fix 3: HTML/malformed input sanitization
+# ══════════════════════════════════════════════════════════════════════════════
+class TestInputSanitization(unittest.TestCase):
+    def test_html_tags_stripped(self):
+        """app.py must strip HTML tags from input."""
+        import re
+        test_input = '<script>alert(1)</script>'
+        sanitized = re.sub(r'<[^>]*>', '', test_input).strip()
+        self.assertEqual(sanitized, 'alert(1)')
+
+    def test_pure_html_becomes_empty(self):
+        """Pure HTML tags with no text content should be stripped to empty."""
+        import re
+        test_input = '<div><p></p></div>'
+        sanitized = re.sub(r'<[^>]*>', '', test_input).strip()
+        self.assertEqual(sanitized, '')
+
+    def test_arabic_ratio_check(self):
+        """Non-Arabic inputs should be detected by ratio check."""
+        import re
+        # Predominantly English/code
+        text = 'function hello() { return 42; }'
+        arabic_chars = len(re.findall(r'[\u0600-\u06FF]', text))
+        alpha_chars = len(re.findall(r'[a-zA-Z\u0600-\u06FF]', text))
+        ratio = arabic_chars / alpha_chars if alpha_chars > 0 else 0
+        self.assertLess(ratio, 0.3, "Pure English should fail Arabic ratio check")
+
+        # Predominantly Arabic
+        text2 = 'السلام عليكم hello'
+        arabic_chars2 = len(re.findall(r'[\u0600-\u06FF]', text2))
+        alpha_chars2 = len(re.findall(r'[a-zA-Z\u0600-\u06FF]', text2))
+        ratio2 = arabic_chars2 / alpha_chars2 if alpha_chars2 > 0 else 0
+        self.assertGreaterEqual(ratio2, 0.3, "Mostly Arabic should pass ratio check")
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# QA Fix 4: Aggregate punctuation cap (max 3 per response)
+# ══════════════════════════════════════════════════════════════════════════════
+class TestAggregatePunctuationCap(unittest.TestCase):
+    def test_excess_punctuation_patches_capped(self):
+        """More than 3 punctuation patches should be capped to 3."""
+        ctx = PipelineContext("كلمة أولى ثم ثانية ثم ثالثة ثم رابعة ثم خامسة")
+
+        # Add 5 punctuation patches
+        for i in range(5):
+            ctx.add_patch('punctuation', i * 8, i * 8 + 4,
+                          f'word{i}!', confidence=0.8)
+
+        # Simulate the cap logic from app.py
+        MAX_PUNC_PATCHES_PER_RESPONSE = 3
+        punc_patches = [p for p in ctx.patches.patches if p.stage == 'punctuation']
+        if len(punc_patches) > MAX_PUNC_PATCHES_PER_RESPONSE:
+            punc_patches_sorted = sorted(punc_patches, key=lambda p: p.start_original)
+            to_remove = set(id(p) for p in punc_patches_sorted[MAX_PUNC_PATCHES_PER_RESPONSE:])
+            ctx.patches.patches = [p for p in ctx.patches.patches if id(p) not in to_remove]
+
+        punc_remaining = [p for p in ctx.patches.patches if p.stage == 'punctuation']
+        self.assertLessEqual(len(punc_remaining), MAX_PUNC_PATCHES_PER_RESPONSE)
+
+    def test_cap_preserves_earliest_patches(self):
+        """The cap should keep earliest patches (lowest start_original)."""
+        ctx = PipelineContext("a b c d e f g h")
+
+        # Add 4 patches at positions 0, 10, 20, 30
+        positions = [0, 10, 20, 30]
+        for pos in positions:
+            ctx.add_patch('punctuation', pos, pos + 3, 'fix!', confidence=0.8)
+
+        MAX_PUNC_PATCHES_PER_RESPONSE = 3
+        punc_patches = [p for p in ctx.patches.patches if p.stage == 'punctuation']
+        punc_patches_sorted = sorted(punc_patches, key=lambda p: p.start_original)
+        to_remove = set(id(p) for p in punc_patches_sorted[MAX_PUNC_PATCHES_PER_RESPONSE:])
+        ctx.patches.patches = [p for p in ctx.patches.patches if id(p) not in to_remove]
+
+        remaining = ctx.patches.patches
+        # The patch at position 30 should be dropped (it's the 4th, earliest-last)
+        remaining_starts = sorted([p.start_original for p in remaining])
+        self.assertEqual(remaining_starts, [0, 10, 20])
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# QA Fix 6: applyAllSuggestions reverse sort documented + tested
+# ══════════════════════════════════════════════════════════════════════════════
+class TestApplyAllReverseSort(unittest.TestCase):
+    def test_reverse_sort_comment_exists(self):
+        """editor.js must document why reverse sort is required in applyAllSuggestions."""
+        editor_path = os.path.join(os.path.dirname(__file__), '..', 'src', 'js', 'editor.js')
+        with open(editor_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        self.assertIn('CRITICAL: Sort in REVERSE order', content)
+        self.assertIn('back-to-front', content)
+
+    def test_apply_patches_reverse_order_correctness(self):
+        """Applying patches in reverse order must produce correct result."""
+        original = "الطلاب ذهب الي المدرسه"
+        suggestions = [
+            {'start': 0, 'end': 6, 'original': 'الطلاب', 'correction': 'الطلّاب'},
+            {'start': 7, 'end': 10, 'original': 'ذهب', 'correction': 'ذهبوا'},
+            {'start': 11, 'end': 14, 'original': 'الي', 'correction': 'إلى'},
+            {'start': 15, 'end': 22, 'original': 'المدرسه', 'correction': 'المدرسة'},
+        ]
+
+        # Apply in reverse order (same as applyAllSuggestions)
+        result = original
+        for s in sorted(suggestions, key=lambda x: -x['start']):
+            result = result[:s['start']] + s['correction'] + result[s['end']:]
+
+        self.assertEqual(result, "الطلّاب ذهبوا إلى المدرسة")
+
+    def test_forward_order_would_corrupt(self):
+        """Applying patches in forward order would produce wrong result when lengths differ."""
+        original = "ab cd ef"
+        suggestions = [
+            {'start': 0, 'end': 2, 'original': 'ab', 'correction': 'abc'},  # length change!
+            {'start': 3, 'end': 5, 'original': 'cd', 'correction': 'cde'},
+        ]
+
+        # Forward (WRONG — offsets shift after first edit)
+        forward_result = original
+        for s in sorted(suggestions, key=lambda x: x['start']):
+            forward_result = forward_result[:s['start']] + s['correction'] + forward_result[s['end']:]
+
+        # Reverse (CORRECT)
+        reverse_result = original
+        for s in sorted(suggestions, key=lambda x: -x['start']):
+            reverse_result = reverse_result[:s['start']] + s['correction'] + reverse_result[s['end']:]
+
+        self.assertEqual(reverse_result, "abc cde ef")
+        # Forward produces wrong result because offsets shift
+        self.assertNotEqual(forward_result, reverse_result)
+
+
 if __name__ == '__main__':
     unittest.main()

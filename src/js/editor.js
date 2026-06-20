@@ -379,9 +379,12 @@ function showTooltip(element) {
 
   // Render alternatives
   if (alternativesEl) {
-    const alts = (suggestion.alternatives && suggestion.alternatives.length > 0)
-      ? suggestion.alternatives
-      : [suggestion.correction, suggestion.original];
+    // Use shared helper (defined in ui.js, loaded before editor.js)
+    const alts = (typeof resolveAlternatives === 'function')
+      ? resolveAlternatives(suggestion)
+      : (suggestion.alternatives && suggestion.alternatives.length > 0)
+        ? suggestion.alternatives
+        : [suggestion.correction, suggestion.original];
     let html = '';
     // Render corrections first (non-keep)
     alts.forEach((alt, i) => {
@@ -651,6 +654,10 @@ function applySuggestionById(id) {
 }
 
 function applyAllSuggestions() {
+  // CRITICAL: Sort in REVERSE order (highest start offset first).
+  // Applying edits back-to-front preserves the offset validity of all
+  // subsequent edits. Front-to-back would invalidate every offset after
+  // the first edit due to text length changes. Do NOT change this sort.
   const suggestions = [...(window.currentSuggestions || [])].sort((a, b) => b.start - a.start);
   if (suggestions.length === 0) return;
   _isApplyingSuggestion = true;

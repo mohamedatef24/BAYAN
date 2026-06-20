@@ -775,6 +775,23 @@ def analyze_text():
         if not text:
             return jsonify({'error': 'Text is required', 'status': 'error'}), 400
 
+        # ── Input Sanitization (Fix 3: prevent pathological model inputs) ──
+        # Strip HTML tags — prevents AraSpell from doing exhaustive edit-distance
+        # on tag characters like <script>, </div>, etc.
+        text = re.sub(r'<[^>]*>', '', text).strip()
+        if not text:
+            return jsonify({'error': 'Text is required', 'status': 'error'}), 400
+
+        # Reject inputs that are predominantly non-Arabic (code, markup, etc.)
+        arabic_chars = len(re.findall(r'[\u0600-\u06FF]', text))
+        alpha_chars = len(re.findall(r'[a-zA-Z\u0600-\u06FF]', text))
+        if alpha_chars > 0 and arabic_chars / alpha_chars < 0.3:
+            return jsonify({
+                'original': text, 'corrected': text,
+                'suggestions': [], 'timing_ms': {},
+                'status': 'success'
+            })
+
         # Pipeline state — PipelineContext carries all shared state
         ctx = PipelineContext(text)
         current_text = text  # Local alias (updated alongside ctx.current_text)
@@ -999,6 +1016,20 @@ def analyze_text():
                         'punctuation', d['start'], d['end'],
                         d['correction'], confidence=0.8
                     )
+
+                # ── Aggregate punctuation cap (Fix 4): max 3 punctuation patches per response ──
+                MAX_PUNC_PATCHES_PER_RESPONSE = 3
+                punc_patches = [p for p in ctx.patches.patches if p.stage == 'punctuation']
+                if len(punc_patches) > MAX_PUNC_PATCHES_PER_RESPONSE:
+                    # Keep earliest patches (by start_original) — consistent with PatchSet sort
+                    punc_patches_sorted = sorted(punc_patches, key=lambda p: p.start_original)
+                    to_remove = set(id(p) for p in punc_patches_sorted[MAX_PUNC_PATCHES_PER_RESPONSE:])
+                    ctx.patches.patches = [p for p in ctx.patches.patches if id(p) not in to_remove]
+                    logger.info(
+                        f"[PUNC-CAP] Capped punctuation patches: "
+                        f"{len(punc_patches)} → {MAX_PUNC_PATCHES_PER_RESPONSE}"
+                    )
+
                 ctx.mutate_text(corrected_punc, OffsetMapper)
                 current_text = ctx.current_text
         except Exception as e:
@@ -1015,6 +1046,20 @@ def analyze_text():
         #   One range = one owner. No stacking.
         suggestions = ctx.patches.to_list()
 
+        # ── Rebuild 'corrected' from original + accepted patches (Fix 2) ──
+        # This ensures 'corrected' exactly matches what you'd get by applying
+        # all suggestions to 'original'. ctx.current_text includes StageLocker-
+        # blocked and safety-rejected mutations and must NOT be used.
+        def _apply_patches_to_original(original_text, suggestion_dicts):
+            """Apply patches in reverse offset order to produce corrected text."""
+            result = original_text
+            # Sort by start DESC so offset shifts don't invalidate later patches
+            for s in sorted(suggestion_dicts, key=lambda x: -x['start']):
+                result = result[:s['start']] + s['correction'] + result[s['end']:]
+            return result
+
+        corrected = _apply_patches_to_original(text, suggestions)
+
         logger.info(f"[ANALYZE] Total: {timing_ms['total_ms']}ms | "
                     f"Spelling: {timing_ms['spelling_ms']}ms | "
                     f"Grammar: {timing_ms['grammar_ms']}ms | "
@@ -1023,7 +1068,7 @@ def analyze_text():
 
         return jsonify({
             'original': text,
-            'corrected': ctx.current_text,
+            'corrected': corrected,
             'suggestions': suggestions,
             'timing_ms': timing_ms,
             'status': 'success'
