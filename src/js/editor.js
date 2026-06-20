@@ -521,8 +521,8 @@ function applySuggestionAtOffsets(suggestion) {
     _isApplyingSuggestion = false;
   }
   // P2/User Request: Auto re-analyze after applying suggestion
-  // Runs AFTER _isApplyingSuggestion is reset, so the guard won't block it.
-  setTimeout(() => { analyzeTextDelayed(); }, 300);
+  // Calls analyzeText() DIRECTLY (not delayed) for instant re-analysis.
+  setTimeout(() => { analyzeText(); }, 300);
 }
 
 function applyCorrection() {
@@ -607,7 +607,7 @@ function applyAlternativeCorrection(suggestion, correctionText) {
     _isApplyingSuggestion = false;
   }
   // P2/User Request: Auto re-analyze after applying alternative correction
-  setTimeout(() => { analyzeTextDelayed(); }, 300);
+  setTimeout(() => { analyzeText(); }, 300);
 }
 
 function dismissSuggestion(suggestion) {
@@ -688,7 +688,7 @@ function applyAllSuggestions() {
     _isApplyingSuggestion = false;
   }
   // P2/User Request: Auto re-analyze after applying all suggestions
-  setTimeout(() => { analyzeTextDelayed(); }, 300);
+  setTimeout(() => { analyzeText(); }, 300);
 }
 
 function clearEditor() {
