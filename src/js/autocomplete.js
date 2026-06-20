@@ -2,12 +2,6 @@
  * AutoComplete Module — Ghost Text + Dropdown for Arabic autocomplete.
  *
  * COMPLETELY INDEPENDENT from the correction pipeline.
- * This module has ZERO interaction with:
- * - editor.js correction/highlight logic
- * - renderer.js span rendering
- * - ui.js suggestion sidebar
- * - /api/analyze
- *
  * It only talks to: /api/autocomplete (its own endpoint)
  */
 
@@ -28,7 +22,6 @@
   let debounceTimer = null;
   let isComposing = false;
   let editorEl = null;
-  let _suppressSelectionChange = false;
   let _lastFetchId = 0;
 
   // ─── Initialization ──────────────────────────────────────────────
@@ -42,7 +35,7 @@
     createGhostElement();
     createDropdownElement();
     bindEvents();
-    console.log('[AutoComplete] Initialized — editor element found');
+    console.log('[AutoComplete] Initialized');
   }
 
   // ─── Ghost Text Element ──────────────────────────────────────────
@@ -50,8 +43,7 @@
     ghostEl = document.createElement('div');
     ghostEl.id = 'autocomplete-ghost';
     ghostEl.setAttribute('aria-hidden', 'true');
-    // Append to editor's parent for relative positioning
-    const editorParent = editorEl.parentElement;
+    var editorParent = editorEl.parentElement;
     if (editorParent) {
       editorParent.style.position = 'relative';
       editorParent.appendChild(ghostEl);
@@ -86,13 +78,10 @@
     editorEl.addEventListener('scroll', dismiss);
     window.addEventListener('resize', dismiss);
 
-    // Focus lost → dismiss
+    // Focus lost → dismiss (with delay for dropdown clicks)
     editorEl.addEventListener('blur', function () {
-      // Small delay to allow dropdown click to register
       setTimeout(function () {
-        if (document.activeElement !== editorEl) {
-          dismiss();
-        }
+        if (document.activeElement !== editorEl) dismiss();
       }, 200);
     });
   }
@@ -100,13 +89,8 @@
   // ─── Input Handler ───────────────────────────────────────────────
   function onInput() {
     if (isComposing) return;
-
-    // Clear previous debounce
     clearTimeout(debounceTimer);
-
-    // Hide ghost immediately while typing (but keep dropdown state for debounce)
     hideGhost();
-
     debounceTimer = setTimeout(fetchSuggestions, DEBOUNCE_MS);
   }
 
@@ -120,66 +104,73 @@
         e.stopPropagation();
         acceptSuggestion();
         break;
-
       case 'Escape':
         e.preventDefault();
         dismiss();
         break;
-
       case 'ArrowDown':
         e.preventDefault();
         navigateDropdown(1);
         break;
-
       case 'ArrowUp':
         e.preventDefault();
         navigateDropdown(-1);
         break;
-
-      // Don't dismiss on other keys — let onInput handle the debounce cycle
+      case 'Enter':
+        // If dropdown is visible, accept on Enter too
+        if (isVisible() && selectedIndex >= 0) {
+          e.preventDefault();
+          e.stopPropagation();
+          acceptSuggestion();
+        }
+        break;
     }
   }
 
   // ─── Fetch Suggestions ───────────────────────────────────────────
   async function fetchSuggestions() {
-    const fetchId = ++_lastFetchId;
+    var fetchId = ++_lastFetchId;
 
-    const sel = window.getSelection();
+    var sel = window.getSelection();
     if (!sel || !sel.isCollapsed || !sel.rangeCount) {
       dismiss();
       return;
     }
 
-    // Check editor has enough text
-    const fullText = editorEl.innerText || editorEl.textContent || '';
-    if (fullText.trim().length < MIN_CONTEXT_LEN) {
+    // CRITICAL: Only show autocomplete when cursor is at END of text
+    // or at the end of a word (after a space or at document end)
+    var textAfterCursor = getTextAfterCursor();
+    if (textAfterCursor.length > 0 && textAfterCursor[0] !== ' ' && textAfterCursor[0] !== '\n') {
+      // Cursor is in the MIDDLE of a word — don't show autocomplete
       dismiss();
       return;
     }
 
-    // Extract context before cursor
-    const context = getTextBeforeCursor(CONTEXT_CHARS);
+    // Get context (text before cursor)
+    var context = getTextBeforeCursor(CONTEXT_CHARS);
     if (!context || context.trim().length < MIN_CONTEXT_LEN) {
       dismiss();
       return;
     }
 
+    // Must end with a word (not just spaces)
+    var trimmed = context.trimEnd();
+    if (!trimmed || trimmed.length < MIN_CONTEXT_LEN) {
+      dismiss();
+      return;
+    }
+
     try {
-      const resp = await fetch('/api/autocomplete', {
+      var resp = await fetch('/api/autocomplete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ context: context, n: MAX_SUGGESTIONS })
+        body: JSON.stringify({ context: trimmed, n: MAX_SUGGESTIONS })
       });
 
-      // Stale response check — if another fetch started, ignore this one
       if (fetchId !== _lastFetchId) return;
+      if (!resp.ok) { dismiss(); return; }
 
-      if (!resp.ok) {
-        dismiss();
-        return;
-      }
-
-      const data = await resp.json();
+      var data = await resp.json();
       if (fetchId !== _lastFetchId) return;
 
       if (data.status !== 'success' || !data.suggestions || !data.suggestions.length) {
@@ -187,7 +178,7 @@
         return;
       }
 
-      console.log('[AutoComplete] Showing suggestions:', data.suggestions);
+      console.log('[AutoComplete] Suggestions for last word:', data.suggestions);
       showSuggestions(data.suggestions);
 
     } catch (err) {
@@ -198,19 +189,36 @@
 
   // ─── Get Text Before Cursor ──────────────────────────────────────
   function getTextBeforeCursor(maxChars) {
-    const sel = window.getSelection();
+    var sel = window.getSelection();
     if (!sel || !sel.rangeCount) return '';
 
     try {
-      const range = sel.getRangeAt(0);
-      const preRange = document.createRange();
+      var range = sel.getRangeAt(0);
+      var preRange = document.createRange();
       preRange.selectNodeContents(editorEl);
       preRange.setEnd(range.startContainer, range.startOffset);
-      const text = preRange.toString();
+      var text = preRange.toString();
       preRange.detach();
-
       if (text.length <= maxChars) return text;
       return text.slice(-maxChars);
+    } catch (e) {
+      return '';
+    }
+  }
+
+  // ─── Get Text After Cursor ───────────────────────────────────────
+  function getTextAfterCursor() {
+    var sel = window.getSelection();
+    if (!sel || !sel.rangeCount) return '';
+
+    try {
+      var range = sel.getRangeAt(0);
+      var postRange = document.createRange();
+      postRange.selectNodeContents(editorEl);
+      postRange.setStart(range.endContainer, range.endOffset);
+      var text = postRange.toString();
+      postRange.detach();
+      return text;
     } catch (e) {
       return '';
     }
@@ -241,11 +249,11 @@
       dropdownEl.appendChild(item);
     });
 
-    // Position and show dropdown
+    // Position and show dropdown BELOW the caret, aligned to caret position
     positionDropdown();
     dropdownEl.style.display = 'block';
 
-    // Show ghost text
+    // Show ghost text inline
     showGhost(suggestions[0]);
   }
 
@@ -253,21 +261,19 @@
   function showGhost(text) {
     if (!ghostEl || !text) return;
 
-    var caretPos = getCaretCoordinatesSimple();
-    if (!caretPos) {
-      hideGhost();
-      return;
-    }
+    var caretPos = getCaretCoordinates();
+    if (!caretPos) { hideGhost(); return; }
 
     ghostEl.textContent = text;
     ghostEl.style.display = 'block';
 
     var parentRect = editorEl.parentElement.getBoundingClientRect();
 
-    // RTL: ghost appears to the LEFT of the caret
+    // Position ghost at caret — for RTL, text appears to the LEFT of caret
     ghostEl.style.top = (caretPos.top - parentRect.top) + 'px';
-    ghostEl.style.right = (parentRect.right - caretPos.left + 4) + 'px';
+    // Use left positioning (place ghost just left of the caret in RTL)
     ghostEl.style.left = 'auto';
+    ghostEl.style.right = (parentRect.right - caretPos.right + 2) + 'px';
   }
 
   function hideGhost() {
@@ -279,40 +285,38 @@
 
   // ─── Dropdown Position ───────────────────────────────────────────
   function positionDropdown() {
-    var caretPos = getCaretCoordinatesSimple();
+    var caretPos = getCaretCoordinates();
     if (!caretPos) return;
 
-    // Position below caret
+    // Use fixed positioning relative to viewport
     dropdownEl.style.position = 'fixed';
-    dropdownEl.style.top = (caretPos.bottom + 6) + 'px';
 
-    // RTL: align to the right of caret
-    dropdownEl.style.right = (window.innerWidth - caretPos.left) + 'px';
-    dropdownEl.style.left = 'auto';
+    // Place BELOW the caret line
+    var topPos = caretPos.bottom + 6;
+    dropdownEl.style.top = topPos + 'px';
 
-    // Force layout to get actual dimensions
-    var rect = dropdownEl.getBoundingClientRect();
+    // For RTL: align dropdown's RIGHT edge to the caret position
+    // Use LEFT positioning to place the dropdown starting at the caret X
+    var leftPos = caretPos.left - 160; // dropdown is ~160px wide, align right edge to caret
+    if (leftPos < 10) leftPos = 10;
+    dropdownEl.style.left = leftPos + 'px';
+    dropdownEl.style.right = 'auto';
 
-    // If dropdown goes off-screen bottom, show above caret
-    if (rect.bottom > window.innerHeight - 20) {
-      dropdownEl.style.top = (caretPos.top - rect.height - 6) + 'px';
-    }
-
-    // If dropdown goes off-screen right (RTL), adjust
-    if (rect.left < 10) {
-      dropdownEl.style.right = 'auto';
-      dropdownEl.style.left = '10px';
-    }
+    // Check if dropdown goes off-screen bottom
+    requestAnimationFrame(function () {
+      var rect = dropdownEl.getBoundingClientRect();
+      if (rect.bottom > window.innerHeight - 20) {
+        dropdownEl.style.top = (caretPos.top - rect.height - 6) + 'px';
+      }
+    });
   }
 
   // ─── Dropdown Navigation ─────────────────────────────────────────
   function navigateDropdown(direction) {
     if (!currentSuggestions.length) return;
-
     selectedIndex += direction;
     if (selectedIndex < 0) selectedIndex = currentSuggestions.length - 1;
     if (selectedIndex >= currentSuggestions.length) selectedIndex = 0;
-
     updateDropdownSelection();
     showGhost(currentSuggestions[selectedIndex]);
   }
@@ -322,11 +326,8 @@
     items.forEach(function (item, idx) {
       item.classList.toggle('ac-selected', idx === selectedIndex);
     });
-
     var selected = dropdownEl.querySelector('.ac-selected');
-    if (selected) {
-      selected.scrollIntoView({ block: 'nearest' });
-    }
+    if (selected) selected.scrollIntoView({ block: 'nearest' });
   }
 
   // ─── Accept Suggestion ───────────────────────────────────────────
@@ -337,30 +338,24 @@
     }
 
     var word = currentSuggestions[selectedIndex];
-
     var sel = window.getSelection();
     if (!sel || !sel.rangeCount) {
       dismiss();
       return;
     }
 
-    // Insert word + space at cursor
-    var textToInsert = word + ' ';
-    var range = sel.getRangeAt(0);
-    range.deleteContents();
-    var textNode = document.createTextNode(textToInsert);
-    range.insertNode(textNode);
+    // Determine if we need a space before the word
+    var textBefore = getTextBeforeCursor(10);
+    var needsSpaceBefore = textBefore.length > 0 && !textBefore.endsWith(' ') && !textBefore.endsWith('\n');
 
-    // Move caret after inserted text
-    range.setStartAfter(textNode);
-    range.setEndAfter(textNode);
-    sel.removeAllRanges();
-    sel.addRange(range);
+    // Build the text to insert: [optional space] + word + space
+    var textToInsert = (needsSpaceBefore ? ' ' : '') + word + ' ';
+
+    // Use execCommand for reliable insertion in contenteditable
+    // This preserves undo history and handles cursor position correctly
+    document.execCommand('insertText', false, textToInsert);
 
     dismiss();
-
-    // Notify editor that content changed
-    editorEl.dispatchEvent(new Event('input', { bubbles: true }));
   }
 
   // ─── Dismiss ─────────────────────────────────────────────────────
@@ -381,10 +376,8 @@
 
   /**
    * Get caret coordinates using Range.getClientRects() — NO DOM mutation.
-   * This avoids triggering input/selectionchange events that would dismiss
-   * the dropdown immediately.
    */
-  function getCaretCoordinatesSimple() {
+  function getCaretCoordinates() {
     var sel = window.getSelection();
     if (!sel || !sel.rangeCount) return null;
 
@@ -392,20 +385,20 @@
       var range = sel.getRangeAt(0).cloneRange();
       range.collapse(true);
 
-      // Try getClientRects first (works when caret is inside a text node)
+      // Try getClientRects first
       var rects = range.getClientRects();
       if (rects.length > 0) {
         var r = rects[0];
         return { top: r.top, left: r.left, bottom: r.bottom, right: r.right };
       }
 
-      // Fallback: use the range's bounding rect
+      // Fallback: use getBoundingClientRect
       var bRect = range.getBoundingClientRect();
-      if (bRect && bRect.top !== 0) {
+      if (bRect && (bRect.top !== 0 || bRect.left !== 0)) {
         return { top: bRect.top, left: bRect.left, bottom: bRect.bottom, right: bRect.right };
       }
 
-      // Last resort: use editor position + some offset
+      // Last resort: use editor position
       var editorRect = editorEl.getBoundingClientRect();
       return {
         top: editorRect.top + 20,
@@ -418,12 +411,10 @@
     }
   }
 
-  // ─── Initialize on DOM ready ─────────────────────────────────────
+  // ─── Initialize ──────────────────────────────────────────────────
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
-    // Script runs in <head>, editor might not exist yet
-    // Wait for DOM to be fully ready
     setTimeout(init, 100);
   }
 
