@@ -163,11 +163,16 @@ class ArabicGrammarGuard:
 
     def fix_subject_verb_agreement(self, text):
         """
-        Fix G1: When a plural/dual noun PRECEDES a singular verb (SVO order),
+        Fix G1: When a CONFIRMED plural noun PRECEDES a singular verb (SVO order),
         the verb must agree in number and gender.
 
         Arabic rule: In VSO order, verb can be singular even with plural subject.
         But in SVO order, subject-verb agreement is required.
+
+        EXCLUSIONS:
+        - Pronouns (أنا, أنت, هو, etc.) — these are NOT plural
+        - Proper nouns — don't modify verbs after names
+        - Words tagged as singular by the disambiguator
         """
         tokens = simple_word_tokenize(text)
         if len(tokens) < 2:
@@ -175,8 +180,16 @@ class ArabicGrammarGuard:
         disambig_tokens = self.mle.disambiguate(tokens)
         corrected_tokens = list(tokens)
 
-        # Common plural nouns (masculine sound plural) ending in ون/ين/ات
-        # and their expected verb conjugation patterns
+        # Words that should NEVER trigger plural verb agreement
+        EXCLUDED_WORDS = {
+            # Pronouns (all singular/dual)
+            'أنا', 'انا', 'أنت', 'انت', 'أنتِ', 'هو', 'هي',
+            'نحن', 'أنتما', 'هما',
+            # Common words that look like nouns but aren't plural
+            'كان', 'وكان', 'كانت', 'وكانت', 'ليس', 'ليست',
+            'هذا', 'هذه', 'ذلك', 'تلك', 'هناك',
+        }
+
         for i in range(len(disambig_tokens) - 1):
             noun_info = disambig_tokens[i].analyses[0] if disambig_tokens[i].analyses else None
             verb_info = disambig_tokens[i+1].analyses[0] if disambig_tokens[i+1].analyses else None
@@ -187,6 +200,10 @@ class ArabicGrammarGuard:
             verb_pos = verb_info.analysis.get('pos', 'unknown')
             noun_word = corrected_tokens[i]
             verb_word = corrected_tokens[i+1]
+
+            # Skip excluded words
+            if noun_word in EXCLUDED_WORDS:
+                continue
 
             # Only process noun → verb patterns (SVO order)
             if noun_pos != 'noun' or verb_pos != 'verb':
@@ -200,39 +217,46 @@ class ArabicGrammarGuard:
             if verb_num != 's':
                 continue
 
-            # Detect plural nouns
-            is_plural_masc = (noun_word.endswith('ون') or noun_word.endswith('ين')
-                             or noun_num == 'p')
-            is_plural_fem = (noun_word.endswith('ات') or
-                            (noun_gen == 'f' and noun_num == 'p'))
-            # Common broken plurals and collective nouns
+            # Only trigger on CONFIRMED plurals:
+            # 1. Known broken plural nouns (hardcoded list)
+            # 2. Sound masculine plural ending in ون/ين
+            # 3. Sound feminine plural ending in ات
+            # Do NOT rely on POS tagger alone — it misclassifies too many words
+
+            is_plural_masc = False
+            is_plural_fem = False
+
             KNOWN_PLURALS_MASC = {
                 'الطلاب', 'طلاب', 'الرجال', 'رجال', 'الأولاد', 'أولاد',
                 'الأطباء', 'أطباء', 'الاطباء', 'اطباء',
-                'العمال', 'عمال', 'الناس', 'الشباب', 'الأبناء',
+                'العمال', 'عمال', 'الشباب', 'الأبناء',
+                'المهندسون', 'المعلمون', 'المهندسين', 'المعلمين',
             }
             KNOWN_PLURALS_FEM = {
                 'الطالبات', 'طالبات', 'النساء', 'نساء', 'البنات', 'بنات',
                 'المعلمات', 'معلمات', 'الأمهات', 'أمهات',
             }
+
             if noun_word in KNOWN_PLURALS_MASC:
                 is_plural_masc = True
-            if noun_word in KNOWN_PLURALS_FEM:
+            elif noun_word in KNOWN_PLURALS_FEM:
+                is_plural_fem = True
+            elif noun_word.endswith('ون') or noun_word.endswith('ين'):
+                # Sound masculine plural — but only if 4+ chars (avoid short words)
+                if len(noun_word) >= 5:
+                    is_plural_masc = True
+            elif noun_word.endswith('ات') and len(noun_word) >= 5:
                 is_plural_fem = True
 
             if not is_plural_masc and not is_plural_fem:
                 continue
 
             # Fix the verb to agree with the plural subject
-            # Past tense singular → plural
             if is_plural_fem:
-                # Feminine plural: ذهب → ذهبن
                 if not verb_word.endswith('ن') and not verb_word.endswith('نَ'):
-                    # Check if it's a past tense verb (typically 3-5 chars, no prefix)
                     if len(verb_word) >= 3 and not verb_word.startswith('ي') and not verb_word.startswith('ت'):
                         corrected_tokens[i+1] = verb_word + 'ن'
             elif is_plural_masc:
-                # Masculine plural: ذهب → ذهبوا
                 if (not verb_word.endswith('وا') and not verb_word.endswith('ون')
                         and not verb_word.endswith('ين')):
                     if len(verb_word) >= 3 and not verb_word.startswith('ي') and not verb_word.startswith('ت'):
