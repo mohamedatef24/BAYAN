@@ -767,6 +767,79 @@ def _is_small_spelling_change(orig_word, corr_word):
     return dist <= 3 and (dist / max_len) <= 0.5
 
 
+def _is_spelling_only_change(original: str, correction: str) -> bool:
+    """
+    Detect if a grammar model's correction is actually a spelling/orthographic fix
+    (hamza, ه→ة, ا→أ, etc.) rather than a true grammar change.
+
+    Used to re-label grammar patches as 'spelling' for correct UI icons.
+    """
+    if not original or not correction:
+        return False
+
+    # Normalize: strip diacritics for comparison
+    import re as _re
+    strip_diacritics = lambda t: _re.sub(r'[\u064B-\u065F\u0670]', '', t)
+    o = strip_diacritics(original)
+    c = strip_diacritics(correction)
+
+    if o == c:
+        return True  # Only diacritical difference
+
+    # Check word-by-word for single-word changes
+    o_words = o.split()
+    c_words = c.split()
+
+    if len(o_words) != len(c_words):
+        return False  # Word count changed = grammar (word split/merge)
+
+    all_spelling = True
+    for ow, cw in zip(o_words, c_words):
+        if ow == cw:
+            continue
+        if _is_orthographic_variant(ow, cw):
+            continue
+        all_spelling = False
+        break
+
+    return all_spelling
+
+
+def _is_orthographic_variant(word1: str, word2: str) -> bool:
+    """
+    Check if two words differ only by common Arabic orthographic variations:
+    - Hamza placement: ا↔أ↔إ↔آ, ى↔ي, ه↔ة
+    - These are spelling differences, not grammar.
+    """
+    if len(word1) != len(word2):
+        # Allow ه→ة at end (same length since both are 1 char)
+        # But also allow small length diffs for hamza additions
+        if abs(len(word1) - len(word2)) > 1:
+            return False
+        # Check if only difference is a trailing ة↔ه
+        if (word1[:-1] == word2[:-1] and
+                {word1[-1], word2[-1]} <= {'ه', 'ة'}):
+            return True
+        return False
+
+    # Same length: check char-by-char
+    SPELLING_EQUIVALENCES = {
+        frozenset({'ا', 'أ'}), frozenset({'ا', 'إ'}), frozenset({'ا', 'آ'}),
+        frozenset({'أ', 'إ'}), frozenset({'أ', 'آ'}), frozenset({'إ', 'آ'}),
+        frozenset({'ى', 'ي'}), frozenset({'ه', 'ة'}),
+        frozenset({'ؤ', 'و'}), frozenset({'ئ', 'ي'}), frozenset({'ئ', 'ء'}),
+    }
+    diff_count = 0
+    for c1, c2 in zip(word1, word2):
+        if c1 == c2:
+            continue
+        if frozenset({c1, c2}) in SPELLING_EQUIVALENCES:
+            diff_count += 1
+        else:
+            return False  # Non-orthographic difference = grammar
+    return diff_count > 0  # At least one orthographic difference
+
+
 @app.route('/api/analyze', methods=['POST'])
 def analyze_text():
     """
@@ -985,8 +1058,13 @@ def analyze_text():
                             f"'{d.get('original','')}' — locked by previous stage"
                         )
                         continue
+                    # Re-label: if grammar's change is purely orthographic
+                    # (hamza, ه→ة, etc.), tag it as 'spelling' for correct UI icon
+                    stage_label = 'grammar'
+                    if _is_spelling_only_change(d.get('original', ''), d.get('correction', '')):
+                        stage_label = 'spelling'
                     ctx.add_patch(
-                        'grammar', d['start'], d['end'],
+                        stage_label, d['start'], d['end'],
                         d['correction'], confidence=1.0
                     )
                 ctx.mutate_text(corrected_grammar, OffsetMapper)
