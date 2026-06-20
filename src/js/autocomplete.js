@@ -28,12 +28,13 @@
   let debounceTimer = null;
   let isComposing = false;
   let editorEl = null;
+  let _suppressSelectionChange = false;
+  let _lastFetchId = 0;
 
   // ─── Initialization ──────────────────────────────────────────────
   function init() {
     editorEl = document.getElementById('editor-container');
     if (!editorEl) {
-      // Retry after DOM is ready
       setTimeout(init, 500);
       return;
     }
@@ -41,7 +42,7 @@
     createGhostElement();
     createDropdownElement();
     bindEvents();
-    console.log('[AutoComplete] Initialized');
+    console.log('[AutoComplete] Initialized — editor element found');
   }
 
   // ─── Ghost Text Element ──────────────────────────────────────────
@@ -49,7 +50,7 @@
     ghostEl = document.createElement('div');
     ghostEl.id = 'autocomplete-ghost';
     ghostEl.setAttribute('aria-hidden', 'true');
-    // Position relative to editor's parent
+    // Append to editor's parent for relative positioning
     const editorParent = editorEl.parentElement;
     if (editorParent) {
       editorParent.style.position = 'relative';
@@ -69,18 +70,10 @@
 
   // ─── Event Binding ───────────────────────────────────────────────
   function bindEvents() {
-    // Typing → debounced autocomplete
     editorEl.addEventListener('input', onInput);
-
-    // Composition events (IME)
-    editorEl.addEventListener('compositionstart', () => { isComposing = true; });
-    editorEl.addEventListener('compositionend', () => { isComposing = false; });
-
-    // Keyboard: TAB accept, ESC dismiss, arrow navigation
+    editorEl.addEventListener('compositionstart', function () { isComposing = true; });
+    editorEl.addEventListener('compositionend', function () { isComposing = false; });
     editorEl.addEventListener('keydown', onKeyDown);
-
-    // Cursor movement / selection change → dismiss
-    document.addEventListener('selectionchange', onSelectionChange);
 
     // Click outside → dismiss
     document.addEventListener('mousedown', function (e) {
@@ -89,30 +82,32 @@
       }
     });
 
-    // Scroll → reposition
+    // Scroll/resize → dismiss
     editorEl.addEventListener('scroll', dismiss);
-
-    // Window resize → dismiss
     window.addEventListener('resize', dismiss);
+
+    // Focus lost → dismiss
+    editorEl.addEventListener('blur', function () {
+      // Small delay to allow dropdown click to register
+      setTimeout(function () {
+        if (document.activeElement !== editorEl) {
+          dismiss();
+        }
+      }, 200);
+    });
   }
 
   // ─── Input Handler ───────────────────────────────────────────────
   function onInput() {
     if (isComposing) return;
 
+    // Clear previous debounce
     clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(fetchSuggestions, DEBOUNCE_MS);
-  }
 
-  // ─── Selection Change → Dismiss ──────────────────────────────────
-  function onSelectionChange() {
-    const sel = window.getSelection();
-    if (!sel || !sel.isCollapsed) {
-      dismiss();
-      return;
-    }
-    // If cursor moved (not from typing), dismiss
-    // We rely on the debounce to re-trigger if user is still typing
+    // Hide ghost immediately while typing (but keep dropdown state for debounce)
+    hideGhost();
+
+    debounceTimer = setTimeout(fetchSuggestions, DEBOUNCE_MS);
   }
 
   // ─── Keyboard Handler ───────────────────────────────────────────
@@ -122,6 +117,7 @@
     switch (e.key) {
       case 'Tab':
         e.preventDefault();
+        e.stopPropagation();
         acceptSuggestion();
         break;
 
@@ -140,30 +136,28 @@
         navigateDropdown(-1);
         break;
 
-      default:
-        // Any other key → will trigger onInput → new debounce
-        // Dismiss current ghost immediately for responsiveness
-        hideGhost();
-        break;
+      // Don't dismiss on other keys — let onInput handle the debounce cycle
     }
   }
 
   // ─── Fetch Suggestions ───────────────────────────────────────────
   async function fetchSuggestions() {
+    const fetchId = ++_lastFetchId;
+
     const sel = window.getSelection();
     if (!sel || !sel.isCollapsed || !sel.rangeCount) {
       dismiss();
       return;
     }
 
-    // Check the editor has text
-    const text = editorEl.innerText || editorEl.textContent || '';
-    if (text.trim().length < MIN_CONTEXT_LEN) {
+    // Check editor has enough text
+    const fullText = editorEl.innerText || editorEl.textContent || '';
+    if (fullText.trim().length < MIN_CONTEXT_LEN) {
       dismiss();
       return;
     }
 
-    // Extract context: text before cursor (last N chars)
+    // Extract context before cursor
     const context = getTextBeforeCursor(CONTEXT_CHARS);
     if (!context || context.trim().length < MIN_CONTEXT_LEN) {
       dismiss();
@@ -174,11 +168,11 @@
       const resp = await fetch('/api/autocomplete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          context: context,
-          n: MAX_SUGGESTIONS
-        })
+        body: JSON.stringify({ context: context, n: MAX_SUGGESTIONS })
       });
+
+      // Stale response check — if another fetch started, ignore this one
+      if (fetchId !== _lastFetchId) return;
 
       if (!resp.ok) {
         dismiss();
@@ -186,16 +180,19 @@
       }
 
       const data = await resp.json();
+      if (fetchId !== _lastFetchId) return;
+
       if (data.status !== 'success' || !data.suggestions || !data.suggestions.length) {
         dismiss();
         return;
       }
 
+      console.log('[AutoComplete] Showing suggestions:', data.suggestions);
       showSuggestions(data.suggestions);
 
     } catch (err) {
       console.warn('[AutoComplete] Fetch error:', err);
-      dismiss();
+      if (fetchId === _lastFetchId) dismiss();
     }
   }
 
@@ -222,20 +219,18 @@
   // ─── Show Suggestions ────────────────────────────────────────────
   function showSuggestions(suggestions) {
     currentSuggestions = suggestions;
-    selectedIndex = 0; // Pre-select first
+    selectedIndex = 0;
 
-    // Show ghost text (best suggestion)
-    showGhost(suggestions[0]);
-
-    // Build dropdown
+    // Build dropdown items
     dropdownEl.innerHTML = '';
     suggestions.forEach(function (word, idx) {
-      const item = document.createElement('div');
+      var item = document.createElement('div');
       item.className = 'ac-dropdown-item' + (idx === 0 ? ' ac-selected' : '');
       item.setAttribute('role', 'option');
       item.textContent = word;
       item.addEventListener('mousedown', function (e) {
         e.preventDefault();
+        e.stopPropagation();
         selectedIndex = idx;
         acceptSuggestion();
       });
@@ -246,17 +241,19 @@
       dropdownEl.appendChild(item);
     });
 
-    // Position dropdown near caret
+    // Position and show dropdown
     positionDropdown();
     dropdownEl.style.display = 'block';
+
+    // Show ghost text
+    showGhost(suggestions[0]);
   }
 
   // ─── Ghost Text ──────────────────────────────────────────────────
   function showGhost(text) {
     if (!ghostEl || !text) return;
 
-    // Get caret position relative to editor
-    const caretPos = getCaretCoordinates();
+    var caretPos = getCaretCoordinatesSimple();
     if (!caretPos) {
       hideGhost();
       return;
@@ -265,9 +262,7 @@
     ghostEl.textContent = text;
     ghostEl.style.display = 'block';
 
-    // Position ghost at caret
-    const editorRect = editorEl.getBoundingClientRect();
-    const parentRect = editorEl.parentElement.getBoundingClientRect();
+    var parentRect = editorEl.parentElement.getBoundingClientRect();
 
     // RTL: ghost appears to the LEFT of the caret
     ghostEl.style.top = (caretPos.top - parentRect.top) + 'px';
@@ -284,24 +279,29 @@
 
   // ─── Dropdown Position ───────────────────────────────────────────
   function positionDropdown() {
-    const caretPos = getCaretCoordinates();
+    var caretPos = getCaretCoordinatesSimple();
     if (!caretPos) return;
-
-    const lineHeight = parseInt(getComputedStyle(editorEl).lineHeight) || 24;
 
     // Position below caret
     dropdownEl.style.position = 'fixed';
-    dropdownEl.style.top = (caretPos.bottom + 4) + 'px';
+    dropdownEl.style.top = (caretPos.bottom + 6) + 'px';
 
     // RTL: align to the right of caret
     dropdownEl.style.right = (window.innerWidth - caretPos.left) + 'px';
     dropdownEl.style.left = 'auto';
 
-    // Ensure dropdown doesn't go off-screen
-    const rect = dropdownEl.getBoundingClientRect();
+    // Force layout to get actual dimensions
+    var rect = dropdownEl.getBoundingClientRect();
+
+    // If dropdown goes off-screen bottom, show above caret
     if (rect.bottom > window.innerHeight - 20) {
-      // Show above caret instead
-      dropdownEl.style.top = (caretPos.top - rect.height - 4) + 'px';
+      dropdownEl.style.top = (caretPos.top - rect.height - 6) + 'px';
+    }
+
+    // If dropdown goes off-screen right (RTL), adjust
+    if (rect.left < 10) {
+      dropdownEl.style.right = 'auto';
+      dropdownEl.style.left = '10px';
     }
   }
 
@@ -318,13 +318,12 @@
   }
 
   function updateDropdownSelection() {
-    const items = dropdownEl.querySelectorAll('.ac-dropdown-item');
+    var items = dropdownEl.querySelectorAll('.ac-dropdown-item');
     items.forEach(function (item, idx) {
       item.classList.toggle('ac-selected', idx === selectedIndex);
     });
 
-    // Scroll selected item into view
-    const selected = dropdownEl.querySelector('.ac-selected');
+    var selected = dropdownEl.querySelector('.ac-selected');
     if (selected) {
       selected.scrollIntoView({ block: 'nearest' });
     }
@@ -337,23 +336,22 @@
       return;
     }
 
-    const word = currentSuggestions[selectedIndex];
+    var word = currentSuggestions[selectedIndex];
 
-    // Insert the word at cursor position
-    const sel = window.getSelection();
+    var sel = window.getSelection();
     if (!sel || !sel.rangeCount) {
       dismiss();
       return;
     }
 
-    // Insert with a space before the word
-    const textToInsert = word + ' ';
-    const range = sel.getRangeAt(0);
+    // Insert word + space at cursor
+    var textToInsert = word + ' ';
+    var range = sel.getRangeAt(0);
     range.deleteContents();
-    const textNode = document.createTextNode(textToInsert);
+    var textNode = document.createTextNode(textToInsert);
     range.insertNode(textNode);
 
-    // Move caret to end of inserted text
+    // Move caret after inserted text
     range.setStartAfter(textNode);
     range.setEndAfter(textNode);
     sel.removeAllRanges();
@@ -361,7 +359,7 @@
 
     dismiss();
 
-    // Trigger input event so the editor knows text changed
+    // Notify editor that content changed
     editorEl.dispatchEvent(new Event('input', { bubbles: true }));
   }
 
@@ -381,35 +379,40 @@
     return dropdownEl && dropdownEl.style.display !== 'none';
   }
 
-  function getCaretCoordinates() {
-    const sel = window.getSelection();
+  /**
+   * Get caret coordinates using Range.getClientRects() — NO DOM mutation.
+   * This avoids triggering input/selectionchange events that would dismiss
+   * the dropdown immediately.
+   */
+  function getCaretCoordinatesSimple() {
+    var sel = window.getSelection();
     if (!sel || !sel.rangeCount) return null;
 
     try {
-      const range = sel.getRangeAt(0).cloneRange();
+      var range = sel.getRangeAt(0).cloneRange();
       range.collapse(true);
 
-      // Use a zero-width space to get coordinates
-      const span = document.createElement('span');
-      span.textContent = '\u200B';
-      range.insertNode(span);
+      // Try getClientRects first (works when caret is inside a text node)
+      var rects = range.getClientRects();
+      if (rects.length > 0) {
+        var r = rects[0];
+        return { top: r.top, left: r.left, bottom: r.bottom, right: r.right };
+      }
 
-      const rect = span.getBoundingClientRect();
-      const coords = {
-        top: rect.top,
-        left: rect.left,
-        bottom: rect.bottom,
-        right: rect.right
+      // Fallback: use the range's bounding rect
+      var bRect = range.getBoundingClientRect();
+      if (bRect && bRect.top !== 0) {
+        return { top: bRect.top, left: bRect.left, bottom: bRect.bottom, right: bRect.right };
+      }
+
+      // Last resort: use editor position + some offset
+      var editorRect = editorEl.getBoundingClientRect();
+      return {
+        top: editorRect.top + 20,
+        left: editorRect.right - 20,
+        bottom: editorRect.top + 44,
+        right: editorRect.right
       };
-
-      // Clean up
-      span.parentNode.removeChild(span);
-
-      // Restore selection
-      sel.removeAllRanges();
-      sel.addRange(range);
-
-      return coords;
     } catch (e) {
       return null;
     }
@@ -419,7 +422,9 @@
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
-    init();
+    // Script runs in <head>, editor might not exist yet
+    // Wait for DOM to be fully ready
+    setTimeout(init, 100);
   }
 
 })();
