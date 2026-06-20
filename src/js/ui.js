@@ -59,10 +59,21 @@ function updateWritingScore(spelling, grammar, punctuation) {
 /**
  * Build HTML for a single suggestion card
  */
+/**
+ * Resolve alternatives for a suggestion, falling back to [correction, original]
+ * when the model doesn't provide alternatives (e.g. grammar, punctuation).
+ * Shared logic — must stay in sync with tooltip rendering in editor.js.
+ */
+function resolveAlternatives(suggestion) {
+  return (suggestion.alternatives && suggestion.alternatives.length > 0)
+    ? suggestion.alternatives
+    : [suggestion.correction, suggestion.original];
+}
+
 function buildSuggestionCardHTML(suggestion, index) {
   const badgeClass = `badge-${suggestion.type}`;
   const label = TYPE_LABELS[suggestion.type] || suggestion.type;
-  const alts = suggestion.alternatives || [suggestion.correction, suggestion.original];
+  const alts = resolveAlternatives(suggestion);
   // Pipeline Hardening v3.3: Use suggestion.id (UUID) instead of array index
   const suggestionId = suggestion.id || index;
 
