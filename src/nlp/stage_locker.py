@@ -42,6 +42,13 @@ class StageLocker:
                 return True
         return False
 
+    def is_locked_by(self, start: int, end: int):
+        """Return (locked_start, locked_end, owner) if locked, else None."""
+        for ls, le, owner in self.locked_spans:
+            if start < le and end > ls:
+                return (ls, le, owner)
+        return None
+
     def update_via_mapper(self, mapper) -> None:
         """
         Shift all locked spans to match the new CURRENT_TEXT after mutation.
