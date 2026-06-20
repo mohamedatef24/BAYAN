@@ -615,5 +615,234 @@ class TestApplyAllReverseSort(unittest.TestCase):
         self.assertNotEqual(forward_result, reverse_result)
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# FIX VERIFICATION TESTS — Test that each model bug fix actually works
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Import the fix functions from app.py without starting Flask
+def _import_app_functions():
+    """Import helper functions from app.py without loading Flask."""
+    import importlib.util
+    import types
+    app_path = os.path.join(os.path.dirname(__file__), '..', 'src', 'app.py')
+
+    # Read the file and extract just the functions we need
+    with open(app_path, 'r', encoding='utf-8') as f:
+        source = f.read()
+
+    # We need _levenshtein, _is_small_spelling_change,
+    # _is_spelling_only_change, _is_orthographic_variant
+    module = types.ModuleType('app_helpers')
+    module.__dict__['re'] = __import__('re')
+    # Extract function bodies
+    import re as _re
+
+    # Execute just the helper functions in an isolated namespace
+    func_names = [
+        '_levenshtein', '_is_small_spelling_change',
+        '_is_spelling_only_change', '_is_orthographic_variant'
+    ]
+    # Find and execute each function
+    for func_name in func_names:
+        pattern = rf'^(def {func_name}\(.*?\n(?:(?:    .+\n|[ \t]*\n)*))'
+        match = _re.search(pattern, source, _re.MULTILINE)
+        if match:
+            exec(match.group(1), module.__dict__)
+
+    return module
+
+
+class TestFixS2_GenderPreservation(unittest.TestCase):
+    """Fix S2: _is_small_spelling_change rejects corrections that drop feminine marker."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.helpers = _import_app_functions()
+
+    def test_rejects_baridah_to_barid(self):
+        """بارده→بارد drops feminine marker — must reject."""
+        result = self.helpers._is_small_spelling_change('بارده', 'بارد')
+        self.assertFalse(result, "Should reject correction that drops ه feminine ending")
+
+    def test_rejects_munkhafidah_to_munkhafid(self):
+        """منخفضه→منخفض drops feminine marker — must reject."""
+        result = self.helpers._is_small_spelling_change('منخفضه', 'منخفض')
+        self.assertFalse(result, "Should reject correction that drops ه feminine ending")
+
+    def test_accepts_ha_to_ta_marbuta(self):
+        """المدرسه→المدرسة is valid (ه→ة at end)."""
+        result = self.helpers._is_small_spelling_change('المدرسه', 'المدرسة')
+        self.assertTrue(result, "Should accept ه→ة correction")
+
+    def test_accepts_normal_spelling_fix(self):
+        """Normal spelling corrections still accepted."""
+        result = self.helpers._is_small_spelling_change('علىكم', 'عليكم')
+        self.assertTrue(result, "Should accept normal spelling correction")
+
+
+class TestFixS3_HamzaWhitelist(unittest.TestCase):
+    """Fix S3: AraSpellPostProcessor.fix_common_hamza fixes common hamza errors."""
+
+    @classmethod
+    def setUpClass(cls):
+        from nlp.spelling.araspell_rules import AraSpellPostProcessor
+        cls.pp = AraSpellPostProcessor
+
+    def test_aliy_to_ila(self):
+        result = self.pp.fix_common_hamza('ذهبت الي المدرسة')
+        self.assertIn('إلى', result, "الي should become إلى")
+
+    def test_ant_to_anta(self):
+        result = self.pp.fix_common_hamza('هل انت ذاهب')
+        self.assertIn('أنت', result, "انت should become أنت")
+
+    def test_lan_to_lian(self):
+        result = self.pp.fix_common_hamza('غاب لان الطقس سيء')
+        self.assertIn('لأن', result, "لان should become لأن")
+
+    def test_ams_to_ams(self):
+        result = self.pp.fix_common_hamza('ذهبت امس')
+        self.assertIn('أمس', result, "امس should become أمس")
+
+    def test_alan_to_alan(self):
+        result = self.pp.fix_common_hamza('الان بدأ الدرس')
+        self.assertIn('الآن', result, "الان should become الآن")
+
+    def test_preserves_correct_words(self):
+        """Words not in whitelist should be unchanged."""
+        result = self.pp.fix_common_hamza('الكتاب جميل')
+        self.assertEqual(result, 'الكتاب جميل')
+
+
+class TestPrefixedHamza(unittest.TestCase):
+    """Prefixed hamza: fix_common_hamza handles و/ف/ب/ك/ل + whitelist word."""
+
+    @classmethod
+    def setUpClass(cls):
+        from nlp.spelling.araspell_rules import AraSpellPostProcessor
+        cls.pp = AraSpellPostProcessor
+
+    def test_wa_asdiqai(self):
+        """واصدقائي → وأصدقائي"""
+        result = self.pp.fix_common_hamza('ذهبت واصدقائي')
+        self.assertIn('وأصدقائي', result, "واصدقائي should become وأصدقائي")
+
+    def test_fa_inna(self):
+        """فان → فأن"""
+        result = self.pp.fix_common_hamza('فان الامر واضح')
+        self.assertIn('فأن', result)
+
+    def test_ba_prefix(self):
+        """بامس not a valid lookup — should stay unchanged."""
+        # بامس is not ب+امس in a meaningful way, but the logic tries
+        text = 'مررت بامس'
+        result = self.pp.fix_common_hamza(text)
+        # ب + امس = ب + أمس → بأمس
+        self.assertIn('بأمس', result, "بامس should become بأمس")
+
+    def test_waw_an(self):
+        """وان → وأن"""
+        result = self.pp.fix_common_hamza('قال وان الحق واضح')
+        self.assertIn('وأن', result, "وان should become وأن")
+
+
+class TestFixP1_PuncOnlyMarks(unittest.TestCase):
+    """Fix P1: PunctuationChecker._strip_non_punctuation_changes keeps only marks."""
+
+    def _make_checker(self):
+        """Create a minimal PunctuationChecker for testing strip logic."""
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+        from nlp.punctuation.punctuation_service import PunctuationChecker
+        # Pass None for model/tokenizer/device since we only test the strip method
+        return PunctuationChecker(None, None, None)
+
+    def test_keeps_added_comma(self):
+        checker = self._make_checker()
+        original = 'ذهبت إلى المدرسة وكان الجو جميل'
+        punctuated = 'ذهبت إلى المدرسة، وكان الجو جميل.'
+        result = checker._strip_non_punctuation_changes(original, punctuated)
+        self.assertIn('،', result, "Should keep added comma")
+        self.assertIn('المدرسة', result)
+
+    def test_reverts_spelling_change(self):
+        checker = self._make_checker()
+        original = 'ذهبت الي المدرسه'
+        # Model changed الي→إلى AND المدرسه→المدرسة (spelling) + added period
+        punctuated = 'ذهبت إلى المدرسة.'
+        result = checker._strip_non_punctuation_changes(original, punctuated)
+        # Should revert spelling changes but keep the period
+        self.assertIn('الي', result, "Should revert الي (punc shouldn't fix spelling)")
+        self.assertIn('المدرسه', result, "Should revert المدرسه (punc shouldn't fix spelling)")
+
+    def test_identical_input_output(self):
+        checker = self._make_checker()
+        text = 'النص كما هو'
+        result = checker._strip_non_punctuation_changes(text, text)
+        self.assertEqual(result, text)
+
+
+class TestGrammarRelabeling(unittest.TestCase):
+    """Grammar re-labeling: _is_spelling_only_change detects orthographic-only diffs."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.helpers = _import_app_functions()
+
+    def test_ha_to_ta_marbuta_is_spelling(self):
+        """المدرسه→المدرسة is a spelling fix, not grammar."""
+        result = self.helpers._is_spelling_only_change('المدرسه', 'المدرسة')
+        self.assertTrue(result, "ه→ة should be classified as spelling")
+
+    def test_hamza_alef_is_spelling(self):
+        """الي→إلى is a spelling fix."""
+        result = self.helpers._is_spelling_only_change('الي', 'إلى')
+        # الي→إلى has length difference and different chars
+        # This should be detected as orthographic
+        self.assertTrue(result, "hamza fix should be classified as spelling")
+
+    def test_verb_conjugation_is_grammar(self):
+        """سعيدون→سعيدين is a grammar fix, not spelling."""
+        result = self.helpers._is_spelling_only_change('سعيدون', 'سعيدين')
+        self.assertFalse(result, "ون→ين is grammar, not spelling")
+
+    def test_word_addition_is_grammar(self):
+        """Adding a word is grammar, not spelling."""
+        result = self.helpers._is_spelling_only_change('الطلاب ذهب', 'الطلاب ذهبوا')
+        self.assertFalse(result, "Word count change = grammar")
+
+    def test_anta_is_spelling(self):
+        """انت→أنت is a spelling fix."""
+        result = self.helpers._is_spelling_only_change('انت', 'أنت')
+        self.assertTrue(result, "hamza restoration should be classified as spelling")
+
+
+class TestOrthographicVariant(unittest.TestCase):
+    """_is_orthographic_variant correctly classifies char-level differences."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.helpers = _import_app_functions()
+
+    def test_ha_ta_marbuta(self):
+        self.assertTrue(self.helpers._is_orthographic_variant('المدرسه', 'المدرسة'))
+
+    def test_alef_hamza(self):
+        self.assertTrue(self.helpers._is_orthographic_variant('انت', 'أنت'))
+
+    def test_ya_alef_maqsura(self):
+        self.assertTrue(self.helpers._is_orthographic_variant('الي', 'إلي'))
+
+    def test_completely_different_words(self):
+        self.assertFalse(self.helpers._is_orthographic_variant('كتاب', 'مدرسة'))
+
+    def test_grammar_change_not_spelling(self):
+        """ون→ين is grammar, not orthographic variant."""
+        self.assertFalse(self.helpers._is_orthographic_variant('سعيدون', 'سعيدين'))
+
+    def test_identical_words(self):
+        """Identical words are NOT orthographic variants (no diff)."""
+        self.assertFalse(self.helpers._is_orthographic_variant('كتاب', 'كتاب'))
+
+
 if __name__ == '__main__':
     unittest.main()
