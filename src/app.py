@@ -814,9 +814,35 @@ def _is_small_spelling_change(orig_word, corr_word, vocab_manager=None):
     dist = _levenshtein(orig_word, corr_word)
     max_len = max(len(orig_word), len(corr_word))
 
-    # Allow at most 3 character edits and at most 50% of the word
-    # AraSpell has its own validation pipeline, so we can be more permissive here
-    return dist <= 3 and (dist / max_len) <= 0.5
+    # Tighter filter for OOV words: reject edits that change word roots
+    # Allow max 2 edits at max 50% of word length
+    if dist > 2 or (dist / max_len) > 0.5:
+        return False
+
+    # CRITICAL: Only allow ORTHOGRAPHIC fixes (ه↔ة, ا↔أ↔إ↔آ, ي↔ى).
+    # Any other letter change means the word's ROOT is different
+    # (e.g. عضلية→عملية ض→م = completely different word!)
+    ORTHO_PAIRS = {
+        ('ه', 'ة'), ('ة', 'ه'),
+        ('ا', 'أ'), ('أ', 'ا'), ('ا', 'إ'), ('إ', 'ا'), ('ا', 'آ'), ('آ', 'ا'),
+        ('ي', 'ى'), ('ى', 'ي'),
+        ('ؤ', 'و'), ('و', 'ؤ'),  # hamza on waw
+        ('ئ', 'ي'), ('ي', 'ئ'),  # hamza on ya
+        ('ء', 'أ'), ('أ', 'ء'),  # standalone hamza ↔ hamza on alef
+        ('ء', 'ؤ'), ('ؤ', 'ء'),  # standalone hamza ↔ hamza on waw
+        ('ء', 'ئ'), ('ئ', 'ء'),  # standalone hamza ↔ hamza on ya
+    }
+    # Check every character pair — reject if ANY non-orthographic change
+    if len(orig_word) != len(corr_word):
+        # Length change = structural change, not just orthographic
+        # Exception: if diff is just adding/removing ا at start (hamza)
+        if abs(len(orig_word) - len(corr_word)) > 1:
+            return False
+    for a, b in zip(orig_word, corr_word):
+        if a != b and (a, b) not in ORTHO_PAIRS:
+            return False
+
+    return True
 
 
 def _is_spelling_only_change(original: str, correction: str) -> bool:
