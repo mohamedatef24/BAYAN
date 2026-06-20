@@ -379,7 +379,9 @@ function showTooltip(element) {
 
   // Render alternatives
   if (alternativesEl) {
-    const alts = suggestion.alternatives || [suggestion.correction, suggestion.original];
+    const alts = (suggestion.alternatives && suggestion.alternatives.length > 0)
+      ? suggestion.alternatives
+      : [suggestion.correction, suggestion.original];
     let html = '';
     // Render corrections first (non-keep)
     alts.forEach((alt, i) => {
