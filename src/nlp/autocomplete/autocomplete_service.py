@@ -75,6 +75,7 @@ class HybridAutoComplete:
         self.gpt2_model = None
         self.device = "cpu"
         self.alpha = 0.4  # Weight: 40% bigram, 60% GPT-2 (GPT-2 has context!)
+        self.threshold = 0.05  # Min score to show a suggestion
         self._cache = {}
         self._cache_max = 256
 
@@ -135,7 +136,7 @@ class HybridAutoComplete:
 
     # ─── Prediction ───────────────────────────────────────────────────────
 
-    def predict(self, context: str, n: int = 5) -> list:
+    def predict(self, context: str, n: int = 3) -> list:
         """
         Get top-N autocomplete suggestions for the given context.
 
@@ -176,7 +177,7 @@ class HybridAutoComplete:
             logger.error(f"AutoComplete prediction error: {e}")
             return []
 
-    def _bigram_predict(self, context: str, n: int = 5) -> list:
+    def _bigram_predict(self, context: str, n: int = 3) -> list:
         """Statistical-only prediction using bigram model."""
         from .autocomplete_rules import merge_similar_predictions, filter_suggestions
 
@@ -212,10 +213,12 @@ class HybridAutoComplete:
         preds.sort(key=lambda x: x[1], reverse=True)
         preds = merge_similar_predictions(preds, top_k=n * 3)
         preds = filter_suggestions(preds)
+        # Apply score threshold
+        preds = [(w, s) for w, s in preds if s >= self.threshold]
 
         return [w for w, _ in preds[:n]]
 
-    def _hybrid_predict(self, context: str, n: int = 5) -> list:
+    def _hybrid_predict(self, context: str, n: int = 3) -> list:
         """Hybrid prediction: bigram + GPT-2 scoring.
         
         GPT-2 receives the FULL sentence as context for true context awareness.
@@ -248,6 +251,7 @@ class HybridAutoComplete:
             if gpt2_probs:
                 # Use GPT-2's own contextual predictions
                 gpt2_preds = sorted(gpt2_probs.items(), key=lambda x: x[1], reverse=True)
+                gpt2_preds = [(w, s) for w, s in gpt2_preds if s >= self.threshold]
                 gpt2_preds = filter_suggestions(gpt2_preds)
                 return [w for w, _ in gpt2_preds[:n]]
             return self._bigram_predict(context, n)
@@ -256,6 +260,7 @@ class HybridAutoComplete:
         if total == 0:
             if gpt2_probs:
                 gpt2_preds = sorted(gpt2_probs.items(), key=lambda x: x[1], reverse=True)
+                gpt2_preds = [(w, s) for w, s in gpt2_preds if s >= self.threshold]
                 gpt2_preds = filter_suggestions(gpt2_preds)
                 return [w for w, _ in gpt2_preds[:n]]
             return self._bigram_predict(context, n)
@@ -283,6 +288,8 @@ class HybridAutoComplete:
 
         results.sort(key=lambda x: x[1], reverse=True)
         results = filter_suggestions(results)
+        # Apply score threshold — filter out low-confidence suggestions
+        results = [(w, s) for w, s in results if s >= self.threshold]
 
         return [w for w, _ in results[:n]]
 
