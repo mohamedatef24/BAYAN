@@ -27,13 +27,107 @@ class PunctuationChecker:
     Arabic punctuation restoration pipeline:
       1. Preprocessing (remove diacritics)
       2. Model inference (chunked, windowed — 50 words/chunk)
-      3. Postprocessing (typographic cleanup)
+      3. Postprocessing: strip non-punctuation changes (Fix P1)
+      4. Typographic cleanup
     """
+
+    # Arabic and common punctuation marks
+    PUNCTUATION_CHARS = set('.,;:!?،؛؟!.:«»"\'()-–—…')
 
     def __init__(self, model, tokenizer, device):
         self.model = model
         self.tokenizer = tokenizer
         self.device = device
+
+    @staticmethod
+    def _strip_punct(word: str) -> str:
+        """Remove leading/trailing punctuation from a word."""
+        return word.strip('.,;:!?،؛؟!.:«»"\'()-–—…')
+
+    def _strip_non_punctuation_changes(self, original: str, punctuated: str) -> str:
+        """
+        Fix P1: The PuncAra model was fine-tuned on data with spelling/grammar
+        corrections. We only want punctuation marks from this stage.
+
+        Strategy: Align original and punctuated word-by-word. For each word,
+        if the model changed the BASE text (not just added/moved punctuation),
+        revert to the original word but keep any punctuation the model added.
+        """
+        orig_words = original.split()
+        punc_words = punctuated.split()
+
+        if not orig_words or not punc_words:
+            return punctuated
+
+        # Build result by aligning words
+        result = []
+        oi = 0  # index into orig_words
+        pi = 0  # index into punc_words
+
+        while oi < len(orig_words) and pi < len(punc_words):
+            o_word = orig_words[oi]
+            p_word = punc_words[pi]
+
+            o_base = self._strip_punct(o_word)
+            p_base = self._strip_punct(p_word)
+
+            if o_base == p_base:
+                # Same base word — keep punctuation changes from model
+                result.append(p_word)
+                oi += 1
+                pi += 1
+            elif self._is_only_punct_difference(o_word, p_word):
+                # Words differ only by punctuation — keep model's punctuation
+                result.append(p_word)
+                oi += 1
+                pi += 1
+            else:
+                # Model changed the actual word content (spelling/grammar/hamza)
+                # Revert to original word but transfer any NEW punctuation
+                punct_suffix = ''
+                punct_prefix = ''
+                for ch in reversed(p_word):
+                    if ch in self.PUNCTUATION_CHARS:
+                        punct_suffix = ch + punct_suffix
+                    else:
+                        break
+                for ch in p_word:
+                    if ch in self.PUNCTUATION_CHARS:
+                        punct_prefix += ch
+                    else:
+                        break
+
+                # Only add punctuation that wasn't already there
+                if not o_word.endswith(punct_suffix) and punct_suffix:
+                    result.append(o_word + punct_suffix)
+                elif punct_prefix and not o_word.startswith(punct_prefix):
+                    result.append(punct_prefix + o_word)
+                else:
+                    result.append(o_word)
+                oi += 1
+                pi += 1
+
+        # Append remaining original words
+        while oi < len(orig_words):
+            result.append(orig_words[oi])
+            oi += 1
+
+        # Append remaining punctuation-only words from model
+        while pi < len(punc_words):
+            p_word = punc_words[pi]
+            if all(ch in self.PUNCTUATION_CHARS or ch.isspace() for ch in p_word):
+                result.append(p_word)
+            pi += 1
+
+        return ' '.join(result)
+
+    @staticmethod
+    def _is_only_punct_difference(word1: str, word2: str) -> bool:
+        """Check if two words differ only by punctuation characters."""
+        PUNCT = set('.,;:!?،؛؟!.:«»"\'()-–—…')
+        base1 = ''.join(c for c in word1 if c not in PUNCT)
+        base2 = ''.join(c for c in word2 if c not in PUNCT)
+        return base1 == base2
 
     def _predict_chunk(self, text_chunk: str) -> str:
         """Run model inference on a single chunk (max 128 tokens)."""
@@ -114,6 +208,8 @@ class PunctuationChecker:
 
             for paragraph in paragraphs:
                 punctuated = self._fix_punctuation(paragraph)
+                # Fix P1: Strip spelling/grammar changes, keep only punctuation
+                punctuated = self._strip_non_punctuation_changes(paragraph, punctuated)
                 cleaned = arabic_postprocessing(punctuated)
                 processed_paragraphs.append(cleaned)
 
