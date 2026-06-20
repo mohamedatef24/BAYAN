@@ -172,11 +172,17 @@ class AraSpellPostProcessor:
             result.append(word)
         return ' '.join(result)
     
+    # Attached prefixes that can precede hamza-whitelist words
+    # Ordered longest-first so وال is tried before و
+    HAMZA_PREFIXES = ['وبال', 'فبال', 'وال', 'بال', 'فال', 'كال', 'ول', 'فل',
+                      'وب', 'فب', 'وك', 'فك', 'و', 'ف', 'ب', 'ك', 'ل']
+
     @staticmethod
     def fix_common_hamza(text: str) -> str:
         """
         Fix common hamza placement errors using a whitelist.
-        These are the most frequent informal Arabic spelling mistakes.
+        Also handles prefixed words: و/ف/ب/ك/ل + whitelist word.
+        e.g. واصدقائي → وأصدقائي, بالاسعار → بالأسعار
         """
         words = text.split()
         result = []
@@ -184,7 +190,18 @@ class AraSpellPostProcessor:
             # Check exact match first
             if word in AraSpellPostProcessor.HAMZA_WHITELIST:
                 result.append(AraSpellPostProcessor.HAMZA_WHITELIST[word])
-            else:
+                continue
+
+            # Try stripping common prefixes and looking up the remainder
+            fixed = False
+            for prefix in AraSpellPostProcessor.HAMZA_PREFIXES:
+                if word.startswith(prefix) and len(word) > len(prefix) + 1:
+                    remainder = word[len(prefix):]
+                    if remainder in AraSpellPostProcessor.HAMZA_WHITELIST:
+                        result.append(prefix + AraSpellPostProcessor.HAMZA_WHITELIST[remainder])
+                        fixed = True
+                        break
+            if not fixed:
                 result.append(word)
         return ' '.join(result)
     
