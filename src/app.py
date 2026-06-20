@@ -831,6 +831,14 @@ def _is_small_spelling_change(orig_word, corr_word, vocab_manager=None):
         if corr_word == orig_word[:-1] or len(corr_word) < len(orig_word):
             return 0.0
 
+    # ── GUARD 3: Word truncation protection (Phase 4, P3) ──
+    # Reject corrections that significantly shorten a valid word.
+    # E.g. الدمث→الدم (rare word truncated to different word).
+    if vocab_manager and len(orig_word) - len(corr_word) >= 2:
+        if vocab_manager.is_iv(orig_word):
+            logger.info(f"[SPELLING] Blocked truncation: '{orig_word}'→'{corr_word}' (valid word shortened by {len(orig_word) - len(corr_word)} chars)")
+            return 0.0
+
     # CRITICAL: If both words are valid Arabic words, only accept known fixes.
     # This prevents the spelling model from changing one correct word to another
     # (e.g. وكان→وكأن, which changes "and was" to "as if" — a meaning change).
@@ -1330,6 +1338,26 @@ def analyze_text():
                 logger.error(traceback.format_exc())
                 timing_ms['spelling_error'] = f"{type(e).__name__}: {str(e)[:200]}"
 
+        # ── Standalone hamza-fix pass (P1/P2) ──
+        # fix_common_hamza handles common hamza errors that AraSpell missed
+        # in sentence context: انت→أنت, الان→الآن, ام→أم, انا→أنا, etc.
+        # This runs on the FULL text regardless of whether AraSpell ran.
+        try:
+            from nlp.spelling.araspell_rules import AraSpellPostProcessor
+            hamza_fixed = AraSpellPostProcessor.fix_common_hamza(current_text)
+            if hamza_fixed != current_text:
+                hamza_diffs = get_word_diffs(current_text, hamza_fixed)
+                for hd in hamza_diffs:
+                    ctx.add_patch(
+                        'spelling', hd['start'], hd['end'],
+                        hd['correction'], confidence=0.95,
+                    )
+                    logger.info(f"[HAMZA-FIX] '{hd.get('original','')}' → '{hd.get('correction','')}'")
+                ctx.mutate_text(hamza_fixed, OffsetMapper)
+                current_text = ctx.current_text
+        except Exception as e:
+            logger.error(f"[ANALYZE] Hamza fix failed: {type(e).__name__}: {e}")
+
         # 2. Grammar (runs on spelling-corrected text — word-level dependency)
         try:
             t0 = time.time()
@@ -1341,7 +1369,40 @@ def analyze_text():
             logger.info(f"[ANALYZE] Step 2: Grammar done in {timing_ms['grammar_ms']}ms")
             if corrected_grammar != ctx.current_text:
                 diffs = get_word_diffs(ctx.current_text, corrected_grammar)
+
+                # ── Phase 2 (P1): Split multi-word grammar diffs ──
+                # Break merged diffs like "الي المدرسه الاستاذ"→"إلى المدرسة الأستاذ"
+                # into individual word-level suggestions.
+                expanded_diffs = []
                 for d in diffs:
+                    orig_text = d.get('original', '')
+                    corr_text = d.get('correction', '')
+                    orig_words_list = orig_text.split()
+                    corr_words_list = corr_text.split()
+                    # Only split if same word count and multiple words
+                    if (len(orig_words_list) > 1
+                            and len(orig_words_list) == len(corr_words_list)):
+                        # Split into per-word diffs
+                        search_from = d['start']
+                        for ow, cw in zip(orig_words_list, corr_words_list):
+                            if ow != cw:
+                                w_start = ctx.current_text.find(ow, search_from)
+                                if w_start >= 0:
+                                    w_end = w_start + len(ow)
+                                    expanded_diffs.append({
+                                        'start': w_start, 'end': w_end,
+                                        'original': ow, 'correction': cw,
+                                        'type': 'generic'
+                                    })
+                                    search_from = w_end
+                                else:
+                                    search_from += len(ow) + 1
+                            else:
+                                search_from += len(ow) + 1
+                    else:
+                        expanded_diffs.append(d)
+
+                for d in expanded_diffs:
                     # StageLocker: skip diffs that overlap with locked ranges
                     if ctx.stage_locker.is_locked(d['start'], d['end']):
                         logger.info(
