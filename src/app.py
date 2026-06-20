@@ -457,7 +457,7 @@ def autocomplete():
         t0 = time.time()
         suggestions = ac_model.predict(context, n=n)
         elapsed = int((time.time() - t0) * 1000)
-        logger.info(f"[AUTOCOMPLETE] {elapsed}ms | mode={ac_model.get_mode()} | suggestions={suggestions}")
+        logger.info(f"[AUTOCOMPLETE] {elapsed}ms | mode={ac_model.get_mode()} | context='{context[:80]}' | suggestions={suggestions}")
 
         return jsonify({
             'suggestions': suggestions,

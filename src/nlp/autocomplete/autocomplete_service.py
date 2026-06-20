@@ -47,9 +47,9 @@ def get_autocomplete_model():
 
 # ─── Cache key helper ─────────────────────────────────────────────────────────
 def _context_key(context: str) -> str:
-    """Reduce context to last 3 words for cache key."""
+    """Use last 5 words for cache key — preserves enough context for GPT-2 awareness."""
     words = context.strip().split()
-    return " ".join(words[-3:]) if words else ""
+    return " ".join(words[-5:]) if words else ""
 
 
 # ─── Main Service ─────────────────────────────────────────────────────────────
@@ -216,7 +216,13 @@ class HybridAutoComplete:
         return [w for w, _ in preds[:n]]
 
     def _hybrid_predict(self, context: str, n: int = 5) -> list:
-        """Hybrid prediction: bigram + GPT-2 scoring."""
+        """Hybrid prediction: bigram + GPT-2 scoring.
+        
+        GPT-2 receives the FULL sentence as context for true context awareness.
+        Bigram provides frequency-based candidates from the last word.
+        GPT-2's own top predictions are ADDED as candidates so contextually
+        appropriate words that bigram doesn't know about can still appear.
+        """
         from .autocomplete_rules import merge_similar_predictions, filter_suggestions
 
         tokens = context.strip().split()
@@ -225,7 +231,7 @@ class HybridAutoComplete:
 
         last_word = tokens[-1]
 
-        # 1. Get bigram candidates
+        # 1. Get bigram candidates (frequency-based, last word only)
         stat_candidates = []
         if last_word in self.bigrams:
             for w, c in self.bigrams[last_word].items():
@@ -233,27 +239,48 @@ class HybridAutoComplete:
                     continue
                 stat_candidates.append((w, c))
 
+        # 2. Get GPT-2 next-token probabilities using FULL context
+        #    GPT-2 sees the entire sentence, not just the last word
+        gpt2_probs = self._gpt2_next_token_probs(context, top_k=50)
+
+        # 3. If no bigram candidates, use GPT-2 predictions directly
         if not stat_candidates:
-            # No bigram matches — fall back to bigram-only with unigrams
+            if gpt2_probs:
+                # Use GPT-2's own contextual predictions
+                gpt2_preds = sorted(gpt2_probs.items(), key=lambda x: x[1], reverse=True)
+                gpt2_preds = filter_suggestions(gpt2_preds)
+                return [w for w, _ in gpt2_preds[:n]]
             return self._bigram_predict(context, n)
 
         total = sum(c for _, c in stat_candidates)
         if total == 0:
+            if gpt2_probs:
+                gpt2_preds = sorted(gpt2_probs.items(), key=lambda x: x[1], reverse=True)
+                gpt2_preds = filter_suggestions(gpt2_preds)
+                return [w for w, _ in gpt2_preds[:n]]
             return self._bigram_predict(context, n)
 
         stat_preds = [(w, c / total) for w, c in stat_candidates]
         stat_preds.sort(key=lambda x: x[1], reverse=True)
         stat_preds = merge_similar_predictions(stat_preds, top_k=20)
 
-        # 2. Get GPT-2 next-token probabilities (ONCE)
-        gpt2_probs = self._gpt2_next_token_probs(context, top_k=50)
-
-        # 3. Hybrid scoring
+        # 4. Hybrid scoring: combine bigram frequency with GPT-2 context score
         results = []
+        seen_words = set()
         for w, stat_p in stat_preds:
             neural_p = gpt2_probs.get(w, 1e-8)
             score = self.alpha * stat_p + (1 - self.alpha) * neural_p
             results.append((w, score))
+            seen_words.add(w)
+
+        # 5. ADD GPT-2's own top contextual predictions as bonus candidates
+        #    These are words GPT-2 thinks fit the context but bigram doesn't know
+        for w, neural_p in sorted(gpt2_probs.items(), key=lambda x: x[1], reverse=True)[:10]:
+            if w not in seen_words and len(w) >= 2:
+                # Give these a lower alpha since they have no bigram backing
+                score = 0.3 * neural_p  # Lower weight, but still contextual
+                results.append((w, score))
+                seen_words.add(w)
 
         results.sort(key=lambda x: x[1], reverse=True)
         results = filter_suggestions(results)
