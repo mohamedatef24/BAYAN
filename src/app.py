@@ -1155,12 +1155,23 @@ def analyze_text():
                 diffs = get_word_diffs(ctx.current_text, corrected_punc)
                 for d in diffs:
                     # StageLocker: skip diffs that overlap with locked ranges
+                    # BUT allow pure punctuation insertions near locked words
                     if ctx.stage_locker.is_locked(d['start'], d['end']):
+                        import re as _re
+                        orig_alpha = _re.sub(r'[^\u0600-\u06FFa-zA-Z]', '', d.get('original', ''))
+                        corr_alpha = _re.sub(r'[^\u0600-\u06FFa-zA-Z]', '', d.get('correction', ''))
+                        if orig_alpha != corr_alpha:
+                            # Diff changes actual words — block it
+                            logger.info(
+                                f"[LOCK] Punctuation blocked on [{d['start']}:{d['end']}] "
+                                f"'{d.get('original','')}' \u2014 locked by previous stage"
+                            )
+                            continue
+                        # Arabic text unchanged \u2014 only punctuation added/moved. Allow through.
                         logger.info(
-                            f"[LOCK] Punctuation blocked on [{d['start']}:{d['end']}] "
-                            f"'{d.get('original','')}' — locked by previous stage"
+                            f"[LOCK] Punctuation ALLOWED through lock [{d['start']}:{d['end']}] "
+                            f"'{d.get('original','')}' \u2192 '{d.get('correction','')}' \u2014 pure punctuation"
                         )
-                        continue
                     # Punctuation safety layer: reject non-punctuation changes
                     if not validate_punctuation_diff(d):
                         logger.info(
