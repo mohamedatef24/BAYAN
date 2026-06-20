@@ -10,9 +10,6 @@ const MAX_ANALYZE_LENGTH = 5000;
 // Pipeline Hardening v3.3: Guard to prevent input events during suggestion apply
 let _isApplyingSuggestion = false;
 
-// Track last analyzed text to prevent redundant API calls
-let _lastAnalyzedText = '';
-
 // ── Custom Undo/Redo Stack ──
 const _undoStack = [];
 const _redoStack = [];
@@ -246,7 +243,7 @@ function findSuggestionElement(id) {
   return document.querySelector(`[data-suggestion-id="${id}"]`);
 }
 
-async function analyzeText(forceReanalyze = false) {
+async function analyzeText() {
   const text = getEditorText();
   updateEditorStats();
   updatePlaceholder();
@@ -258,13 +255,8 @@ async function analyzeText(forceReanalyze = false) {
     updateSuggestionsList([]);
     window.currentSuggestions = [];
     updateAnalysisLimitBanner(false);
-    _lastAnalyzedText = '';
     return;
   }
-
-  // Skip redundant analysis if text hasn't changed (prevents overlay→input→analyze loop)
-  if (!forceReanalyze && text === _lastAnalyzedText) return;
-  _lastAnalyzedText = text;
 
   const isTruncated = text.length > MAX_ANALYZE_LENGTH;
   const textForApi = isTruncated ? text.substring(0, MAX_ANALYZE_LENGTH) : text;
@@ -528,11 +520,6 @@ function applySuggestionAtOffsets(suggestion) {
   } finally {
     _isApplyingSuggestion = false;
   }
-  // P2/User Request: Auto re-analyze after applying suggestion
-  // Calls analyzeText() DIRECTLY (not delayed) for instant re-analysis.
-  // forceReanalyze=true because the text changed (suggestion was applied)
-  _lastAnalyzedText = ''; // Reset so analysis isn't skipped
-  setTimeout(() => { analyzeText(); }, 300);
 }
 
 function applyCorrection() {
@@ -616,9 +603,6 @@ function applyAlternativeCorrection(suggestion, correctionText) {
   } finally {
     _isApplyingSuggestion = false;
   }
-  // P2/User Request: Auto re-analyze after applying alternative correction
-  _lastAnalyzedText = ''; // Reset so analysis isn't skipped
-  setTimeout(() => { analyzeText(); }, 300);
 }
 
 function dismissSuggestion(suggestion) {
@@ -698,9 +682,6 @@ function applyAllSuggestions() {
   } finally {
     _isApplyingSuggestion = false;
   }
-  // P2/User Request: Auto re-analyze after applying all suggestions
-  _lastAnalyzedText = ''; // Reset so analysis isn't skipped
-  setTimeout(() => { analyzeText(); }, 300);
 }
 
 function clearEditor() {
