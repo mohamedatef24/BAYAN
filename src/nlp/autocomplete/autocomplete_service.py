@@ -290,12 +290,15 @@ class HybridAutoComplete:
         """
         Get GPT-2 next-WORD predictions using generate() for complete words.
         
-        Instead of predicting a single BPE token (which gives subwords like 'ال'),
-        we generate short sequences and extract the first complete word.
-        This gives us actual Arabic words like 'القاهرة' instead of 'ال'.
+        Uses SAMPLING (not beam search) for diverse predictions.
+        Beam search collapses: 10 beams → same 1-3 words.
+        Sampling with top_k/top_p → 10-15 diverse, contextual words.
         """
         if self.gpt2_model is None or self.gpt2_tokenizer is None:
             return {}
+
+        import re
+        ARABIC_WORD_RE = re.compile(r'[\u0600-\u06FF]{2,}')
 
         try:
             inputs = self.gpt2_tokenizer(
@@ -306,46 +309,41 @@ class HybridAutoComplete:
             )
             input_len = inputs['input_ids'].shape[1]
 
-            # Generate multiple sequences (beam search for diversity)
+            # Generate diverse sequences using SAMPLING (not beam search)
             with torch.no_grad():
                 outputs = self.gpt2_model.generate(
                     **inputs,
-                    max_new_tokens=6,    # Enough tokens to form a complete word
-                    num_beams=10,        # Beam search for quality
-                    num_return_sequences=10,
-                    do_sample=False,
-                    early_stopping=True,
+                    max_new_tokens=5,       # Enough for 1 complete Arabic word
+                    do_sample=True,          # Sampling for diversity
+                    top_k=50,                # Consider top 50 tokens
+                    top_p=0.9,               # Nucleus sampling
+                    temperature=0.8,         # Slight sharpening for quality
+                    num_return_sequences=15, # More samples = more diverse words
                     no_repeat_ngram_size=2,
                 )
 
-            # Extract the first NEW word from each generated sequence
-            import re
-            ARABIC_WORD_RE = re.compile(r'[\u0600-\u06FF]{2,}')
-            
-            prob_dict = {}
-            for i, seq in enumerate(outputs):
-                # Decode only the NEW tokens (skip the input prefix)
+            # Extract the first NEW Arabic word from each sequence
+            word_counts = {}
+            for seq in outputs:
                 new_tokens = seq[input_len:]
                 generated_text = self.gpt2_tokenizer.decode(new_tokens, skip_special_tokens=True).strip()
                 
                 if not generated_text:
                     continue
                 
-                # Extract the first complete Arabic word
                 match = ARABIC_WORD_RE.search(generated_text)
                 if match:
                     word = match.group(0)
-                    # Score: higher rank = higher probability (beam search is sorted)
-                    score = 1.0 / (i + 1)  # 1.0, 0.5, 0.33, 0.25, ...
-                    if word not in prob_dict or prob_dict[word] < score:
-                        prob_dict[word] = score
+                    word_counts[word] = word_counts.get(word, 0) + 1
 
-            # Normalize scores to sum to ~1
-            total = sum(prob_dict.values())
-            if total > 0:
-                prob_dict = {w: s / total for w, s in prob_dict.items()}
+            # Score = frequency across samples (how often GPT-2 picks this word)
+            total = sum(word_counts.values())
+            if total == 0:
+                return {}
+            
+            prob_dict = {w: count / total for w, count in word_counts.items()}
 
-            logger.info(f"[GPT2] context='{prefix[-40:]}' → words={list(prob_dict.keys())[:8]}")
+            logger.info(f"[GPT2] context='{prefix[-50:]}' → words={sorted(prob_dict.items(), key=lambda x: -x[1])[:8]}")
             return prob_dict
 
         except Exception as e:
