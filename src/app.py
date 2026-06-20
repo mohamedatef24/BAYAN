@@ -6,6 +6,9 @@ Provides API endpoints for the Bayan web application.
 import os
 import logging
 import time
+import hashlib
+from collections import OrderedDict
+from functools import wraps
 from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 from pathlib import Path
@@ -75,6 +78,119 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})  # CORS for API routes only
 MAX_TEXT_LENGTH = 5000  # Maximum characters for input text
 MAX_SUMMARY_LENGTH = 512  # Maximum tokens for summary
 MIN_TEXT_LENGTH = 10  # Minimum characters for summarization
+
+# ── Response Cache (P3) ──
+# LRU cache for /api/analyze: hash(text) → (response_dict, timestamp)
+_ANALYZE_CACHE_MAX = 500
+_ANALYZE_CACHE_TTL = 300  # 5 minutes
+_analyze_cache = OrderedDict()
+
+# ── Rate Limiter (P3) ──
+_RATE_LIMIT_MAX = 30  # requests per window
+_RATE_LIMIT_WINDOW = 60  # seconds
+_rate_limit_store = {}  # ip → [(timestamp, ...)]
+
+# ── Ta Marbuta Dictionary (P2) ──
+# Common words where ه at the end should be ة
+_TA_MARBUTA_DICT = {
+    'المدرسه': 'المدرسة', 'الجامعه': 'الجامعة', 'المكتبه': 'المكتبة',
+    'الحياه': 'الحياة', 'الصلاه': 'الصلاة', 'الزكاه': 'الزكاة',
+    'القراءه': 'القراءة', 'الكتابه': 'الكتابة', 'المعرفه': 'المعرفة',
+    'الثقافه': 'الثقافة', 'السياسه': 'السياسة', 'الاقتصاديه': 'الاقتصادية',
+    'العربيه': 'العربية', 'الاسلاميه': 'الإسلامية', 'التربيه': 'التربية',
+    'الشريعه': 'الشريعة', 'الدوله': 'الدولة', 'الحكومه': 'الحكومة',
+    'المدينه': 'المدينة', 'القريه': 'القرية', 'الغرفه': 'الغرفة',
+    'السياره': 'السيارة', 'الطاوله': 'الطاولة', 'الرساله': 'الرسالة',
+    'المقاله': 'المقالة', 'الصحيفه': 'الصحيفة', 'الجريده': 'الجريدة',
+    'القصه': 'القصة', 'الروايه': 'الرواية', 'اللغه': 'اللغة',
+    'الفكره': 'الفكرة', 'الخطوه': 'الخطوة', 'المرحله': 'المرحلة',
+    'النتيجه': 'النتيجة', 'المشكله': 'المشكلة', 'الطريقه': 'الطريقة',
+    'الحاله': 'الحالة', 'الصوره': 'الصورة', 'القوه': 'القوة',
+    'الوحده': 'الوحدة', 'العلاقه': 'العلاقة', 'التجربه': 'التجربة',
+    'الحركه': 'الحركة', 'السلطه': 'السلطة', 'المنطقه': 'المنطقة',
+    'الساعه': 'الساعة', 'اللحظه': 'اللحظة', 'الفتره': 'الفترة',
+    'الاداره': 'الإدارة', 'البيئه': 'البيئة', 'الماده': 'المادة',
+    'الاسره': 'الأسرة', 'العائله': 'العائلة', 'الشركه': 'الشركة',
+    'المؤسسه': 'المؤسسة', 'المنظمه': 'المنظمة', 'الجمعيه': 'الجمعية',
+    'الوزاره': 'الوزارة', 'السفاره': 'السفارة', 'القياده': 'القيادة',
+    'الزياره': 'الزيارة', 'المحاوله': 'المحاولة', 'الدراسه': 'الدراسة',
+    'الممارسه': 'الممارسة', 'المتابعه': 'المتابعة', 'الخدمه': 'الخدمة',
+    'التقنيه': 'التقنية', 'الهندسه': 'الهندسة', 'الفلسفه': 'الفلسفة',
+    'مدرسه': 'مدرسة', 'جامعه': 'جامعة', 'مكتبه': 'مكتبة',
+    'حياه': 'حياة', 'صلاه': 'صلاة', 'زكاه': 'زكاة',
+    'لغه': 'لغة', 'قصه': 'قصة', 'فكره': 'فكرة',
+    'خطوه': 'خطوة', 'صوره': 'صورة', 'قوه': 'قوة',
+    'سياره': 'سيارة', 'رساله': 'رسالة', 'ساعه': 'ساعة',
+    'غرفه': 'غرفة', 'شركه': 'شركة', 'دوله': 'دولة',
+}
+
+
+def _fix_ta_marbuta(text):
+    """Fix common ه→ة errors at pipeline level using dictionary lookup."""
+    words = text.split()
+    fixed_words = []
+    changes = []
+    pos = 0
+    for word in words:
+        start = text.find(word, pos)
+        end = start + len(word)
+        # Check bare word
+        if word in _TA_MARBUTA_DICT:
+            fixed_words.append(_TA_MARBUTA_DICT[word])
+            changes.append({'start': start, 'end': end, 'original': word, 'correction': _TA_MARBUTA_DICT[word]})
+        # Check word ending in ه that should be ة (pattern match)
+        elif word.endswith('ه') and len(word) >= 3:
+            candidate = word[:-1] + 'ة'
+            if candidate in _TA_MARBUTA_DICT.values():
+                fixed_words.append(candidate)
+                changes.append({'start': start, 'end': end, 'original': word, 'correction': candidate})
+            else:
+                fixed_words.append(word)
+        else:
+            fixed_words.append(word)
+        pos = end
+    return ' '.join(fixed_words), changes
+
+
+def _check_rate_limit(ip):
+    """Check if IP has exceeded rate limit. Returns True if allowed."""
+    now = time.time()
+    if ip not in _rate_limit_store:
+        _rate_limit_store[ip] = []
+    # Clean old entries
+    _rate_limit_store[ip] = [t for t in _rate_limit_store[ip] if now - t < _RATE_LIMIT_WINDOW]
+    if len(_rate_limit_store[ip]) >= _RATE_LIMIT_MAX:
+        return False
+    _rate_limit_store[ip].append(now)
+    return True
+
+
+def _get_cache_key(text):
+    """Generate cache key from text."""
+    return hashlib.md5(text.encode('utf-8')).hexdigest()
+
+
+def _get_cached_response(text):
+    """Get cached response if exists and not expired."""
+    key = _get_cache_key(text)
+    if key in _analyze_cache:
+        data, ts = _analyze_cache[key]
+        if time.time() - ts < _ANALYZE_CACHE_TTL:
+            _analyze_cache.move_to_end(key)
+            return data
+        else:
+            del _analyze_cache[key]
+    return None
+
+
+def _set_cached_response(text, response_data):
+    """Store response in cache."""
+    key = _get_cache_key(text)
+    _analyze_cache[key] = (response_data, time.time())
+    # Evict oldest if over limit
+    while len(_analyze_cache) > _ANALYZE_CACHE_MAX:
+        _analyze_cache.popitem(last=False)
+
 
 # Global model instances
 summarization_model = None
@@ -1069,6 +1185,14 @@ def _is_orthographic_variant(word1: str, word2: str) -> bool:
 
 @app.route('/api/analyze', methods=['POST'])
 def analyze_text():
+    # ── Rate Limiting (P3) ──
+    client_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    if not _check_rate_limit(client_ip):
+        return jsonify({
+            'error': 'Rate limit exceeded. Please wait before making more requests.',
+            'status': 'error'
+        }), 429
+
     """
     Perform sequential analysis (Spelling -> Grammar -> Punctuation) 
     and return word-level suggestions with offsets.
@@ -1089,6 +1213,12 @@ def analyze_text():
         text = re.sub(r'<[^>]*>', '', text).strip()
         if not text:
             return jsonify({'error': 'Text is required', 'status': 'error'}), 400
+
+        # ── Cache Check (P3) ──
+        cached = _get_cached_response(text)
+        if cached:
+            logger.info(f"[ANALYZE] Cache hit for text (len={len(text)})")
+            return jsonify(cached)
 
         # Reject inputs that are predominantly non-Arabic (code, markup, etc.)
         arabic_chars = len(re.findall(r'[\u0600-\u06FF]', text))
@@ -1358,6 +1488,22 @@ def analyze_text():
         except Exception as e:
             logger.error(f"[ANALYZE] Hamza fix failed: {type(e).__name__}: {e}")
 
+        # ── Ta Marbuta fix pass (P2) ──
+        # Catches common ه→ة errors like المدرسه→المدرسة at pipeline level.
+        try:
+            ta_fixed, ta_changes = _fix_ta_marbuta(current_text)
+            if ta_fixed != current_text:
+                for tc in ta_changes:
+                    ctx.add_patch(
+                        'spelling', tc['start'], tc['end'],
+                        tc['correction'], confidence=0.95,
+                    )
+                    logger.info(f"[TA-MARBUTA] '{tc['original']}' → '{tc['correction']}'")
+                ctx.mutate_text(ta_fixed, OffsetMapper)
+                current_text = ctx.current_text
+        except Exception as e:
+            logger.error(f"[ANALYZE] Ta Marbuta fix failed: {type(e).__name__}: {e}")
+
         # 2. Grammar (runs on spelling-corrected text — word-level dependency)
         try:
             t0 = time.time()
@@ -1605,6 +1751,10 @@ def analyze_text():
         if stage_errors:
             response_data['warnings'] = stage_errors
 
+        # ── Cache Store (P3) ──
+        if response_status == 'success':
+            _set_cached_response(text, response_data)
+
         return jsonify(response_data)
 
     except Exception as e:
@@ -1615,6 +1765,52 @@ def analyze_text():
             'status': 'error',
             'details': str(e) if app.debug else None
         }), 500
+
+
+@app.route('/api/feedback', methods=['POST'])
+def submit_feedback():
+    """Accept user feedback on correction suggestions."""
+    try:
+        if not request.is_json:
+            return jsonify({'error': 'Request must be JSON', 'status': 'error'}), 400
+
+        data = request.get_json()
+        suggestion_id = data.get('suggestion_id', '')
+        helpful = data.get('helpful', None)
+        text = data.get('text', '')[:200]  # Truncate for safety
+        original = data.get('original', '')[:100]
+        correction = data.get('correction', '')[:100]
+
+        if helpful is None:
+            return jsonify({'error': 'helpful field is required', 'status': 'error'}), 400
+
+        # Log feedback (simple file-based for now)
+        feedback_entry = {
+            'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
+            'suggestion_id': suggestion_id,
+            'helpful': helpful,
+            'original': original,
+            'correction': correction,
+            'text_snippet': text,
+            'ip': request.headers.get('X-Forwarded-For', request.remote_addr),
+        }
+        logger.info(f"[FEEDBACK] {feedback_entry}")
+
+        # Append to feedback log file
+        try:
+            feedback_dir = Path(__file__).parent.parent / 'logs'
+            feedback_dir.mkdir(exist_ok=True)
+            with open(feedback_dir / 'feedback.jsonl', 'a', encoding='utf-8') as f:
+                import json
+                f.write(json.dumps(feedback_entry, ensure_ascii=False) + '\n')
+        except Exception as log_err:
+            logger.warning(f"[FEEDBACK] Could not write to file: {log_err}")
+
+        return jsonify({'status': 'success', 'message': 'شكراً لملاحظاتك!'})
+
+    except Exception as e:
+        logger.error(f"[FEEDBACK] Error: {e}")
+        return jsonify({'error': 'Failed to submit feedback', 'status': 'error'}), 500
 
 
 @app.errorhandler(404)

@@ -1,0 +1,261 @@
+{
+  "phase_1_3": [
+    {
+      "input": "لكن الأمر مختلف",
+      "corrected": "لكن الأمر مختلف.",
+      "check": "لكن",
+      "status": "✅ PRESERVED",
+      "suggestions": 1
+    },
+    {
+      "input": "ذلك الكتاب جميل",
+      "corrected": "ذلك الكتاب جميل.",
+      "check": "ذلك",
+      "status": "✅ PRESERVED",
+      "suggestions": 1
+    },
+    {
+      "input": "إلى المدرسة",
+      "corrected": "إلى المدرسة.",
+      "check": "إلى",
+      "status": "✅ PRESERVED",
+      "suggestions": 1
+    },
+    {
+      "input": "على الطاولة",
+      "corrected": "على الطاولة.",
+      "check": "على",
+      "status": "✅ PRESERVED",
+      "suggestions": 1
+    },
+    {
+      "input": "هذه المدينة جميلة",
+      "corrected": "هذه المدينة جميلة.",
+      "check": "هذه",
+      "status": "✅ PRESERVED",
+      "suggestions": 1
+    },
+    {
+      "input": "كان الجو حارا",
+      "corrected": "كان الجو حارا.",
+      "check": "كان",
+      "status": "✅ PRESERVED",
+      "suggestions": 1
+    },
+    {
+      "input": "لاكن الأمر مختلف",
+      "corrected": "لكن الأمر مختلف.",
+      "check": "لاكن→لكن",
+      "status": "✅ CORRECTED",
+      "suggestions": 2
+    },
+    {
+      "input": "ذالك الكتاب جميل",
+      "corrected": "ذلك الكتاب جميل.",
+      "check": "ذالك→ذلك",
+      "status": "✅ CORRECTED",
+      "suggestions": 2
+    }
+  ],
+  "phase_2": {
+    "total": 10,
+    "raw_fp_count": 5,
+    "raw_fp_rate": "50%",
+    "pipeline_fp_count": 1,
+    "pipeline_fp_rate": "10%",
+    "results": [
+      {
+        "id": "R-01",
+        "word": "عصماء",
+        "raw_changed": true,
+        "pipeline_changed": false,
+        "pipeline_targeted": false,
+        "is_false_positive": false
+      },
+      {
+        "id": "R-02",
+        "word": "يستشف",
+        "raw_changed": true,
+        "pipeline_changed": false,
+        "pipeline_targeted": false,
+        "is_false_positive": false
+      },
+      {
+        "id": "R-03",
+        "word": "المسغبة",
+        "raw_changed": true,
+        "pipeline_changed": false,
+        "pipeline_targeted": false,
+        "is_false_positive": false
+      },
+      {
+        "id": "R-04",
+        "word": "التقاعس",
+        "raw_changed": true,
+        "pipeline_changed": false,
+        "pipeline_targeted": false,
+        "is_false_positive": false
+      },
+      {
+        "id": "R-05",
+        "word": "استئثار",
+        "raw_changed": false,
+        "pipeline_changed": false,
+        "pipeline_targeted": false,
+        "is_false_positive": false
+      },
+      {
+        "id": "R-06",
+        "word": "تبجيل",
+        "raw_changed": false,
+        "pipeline_changed": false,
+        "pipeline_targeted": false,
+        "is_false_positive": false
+      },
+      {
+        "id": "R-07",
+        "word": "الدمث",
+        "raw_changed": true,
+        "pipeline_changed": true,
+        "pipeline_targeted": true,
+        "is_false_positive": true
+      },
+      {
+        "id": "R-08",
+        "word": "استقصاء",
+        "raw_changed": false,
+        "pipeline_changed": false,
+        "pipeline_targeted": false,
+        "is_false_positive": false
+      },
+      {
+        "id": "R-09",
+        "word": "التواني",
+        "raw_changed": false,
+        "pipeline_changed": false,
+        "pipeline_targeted": false,
+        "is_false_positive": false
+      },
+      {
+        "id": "R-10",
+        "word": "مستطرف",
+        "raw_changed": false,
+        "pipeline_changed": false,
+        "pipeline_targeted": false,
+        "is_false_positive": false
+      }
+    ]
+  },
+  "phase_3_2": [
+    {
+      "input": "ولذالك قررت السفر",
+      "corrected": "ولذالك قررت السفر.",
+      "bad_split_present": false,
+      "good_correction_present": false
+    },
+    {
+      "input": "المستشفياتهم كبيرة",
+      "corrected": "المستشفيات هم كبيرة.",
+      "bad_split_present": false,
+      "good_correction_present": false
+    }
+  ],
+  "phase_5_5": [
+    {
+      "input": "الطالبه كتبو الوجبات",
+      "corrected": "الطالبة كتبو الوجبات.",
+      "suggestions": 2,
+      "has_duplicate": false,
+      "word_count_diff": 0
+    },
+    {
+      "input": "هو ذهبو الي البيت",
+      "corrected": "هو ذهب إلى البيت.",
+      "suggestions": 3,
+      "has_duplicate": false,
+      "word_count_diff": 0
+    },
+    {
+      "input": "الطلاب اجتهدو في امتحانتهم",
+      "corrected": "الطلاب اجتهدو في امتحانتهم.",
+      "suggestions": 1,
+      "has_duplicate": false,
+      "word_count_diff": 0
+    }
+  ],
+  "phase_6_3": {
+    "empty_count": 0,
+    "error_count": 0,
+    "results": [
+      {
+        "attempt": 1,
+        "corrected": "الحديقة جميلة والأزهار متفتحة.",
+        "suggestions": 2,
+        "status": "success",
+        "warnings": {},
+        "is_empty": false,
+        "is_error": false
+      },
+      {
+        "attempt": 2,
+        "corrected": "الحديقة جميلة والأزهار متفتحة.",
+        "suggestions": 2,
+        "status": "success",
+        "warnings": {},
+        "is_empty": false,
+        "is_error": false
+      },
+      {
+        "attempt": 3,
+        "corrected": "الحديقة جميلة والأزهار متفتحة.",
+        "suggestions": 2,
+        "status": "success",
+        "warnings": {},
+        "is_empty": false,
+        "is_error": false
+      },
+      {
+        "attempt": 4,
+        "corrected": "الحديقة جميلة والأزهار متفتحة.",
+        "suggestions": 2,
+        "status": "success",
+        "warnings": {},
+        "is_empty": false,
+        "is_error": false
+      },
+      {
+        "attempt": 5,
+        "corrected": "الحديقة جميلة والأزهار متفتحة.",
+        "suggestions": 2,
+        "status": "success",
+        "warnings": {},
+        "is_empty": false,
+        "is_error": false
+      }
+    ]
+  },
+  "phase_6_4": {
+    "input_chars": 982,
+    "input_words": 159,
+    "status": "success",
+    "suggestions": 4,
+    "warnings": {},
+    "timing": {
+      "grammar_ms": 12196,
+      "punctuation_ms": 14448,
+      "spelling_ms": 0,
+      "total_ms": 26649
+    },
+    "elapsed_ms": 27615,
+    "is_silently_empty": false
+  },
+  "phase_7_1": {
+    "input": "قال المعلم للطلاب ادرسوا جيدا فالامتحان قريب",
+    "raw_output": "قال المعلم للطلاب ادرسوا: جيدا فالامتحان قريب؛",
+    "pipeline_output": "قال المعلم للطلاب ادرسوا: جيدا فالامتحين قريب",
+    "has_semicolon_raw": true,
+    "has_semicolon_pipeline": false,
+    "diagnosis": "StageLocker or validate_punctuation_diff rejection",
+    "pipeline_punc_count": 1
+  }
+}

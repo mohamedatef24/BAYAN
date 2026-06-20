@@ -1,0 +1,571 @@
+{
+  "timestamp": "2026-06-20T21:33:09.369155+00:00",
+  "a1_bug032": {
+    "input_chars": 982,
+    "input_words": 159,
+    "pipeline": {
+      "status": "success",
+      "suggestions": 4,
+      "elapsed_ms": 29556,
+      "timing_ms": {
+        "grammar_ms": 13132,
+        "punctuation_ms": 15452,
+        "spelling_ms": 0,
+        "total_ms": 28589
+      },
+      "warnings": null
+    },
+    "spelling": {
+      "elapsed_ms": 15980,
+      "error": null
+    },
+    "grammar": {
+      "elapsed_ms": 13068
+    },
+    "punctuation": {
+      "elapsed_ms": 21901
+    }
+  },
+  "a2_fp_rate": {
+    "original_appendix_e": {
+      "fp_count": 10,
+      "total": 10,
+      "fp_rate": "100%",
+      "results": [
+        {
+          "id": "R-01",
+          "input": "استوقفني المشهد فتأملته مليا",
+          "corrected": "استوقفني المشهد فتأملتة مليا",
+          "changed": true,
+          "suggestion_count": 1
+        },
+        {
+          "id": "R-02",
+          "input": "تستأثر القوى العظمى بالنفوذ الدولي",
+          "corrected": "تستأثر القوى العظمى بالنفوذ الدولي.",
+          "changed": true,
+          "suggestion_count": 1
+        },
+        {
+          "id": "R-03",
+          "input": "استقطب المؤتمر ثلة من العلماء الأفذاذ",
+          "corrected": "استقطب المؤتمر ثلة من العلماء الأفذاذ.",
+          "changed": true,
+          "suggestion_count": 1
+        },
+        {
+          "id": "R-04",
+          "input": "يتسنى للمرء أن يستشف الحقيقة من بين السطور",
+          "corrected": "يتسنى للمرء أن يستشفِ الحقيقة من بين السطور",
+          "changed": true,
+          "suggestion_count": 1
+        },
+        {
+          "id": "R-05",
+          "input": "ألقى المحاضر خطبة عصماء استحوذت على إعجاب الحاضرين",
+          "corrected": "ألقى المحاضر خطبة عصماء استحوذت؛ على إعجاب الحاضرين",
+          "changed": true,
+          "suggestion_count": 1
+        },
+        {
+          "id": "R-06",
+          "input": "تمخض الاجتماع عن قرارات مصيرية",
+          "corrected": "تمخض الاجتماع عن قرارات مصيرية.",
+          "changed": true,
+          "suggestion_count": 1
+        },
+        {
+          "id": "R-07",
+          "input": "أرهقته المسغبة فاستكان للقدر",
+          "corrected": "أرهقته المسغبة فاستكان للقدر.",
+          "changed": true,
+          "suggestion_count": 1
+        },
+        {
+          "id": "R-08",
+          "input": "نستشرف آفاق المستقبل بثقة واقتدار",
+          "corrected": "نستشرف آفاق المستقبل بثقة واقتدار.",
+          "changed": true,
+          "suggestion_count": 1
+        },
+        {
+          "id": "R-09",
+          "input": "اعتراه القلق فتملكه الأرق",
+          "corrected": "اعتراه القلق فتملكة الأرق.",
+          "changed": true,
+          "suggestion_count": 2
+        },
+        {
+          "id": "R-10",
+          "input": "استأنف العمل بعد فترة من التقاعس",
+          "corrected": "استأنف العمل بعد فترة من التقاعس.",
+          "changed": true,
+          "suggestion_count": 1
+        }
+      ]
+    },
+    "constructed_sentences": {
+      "fp_count": 10,
+      "total": 10,
+      "fp_rate": "100%",
+      "results": [
+        {
+          "id": "R-01c",
+          "input": "المدينة العصماء تحتضن آلاف السكان",
+          "corrected": "المدينة العصماء تحتضن آلاف السكان.",
+          "changed": true,
+          "suggestion_count": 1
+        },
+        {
+          "id": "R-02c",
+          "input": "يستشف الباحث نتائج الدراسة بعناية",
+          "corrected": "يستشف الباحث نتائج الدراسة بعناية.",
+          "changed": true,
+          "suggestion_count": 1
+        },
+        {
+          "id": "R-03c",
+          "input": "أرهقته المسغبة والعطش الشديد",
+          "corrected": "أرهقته المسغبة والعطش الشديد!",
+          "changed": true,
+          "suggestion_count": 1
+        },
+        {
+          "id": "R-04c",
+          "input": "التقاعس عن العمل يؤدي إلى الفشل",
+          "corrected": "التقاعس عن العمل يؤدي إلى الفشل.",
+          "changed": true,
+          "suggestion_count": 1
+        },
+        {
+          "id": "R-05c",
+          "input": "استئثار السلطة يهدد الديمقراطية",
+          "corrected": "استئثار السلطة يهدد الديمقراطية.",
+          "changed": true,
+          "suggestion_count": 1
+        },
+        {
+          "id": "R-06c",
+          "input": "تبجيل العلماء واجب على المجتمع",
+          "corrected": "تبجيل العلماء واجب على المجتمع.",
+          "changed": true,
+          "suggestion_count": 1
+        },
+        {
+          "id": "R-07c",
+          "input": "الرجل الدمث يحبه الجميع",
+          "corrected": "الرجل الدم يحبة الجميع.",
+          "changed": true,
+          "suggestion_count": 3
+        },
+        {
+          "id": "R-08c",
+          "input": "استقصاء الحقائق مهم في الصحافة",
+          "corrected": "استقصاء الحقائق مهم في الصحافة.",
+          "changed": true,
+          "suggestion_count": 1
+        },
+        {
+          "id": "R-09c",
+          "input": "لا يجوز التواني في طلب العلم",
+          "corrected": "لا يجوز التواني في طلب العلم.",
+          "changed": true,
+          "suggestion_count": 1
+        },
+        {
+          "id": "R-10c",
+          "input": "كتاب المستطرف من أمهات الكتب العربية",
+          "corrected": "كتاب المستطرف من أمهات الكتب العربية.",
+          "changed": true,
+          "suggestion_count": 1
+        }
+      ]
+    }
+  },
+  "b1_prefix": {
+    "total": 31,
+    "unchanged": 31,
+    "blocked": 0,
+    "leaked": 0,
+    "results": [
+      {
+        "word": "مدرسة",
+        "root": "مدرسة",
+        "prefix": "bare",
+        "input": "مدرسة مهم جدا",
+        "corrected": "مدرسة مهمة جدا.",
+        "word_preserved": true,
+        "targeting_suggestions": 0,
+        "status": "✅ PRESERVED"
+      },
+      {
+        "word": "ومدرسة",
+        "root": "مدرسة",
+        "prefix": "wa",
+        "input": "ومدرسة مهم جدا",
+        "corrected": "ومدرسة مهمة جدا.",
+        "word_preserved": true,
+        "targeting_suggestions": 0,
+        "status": "✅ PRESERVED"
+      },
+      {
+        "word": "بمدرسة",
+        "root": "مدرسة",
+        "prefix": "ba",
+        "input": "بمدرسة مهم جدا",
+        "corrected": "بمدرسة مهمة جدا.",
+        "word_preserved": true,
+        "targeting_suggestions": 0,
+        "status": "✅ PRESERVED"
+      },
+      {
+        "word": "لمدرسة",
+        "root": "مدرسة",
+        "prefix": "la",
+        "input": "لمدرسة مهم جدا",
+        "corrected": "لمدرسة مهمة جدا.",
+        "word_preserved": true,
+        "targeting_suggestions": 0,
+        "status": "✅ PRESERVED"
+      },
+      {
+        "word": "كمدرسة",
+        "root": "مدرسة",
+        "prefix": "ka",
+        "input": "كمدرسة مهم جدا",
+        "corrected": "كمدرسة مهمة جدا.",
+        "word_preserved": true,
+        "targeting_suggestions": 0,
+        "status": "✅ PRESERVED"
+      },
+      {
+        "word": "شمس",
+        "root": "شمس",
+        "prefix": "bare",
+        "input": "شمس مهم جدا",
+        "corrected": "شمس مهمة جدا.",
+        "word_preserved": true,
+        "targeting_suggestions": 0,
+        "status": "✅ PRESERVED"
+      },
+      {
+        "word": "وشمس",
+        "root": "شمس",
+        "prefix": "wa",
+        "input": "وشمس مهم جدا",
+        "corrected": "وشمس مهمة جدا.",
+        "word_preserved": true,
+        "targeting_suggestions": 0,
+        "status": "✅ PRESERVED"
+      },
+      {
+        "word": "بشمس",
+        "root": "شمس",
+        "prefix": "ba",
+        "input": "بشمس مهم جدا",
+        "corrected": "بشمس مهمة جدا.",
+        "word_preserved": true,
+        "targeting_suggestions": 0,
+        "status": "✅ PRESERVED"
+      },
+      {
+        "word": "لشمس",
+        "root": "شمس",
+        "prefix": "la",
+        "input": "لشمس مهم جدا",
+        "corrected": "لشمس مهم جدا.",
+        "word_preserved": true,
+        "targeting_suggestions": 0,
+        "status": "✅ PRESERVED"
+      },
+      {
+        "word": "كشمس",
+        "root": "شمس",
+        "prefix": "ka",
+        "input": "كشمس مهم جدا",
+        "corrected": "كشمس مهمة جدا.",
+        "word_preserved": true,
+        "targeting_suggestions": 0,
+        "status": "✅ PRESERVED"
+      },
+      {
+        "word": "أمة",
+        "root": "أمة",
+        "prefix": "bare",
+        "input": "أمة مهم جدا",
+        "corrected": "أمة مهمة جدا؟",
+        "word_preserved": true,
+        "targeting_suggestions": 0,
+        "status": "✅ PRESERVED"
+      },
+      {
+        "word": "وأمة",
+        "root": "أمة",
+        "prefix": "wa",
+        "input": "وأمة مهم جدا",
+        "corrected": "وأمة مهمة جدا.",
+        "word_preserved": true,
+        "targeting_suggestions": 0,
+        "status": "✅ PRESERVED"
+      },
+      {
+        "word": "بأمة",
+        "root": "أمة",
+        "prefix": "ba",
+        "input": "بأمة مهم جدا",
+        "corrected": "بأمة مهمة جدا؟",
+        "word_preserved": true,
+        "targeting_suggestions": 0,
+        "status": "✅ PRESERVED"
+      },
+      {
+        "word": "لأمة",
+        "root": "أمة",
+        "prefix": "la",
+        "input": "لأمة مهم جدا",
+        "corrected": "لأمة مهمة جدا.",
+        "word_preserved": true,
+        "targeting_suggestions": 0,
+        "status": "✅ PRESERVED"
+      },
+      {
+        "word": "كأمة",
+        "root": "أمة",
+        "prefix": "ka",
+        "input": "كأمة مهم جدا",
+        "corrected": "كأمة مهمة جدا.",
+        "word_preserved": true,
+        "targeting_suggestions": 0,
+        "status": "✅ PRESERVED"
+      },
+      {
+        "word": "نافذة",
+        "root": "نافذة",
+        "prefix": "bare",
+        "input": "نافذة مهم جدا",
+        "corrected": "نافذة مهمة جدا.",
+        "word_preserved": true,
+        "targeting_suggestions": 0,
+        "status": "✅ PRESERVED"
+      },
+      {
+        "word": "ونافذة",
+        "root": "نافذة",
+        "prefix": "wa",
+        "input": "ونافذة مهم جدا",
+        "corrected": "ونافذة مهمة جدا.",
+        "word_preserved": true,
+        "targeting_suggestions": 0,
+        "status": "✅ PRESERVED"
+      },
+      {
+        "word": "بنافذة",
+        "root": "نافذة",
+        "prefix": "ba",
+        "input": "بنافذة مهم جدا",
+        "corrected": "بنافذة مهمة جدا.",
+        "word_preserved": true,
+        "targeting_suggestions": 0,
+        "status": "✅ PRESERVED"
+      },
+      {
+        "word": "لنافذة",
+        "root": "نافذة",
+        "prefix": "la",
+        "input": "لنافذة مهم جدا",
+        "corrected": "لنافذة مهمة جدا.",
+        "word_preserved": true,
+        "targeting_suggestions": 0,
+        "status": "✅ PRESERVED"
+      },
+      {
+        "word": "كنافذة",
+        "root": "نافذة",
+        "prefix": "ka",
+        "input": "كنافذة مهم جدا",
+        "corrected": "كنافذة مهمة جدا.",
+        "word_preserved": true,
+        "targeting_suggestions": 0,
+        "status": "✅ PRESERVED"
+      },
+      {
+        "word": "علم",
+        "root": "علم",
+        "prefix": "bare",
+        "input": "علم مهم جدا",
+        "corrected": "علم مهم جدا.",
+        "word_preserved": true,
+        "targeting_suggestions": 0,
+        "status": "✅ PRESERVED"
+      },
+      {
+        "word": "وعلم",
+        "root": "علم",
+        "prefix": "wa",
+        "input": "وعلم مهم جدا",
+        "corrected": "وعلم مهم جدا.",
+        "word_preserved": true,
+        "targeting_suggestions": 0,
+        "status": "✅ PRESERVED"
+      },
+      {
+        "word": "بعلم",
+        "root": "علم",
+        "prefix": "ba",
+        "input": "بعلم مهم جدا",
+        "corrected": "بعلم مهم جدا.",
+        "word_preserved": true,
+        "targeting_suggestions": 0,
+        "status": "✅ PRESERVED"
+      },
+      {
+        "word": "لعلم",
+        "root": "علم",
+        "prefix": "la",
+        "input": "لعلم مهم جدا",
+        "corrected": "لعلم مهم جدا.",
+        "word_preserved": true,
+        "targeting_suggestions": 0,
+        "status": "✅ PRESERVED"
+      },
+      {
+        "word": "كعلم",
+        "root": "علم",
+        "prefix": "ka",
+        "input": "كعلم مهم جدا",
+        "corrected": "كعلم مهم جدا.",
+        "word_preserved": true,
+        "targeting_suggestions": 0,
+        "status": "✅ PRESERVED"
+      },
+      {
+        "word": "اقتصاد",
+        "root": "اقتصاد",
+        "prefix": "bare",
+        "input": "اقتصاد مهم جدا",
+        "corrected": "اقتصاد مهم جدا.",
+        "word_preserved": true,
+        "targeting_suggestions": 0,
+        "status": "✅ PRESERVED"
+      },
+      {
+        "word": "واقتصاد",
+        "root": "اقتصاد",
+        "prefix": "wa",
+        "input": "واقتصاد مهم جدا",
+        "corrected": "واقتصاد مهم جدا.",
+        "word_preserved": true,
+        "targeting_suggestions": 0,
+        "status": "✅ PRESERVED"
+      },
+      {
+        "word": "باقتصاد",
+        "root": "اقتصاد",
+        "prefix": "ba",
+        "input": "باقتصاد مهم جدا",
+        "corrected": "باقتصاد مهم جدا.",
+        "word_preserved": true,
+        "targeting_suggestions": 0,
+        "status": "✅ PRESERVED"
+      },
+      {
+        "word": "لاقتصاد",
+        "root": "اقتصاد",
+        "prefix": "la",
+        "input": "لاقتصاد مهم جدا",
+        "corrected": "لاقتصاد مهم جدا.",
+        "word_preserved": true,
+        "targeting_suggestions": 0,
+        "status": "✅ PRESERVED"
+      },
+      {
+        "word": "كاقتصاد",
+        "root": "اقتصاد",
+        "prefix": "ka",
+        "input": "كاقتصاد مهم جدا",
+        "corrected": "كاقتصاد مهم جدا.",
+        "word_preserved": true,
+        "targeting_suggestions": 0,
+        "status": "✅ PRESERVED"
+      },
+      {
+        "word": "ولذالك",
+        "input": "ولذالك يجب الاهتمام",
+        "corrected": "ولذالك يجب الاهتمام.",
+        "status": "⚠ UNCHANGED (misspelling preserved)"
+      }
+    ]
+  },
+  "b4_boundary": {
+    "boundary_explanation": "Partial: 300=23 spell, 301=2 spell",
+    "test_300": {
+      "chars": 300,
+      "suggestions": 31,
+      "spelling": 23
+    },
+    "test_301": {
+      "chars": 301,
+      "suggestions": 12,
+      "spelling": 2
+    },
+    "repetitive": {
+      "input_chars": 600,
+      "status": "success",
+      "suggestions": 4,
+      "garbled": false,
+      "corrected_preview": "مرحبا مرحبا مرحبا ومرحبا مرحبا مرحبامرحبا مرحبا مرحبا مرحب مرحبا مرحبا وسهلا مرحبا مرحبا ترحيبا مرحب"
+    }
+  },
+  "b5_shadda": [
+    {
+      "input": "إنّ العلم نور",
+      "output": "إن العلم نور",
+      "status": "⚠ CHANGED"
+    },
+    {
+      "input": "علمت أنّ الامتحان صعب",
+      "output": "علمت أن الامتحان صعب",
+      "status": "⚠ CHANGED"
+    },
+    {
+      "input": "إنّ",
+      "output": "إن إن",
+      "status": "❌ DUPLICATED"
+    },
+    {
+      "input": "أنّ",
+      "output": "أن أن",
+      "status": "❌ DUPLICATED"
+    }
+  ],
+  "b7_brackets": [
+    {
+      "input": "(([{هذا النص}]))",
+      "corrected": "( ( [ { هذا النص } ] ، و",
+      "input_balanced": true,
+      "output_balanced": false,
+      "suggestions": 1
+    },
+    {
+      "input": "({هذا النص})",
+      "corrected": "يُعدَّ هذا النصا",
+      "input_balanced": true,
+      "output_balanced": true,
+      "suggestions": 1
+    },
+    {
+      "input": "(هذا النص)",
+      "corrected": "هذا النص",
+      "input_balanced": true,
+      "output_balanced": true,
+      "suggestions": 1
+    },
+    {
+      "input": "[هذا النص]",
+      "corrected": "هذا النص",
+      "input_balanced": true,
+      "output_balanced": true,
+      "suggestions": 1
+    }
+  ]
+}
