@@ -74,7 +74,7 @@ class HybridAutoComplete:
         self.gpt2_tokenizer = None
         self.gpt2_model = None
         self.device = "cpu"
-        self.alpha = 0.6  # Weight: 60% bigram, 40% GPT-2
+        self.alpha = 0.4  # Weight: 40% bigram, 60% GPT-2 (GPT-2 has context!)
         self._cache = {}
         self._cache_max = 256
 
@@ -274,11 +274,10 @@ class HybridAutoComplete:
             seen_words.add(w)
 
         # 5. ADD GPT-2's own top contextual predictions as bonus candidates
-        #    These are words GPT-2 thinks fit the context but bigram doesn't know
+        #    These are complete words GPT-2 generated based on full sentence context
         for w, neural_p in sorted(gpt2_probs.items(), key=lambda x: x[1], reverse=True)[:10]:
             if w not in seen_words and len(w) >= 2:
-                # Give these a lower alpha since they have no bigram backing
-                score = 0.3 * neural_p  # Lower weight, but still contextual
+                score = 0.5 * neural_p  # High weight — GPT-2 understands context
                 results.append((w, score))
                 seen_words.add(w)
 
@@ -288,7 +287,13 @@ class HybridAutoComplete:
         return [w for w, _ in results[:n]]
 
     def _gpt2_next_token_probs(self, prefix: str, top_k: int = 50) -> dict:
-        """Get GPT-2 next-token probability distribution."""
+        """
+        Get GPT-2 next-WORD predictions using generate() for complete words.
+        
+        Instead of predicting a single BPE token (which gives subwords like 'ال'),
+        we generate short sequences and extract the first complete word.
+        This gives us actual Arabic words like 'القاهرة' instead of 'ال'.
+        """
         if self.gpt2_model is None or self.gpt2_tokenizer is None:
             return {}
 
@@ -297,22 +302,50 @@ class HybridAutoComplete:
                 prefix,
                 return_tensors="pt",
                 truncation=True,
-                max_length=512,  # Shorter than 1024 for speed
+                max_length=512,
             )
+            input_len = inputs['input_ids'].shape[1]
 
+            # Generate multiple sequences (beam search for diversity)
             with torch.no_grad():
-                outputs = self.gpt2_model(**inputs)
-                logits = outputs.logits[0, -1]
+                outputs = self.gpt2_model.generate(
+                    **inputs,
+                    max_new_tokens=6,    # Enough tokens to form a complete word
+                    num_beams=10,        # Beam search for quality
+                    num_return_sequences=10,
+                    do_sample=False,
+                    early_stopping=True,
+                    no_repeat_ngram_size=2,
+                )
 
-            probs = torch.softmax(logits, dim=-1)
-            top_probs, top_ids = torch.topk(probs, top_k)
-
+            # Extract the first NEW word from each generated sequence
+            import re
+            ARABIC_WORD_RE = re.compile(r'[\u0600-\u06FF]{2,}')
+            
             prob_dict = {}
-            for idx, prob in zip(top_ids, top_probs):
-                word = self.gpt2_tokenizer.decode([idx]).strip()
-                if word and len(word) >= 2:
-                    prob_dict[word] = prob.item()
+            for i, seq in enumerate(outputs):
+                # Decode only the NEW tokens (skip the input prefix)
+                new_tokens = seq[input_len:]
+                generated_text = self.gpt2_tokenizer.decode(new_tokens, skip_special_tokens=True).strip()
+                
+                if not generated_text:
+                    continue
+                
+                # Extract the first complete Arabic word
+                match = ARABIC_WORD_RE.search(generated_text)
+                if match:
+                    word = match.group(0)
+                    # Score: higher rank = higher probability (beam search is sorted)
+                    score = 1.0 / (i + 1)  # 1.0, 0.5, 0.33, 0.25, ...
+                    if word not in prob_dict or prob_dict[word] < score:
+                        prob_dict[word] = score
 
+            # Normalize scores to sum to ~1
+            total = sum(prob_dict.values())
+            if total > 0:
+                prob_dict = {w: s / total for w, s in prob_dict.items()}
+
+            logger.info(f"[GPT2] context='{prefix[-40:]}' → words={list(prob_dict.keys())[:8]}")
             return prob_dict
 
         except Exception as e:
