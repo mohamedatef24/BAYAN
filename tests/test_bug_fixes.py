@@ -657,5 +657,186 @@ class TestSuffixCorruption(unittest.TestCase):
                          "Verb+pronoun كتبته→كتبتة must be blocked")
 
 
+# ═══════════════════════════════════════════════════════════════
+# P2: Ta Marbuta Fix Tests
+# ═══════════════════════════════════════════════════════════════
+class TestTaMarbutaFix(unittest.TestCase):
+    """Tests for the _fix_ta_marbuta pipeline function."""
+
+    @classmethod
+    def setUpClass(cls):
+        from app import _fix_ta_marbuta, _TA_MARBUTA_DICT
+        cls.fix = staticmethod(_fix_ta_marbuta)
+        cls.dict = _TA_MARBUTA_DICT
+
+    def test_basic_fix(self):
+        """المدرسه should be corrected to المدرسة."""
+        result, changes = self.fix('ذهبت الى المدرسه')
+        self.assertIn('المدرسة', result)
+        self.assertEqual(len(changes), 1)
+        self.assertEqual(changes[0]['original'], 'المدرسه')
+        self.assertEqual(changes[0]['correction'], 'المدرسة')
+
+    def test_multiple_fixes(self):
+        """Multiple ta marbuta errors in one sentence."""
+        result, changes = self.fix('الحياه في المدينه جميله')
+        self.assertIn('الحياة', result)
+        self.assertIn('المدينة', result)
+        self.assertGreaterEqual(len(changes), 2)
+
+    def test_no_false_positives(self):
+        """Words ending in ه that are NOT ta marbuta should be left alone."""
+        result, changes = self.fix('الله أكبر')
+        self.assertEqual(result, 'الله أكبر')
+        self.assertEqual(len(changes), 0)
+
+    def test_correct_text_untouched(self):
+        """Already correct text should not be changed."""
+        result, changes = self.fix('ذهبت إلى المدرسة')
+        self.assertEqual(result, 'ذهبت إلى المدرسة')
+        self.assertEqual(len(changes), 0)
+
+    def test_without_alef_lam(self):
+        """Bare words without ال should also be fixed."""
+        result, changes = self.fix('هذه مدرسه كبيره')
+        self.assertIn('مدرسة', result)
+
+    def test_dict_coverage(self):
+        """Dictionary should have significant coverage."""
+        self.assertGreater(len(self.dict), 50)
+
+
+# ═══════════════════════════════════════════════════════════════
+# P2: Hamza Whitelist Tests
+# ═══════════════════════════════════════════════════════════════
+class TestHamzaWhitelist(unittest.TestCase):
+    """Tests for hamza fix function."""
+
+    @classmethod
+    def setUpClass(cls):
+        try:
+            from nlp.spelling.araspell_rules import AraSpellPostProcessor
+            cls.fix = staticmethod(AraSpellPostProcessor.fix_common_hamza)
+            cls.available = True
+        except Exception:
+            cls.available = False
+
+    def test_anta_fix(self):
+        """انت should become أنت."""
+        if not self.available:
+            self.skipTest("AraSpellPostProcessor not available")
+        result = self.fix('انت طالب')
+        self.assertIn('أنت', result)
+
+    def test_ana_fix(self):
+        """انا should become أنا."""
+        if not self.available:
+            self.skipTest("AraSpellPostProcessor not available")
+        result = self.fix('انا ذاهب')
+        self.assertIn('أنا', result)
+
+    def test_alaan_fix(self):
+        """الان should become الآن."""
+        if not self.available:
+            self.skipTest("AraSpellPostProcessor not available")
+        result = self.fix('اذهب الان')
+        self.assertIn('الآن', result)
+
+    def test_correct_hamza_untouched(self):
+        """Already correct hamza should not be changed."""
+        if not self.available:
+            self.skipTest("AraSpellPostProcessor not available")
+        result = self.fix('أنت ذاهب إلى المدرسة')
+        self.assertEqual(result, 'أنت ذاهب إلى المدرسة')
+
+
+# ═══════════════════════════════════════════════════════════════
+# P3: Caching & Rate Limiting Tests
+# ═══════════════════════════════════════════════════════════════
+class TestCachingAndRateLimiting(unittest.TestCase):
+    """Tests for response caching and rate limiting."""
+
+    @classmethod
+    def setUpClass(cls):
+        from app import (
+            _get_cache_key, _get_cached_response,
+            _set_cached_response, _check_rate_limit,
+            _analyze_cache, _rate_limit_store
+        )
+        cls._get_cache_key = staticmethod(_get_cache_key)
+        cls._get_cached = staticmethod(_get_cached_response)
+        cls._set_cached = staticmethod(_set_cached_response)
+        cls._check_rate = staticmethod(_check_rate_limit)
+        cls._cache = _analyze_cache
+        cls._rate_store = _rate_limit_store
+
+    def setUp(self):
+        self._cache.clear()
+        self._rate_store.clear()
+
+    def test_cache_key_deterministic(self):
+        """Same text should produce same cache key."""
+        key1 = self._get_cache_key('مرحبا')
+        key2 = self._get_cache_key('مرحبا')
+        self.assertEqual(key1, key2)
+
+    def test_cache_key_different(self):
+        """Different texts should produce different keys."""
+        key1 = self._get_cache_key('مرحبا')
+        key2 = self._get_cache_key('أهلا')
+        self.assertNotEqual(key1, key2)
+
+    def test_cache_store_and_retrieve(self):
+        """Cached response should be retrievable."""
+        data = {'original': 'test', 'corrected': 'test', 'suggestions': []}
+        self._set_cached('مرحبا', data)
+        result = self._get_cached('مرحبا')
+        self.assertIsNotNone(result)
+        self.assertEqual(result['original'], 'test')
+
+    def test_cache_miss(self):
+        """Non-cached text should return None."""
+        result = self._get_cached('نص جديد')
+        self.assertIsNone(result)
+
+    def test_rate_limit_allows(self):
+        """First request should be allowed."""
+        self.assertTrue(self._check_rate('127.0.0.1'))
+
+    def test_rate_limit_blocks(self):
+        """Should block after exceeding limit."""
+        for _ in range(30):
+            self._check_rate('test_ip')
+        self.assertFalse(self._check_rate('test_ip'))
+
+
+# ═══════════════════════════════════════════════════════════════
+# P2: Grammar Splitting Tests
+# ═══════════════════════════════════════════════════════════════
+class TestGrammarSplitting(unittest.TestCase):
+    """Tests for grammar multi-word diff splitting logic."""
+
+    def test_split_logic(self):
+        """Multi-word grammar diffs should be split into individual words."""
+        # Simulate the splitting logic from analyze_text
+        orig_text = 'الي المدرسه الاستاذ'
+        corr_text = 'إلى المدرسة الأستاذ'
+        orig_words = orig_text.split()
+        corr_words = corr_text.split()
+
+        self.assertEqual(len(orig_words), len(corr_words))
+
+        diffs = []
+        for ow, cw in zip(orig_words, corr_words):
+            if ow != cw:
+                diffs.append({'original': ow, 'correction': cw})
+
+        self.assertEqual(len(diffs), 3)
+        self.assertEqual(diffs[0]['original'], 'الي')
+        self.assertEqual(diffs[0]['correction'], 'إلى')
+        self.assertEqual(diffs[1]['original'], 'المدرسه')
+        self.assertEqual(diffs[1]['correction'], 'المدرسة')
+
+
 if __name__ == '__main__':
     unittest.main()

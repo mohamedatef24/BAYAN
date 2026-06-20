@@ -1,0 +1,27 @@
+{
+  "test_count": 5,
+  "all_pass": true,
+  "contamination_found": false,
+  "results": {
+    "CONC-3": {
+      "corrected": "التزم الرياضي بتناول وجباته الصحية وحساب سعراته بدقة رغبة؛ في بناء كتلة عضلية قوية ويا له، من التزام حديدي يثير الإعجاب ولقد كان! أداؤه في المسابقات الأخيرة مبهرا للغاية",
+      "suggestions_count": 3
+    },
+    "CONC-1": {
+      "corrected": "الحديقه جميلة.",
+      "suggestions_count": 1
+    },
+    "CONC-2": {
+      "corrected": "الطلاب ذهبوا إلى المدرسة.",
+      "suggestions_count": 3
+    },
+    "CONC-5": {
+      "corrected": "هذه المدينة جميلة جدا ومناخها معتدل.",
+      "suggestions_count": 2
+    },
+    "CONC-4": {
+      "corrected": "القاهرة عاصمة مصر.",
+      "suggestions_count": 1
+    }
+  }
+}

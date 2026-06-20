@@ -1,0 +1,75 @@
+{
+  "phase_0_1": {
+    "verdict": "WORKS in isolation ONLY, FAILS in sentence context",
+    "results": [
+      {
+        "label": "ان (isolation)",
+        "input": "ان",
+        "raw_spelling": "أن",
+        "raw_changed": true,
+        "pipeline_corrected": "إن.",
+        "pipeline_suggestions": 1
+      },
+      {
+        "label": "ان الحياة جميلة (sentence)",
+        "input": "ان الحياة جميلة",
+        "raw_spelling": "ان الحياة جميلة",
+        "raw_changed": false,
+        "pipeline_corrected": "إن الحياة جميلة!",
+        "pipeline_suggestions": 2
+      },
+      {
+        "label": "ان الذكاء مهم (sentence)",
+        "input": "ان الذكاء مهم",
+        "raw_spelling": "ان الذكاء مهم",
+        "raw_changed": false,
+        "pipeline_corrected": "إن الذكاء مهم.",
+        "pipeline_suggestions": 2
+      },
+      {
+        "label": "قال ان الحق واضح (mid-sentence)",
+        "input": "قال ان الحق واضح",
+        "raw_spelling": "قال ان الحق واضح",
+        "raw_changed": false,
+        "pipeline_corrected": "قال ان: الحق واضح",
+        "pipeline_suggestions": 1
+      }
+    ]
+  },
+  "phase_0_3": {
+    "input_chars": 982,
+    "input_words": 159,
+    "spelling": {
+      "error": "ReadTimeout: HTTPSConnectionPool(host='bayan10-bayan-api.hf.space', port=443): Read timed out. (read timeout=90)",
+      "elapsed": null
+    },
+    "grammar": {
+      "error": "ReadTimeout: HTTPSConnectionPool(host='bayan10-bayan-api.hf.space', port=443): Read timed out. (read timeout=90)",
+      "elapsed": null
+    },
+    "punctuation": {
+      "error": "ReadTimeout: HTTPSConnectionPool(host='bayan10-bayan-api.hf.space', port=443): Read timed out. (read timeout=90)",
+      "elapsed": null
+    },
+    "pipeline": {
+      "error": null,
+      "status": "success",
+      "suggestions": 4,
+      "timing": {
+        "grammar_ms": 12179,
+        "punctuation_ms": 12237,
+        "spelling_ms": 0,
+        "total_ms": 24420
+      },
+      "elapsed": 54892
+    }
+  },
+  "phase_0_4": {
+    "sentence": "الطلاب اللذين اجتهدو في دراستهم حققو نتائج ممتازه في الأمتحانات الصعبه",
+    "subject": "الطلاب (PLURAL)",
+    "correct_form": "الذين (plural)",
+    "is_real_bug": true,
+    "grammar_output": "الطلاب الذين اجتهدو في دراستهم حققوا نتائج ممتازة في الامتحانات الصعبة",
+    "bug_status": "fixed_by_model"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "b2": [
+    {
+      "id": "BUG-006",
+      "word": "اهم",
+      "input": "هذا اهم شيء في الحياة",
+      "corrected": "هذا اهم شيء في الحياة.",
+      "status": "✅ PRESERVED",
+      "targeting_suggestions": 0
+    },
+    {
+      "id": "BUG-009",
+      "word": "قرأ",
+      "input": "قرأ الطالب الكتاب",
+      "corrected": "قرأ الطالب الكتاب.",
+      "status": "✅ PRESERVED",
+      "targeting_suggestions": 0
+    },
+    {
+      "id": "BUG-010",
+      "word": "مشى",
+      "input": "مشى الرجل إلى البيت",
+      "corrected": "مشى الرجل إلى البيت.",
+      "status": "✅ PRESERVED",
+      "targeting_suggestions": 0
+    },
+    {
+      "id": "BUG-013",
+      "word": "خطأ",
+      "input": "وقع في خطأ كبير",
+      "corrected": "وقع في خطأ كبير.",
+      "status": "✅ PRESERVED",
+      "targeting_suggestions": 0
+    }
+  ],
+  "b3_note": "Deployed API lacks Round 2 fixes"
+}

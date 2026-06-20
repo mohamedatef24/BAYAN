@@ -1,0 +1,61 @@
+{
+  "input": "ان الطالبات ذهبو الى الجامعه",
+  "raw_spelling": "ان الط ابت ذهبوا إلى الجامعه",
+  "raw_grammar": "إن الطالبات ذهبن إلى الجامعة",
+  "pipeline_corrected": "إن الطالبات ذهبن ذهبوا الجامعة.",
+  "suggestions": [
+    {
+      "alternatives": [],
+      "confidence": 1.0,
+      "correction": "ذهبن",
+      "end": 16,
+      "id": "f303a4d8-1369-43f7-8ad5-209c03d4af24",
+      "locked": true,
+      "original": "ذهبو",
+      "priority": 3,
+      "start": 12,
+      "type": "grammar"
+    },
+    {
+      "alternatives": [],
+      "confidence": 0.8,
+      "correction": "الجامعة.",
+      "end": 28,
+      "id": "ece1c300-e501-44dc-9ef2-907b47785145",
+      "locked": true,
+      "original": "الجامعه",
+      "priority": 2,
+      "start": 21,
+      "type": "punctuation"
+    },
+    {
+      "alternatives": [],
+      "confidence": 1.0,
+      "correction": "إن",
+      "end": 2,
+      "id": "aa123654-bb3a-46ab-aa3c-7cea6dc4955b",
+      "locked": true,
+      "original": "ان",
+      "priority": 1,
+      "start": 0,
+      "type": "spelling"
+    },
+    {
+      "alternatives": [
+        "ذهبوا",
+        "ال",
+        "الم",
+        "الى"
+      ],
+      "confidence": 0.9,
+      "correction": "ذهبوا",
+      "end": 20,
+      "id": "bf07637f-0432-4311-aab1-77f521718214",
+      "locked": true,
+      "original": "الى",
+      "priority": 1,
+      "start": 17,
+      "type": "spelling"
+    }
+  ]
+}

@@ -796,6 +796,87 @@
   margin-top: var(--spacing-sm);
 }
 
+/* ── Type Icon ── */
+.popover-type-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+/* ── Original Label ── */
+#tooltip-original {
+  text-decoration: none;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+}
+
+.popover-original-label {
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-label);
+}
+
+.popover-original-word {
+  text-decoration: line-through;
+  color: var(--color-error);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* ── Feedback Buttons ── */
+.popover-feedback {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border);
+  justify-content: center;
+}
+
+.popover-feedback-label {
+  font-size: var(--font-size-label);
+  color: var(--color-text-muted);
+}
+
+.popover-feedback-btn {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-surface);
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.popover-feedback-yes:hover {
+  background: rgba(34, 197, 94, 0.15);
+  border-color: #22c55e;
+  transform: scale(1.1);
+}
+
+.popover-feedback-no:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: #ef4444;
+  transform: scale(1.1);
+}
+
+.popover-feedback-thanks {
+  font-size: var(--font-size-label);
+  color: #22c55e;
+  font-weight: var(--font-weight-bold);
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+
 /* ── Alt chips in suggestion cards ── */
 .suggestion-card-alts {
   display: flex;

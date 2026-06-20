@@ -363,18 +363,19 @@ function showTooltip(element) {
   const alternativesEl = document.getElementById('tooltip-alternatives');
 
   const typeMap = {
-    spelling: 'خطأ إملائي',
-    grammar: 'خطأ نحوي',
-    punctuation: 'علامات ترقيم'
+    spelling: { label: 'خطأ إملائي', icon: '🔤' },
+    grammar: { label: 'خطأ نحوي', icon: '📝' },
+    punctuation: { label: 'علامات ترقيم', icon: '✏️' }
   };
 
   if (typeEl) {
-    typeEl.textContent = typeMap[suggestion.type] || suggestion.type;
+    const typeInfo = typeMap[suggestion.type] || { label: suggestion.type, icon: '📋' };
+    typeEl.innerHTML = `<span class="popover-type-icon">${typeInfo.icon}</span> ${typeInfo.label}`;
     typeEl.className = `popover-type popover-type--${suggestion.type}`;
   }
 
   if (originalEl) {
-    originalEl.textContent = suggestion.original;
+    originalEl.innerHTML = `<span class="popover-original-label">الأصل:</span> <span class="popover-original-word">${escapeHtml(suggestion.original)}</span>`;
   }
 
   // Render alternatives
@@ -392,23 +393,36 @@ function showTooltip(element) {
       if (isKeep) return; // render keep button last
       const isMain = i === 0;
       const btnClass = isMain ? 'popover-alt-btn popover-alt-main' : 'popover-alt-btn';
-      html += `<button class="${btnClass}" data-alt-correction="${escapeHtml(alt)}" type="button">${escapeHtml(alt)}</button>`;
+      html += `<button class="${btnClass}" data-alt-correction="${escapeHtml(alt)}" type="button">${isMain ? '✓ ' : ''}${escapeHtml(alt)}</button>`;
     });
     // Render keep button at end
     html += `<button class="popover-alt-btn popover-alt-keep" data-alt-correction="${escapeHtml(suggestion.original)}" type="button">إبقاء كما هي</button>`;
+    // Render feedback buttons
+    html += `<div class="popover-feedback">
+      <span class="popover-feedback-label">هل الاقتراح مفيد؟</span>
+      <button class="popover-feedback-btn popover-feedback-yes" data-feedback="yes" type="button" title="مفيد">👍</button>
+      <button class="popover-feedback-btn popover-feedback-no" data-feedback="no" type="button" title="غير مفيد">👎</button>
+    </div>`;
     alternativesEl.innerHTML = html;
 
-    // Bind click events
+    // Bind click events for alternatives
     alternativesEl.querySelectorAll('.popover-alt-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const correctionText = btn.dataset.altCorrection;
         if (correctionText === suggestion.original) {
-          // "Keep as-is" — just dismiss the suggestion
           dismissSuggestion(suggestion);
         } else {
-          // Apply this alternative correction
           applyAlternativeCorrection(suggestion, correctionText);
         }
+      });
+    });
+
+    // Bind feedback buttons
+    alternativesEl.querySelectorAll('.popover-feedback-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const helpful = btn.dataset.feedback === 'yes';
+        _sendFeedback(suggestion, helpful);
+        btn.closest('.popover-feedback').innerHTML = '<span class="popover-feedback-thanks">شكراً لملاحظاتك! ✓</span>';
       });
     });
   }
@@ -520,6 +534,9 @@ function applySuggestionAtOffsets(suggestion) {
   } finally {
     _isApplyingSuggestion = false;
   }
+  // P2/User Request: Auto re-analyze after applying suggestion
+  // Calls analyzeText() DIRECTLY (not delayed) for instant re-analysis.
+  setTimeout(() => { analyzeText(); }, 300);
 }
 
 function applyCorrection() {
@@ -603,6 +620,8 @@ function applyAlternativeCorrection(suggestion, correctionText) {
   } finally {
     _isApplyingSuggestion = false;
   }
+  // P2/User Request: Auto re-analyze after applying alternative correction
+  setTimeout(() => { analyzeText(); }, 300);
 }
 
 function dismissSuggestion(suggestion) {
@@ -682,6 +701,8 @@ function applyAllSuggestions() {
   } finally {
     _isApplyingSuggestion = false;
   }
+  // P2/User Request: Auto re-analyze after applying all suggestions
+  setTimeout(() => { analyzeText(); }, 300);
 }
 
 function clearEditor() {
@@ -743,6 +764,22 @@ function copyText() {
     document.body.removeChild(temp);
     if (typeof showToast === 'function') showToast('✓ تم نسخ النص');
   });
+}
+
+// ── Feedback API (P2) ──
+function _sendFeedback(suggestion, helpful) {
+  const apiBase = window.BAYAN_API_BASE || '';
+  fetch(`${apiBase}/api/feedback`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      suggestion_id: suggestion.id || '',
+      helpful: helpful,
+      original: suggestion.original || '',
+      correction: suggestion.correction || '',
+      text: (document.getElementById('editor-container')?.textContent || '').substring(0, 200),
+    })
+  }).catch(err => console.warn('[Feedback] Failed:', err));
 }
 
 if (typeof module !== 'undefined' && module.exports) {

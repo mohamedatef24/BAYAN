@@ -1,0 +1,1323 @@
+{
+  "timestamp": "2026-06-20T19:17:40.208323+00:00",
+  "api_base": "https://bayan10-bayan-api.hf.space",
+  "health": {
+    "environment": "huggingface_spaces",
+    "mode": "hf_spaces_local",
+    "models": {
+      "autocomplete": true,
+      "grammar": true,
+      "punctuation": true,
+      "spelling": true,
+      "summarization": true
+    },
+    "note": "Free tier: summarization local, other models return input unchanged",
+    "status": "healthy",
+    "supabase": {
+      "configured": true
+    }
+  },
+  "cat1": [
+    {
+      "id": "C1-01",
+      "category": 1,
+      "input": "كانت الفتيات يلعبون في الحديقه",
+      "a_spelling": "كانت الفتيات يلعبون في الحديقة",
+      "a_grammar_on_original": "كانت الفتيات يلعبن في الحديقة",
+      "a_grammar_on_spell_corrected": "كانت الفتيات يلعبن في الحديقة",
+      "a_punctuation": "كانت الفتيات يلعبون في الحديقه.",
+      "grammar_diff_orig_vs_spell": [],
+      "b_corrected": "كانت الفتيات يلعبن في الحديقة.",
+      "b_suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "يلعبن",
+          "end": 19,
+          "id": "48d68e84-19e8-4af0-b1ea-b7ae4c7427f4",
+          "locked": true,
+          "original": "يلعبون",
+          "priority": 3,
+          "start": 13,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [],
+          "confidence": 0.8,
+          "correction": "الحديقة.",
+          "end": 30,
+          "id": "0012d2dc-08f6-44ad-a9d1-e07230045474",
+          "locked": true,
+          "original": "الحديقه",
+          "priority": 2,
+          "start": 23,
+          "type": "punctuation"
+        }
+      ]
+    },
+    {
+      "id": "C1-02",
+      "category": 1,
+      "input": "ان الطالبات ذهبو الى الجامعه",
+      "a_spelling": "ان الط ابت ذهبوا إلى الجامعه",
+      "a_grammar_on_original": "إن الطالبات ذهبن إلى الجامعة",
+      "a_grammar_on_spell_corrected": "إن الطلاب ذهبوا إلى الجامعة",
+      "a_punctuation": "ان الطالبات ذهبو الى الجامعه!",
+      "grammar_diff_orig_vs_spell": [
+        {
+          "word_idx": 1,
+          "gram_on_orig": "الطالبات",
+          "gram_on_spell": "الطلاب"
+        },
+        {
+          "word_idx": 2,
+          "gram_on_orig": "ذهبن",
+          "gram_on_spell": "ذهبوا"
+        }
+      ],
+      "b_corrected": "إن الطالبات ذهبن ذهبوا الجامعة.",
+      "b_suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "ذهبن",
+          "end": 16,
+          "id": "8a21b71d-8a87-4e29-a828-4ce2b343ae2a",
+          "locked": true,
+          "original": "ذهبو",
+          "priority": 3,
+          "start": 12,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [],
+          "confidence": 0.8,
+          "correction": "الجامعة.",
+          "end": 28,
+          "id": "0c9e127e-8e64-4cc4-a928-03651da1dd15",
+          "locked": true,
+          "original": "الجامعه",
+          "priority": 2,
+          "start": 21,
+          "type": "punctuation"
+        },
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "إن",
+          "end": 2,
+          "id": "156cd1ce-37cd-4ade-888c-9e8d12a83b05",
+          "locked": true,
+          "original": "ان",
+          "priority": 1,
+          "start": 0,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [
+            "ذهبوا",
+            "ال",
+            "الم",
+            "الى"
+          ],
+          "confidence": 0.9,
+          "correction": "ذهبوا",
+          "end": 20,
+          "id": "836d7346-3ea8-4851-bc69-53df3e1ff6b4",
+          "locked": true,
+          "original": "الى",
+          "priority": 1,
+          "start": 17,
+          "type": "spelling"
+        }
+      ]
+    },
+    {
+      "id": "C1-03",
+      "category": 1,
+      "input": "هذة المدينه جميله جدا ومناخها معتدل",
+      "a_spelling": "هذة المدينه جميله جدا ومناخها معتدل",
+      "a_grammar_on_original": "هذه المدينة جميلة جدا ومناخها معتدل",
+      "a_grammar_on_spell_corrected": "هذه المدينة جميلة جدا ومناخها معتدل",
+      "a_punctuation": "هذة المدينه جميله جدا ومناخها معتدل.",
+      "grammar_diff_orig_vs_spell": [],
+      "b_corrected": "هذه المدينة جميلة جدا ومناخها معتدل.",
+      "b_suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 0.8,
+          "correction": "معتدل.",
+          "end": 35,
+          "id": "b960d84a-bcf6-40c3-976e-29632ad7f302",
+          "locked": true,
+          "original": "معتدل",
+          "priority": 2,
+          "start": 30,
+          "type": "punctuation"
+        },
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "هذه المدينة جميلة",
+          "end": 17,
+          "id": "a89acaad-669a-4867-9ebd-6bd5cbfad2ea",
+          "locked": true,
+          "original": "هذة المدينه جميله",
+          "priority": 1,
+          "start": 0,
+          "type": "spelling"
+        }
+      ]
+    },
+    {
+      "id": "C1-04",
+      "category": 1,
+      "input": "الطلاب اجتهدو في دراستهم وحققو نتائج ممتازه",
+      "a_spelling": "الطلاب الاجتهادوا في دراستهم وحققوا نتائج ممتازه",
+      "a_grammar_on_original": "الطلاب اجتهدو في دراستهم وحققوا نتائج ممتازة",
+      "a_grammar_on_spell_corrected": "الطلاب اجتهدوا في دراستهم وحققوا نتائج ممتازة",
+      "a_punctuation": "الطلاب اجتهدو في دراستهم وحققو نتائج ممتازه.",
+      "grammar_diff_orig_vs_spell": [
+        {
+          "word_idx": 1,
+          "gram_on_orig": "اجتهدو",
+          "gram_on_spell": "اجتهدوا"
+        }
+      ],
+      "b_corrected": "الطلاب اجتهدو في دراستهم وحققوا نتائج ممتازة.",
+      "b_suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 0.8,
+          "correction": "ممتازة.",
+          "end": 43,
+          "id": "19a6216b-b7a1-4c0f-acd9-5c698617443b",
+          "locked": true,
+          "original": "ممتازه",
+          "priority": 2,
+          "start": 37,
+          "type": "punctuation"
+        },
+        {
+          "alternatives": [
+            "وحققوا",
+            "وحقوق",
+            "وحقق",
+            "وحققو"
+          ],
+          "confidence": 0.9,
+          "correction": "وحققوا",
+          "end": 30,
+          "id": "cdcf61bd-8983-44c8-9c3d-8792dc8027c3",
+          "locked": true,
+          "original": "وحققو",
+          "priority": 1,
+          "start": 25,
+          "type": "spelling"
+        }
+      ]
+    },
+    {
+      "id": "C1-05",
+      "category": 1,
+      "input": "ذهب الولد الى المكتبه وقرا كتاب مفيد",
+      "a_spelling": "ذهب الولد إلى المكتبة وقرا كتاب مفيد",
+      "a_grammar_on_original": "ذهب الولد إلى المكتبة وقرا كتابا مفيدا",
+      "a_grammar_on_spell_corrected": "ذهب الولد إلى المكتبة وقرا كتابا مفيدا",
+      "a_punctuation": "ذهب الولد الى المكتبه وقرا، كتاب مفيد",
+      "grammar_diff_orig_vs_spell": [],
+      "b_corrected": "ذهب الولد إلى المكتبة وقرا كتابا مفيدا",
+      "b_suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "كتابا مفيدا",
+          "end": 36,
+          "id": "ede929d9-8112-4d65-a460-7a44cee535f5",
+          "locked": true,
+          "original": "كتاب مفيد",
+          "priority": 3,
+          "start": 27,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [
+            "إلى",
+            "ال",
+            "الم",
+            "الى"
+          ],
+          "confidence": 0.9,
+          "correction": "إلى",
+          "end": 13,
+          "id": "affb4882-0466-4184-93e7-fb3463132a83",
+          "locked": true,
+          "original": "الى",
+          "priority": 1,
+          "start": 10,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [
+            "المكتبة",
+            "المكتب",
+            "المشتبه",
+            "المكتبه"
+          ],
+          "confidence": 0.9,
+          "correction": "المكتبة",
+          "end": 21,
+          "id": "3f73b099-d428-4c05-98f8-138fb1d83c54",
+          "locked": true,
+          "original": "المكتبه",
+          "priority": 1,
+          "start": 14,
+          "type": "spelling"
+        }
+      ]
+    }
+  ],
+  "cat7": [
+    {
+      "id": "C7-01",
+      "category": 7,
+      "input": "ذهب الولد الى المدرسه وقابل المعلمه واخذ الكتاب",
+      "desc": "3-stage chain: spelling الى→إلى, grammar المدرسه→المدرسة, punc adds marks",
+      "a_spelling": "ذهب الولد إلى المدرسه وقابل المعلمه وأخذ الكتاب",
+      "a_grammar": "ذهب الولد إلى المدرسة وقابل المعلمة وأخذ الكتاب",
+      "a_punc": "ذهب الولد الى المدرسه وقابل، المعلمه واخذ الكتاب،",
+      "b_corrected": "ذهب الولد إلى المدرسة وقابل المعلمة وأخذ الكتاب.",
+      "b_suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 0.8,
+          "correction": "الكتاب.",
+          "end": 47,
+          "id": "3e740303-1dcd-42ec-bd6c-7f0af8069e44",
+          "locked": true,
+          "original": "الكتاب",
+          "priority": 2,
+          "start": 41,
+          "type": "punctuation"
+        },
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "المدرسة",
+          "end": 21,
+          "id": "84f953ae-2d0a-4e99-a07d-7d35638ba843",
+          "locked": true,
+          "original": "المدرسه",
+          "priority": 1,
+          "start": 14,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "المعلمة",
+          "end": 35,
+          "id": "2e793ab2-29fc-454b-8490-ca7cfdfe4404",
+          "locked": true,
+          "original": "المعلمه",
+          "priority": 1,
+          "start": 28,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [
+            "إلى",
+            "ال",
+            "الم",
+            "الى"
+          ],
+          "confidence": 0.9,
+          "correction": "إلى",
+          "end": 13,
+          "id": "d1b951c7-f94e-4941-986c-8ce5fa51bab0",
+          "locked": true,
+          "original": "الى",
+          "priority": 1,
+          "start": 10,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [
+            "وأخذ",
+            "والذ",
+            "واخت",
+            "واخذ"
+          ],
+          "confidence": 0.9,
+          "correction": "وأخذ",
+          "end": 40,
+          "id": "c024f6ae-4740-4d87-9a0d-95818699e4f3",
+          "locked": true,
+          "original": "واخذ",
+          "priority": 1,
+          "start": 36,
+          "type": "spelling"
+        }
+      ],
+      "b_suggestion_count": 5,
+      "overlapping_suggestions": []
+    },
+    {
+      "id": "C7-02",
+      "category": 7,
+      "input": "كانت البنات يلعبون في الحديقه الجميله وفجأه سقطت احداهن",
+      "desc": "Multiple overlapping corrections across all stages",
+      "a_spelling": "كانت البنات يلعبون في الحديقه الجميله وفجأه سقطت احداهن",
+      "a_grammar": "كانت البنات يلعبن في الحديقة الجميلة وفجأة سقطت أختهن",
+      "a_punc": "كانت البنات يلعبون في الحديقه الجميله وفجأه، سقطت احداهن",
+      "b_corrected": "كانت البنات يلعبن في الحديقة الجميلة وفجأة سقطت أختهن.",
+      "b_suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "يلعبن",
+          "end": 18,
+          "id": "2d1e033f-60d9-4921-bb65-d13b890f44d4",
+          "locked": true,
+          "original": "يلعبون",
+          "priority": 3,
+          "start": 12,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [],
+          "confidence": 0.8,
+          "correction": "أختهن.",
+          "end": 55,
+          "id": "409bca6e-33d5-4339-8d75-d8dc1e3a8cea",
+          "locked": true,
+          "original": "احداهن",
+          "priority": 2,
+          "start": 49,
+          "type": "punctuation"
+        },
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "الحديقة الجميلة وفجأة",
+          "end": 43,
+          "id": "ac5b5008-0563-4168-99aa-46c8de59d1d1",
+          "locked": true,
+          "original": "الحديقه الجميله وفجأه",
+          "priority": 1,
+          "start": 22,
+          "type": "spelling"
+        }
+      ],
+      "b_suggestion_count": 3,
+      "overlapping_suggestions": []
+    },
+    {
+      "id": "C7-03",
+      "category": 7,
+      "input": "ان الذكاء الاصطناعي يلعب دورا هاما في تطوير التكنولوجيا الحديثه ولذالك يجب الاهتمام بة",
+      "desc": "Long sentence with corrections from all 3 stages",
+      "a_spelling": "أن الذكاء الاصطناعي يلعب دورا هاما في تطوير التكنولوجيا الحديثة ولذا ذلك يجب الاهتمام بة",
+      "a_grammar": "إن الذكاء الاصطناعي يؤدي دورا مهمّا في تطوير التكنولوجيا الحديثة ولذلك يجب الاهتمام به",
+      "a_punc": "ان الذكاء الاصطناعي يلعب دورا هاما في تطوير التكنولوجيا الحديثه ولذالك؛ يجب الاهتمام بة",
+      "b_corrected": "أن الذكاء الاصطناعي يلعب دورا هاما في تطوير التكنولوجيا الحديثة ولذا ذلك يجب الاهتمام به",
+      "b_suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "به",
+          "end": 86,
+          "id": "0a44f7d9-1554-428c-809a-706631ffebdd",
+          "locked": true,
+          "original": "بة",
+          "priority": 1,
+          "start": 84,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [
+            "أن",
+            "ال",
+            "من",
+            "ان"
+          ],
+          "confidence": 0.9,
+          "correction": "أن",
+          "end": 2,
+          "id": "512b3c30-eadb-40fc-a481-1d4cd0909459",
+          "locked": true,
+          "original": "ان",
+          "priority": 1,
+          "start": 0,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [
+            "الحديثة",
+            "الحديث",
+            "الحديثي",
+            "الحديثه"
+          ],
+          "confidence": 0.9,
+          "correction": "الحديثة",
+          "end": 63,
+          "id": "9eb1f571-7852-4813-975d-f7cd79102ec8",
+          "locked": true,
+          "original": "الحديثه",
+          "priority": 1,
+          "start": 56,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [
+            "ولذا ذلك",
+            "ولذالك"
+          ],
+          "confidence": 0.85,
+          "correction": "ولذا ذلك",
+          "end": 70,
+          "id": "266db5db-ed2a-49be-accb-76db9e07697f",
+          "locked": true,
+          "original": "ولذالك",
+          "priority": 1,
+          "start": 64,
+          "type": "spelling"
+        }
+      ],
+      "b_suggestion_count": 4,
+      "overlapping_suggestions": []
+    },
+    {
+      "id": "C7-04",
+      "category": 7,
+      "input": "هذة المدينه جميله جدا ومناخها معتدل طوال العام وسكانها طيبون جدا",
+      "desc": "Multiple ه→ة fixes: does grammar lock prevent punc from adding marks near those words?",
+      "a_spelling": "هذة المدينه جميله جدا ومناخها معتدل طوال العام وسكان طيبون جدا",
+      "a_grammar": "هذه المدينة جميلة جدا ومناخها معتدل طوال العام وسكانها طيبون جدا",
+      "a_punc": "هذة المدينه جميله جدا ومناخها معتدل طوال العام وسكانها طيبون جدا.",
+      "b_corrected": "هذه المدينة جميلة جدا ومناخها معتدل طوال العام وسكانها طيبون جدا.",
+      "b_suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 0.8,
+          "correction": "جدا.",
+          "end": 64,
+          "id": "0dd9d98a-f146-492b-87c7-dba4913bdfd4",
+          "locked": true,
+          "original": "جدا",
+          "priority": 2,
+          "start": 61,
+          "type": "punctuation"
+        },
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "هذه المدينة جميلة",
+          "end": 17,
+          "id": "e12aa2f9-63d7-4f10-a128-13b0b1bbee9a",
+          "locked": true,
+          "original": "هذة المدينه جميله",
+          "priority": 1,
+          "start": 0,
+          "type": "spelling"
+        }
+      ],
+      "b_suggestion_count": 2,
+      "overlapping_suggestions": []
+    },
+    {
+      "id": "C7-05",
+      "category": 7,
+      "input": "الطلاب اللذين اجتهدو في دراستهم حققو نتائج ممتازه في الأمتحانات الصعبه",
+      "desc": "Heavy corrections needed across stages",
+      "a_spelling": "الطلاب اللذين اجتهد في دراستهم حقوق نتائج ممتازه في الأمتحانات الصعبه",
+      "a_grammar": "الطلاب الذين اجتهدو في دراستهم حققوا نتائج ممتازة في الامتحانات الصعبة",
+      "a_punc": "الطلاب اللذين اجتهدو في دراستهم حققو نتائج ممتازه في الأمتحانات الصعبه.",
+      "b_corrected": "الطلاب اللذين اجتهد في دراستهم حققوا نتائج ممتازة في الأمتحانات الصعبة.",
+      "b_suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "حققوا",
+          "end": 36,
+          "id": "b2ae6a56-0879-4572-837f-875895de9020",
+          "locked": true,
+          "original": "حققو",
+          "priority": 3,
+          "start": 32,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [],
+          "confidence": 0.8,
+          "correction": "الصعبة.",
+          "end": 70,
+          "id": "b075d0de-0e6d-4d88-a897-8e79e1845116",
+          "locked": true,
+          "original": "الصعبه",
+          "priority": 2,
+          "start": 64,
+          "type": "punctuation"
+        },
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "ممتازة",
+          "end": 49,
+          "id": "ee092cbc-bc6f-41f0-9c98-7cc2edeee671",
+          "locked": true,
+          "original": "ممتازه",
+          "priority": 1,
+          "start": 43,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [
+            "اجتهد",
+            "اجتهدو"
+          ],
+          "confidence": 0.9,
+          "correction": "اجتهد",
+          "end": 20,
+          "id": "97a2307e-5a5a-4668-a4fe-052bbf86c4d9",
+          "locked": true,
+          "original": "اجتهدو",
+          "priority": 1,
+          "start": 14,
+          "type": "spelling"
+        }
+      ],
+      "b_suggestion_count": 4,
+      "overlapping_suggestions": []
+    }
+  ],
+  "cat8x": [
+    {
+      "id": "C8X-مدرسة-al",
+      "category": 8,
+      "input": "المدرسة",
+      "root": "مدرسة",
+      "prefix_combo": "al",
+      "track_a_spelling": "المدرسة",
+      "changed": false
+    },
+    {
+      "id": "C8X-مدرسة-wal",
+      "category": 8,
+      "input": "والمدرسة",
+      "root": "مدرسة",
+      "prefix_combo": "wal",
+      "track_a_spelling": "والمدرسة في المدرسة",
+      "changed": true
+    },
+    {
+      "id": "C8X-مدرسة-bal",
+      "category": 8,
+      "input": "بالمدرسة",
+      "root": "مدرسة",
+      "prefix_combo": "bal",
+      "track_a_spelling": "بالمدرسة في المدرسة",
+      "changed": true
+    },
+    {
+      "id": "C8X-مدرسة-lal",
+      "category": 8,
+      "input": "للمدرسة",
+      "root": "مدرسة",
+      "prefix_combo": "lal",
+      "track_a_spelling": "للمدرسة",
+      "changed": false
+    },
+    {
+      "id": "C8X-شمس-al",
+      "category": 8,
+      "input": "الشمس",
+      "root": "شمس",
+      "prefix_combo": "al",
+      "track_a_spelling": "الشمس",
+      "changed": false
+    },
+    {
+      "id": "C8X-شمس-wal",
+      "category": 8,
+      "input": "والشمس",
+      "root": "شمس",
+      "prefix_combo": "wal",
+      "track_a_spelling": "والشمس والشمس",
+      "changed": true
+    },
+    {
+      "id": "C8X-شمس-bal",
+      "category": 8,
+      "input": "بالشمس",
+      "root": "شمس",
+      "prefix_combo": "bal",
+      "track_a_spelling": "الشمس",
+      "changed": true
+    },
+    {
+      "id": "C8X-شمس-lal",
+      "category": 8,
+      "input": "للشمس",
+      "root": "شمس",
+      "prefix_combo": "lal",
+      "track_a_spelling": "للشمس",
+      "changed": false
+    },
+    {
+      "id": "C8X-أمة-al",
+      "category": 8,
+      "input": "الأمة",
+      "root": "أمة",
+      "prefix_combo": "al",
+      "track_a_spelling": "الأمة",
+      "changed": false
+    },
+    {
+      "id": "C8X-أمة-wal",
+      "category": 8,
+      "input": "والأمة",
+      "root": "أمة",
+      "prefix_combo": "wal",
+      "track_a_spelling": "والأمة الأمة",
+      "changed": true
+    },
+    {
+      "id": "C8X-أمة-bal",
+      "category": 8,
+      "input": "بالأمة",
+      "root": "أمة",
+      "prefix_combo": "bal",
+      "track_a_spelling": "الأمة",
+      "changed": true
+    },
+    {
+      "id": "C8X-أمة-lal",
+      "category": 8,
+      "input": "للأمة",
+      "root": "أمة",
+      "prefix_combo": "lal",
+      "track_a_spelling": "للأمة",
+      "changed": false
+    },
+    {
+      "id": "C8X-نافذة-al",
+      "category": 8,
+      "input": "النافذة",
+      "root": "نافذة",
+      "prefix_combo": "al",
+      "track_a_spelling": "النافذة",
+      "changed": false
+    },
+    {
+      "id": "C8X-نافذة-wal",
+      "category": 8,
+      "input": "والنافذة",
+      "root": "نافذة",
+      "prefix_combo": "wal",
+      "track_a_spelling": "النافذة",
+      "changed": true
+    },
+    {
+      "id": "C8X-نافذة-bal",
+      "category": 8,
+      "input": "بالنافذة",
+      "root": "نافذة",
+      "prefix_combo": "bal",
+      "track_a_spelling": "النافذة",
+      "changed": true
+    },
+    {
+      "id": "C8X-نافذة-lal",
+      "category": 8,
+      "input": "للنافذة",
+      "root": "نافذة",
+      "prefix_combo": "lal",
+      "track_a_spelling": "النافذة",
+      "changed": true
+    },
+    {
+      "id": "C8X-علم-al",
+      "category": 8,
+      "input": "العلم",
+      "root": "علم",
+      "prefix_combo": "al",
+      "track_a_spelling": "العلم",
+      "changed": false
+    },
+    {
+      "id": "C8X-علم-wal",
+      "category": 8,
+      "input": "والعلم",
+      "root": "علم",
+      "prefix_combo": "wal",
+      "track_a_spelling": "والعلم هو العلم",
+      "changed": true
+    },
+    {
+      "id": "C8X-علم-bal",
+      "category": 8,
+      "input": "بالعلم",
+      "root": "علم",
+      "prefix_combo": "bal",
+      "track_a_spelling": "العلم بالعلم",
+      "changed": true
+    },
+    {
+      "id": "C8X-علم-lal",
+      "category": 8,
+      "input": "للعلم",
+      "root": "علم",
+      "prefix_combo": "lal",
+      "track_a_spelling": "للعلم",
+      "changed": false
+    },
+    {
+      "id": "C8X-اقتصاد-al",
+      "category": 8,
+      "input": "الاقتصاد",
+      "root": "اقتصاد",
+      "prefix_combo": "al",
+      "track_a_spelling": "الاقتصاد",
+      "changed": false
+    },
+    {
+      "id": "C8X-اقتصاد-wal",
+      "category": 8,
+      "input": "والاقتصاد",
+      "root": "اقتصاد",
+      "prefix_combo": "wal",
+      "track_a_spelling": "والاقتصاد",
+      "changed": false
+    },
+    {
+      "id": "C8X-اقتصاد-bal",
+      "category": 8,
+      "input": "بالاقتصاد",
+      "root": "اقتصاد",
+      "prefix_combo": "bal",
+      "track_a_spelling": "بالاقتصاد في الاقتصاد",
+      "changed": true
+    },
+    {
+      "id": "C8X-اقتصاد-lal",
+      "category": 8,
+      "input": "للاقتصاد",
+      "root": "اقتصاد",
+      "prefix_combo": "lal",
+      "track_a_spelling": "للاقتصاد الاقتصادي",
+      "changed": true
+    }
+  ],
+  "cat9x": [
+    {
+      "id": "C9X-01",
+      "category": 9,
+      "input": "إنّ",
+      "context": "isolation",
+      "concern": "stays إنّ",
+      "track_a_spelling": "إن إن",
+      "changed": true
+    },
+    {
+      "id": "C9X-02",
+      "category": 9,
+      "input": "أنّ",
+      "context": "isolation",
+      "concern": "stays أنّ",
+      "track_a_spelling": "أن أن",
+      "changed": true
+    },
+    {
+      "id": "C9X-03",
+      "category": 9,
+      "input": "إنّ العلم نور",
+      "context": "sentence",
+      "concern": "إنّ stays",
+      "track_a_spelling": "إن العلم نور",
+      "changed": true
+    },
+    {
+      "id": "C9X-04",
+      "category": 9,
+      "input": "علمت أنّ الامتحان صعب",
+      "context": "sentence",
+      "concern": "أنّ stays",
+      "track_a_spelling": "علمت أن الامتحان صعب",
+      "changed": true
+    },
+    {
+      "id": "C9X-05",
+      "category": 9,
+      "input": "علي",
+      "context": "isolation",
+      "concern": "could be name علي or على",
+      "track_a_spelling": "علي",
+      "changed": false
+    },
+    {
+      "id": "C9X-06",
+      "category": 9,
+      "input": "ذهب علي إلى المدرسة",
+      "context": "sentence",
+      "concern": "علي is a name here",
+      "track_a_spelling": "ذهب علي إلى المدرسة",
+      "changed": false
+    },
+    {
+      "id": "C9X-07",
+      "category": 9,
+      "input": "جلس علي الكرسي",
+      "context": "sentence",
+      "concern": "AMBIGUOUS: علي=name or على=on",
+      "track_a_spelling": "جلس علي الكرسي",
+      "changed": false
+    }
+  ],
+  "cat10x": [
+    {
+      "id": "C10X-01a",
+      "category": 10,
+      "input": "الحديقه جميلة جدا",
+      "concern": "error_at_start",
+      "track_a_spelling": "الحديقه جميلة جدا",
+      "a_changed": false,
+      "track_b_corrected": "الحديقة جميلة جدا.",
+      "track_b_suggestions": 2
+    },
+    {
+      "id": "C10X-01b",
+      "category": 10,
+      "input": "الجو حار في الحديقه",
+      "concern": "error_at_end",
+      "track_a_spelling": "الجو حار في الحديقة",
+      "a_changed": true,
+      "track_b_corrected": "الجو حار في الحديقة.",
+      "track_b_suggestions": 1
+    },
+    {
+      "id": "C10X-02a",
+      "category": 10,
+      "input": "الى المدرسة ذهب الولد",
+      "concern": "error_at_start",
+      "track_a_spelling": "إلى المدرسة ذهب الولد",
+      "a_changed": true,
+      "track_b_corrected": "إلى المدرسة ذهب الولد.",
+      "track_b_suggestions": 2
+    },
+    {
+      "id": "C10X-02b",
+      "category": 10,
+      "input": "ذهب الولد الى المدرسة",
+      "concern": "error_at_end",
+      "track_a_spelling": "ذهب الولد إلى المدرسة",
+      "a_changed": true,
+      "track_b_corrected": "ذهب الولد إلى المدرسة.",
+      "track_b_suggestions": 2
+    },
+    {
+      "id": "C10X-DRIFT",
+      "category": 10,
+      "input_len": 713,
+      "word_count": 119,
+      "total_suggestions": 16,
+      "front_half_suggestions": 11,
+      "back_half_suggestions": 5,
+      "coordinate_mismatches": [],
+      "suggestions_detail": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "إحدىهن وبدأت",
+          "end": 62,
+          "id": "e892df95-0d05-40bd-969a-ccda1305cf2c",
+          "locked": true,
+          "original": "احداهن وبدءت",
+          "priority": 3,
+          "start": 50,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "اجتهدوا",
+          "end": 243,
+          "id": "eef5aad7-31f7-4c1e-8095-88dbdda98944",
+          "locked": true,
+          "original": "اجتهدو",
+          "priority": 3,
+          "start": 237,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "حققوا",
+          "end": 259,
+          "id": "abfaa89c-119e-4899-9456-6ee78c929298",
+          "locked": true,
+          "original": "حققو",
+          "priority": 3,
+          "start": 255,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "",
+          "end": 712,
+          "id": "afcc69ca-f5d8-4907-b85a-e348d0d06a12",
+          "locked": true,
+          "original": "بين الأشجار",
+          "priority": 3,
+          "start": 701,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [],
+          "confidence": 0.8,
+          "correction": "محمد،",
+          "end": 282,
+          "id": "4eef8996-7a31-4d0e-83ca-e05604b975e0",
+          "locked": true,
+          "original": "محمد",
+          "priority": 2,
+          "start": 278,
+          "type": "punctuation"
+        },
+        {
+          "alternatives": [],
+          "confidence": 0.8,
+          "correction": "جمهورية،",
+          "end": 424,
+          "id": "7e82e486-59af-4002-be9b-5b202dfe8492",
+          "locked": true,
+          "original": "جمهورية",
+          "priority": 2,
+          "start": 417,
+          "type": "punctuation"
+        },
+        {
+          "alternatives": [],
+          "confidence": 0.8,
+          "correction": "بين،",
+          "end": 497,
+          "id": "6b95fcb5-e190-4dec-8d69-22520c1bb6fe",
+          "locked": true,
+          "original": "بين",
+          "priority": 2,
+          "start": 494,
+          "type": "punctuation"
+        },
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "الحديقة الجميلة وفجأة",
+          "end": 44,
+          "id": "73493796-1711-4996-9ee4-7013191bc9d8",
+          "locked": true,
+          "original": "الحديقه الجميله وفجأه",
+          "priority": 1,
+          "start": 23,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "بشدة",
+          "end": 72,
+          "id": "13c914ea-5b75-4128-aa42-05576b3d55ae",
+          "locked": true,
+          "original": "بشده",
+          "priority": 1,
+          "start": 68,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "إلى المدرسة",
+          "end": 94,
+          "id": "4e827496-d6f1-4a53-b2f7-c78c2d911195",
+          "locked": true,
+          "original": "الى المدرسه",
+          "priority": 1,
+          "start": 83,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "المعلمة وأخذ",
+          "end": 113,
+          "id": "d7548b59-6379-4b95-a5ed-806e5d1d0cfb",
+          "locked": true,
+          "original": "المعلمه واخذ",
+          "priority": 1,
+          "start": 101,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "أن",
+          "end": 123,
+          "id": "aa9b0140-5740-4343-a3a2-3adfa61fa9d9",
+          "locked": true,
+          "original": "ان",
+          "priority": 1,
+          "start": 121,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "هذه المدينة جميلة",
+          "end": 194,
+          "id": "03378376-a164-46c8-8493-55a0dcd97e3e",
+          "locked": true,
+          "original": "هذة المدينه جميله",
+          "priority": 1,
+          "start": 177,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "ممتازة",
+          "end": 272,
+          "id": "b3aac62f-6a7c-4625-b608-5258fea91fcd",
+          "locked": true,
+          "original": "ممتازه",
+          "priority": 1,
+          "start": 266,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "هذه المحاضرة",
+          "end": 632,
+          "id": "e7994f0f-dc27-4c01-b055-0040683a7643",
+          "locked": true,
+          "original": "هذة المحاضره",
+          "priority": 1,
+          "start": 620,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "أهمية",
+          "end": 641,
+          "id": "f68bfac9-17f8-4bbe-9def-1ee35e6ac76a",
+          "locked": true,
+          "original": "اهمية",
+          "priority": 1,
+          "start": 636,
+          "type": "spelling"
+        }
+      ]
+    }
+  ],
+  "cat11": [
+    {
+      "id": "C11-01",
+      "category": 11,
+      "input": "",
+      "desc": "empty_string",
+      "input_len": 0,
+      "crashed": false,
+      "b_corrected": "",
+      "b_suggestions": 0,
+      "error": "HTTP 400: {\"error\":\"Text is required\",\"status\":\"error\"}\n"
+    },
+    {
+      "id": "C11-02",
+      "category": 11,
+      "input": " ",
+      "desc": "whitespace_only",
+      "input_len": 1,
+      "crashed": false,
+      "b_corrected": " ",
+      "b_suggestions": 0,
+      "error": "HTTP 400: {\"error\":\"Text is required\",\"status\":\"error\"}\n"
+    },
+    {
+      "id": "C11-03",
+      "category": 11,
+      "input": "أ",
+      "desc": "single_char",
+      "input_len": 1,
+      "crashed": false,
+      "b_corrected": "أ؟",
+      "b_suggestions": 1,
+      "error": null
+    },
+    {
+      "id": "C11-04",
+      "category": 11,
+      "input": "مستشفياتهم",
+      "desc": "long_single_word",
+      "input_len": 10,
+      "crashed": false,
+      "b_corrected": "في مستشفيات هم",
+      "b_suggestions": 1,
+      "error": null
+    },
+    {
+      "id": "C11-05",
+      "category": 11,
+      "input": "ذهبالولدالىالمدرسةوقابلالمعلمة",
+      "desc": "no_spaces",
+      "input_len": 30,
+      "crashed": false,
+      "b_corrected": "ذهبالولدالىالمدرسةوقابلالمعلمة.",
+      "b_suggestions": 1,
+      "error": null
+    },
+    {
+      "id": "C11-06",
+      "category": 11,
+      "input": "...!؟،،؛؛::...",
+      "desc": "all_punctuation",
+      "input_len": 14,
+      "crashed": false,
+      "b_corrected": ". ! ؟ ، ؛ ::.",
+      "b_suggestions": 1,
+      "error": null
+    },
+    {
+      "id": "C11-07",
+      "category": 11,
+      "input": "(([{هذا النص}]))",
+      "desc": "unbalanced_brackets",
+      "input_len": 16,
+      "crashed": false,
+      "b_corrected": "( ( [ { هذا النص } ] ، و",
+      "b_suggestions": 1,
+      "error": null
+    },
+    {
+      "id": "C11-08",
+      "category": 11,
+      "input": "\"هذا\" 'نص' «اختبار»",
+      "desc": "mixed_quotes",
+      "input_len": 19,
+      "crashed": false,
+      "b_corrected": "\" هذا \" مُنصا ' ' « اختبارا »",
+      "b_suggestions": 1,
+      "error": null
+    },
+    {
+      "id": "C11-09",
+      "category": 11,
+      "input": "يستخدم الذكاء الاصطناعي تقنيات التعلم العميق يستخدم الذكاء الاصطناعي تقنيات التعلم العميق يستخدم الذكاء الاصطناعي تقنيات التعلم العميق يستخدم الذكاء الاصطناعي تقنيات التعلم العميق يستخدم الذكاء الاصطن",
+      "desc": "len_299",
+      "input_len": 299,
+      "crashed": false,
+      "b_corrected": "يستخدم الذكاء الاصطناعي تقنيات، التعلم العميق تستخدم الذكاء الاالعميق،ناعي التقنيات التالتعلم،م العميق يستخدم الذكاء الاصطناعية تقنيات التعلم العميقة يستخدم الذكاء الصناعي تقنيات التعلم عميقا يستخدم ا",
+      "b_suggestions": 7,
+      "error": null
+    },
+    {
+      "id": "C11-10",
+      "category": 11,
+      "input": "يستخدم الذكاء الاصطناعي تقنيات التعلم العميق يستخدم الذكاء الاصطناعي تقنيات التعلم العميق يستخدم الذكاء الاصطناعي تقنيات التعلم العميق يستخدم الذكاء الاصطناعي تقنيات التعلم العميق يستخدم الذكاء الاصطن",
+      "desc": "len_300",
+      "input_len": 300,
+      "crashed": false,
+      "b_corrected": "يستخدم الذكاء الاصطناعي تقنيات، التعلم العميق تستخدم الذكاء االعميق،صطنالذكاء، التقنيات التعلم العميق يستخدم الذكاء الاصطناعية تقنيات التعلم العميقة يستخدم الذكاء الصناعي تقنيات التعلم عميقا يستخدم ال",
+      "b_suggestions": 14,
+      "error": null
+    },
+    {
+      "id": "C11-11",
+      "category": 11,
+      "input": "يستخدم الذكاء الاصطناعي تقنيات التعلم العميق يستخدم الذكاء الاصطناعي تقنيات التعلم العميق يستخدم الذكاء الاصطناعي تقنيات التعلم العميق يستخدم الذكاء الاصطناعي تقنيات التعلم العميق يستخدم الذكاء الاصطن",
+      "desc": "len_301",
+      "input_len": 301,
+      "crashed": false,
+      "b_corrected": "يستخدم الذكاء الاصطناعي تقنيات، التعلم العميق تستخدم الذكاء االعميق،صطنالذكاء، التقنيات التعلم العميق يستخدم الذكاء الاصطناعية تقنيات التعلم العميقة يستخدم الذكاء الصناعي تقنيات التعلم عميقا يستخدم ال",
+      "b_suggestions": 14,
+      "error": null
+    },
+    {
+      "id": "C11-12",
+      "category": 11,
+      "input": "يلعب الطلاب في الحديقه بعد المدرسه وقبل العشاء",
+      "desc": "multi_stage_disagreement",
+      "input_len": 46,
+      "crashed": false,
+      "b_corrected": "يلعب الطلاب في الحديقة بعد المدرسة وقبل العشاء.",
+      "b_suggestions": 3,
+      "error": null
+    },
+    {
+      "id": "C11-13",
+      "category": 11,
+      "input": "الحمد لله",
+      "desc": "model_returns_identical",
+      "input_len": 9,
+      "crashed": false,
+      "b_corrected": "الحمد لله.",
+      "b_suggestions": 1,
+      "error": null
+    },
+    {
+      "id": "C11-14",
+      "category": 11,
+      "input": "مرحبا مرحبا مرحبا مرحبا مرحبا مرحبا مرحبا مرحبا مرحبا مرحبا مرحبا مرحبا مرحبا مرحبا مرحبا مرحبا مرحبا مرحبا مرحبا مرحبا مرحبا مرحبا مرحبا مرحبا مرحبا مرحبا مرحبا مرحبا مرحبا مرحبا مرحبا مرحبا مرحبا مر",
+      "desc": "100x_repeated_word",
+      "input_len": 600,
+      "crashed": false,
+      "b_corrected": "مرحبا مرحبا مرحبا ومرحبا مرحبا مرحبامرحبا مرحبا مرحبا مرحب مرحبا مرحبا وسهلا مرحبا مرحبا ترحيبا مرحبا مرحبا يا مرحبا مرحبا نرحب مرحبا مرحبا ترحيب مرحبا مرحبا أهلا مرحبا مرحبا اهلا مرحبا مرحبا وداعا مر",
+      "b_suggestions": 4,
+      "error": null
+    },
+    {
+      "id": "C11-15",
+      "category": 11,
+      "input": "I went to the مدرسة and met the معلم in the فصل",
+      "desc": "heavy_code_switch",
+      "input_len": 47,
+      "crashed": false,
+      "b_corrected": "I went to the مدرسة and met the معلم in the الفصل.",
+      "b_suggestions": 1,
+      "error": null
+    },
+    {
+      "id": "C11-16",
+      "category": 11,
+      "input": "ايش هالحكي يا زلمة",
+      "desc": "levantine_dialect",
+      "input_len": 18,
+      "crashed": false,
+      "b_corrected": "إيش هالحكي يا زلمة؟",
+      "b_suggestions": 2,
+      "error": null
+    },
+    {
+      "id": "C11-17",
+      "category": 11,
+      "input": "شنو تسوي هسه",
+      "desc": "iraqi_dialect",
+      "input_len": 12,
+      "crashed": false,
+      "b_corrected": "شنو تسوي هسة",
+      "b_suggestions": 1,
+      "error": null
+    },
+    {
+      "id": "C11-RACE",
+      "category": 11,
+      "input": "كانت الفتيات يلعبون في الحديقه",
+      "desc": "parallel_race_condition",
+      "r1_corrected": "كانت الفتيات يلعبن في الحديقة.",
+      "r2_corrected": "كانت الفتيات يلعبن في الحديقة.",
+      "r1_suggestions": 2,
+      "r2_suggestions": 2,
+      "identical": true
+    }
+  ]
+}

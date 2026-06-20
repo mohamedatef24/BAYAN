@@ -1,0 +1,260 @@
+{
+  "timestamp": "2026-06-20T19:33:59.110768+00:00",
+  "gap1_drift": {
+    "word_count": 187,
+    "char_count": 1104,
+    "total_suggestions": 0,
+    "front_half": 0,
+    "back_half": 0,
+    "coordinate_mismatches": [],
+    "a_spelling_changed": true,
+    "a_grammar_changed": true,
+    "a_punc_changed": true,
+    "suggestions": []
+  },
+  "gap2_priority": [
+    {
+      "id": "G2-01",
+      "input": "الطلاب اجتهدو في الامتحان",
+      "desc": "اجتهدو — spelling should add ا, grammar may do different fix. Grammar wins (priority 3 > 1)",
+      "a_spelling": "الطلاب اجتهدو في الامتحان",
+      "a_grammar": "الطلاب اجتهدو في الامتحان",
+      "a_punctuation": "الطلاب اجتهدو في الامتحان.",
+      "b_corrected": "الطلاب اجتهد في الامتحين",
+      "b_suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "الامتحين",
+          "end": 25,
+          "id": "502647e7-18fd-41d2-b1c7-2978a3ee7704",
+          "locked": true,
+          "original": "الامتحان",
+          "priority": 3,
+          "start": 17,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [
+            "اجتهد",
+            "اجتهدو"
+          ],
+          "confidence": 0.9,
+          "correction": "اجتهد",
+          "end": 13,
+          "id": "0a93f071-af36-4219-b6f5-d11e748c4601",
+          "locked": true,
+          "original": "اجتهدو",
+          "priority": 1,
+          "start": 7,
+          "type": "spelling"
+        }
+      ]
+    },
+    {
+      "id": "G2-02",
+      "input": "البنات ذهبو الى البيت",
+      "desc": "ذهبو — spelling could give ذهبوا, grammar could give ذهبن (fem). Grammar wins.",
+      "a_spelling": "البنات ذهبو إلى البيت",
+      "a_grammar": "البنات ذهبن الى البيت",
+      "a_punctuation": "البنات ذهبو الى البيت.",
+      "b_corrected": "البنات ذهبن إلى البيت.",
+      "b_suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "ذهبن",
+          "end": 11,
+          "id": "0f00a9ab-1166-4e4d-8dd7-ae6dba1f9f1e",
+          "locked": true,
+          "original": "ذهبو",
+          "priority": 3,
+          "start": 7,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [],
+          "confidence": 0.8,
+          "correction": "البيت.",
+          "end": 21,
+          "id": "af3a0a21-5e1e-45f5-a1ad-9c3730b4ab25",
+          "locked": true,
+          "original": "البيت",
+          "priority": 2,
+          "start": 16,
+          "type": "punctuation"
+        },
+        {
+          "alternatives": [
+            "إلى",
+            "ال",
+            "الم",
+            "الى"
+          ],
+          "confidence": 0.9,
+          "correction": "إلى",
+          "end": 15,
+          "id": "1b7096dc-6043-4e1a-9de3-d59204327b86",
+          "locked": true,
+          "original": "الى",
+          "priority": 1,
+          "start": 12,
+          "type": "spelling"
+        }
+      ]
+    },
+    {
+      "id": "G2-03",
+      "input": "وفجأه سقطت الكتب",
+      "desc": "وفجأه — spelling may fix ه→ة; punctuation may want comma after it. Overlap?",
+      "a_spelling": "وفجأه سقطت الكتب",
+      "a_grammar": "وفجأة سقطت الكتب",
+      "a_punctuation": "وفجأه سقطت الكتب.",
+      "b_corrected": "وفجأة سقطت الكتب.",
+      "b_suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 0.8,
+          "correction": "الكتب.",
+          "end": 16,
+          "id": "fc257e46-4368-4d32-acb0-de5b6d461aaf",
+          "locked": true,
+          "original": "الكتب",
+          "priority": 2,
+          "start": 11,
+          "type": "punctuation"
+        },
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "وفجأة",
+          "end": 5,
+          "id": "7397e7e6-e238-4ed4-a184-461f576a74f6",
+          "locked": true,
+          "original": "وفجأه",
+          "priority": 1,
+          "start": 0,
+          "type": "spelling"
+        }
+      ]
+    }
+  ],
+  "gap3_dropped": {
+    "tests": [
+      {
+        "input": "الطلاب الذين اجتهدو في دراستهم حققو نتائج ممتازه في الامتحانات",
+        "a_spell_diffs": [
+          {
+            "word_idx": 2,
+            "original": "اجتهدو",
+            "corrected": "اجتهد"
+          },
+          {
+            "word_idx": 5,
+            "original": "حققو",
+            "corrected": "حقوق"
+          }
+        ],
+        "a_gram_diffs": [
+          {
+            "word_idx": 5,
+            "original": "حققو",
+            "corrected": "حققوا"
+          },
+          {
+            "word_idx": 7,
+            "original": "ممتازه",
+            "corrected": "ممتازة"
+          }
+        ],
+        "a_punc_diffs": [
+          {
+            "word_idx": 9,
+            "original": "الامتحانات",
+            "corrected": "الامتحانات."
+          }
+        ],
+        "b_suggestion_count": 4,
+        "dropped_spell": [],
+        "dropped_gram": [],
+        "dropped_punc": []
+      }
+    ]
+  },
+  "gap4_rare": {
+    "tests": [
+      {
+        "id": "R-01",
+        "input": "استوقفني المشهد فتأملته مليا",
+        "domain": "literary",
+        "output": "استوقفني المشهد فتأملتة مليا",
+        "changed": true
+      },
+      {
+        "id": "R-02",
+        "input": "تستأثر القوى العظمى بالنفوذ الدولي",
+        "domain": "political_literary",
+        "output": "تستأثر القوى العظمى بالنفوذ الدولي",
+        "changed": false
+      },
+      {
+        "id": "R-03",
+        "input": "استقطب المؤتمر ثلة من العلماء الأفذاذ",
+        "domain": "formal_rare",
+        "output": "استقطب المؤتمر ثلة من العلماء الأفذاذ",
+        "changed": false
+      },
+      {
+        "id": "R-04",
+        "input": "يتسنى للمرء أن يستشف الحقيقة من بين السطور",
+        "domain": "literary_verb",
+        "output": "يتسنى للمرء أن يكتشف الحقيقة من بين السطور",
+        "changed": true
+      },
+      {
+        "id": "R-05",
+        "input": "ألقى المحاضر خطبة عصماء استحوذت على إعجاب الحاضرين",
+        "domain": "oratory",
+        "output": "ألقى المحاضر خطبة علماء استحوذت على إعجاب الحاضرين",
+        "changed": true
+      },
+      {
+        "id": "R-06",
+        "input": "تمخض الاجتماع عن قرارات مصيرية",
+        "domain": "formal_verb",
+        "output": "تمخض الاجتماع عن قرارات مصيرية",
+        "changed": false
+      },
+      {
+        "id": "R-07",
+        "input": "أرهقته المسغبة فاستكان للقدر",
+        "domain": "classical",
+        "output": "طريقتة المسببة فاستكان القدر",
+        "changed": true
+      },
+      {
+        "id": "R-08",
+        "input": "نستشرف آفاق المستقبل بثقة واقتدار",
+        "domain": "formal_speech",
+        "output": "نستشرف آفاق المستقبل بثقة واقتدار",
+        "changed": false
+      },
+      {
+        "id": "R-09",
+        "input": "اعتراه القلق فتملكه الأرق",
+        "domain": "literary_psych",
+        "output": "اعتراه القلق فتملكة الأرق",
+        "changed": true
+      },
+      {
+        "id": "R-10",
+        "input": "استأنف العمل بعد فترة من التقاعس",
+        "domain": "formal_verb",
+        "output": "استأنف العمل بعد فترة من التقاعد",
+        "changed": true
+      }
+    ],
+    "fp_count": 6,
+    "total": 10
+  }
+}
