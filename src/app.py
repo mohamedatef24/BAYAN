@@ -1411,6 +1411,25 @@ def analyze_text():
                         )
                         continue
 
+                    # ── Punctuation-protection guard ──
+                    # Grammar model sometimes strips/normalizes punctuation
+                    # (removes full stops, commas, etc.). Reject grammar diffs
+                    # that only differ in punctuation marks — grammar should
+                    # only fix grammar, not touch punctuation.
+                    _orig_t = d.get('original', '')
+                    _corr_t = d.get('correction', '')
+                    _PUNC_CHARS = set('.,;:!?؟،؛。·…•–—\u200f\u200e')
+                    _orig_no_punc = ''.join(c for c in _orig_t if c not in _PUNC_CHARS)
+                    _corr_no_punc = ''.join(c for c in _corr_t if c not in _PUNC_CHARS)
+                    if _orig_no_punc == _corr_no_punc:
+                        # Only punctuation was changed — block it
+                        if _orig_t != _corr_t:
+                            logger.info(
+                                f"[GRAMMAR] Blocked punctuation change: "
+                                f"'{_orig_t}' → '{_corr_t}' (grammar must not alter punctuation)"
+                            )
+                            continue
+
                     # Reject grammar hallucinations (e.g. جالس→جاكسون)
                     orig_text = d.get('original', '')
                     corr_text = d.get('correction', '')
