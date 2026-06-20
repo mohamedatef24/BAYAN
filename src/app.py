@@ -760,18 +760,68 @@ def _is_small_spelling_change(orig_word, corr_word, vocab_manager=None):
     CRITICAL: If both words are in-vocabulary (both are valid Arabic words),
     only accept known orthographic fixes (ه→ة, hamza whitelist).
     This prevents the model from corrupting correct words (e.g. وكان→وكأن).
+
+    Returns:
+        float: 0.0 = reject, 0.5 = dampened confidence (rare word risk),
+               0.9 = normal confidence. Phase 2 (BUG-034/035/036/037/E8).
     """
     if not orig_word or not corr_word:
-        return False
+        return 0.0
     if orig_word == corr_word:
-        return False
+        return 0.0
+
+    # ── GUARD 1: Numeral protection (Phase 1, BUG-011/012/E1) ──
+    # Reject corrections that remove/change/introduce digits.
+    # Numeral hallucination is a complete-replacement failure mode.
+    _DIGITS = set('0123456789٠١٢٣٤٥٦٧٨٩')
+    if any(c in _DIGITS for c in orig_word):
+        return 0.0  # Never "correct" text containing numerals
+    if any(c in _DIGITS for c in corr_word):
+        return 0.0  # Never introduce digits that weren't in original
+
+    # ── GUARD 2: Directional confusable-word rules (Phase 1, BUG-004/005/E4) ──
+    # For known function words, only allow corrections TOWARD the valid form.
+    # This prevents meaning-changing substitutions that pass orthographic checks.
+    #
+    # ── B5 KNOWN LIMITATION (BUG-025/026): Shadda Duplication ──
+    # AraSpell duplicates shadda-bearing words in ISOLATION: إنّ→إن إن, أنّ→أن أن.
+    # In sentence context (e.g., "إنّ العلم نور"), the model handles shadda correctly.
+    # This is an isolation-only AraSpell quirk — no pipeline filter needed.
+    _DIRECTIONAL_BLOCKS = {
+        # Demonstratives: هذه (correct feminine) → هذة (misspelling) = ALWAYS wrong
+        'هذه': {'هذة'},
+        'هذا': {'هذة', 'هذه'},    # masculine → don't flip to feminine forms
+        # Verb/particle confusion: كان (was) ↔ كأن (as if) = ALWAYS wrong
+        'كان': {'كأن'},
+        'كأن': {'كان'},
+        # Preposition confusion: different meanings, both valid
+        'إلى': {'على', 'علي'},
+        'على': {'إلى', 'علي'},
+        'علي': {'على'},           # proper name vs preposition
+        # Conjunction: لكن (correct) ↔ لاكن (misspelling of لكن, never valid)
+        'لكن': {'لاكن'},          # correct → misspelling = ALWAYS wrong
+        # Demonstrative: ذلك (correct) ↔ ذالك (common misspelling)
+        'ذلك': {'ذالك'},          # correct → misspelling = ALWAYS wrong
+    }
+    if corr_word in _DIRECTIONAL_BLOCKS.get(orig_word, set()):
+        return 0.0
+
+    # Check with common prefixes stripped (و+كان→و+كأن etc.)
+    _CLITIC_PREFIXES = ('و', 'ف', 'ب', 'ل', 'ك')
+    for _pfx in _CLITIC_PREFIXES:
+        if (orig_word.startswith(_pfx) and corr_word.startswith(_pfx)
+                and len(orig_word) > len(_pfx) + 1):
+            _orig_stem = orig_word[len(_pfx):]
+            _corr_stem = corr_word[len(_pfx):]
+            if _corr_stem in _DIRECTIONAL_BLOCKS.get(_orig_stem, set()):
+                return 0.0
 
     # Ignore tokens that contain non-letters (numbers / punctuation)
     # Arabic letters range plus basic Latin letters.
     if re.search(r'[^ء-يآأإىa-zA-Z]', orig_word):
-        return False
+        return 0.0
     if re.search(r'[^ء-يآأإىa-zA-Z]', corr_word):
-        return False
+        return 0.0
 
     # Fix S2: Reject corrections that drop feminine marker (ه/ة)
     # e.g. بارده→بارد, منخفظه→منخفض — these are WORSE than no correction
@@ -779,7 +829,7 @@ def _is_small_spelling_change(orig_word, corr_word, vocab_manager=None):
     if orig_word.endswith(feminine_endings) and not corr_word.endswith(feminine_endings):
         # Only reject if the correction is just the word minus the ending
         if corr_word == orig_word[:-1] or len(corr_word) < len(orig_word):
-            return False
+            return 0.0
 
     # CRITICAL: If both words are valid Arabic words, only accept known fixes.
     # This prevents the spelling model from changing one correct word to another
@@ -788,28 +838,56 @@ def _is_small_spelling_change(orig_word, corr_word, vocab_manager=None):
         orig_iv = vocab_manager.is_iv(orig_word)
         corr_iv = vocab_manager.is_iv(corr_word)
         if orig_iv and corr_iv:
-            # Both are valid words — only accept known orthographic fixes:
+             # Both are valid words — only accept known orthographic fixes:
             # 1. ه→ة at word end (feminine marker fix)
+            #    B3 (BUG-014/015): EXCEPT when ه is a pronoun suffix (preceded by ت).
+            #    Pattern: verb+ته = "verb + him/it", NOT ta marbuta.
+            #    E.g., فتأملته (fataamaltahu) → فتأملتة is WRONG.
             if (orig_word.endswith('ه') and corr_word.endswith('ة')
                     and orig_word[:-1] == corr_word[:-1]):
-                return True
+                # Guard: if word ends in ته, the ه is likely a pronoun suffix
+                if len(orig_word) >= 3 and orig_word[-2] == 'ت':
+                    logger.info(
+                        f"[SPELLING] Blocked ه→ة at pronoun suffix: "
+                        f"'{orig_word}'→'{corr_word}' (ته pattern = pronoun 'him/it')"
+                    )
+                    return 0.0
+                return 0.9
             # 2. ة→ه at word end (less common but valid)
             if (orig_word.endswith('ة') and corr_word.endswith('ه')
                     and orig_word[:-1] == corr_word[:-1]):
-                return True
+                return 0.9
             # 3. Word is in the hamza whitelist (known common errors)
+            #    CRITICAL (Phase 5 fix, BUG-016/027): only accept if the correction
+            #    MATCHES the whitelist target — not any arbitrary correction.
             from nlp.spelling.araspell_rules import AraSpellPostProcessor
             if orig_word in AraSpellPostProcessor.HAMZA_WHITELIST:
-                return True
+                expected = AraSpellPostProcessor.HAMZA_WHITELIST[orig_word]
+                if corr_word == expected:
+                    return 0.9
+                else:
+                    logger.info(
+                        f"[SPELLING] Whitelist mismatch: '{orig_word}'→'{corr_word}' "
+                        f"(expected '{expected}') — rejected"
+                    )
+                    return 0.0
             # 4. Check prefixed hamza (و+whitelist word, etc.)
             for prefix in AraSpellPostProcessor.HAMZA_PREFIXES:
                 if orig_word.startswith(prefix) and len(orig_word) > len(prefix) + 1:
                     remainder = orig_word[len(prefix):]
                     if remainder in AraSpellPostProcessor.HAMZA_WHITELIST:
-                        return True
+                        expected = prefix + AraSpellPostProcessor.HAMZA_WHITELIST[remainder]
+                        if corr_word == expected:
+                            return 0.9
+                        else:
+                            logger.info(
+                                f"[SPELLING] Prefixed whitelist mismatch: '{orig_word}'→'{corr_word}' "
+                                f"(expected '{expected}') — rejected"
+                            )
+                            return 0.0
             # Both are valid words and change is NOT a known fix — REJECT
             # This prevents وكان→وكأن, etc.
-            return False
+            return 0.0
 
     dist = _levenshtein(orig_word, corr_word)
     max_len = max(len(orig_word), len(corr_word))
@@ -817,7 +895,7 @@ def _is_small_spelling_change(orig_word, corr_word, vocab_manager=None):
     # Tighter filter for OOV words: reject edits that change word roots
     # Allow max 2 edits at max 50% of word length
     if dist > 2 or (dist / max_len) > 0.5:
-        return False
+        return 0.0
 
     # CRITICAL: Only allow ORTHOGRAPHIC fixes (ه↔ة, ا↔أ↔إ↔آ, ي↔ى).
     # Any other letter change means the word's ROOT is different
@@ -837,12 +915,75 @@ def _is_small_spelling_change(orig_word, corr_word, vocab_manager=None):
         # Length change = structural change, not just orthographic
         # Exception: if diff is just adding/removing ا at start (hamza)
         if abs(len(orig_word) - len(corr_word)) > 1:
-            return False
+            return 0.0
     for a, b in zip(orig_word, corr_word):
         if a != b and (a, b) not in ORTHO_PAIRS:
-            return False
+            return 0.0
 
-    return True
+    # ── B3 (BUG-014/015): Pronoun suffix guard (OOV path) ──
+    # Same guard as IV-IV path: block ه→ة when preceded by ت
+    if (orig_word.endswith('ه') and corr_word.endswith('ة')
+            and len(orig_word) >= 3 and orig_word[-2] == 'ت'
+            and orig_word[:-1] == corr_word[:-1]):
+        logger.info(
+            f"[SPELLING] Blocked ه→ة at pronoun suffix (OOV path): "
+            f"'{orig_word}'→'{corr_word}'"
+        )
+        return 0.0
+
+    # ── Phase 2 (BUG-034/035/036/037/E8): Confidence dampening ──
+    # If the original word might be a valid rare word (OOV in model but
+    # potentially real Arabic), dampen confidence so users can reject easily.
+    if vocab_manager:
+        orig_iv = vocab_manager.is_iv(orig_word)
+        corr_iv = vocab_manager.is_iv(corr_word)
+
+        # Phase 2.2: Use frequency rank if available.
+        # If the original word is a known word (even rare), require a
+        # meaningfully higher confidence bar before replacing it.
+        orig_rank = vocab_manager.get_frequency_rank(orig_word)  # 999999 if unknown
+        corr_rank = vocab_manager.get_frequency_rank(corr_word)  # 999999 if unknown
+        if orig_iv and corr_iv and orig_rank < 999999:
+            # Original is a known ranked word — correction should be more common
+            # If correction is rarer or similarly ranked, dampen confidence
+            if corr_rank >= orig_rank:
+                logger.info(
+                    f"[SPELLING] Dampened (freq): '{orig_word}'(rank={orig_rank})"
+                    f"→'{corr_word}'(rank={corr_rank}) — corr not more common"
+                )
+                return 0.5
+
+        if not orig_iv and corr_iv:
+            # OOV→IV: original might be a rare word being "corrected" to common
+            # Dampen confidence to 0.5 (lower than normal 0.9)
+            logger.info(
+                f"[SPELLING] Dampened confidence: '{orig_word}'→'{corr_word}' "
+                f"(OOV→IV, possible rare word)"
+            )
+            return 0.5
+
+    # ── B2 (BUG-006/009/010/013): Hamza-removal dampening ──
+    # Hamza changes (أ→ا, إ→ا, ء→ا, etc.) between same-length words are
+    # ambiguous — could be a valid fix OR a corruption. Always dampen these
+    # to 0.5 regardless of vocab_manager status. This prevents BUG-009
+    # (قرأ→قرا) and BUG-013 (خطأ→خطا) from leaking at full confidence.
+    _HAMZA_CHARS = set('أإآؤئء')
+    if len(orig_word) == len(corr_word):
+        has_hamza_diff = False
+        for a, b in zip(orig_word, corr_word):
+            if a != b:
+                if a in _HAMZA_CHARS or b in _HAMZA_CHARS:
+                    has_hamza_diff = True
+                else:
+                    has_hamza_diff = False
+                    break  # Non-hamza difference, don't apply this guard
+        if has_hamza_diff:
+            logger.info(
+                f"[SPELLING] Dampened (hamza-only): '{orig_word}'→'{corr_word}'"
+            )
+            return 0.5
+
+    return 0.9
 
 
 def _is_spelling_only_change(original: str, correction: str) -> bool:
@@ -990,6 +1131,17 @@ def analyze_text():
         # Short (0-300 chars): full pipeline (Spelling + Grammar + Punctuation)
         # Medium (300-1000 chars): Grammar + Punctuation only (skip AraSpell)
         # Large (1000+ chars): Grammar + Punctuation only
+        #
+        # ── B6/E3 ARCHITECTURAL NOTE ──
+        # For texts >300 chars, AraSpell is skipped for performance. Grammar
+        # still handles most orthographic errors (ه→ة, hamza normalization,
+        # ي↔ى) using its own model. This means long-text orthographic fixes
+        # come from grammar's correction "budget" rather than spelling's.
+        # This is by design — grammar is faster on long text and catches the
+        # most common orthographic patterns. However, rare/literary vocabulary
+        # protection (the confidence dampening from Phase 2) only applies to
+        # spelling, not grammar. For long texts, grammar may still produce
+        # some false positives on rare words.
         text_len = len(current_text)
         run_spelling = text_len <= 300
         if not run_spelling:
@@ -1032,12 +1184,13 @@ def analyze_text():
                                 # 1-word → 1-word: accept only small edits (typos)
                                 o_word = o_segment[0]
                                 c_word = c_segment[0]
-                                if _is_small_spelling_change(o_word, c_word, spell_checker.vocab_manager):
-                                    logger.info(f"[SPELLING] Accepted: '{o_word}'→'{c_word}'")
+                                _spell_conf = _is_small_spelling_change(o_word, c_word, spell_checker.vocab_manager)
+                                if _spell_conf:
+                                    logger.info(f"[SPELLING] Accepted: '{o_word}'→'{c_word}' (conf={_spell_conf})")
                                     new_words.append(c_word)
                                     ctx.add_patch(
                                         'spelling', start_idx, end_idx,
-                                        c_word, confidence=0.9,
+                                        c_word, confidence=_spell_conf,
                                         alternatives=_get_spelling_alternatives(o_word, c_word, spell_checker),
                                     )
                                 else:
@@ -1048,12 +1201,43 @@ def analyze_text():
                                 o_word = o_segment[0]
                                 if len(o_word) >= 5 and ' ' not in o_word:
                                     corr_str = " ".join(c_segment)
-                                    new_words.append(corr_str)
-                                    ctx.add_patch(
-                                        'spelling', start_idx, end_idx,
-                                        corr_str, confidence=0.85,
-                                        alternatives=[corr_str, o_word],
+                                    # ── Phase 3 (BUG-021/028/029): validate split parts ──
+                                    # Reject splits where any part is a dangling fragment
+                                    _VALID_SINGLE_CHAR = {'و', 'ب', 'ل', 'ك', 'ف', 'أ'}
+                                    _parts_ok = all(
+                                        len(p) >= 2 or p in _VALID_SINGLE_CHAR
+                                        for p in c_segment
                                     )
+                                    # Phase 3.2: Reject splits that detach known pronoun suffixes
+                                    # from nouns (e.g. مستشفياتهم → مستشفيات هم is WRONG)
+                                    _ATTACHED_PRONOUNS = {
+                                        'هم', 'هن', 'ها', 'هما', 'كم', 'كن', 'نا',
+                                        'ه', 'ك',  # single-char pronouns
+                                    }
+                                    if _parts_ok and len(c_segment) == 2:
+                                        last_part = c_segment[-1]
+                                        if last_part in _ATTACHED_PRONOUNS:
+                                            # Check if joined form ≈ original (pronoun was attached)
+                                            joined_no_space = ''.join(c_segment)
+                                            if _levenshtein(o_word, joined_no_space) <= 2:
+                                                _parts_ok = False
+                                                logger.info(
+                                                    f"[SPELLING] Rejected split: '{o_word}'→'{corr_str}' "
+                                                    f"(detached pronoun suffix '{last_part}')"
+                                                )
+                                    if _parts_ok:
+                                        new_words.append(corr_str)
+                                        ctx.add_patch(
+                                            'spelling', start_idx, end_idx,
+                                            corr_str, confidence=0.85,
+                                            alternatives=[corr_str, o_word],
+                                        )
+                                    else:
+                                        logger.info(
+                                            f"[SPELLING] Rejected split: '{o_word}'→'{corr_str}' "
+                                            f"(dangling fragment in parts: {c_segment})"
+                                        )
+                                        new_words.append(current_text[start_idx:end_idx])
                                 else:
                                     new_words.append(current_text[start_idx:end_idx])
                             else:
@@ -1069,11 +1253,12 @@ def analyze_text():
                                     if ci < len(c_segment):
                                         c_word = c_segment[ci]
                                         # Check if this is a 1→1 small edit
-                                        if _is_small_spelling_change(o_word, c_word, spell_checker.vocab_manager):
+                                        _spell_conf2 = _is_small_spelling_change(o_word, c_word, spell_checker.vocab_manager)
+                                        if _spell_conf2:
                                             new_words.append(c_word)
                                             ctx.add_patch(
                                                 'spelling', o_start, o_end,
-                                                c_word, confidence=0.9,
+                                                c_word, confidence=_spell_conf2,
                                                 alternatives=_get_spelling_alternatives(o_word, c_word, spell_checker),
                                             )
                                             ci += 1
@@ -1091,7 +1276,26 @@ def analyze_text():
                                             corr_str = " ".join(split_parts)
                                             joined_no_space = "".join(split_parts)
                                             dist = _levenshtein(o_word, joined_no_space)
-                                            if dist <= 3 and len(split_parts) > 1:
+                                            # ── Phase 3 (BUG-021/028/029): validate split parts ──
+                                            _VALID_SC = {'و', 'ب', 'ل', 'ك', 'ف', 'أ'}
+                                            _parts_ok = all(
+                                                len(p) >= 2 or p in _VALID_SC
+                                                for p in split_parts
+                                            )
+                                            # Phase 3.2: Reject splits detaching pronoun suffixes
+                                            _ATTACHED_PRON = {
+                                                'هم', 'هن', 'ها', 'هما', 'كم', 'كن', 'نا',
+                                                'ه', 'ك',
+                                            }
+                                            if _parts_ok and len(split_parts) == 2:
+                                                if split_parts[-1] in _ATTACHED_PRON:
+                                                    if _levenshtein(o_word, joined_no_space) <= 2:
+                                                        _parts_ok = False
+                                                        logger.info(
+                                                            f"[SPELLING] Rejected N→M split: '{o_word}'→'{corr_str}' "
+                                                            f"(detached pronoun suffix '{split_parts[-1]}')"
+                                                        )
+                                            if dist <= 3 and len(split_parts) > 1 and _parts_ok:
                                                 new_words.append(corr_str)
                                                 ctx.add_patch(
                                                     'spelling', o_start, o_end,
@@ -1100,6 +1304,11 @@ def analyze_text():
                                                 )
                                                 ci = temp_ci
                                             else:
+                                                if not _parts_ok:
+                                                    logger.info(
+                                                        f"[SPELLING] Rejected N→M split: '{o_word}'→'{corr_str}' "
+                                                        f"(dangling fragment)"
+                                                    )
                                                 new_words.append(current_text[o_start:o_end])
                                                 ci += 1
                                         else:
@@ -1117,7 +1326,9 @@ def analyze_text():
                     ctx.mutate_text(safe_text, OffsetMapper)
                     current_text = ctx.current_text
             except Exception as e:
-                logger.error(f"[ANALYZE] Spelling failed: {e}")
+                logger.error(f"[ANALYZE] Spelling failed: {type(e).__name__}: {e}")
+                logger.error(traceback.format_exc())
+                timing_ms['spelling_error'] = f"{type(e).__name__}: {str(e)[:200]}"
 
         # 2. Grammar (runs on spelling-corrected text — word-level dependency)
         try:
@@ -1154,6 +1365,22 @@ def analyze_text():
                                 )
                                 continue
 
+                    # ── Phase 4 (BUG-033/E10): Grammar output sanity check ──
+                    # Reject grammar corrections that produce a non-word when
+                    # the original was already a valid word. Mirrors spelling filter.
+                    if len(orig_text.split()) == 1 and len(corr_text.split()) == 1:
+                        try:
+                            from nlp.spelling.araspell_service import get_spelling_model
+                            _vm = get_spelling_model().vocab_manager
+                            if _vm and _vm.is_iv(orig_text) and _vm.is_oov(corr_text):
+                                logger.info(
+                                    f"[GRAMMAR] Rejected corruption: '{orig_text}'→'{corr_text}' "
+                                    f"(valid word → non-word)"
+                                )
+                                continue
+                        except Exception:
+                            pass
+
                     # Re-label: if grammar's change is purely orthographic
                     # (hamza, ه→ة, etc.), tag it as 'spelling' for correct UI icon
                     stage_label = 'grammar'
@@ -1163,10 +1390,30 @@ def analyze_text():
                         stage_label, d['start'], d['end'],
                         corr_text, confidence=1.0
                     )
-                ctx.mutate_text(corrected_grammar, OffsetMapper)
+
+                # ── B7 (E6): Bracket-balance guard ──
+                # If grammar's output lost brackets, reject the grammar correction.
+                _OPEN_BRACKETS = set('([{')
+                _CLOSE_BRACKETS = set(')]}')
+                orig_opens = sum(1 for c in ctx.current_text if c in _OPEN_BRACKETS)
+                orig_closes = sum(1 for c in ctx.current_text if c in _CLOSE_BRACKETS)
+                corr_opens = sum(1 for c in corrected_grammar if c in _OPEN_BRACKETS)
+                corr_closes = sum(1 for c in corrected_grammar if c in _CLOSE_BRACKETS)
+                orig_balanced = (orig_opens == orig_closes)
+                corr_balanced = (corr_opens == corr_closes)
+                if orig_balanced and not corr_balanced:
+                    logger.info(
+                        f"[GRAMMAR] Rejected bracket-unbalanced output: "
+                        f"orig=({orig_opens},{orig_closes}), corr=({corr_opens},{corr_closes})"
+                    )
+                    # Don't mutate text — keep pre-grammar text
+                else:
+                    ctx.mutate_text(corrected_grammar, OffsetMapper)
                 current_text = ctx.current_text
         except Exception as e:
-            logger.error(f"[ANALYZE] Grammar failed: {e}")
+            logger.error(f"[ANALYZE] Grammar failed: {type(e).__name__}: {e}")
+            logger.error(traceback.format_exc())
+            timing_ms['grammar_error'] = f"{type(e).__name__}: {str(e)[:200]}"
 
         # 3. Punctuation (runs on grammar-corrected text — PuncAra-v1 local model)
         try:
@@ -1229,7 +1476,9 @@ def analyze_text():
                 ctx.mutate_text(corrected_punc, OffsetMapper)
                 current_text = ctx.current_text
         except Exception as e:
-            logger.error(f"[ANALYZE] Punctuation failed: {e}")
+            logger.error(f"[ANALYZE] Punctuation failed: {type(e).__name__}: {e}")
+            logger.error(traceback.format_exc())
+            timing_ms['punctuation_error'] = f"{type(e).__name__}: {str(e)[:200]}"
 
         total_time = time.time() - total_start
         timing_ms['total_ms'] = int(total_time * 1000)
@@ -1262,13 +1511,21 @@ def analyze_text():
                     f"Punctuation: {timing_ms['punctuation_ms']}ms | "
                     f"Suggestions: {len(suggestions)}")
 
-        return jsonify({
+        # ── Phase 6 (BUG-032/E9): Signal partial results if any stage failed ──
+        stage_errors = {k: v for k, v in timing_ms.items() if k.endswith('_error')}
+        response_status = 'partial' if stage_errors else 'success'
+
+        response_data = {
             'original': text,
             'corrected': corrected,
             'suggestions': suggestions,
             'timing_ms': timing_ms,
-            'status': 'success'
-        })
+            'status': response_status,
+        }
+        if stage_errors:
+            response_data['warnings'] = stage_errors
+
+        return jsonify(response_data)
 
     except Exception as e:
         logger.error(f"Error during analysis: {str(e)}")
