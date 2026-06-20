@@ -751,6 +751,14 @@ def _is_small_spelling_change(orig_word, corr_word):
     if re.search(r'[^ء-يآأإىa-zA-Z]', corr_word):
         return False
 
+    # Fix S2: Reject corrections that drop feminine marker (ه/ة)
+    # e.g. بارده→بارد, منخفظه→منخفض — these are WORSE than no correction
+    feminine_endings = ('ه', 'ة')
+    if orig_word.endswith(feminine_endings) and not corr_word.endswith(feminine_endings):
+        # Only reject if the correction is just the word minus the ending
+        if corr_word == orig_word[:-1] or len(corr_word) < len(orig_word):
+            return False
+
     dist = _levenshtein(orig_word, corr_word)
     max_len = max(len(orig_word), len(corr_word))
 

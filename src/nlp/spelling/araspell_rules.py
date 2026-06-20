@@ -114,6 +114,50 @@ class AraSpellPostProcessor:
     
     # --- Hamza & Ta Marbuta Handling ---
     
+    # Common Arabic words with hamza errors — covers the most frequent
+    # spelling mistakes in informal Arabic writing
+    HAMZA_WHITELIST = {
+        'الي': 'إلى', 'الى': 'إلى',
+        'انت': 'أنت', 'انتم': 'أنتم', 'انتي': 'أنتِ',
+        'انتو': 'أنتم', 'انتن': 'أنتن',
+        'انا': 'أنا',
+        'امس': 'أمس',
+        'لان': 'لأن', 'لانه': 'لأنه', 'لانها': 'لأنها',
+        'لانهم': 'لأنهم', 'لانك': 'لأنك',
+        'اذا': 'إذا', 'اذ': 'إذ',
+        'اي': 'أي', 'اين': 'أين',
+        'او': 'أو',
+        'اما': 'أما',
+        'ان': 'أن', 'انه': 'أنه', 'انها': 'أنها', 'انهم': 'أنهم',
+        'اخر': 'آخر', 'اخرى': 'أخرى',
+        'الان': 'الآن',
+        'اول': 'أول', 'اولى': 'أولى',
+        'اصبح': 'أصبح', 'اصبحت': 'أصبحت',
+        'اكثر': 'أكثر', 'اقل': 'أقل',
+        'اعلى': 'أعلى', 'ادنى': 'أدنى',
+        'اسرع': 'أسرع', 'ابطا': 'أبطأ',
+        'اكبر': 'أكبر', 'اصغر': 'أصغر',
+        'احسن': 'أحسن', 'اسوا': 'أسوأ',
+        'امام': 'أمام',
+        'اثناء': 'أثناء',
+        'ايضا': 'أيضاً', 'ايض': 'أيضاً',
+        'اساسي': 'أساسي', 'اساسية': 'أساسية',
+        'اخي': 'أخي', 'اخت': 'أخت', 'اخو': 'أخو',
+        'ابي': 'أبي', 'اب': 'أب', 'ابو': 'أبو',
+        'اهل': 'أهل',
+        'اطفال': 'أطفال',
+        'اصدقاء': 'أصدقاء', 'اصدقائي': 'أصدقائي',
+        'اعتقد': 'أعتقد', 'اريد': 'أريد', 'احب': 'أحب',
+        'اعرف': 'أعرف', 'اعلم': 'أعلم',
+        'اخذ': 'أخذ', 'اكل': 'أكل',
+        'الايام': 'الأيام',
+        'الاطفال': 'الأطفال',
+        'الاسعار': 'الأسعار',
+        'الاولى': 'الأولى',
+        'الاخير': 'الأخير', 'الاخيرة': 'الأخيرة',
+        'واصدقائي': 'وأصدقائي',
+    }
+    
     @staticmethod
     def fix_hamza_conservative(text: str) -> str:
         """Conservative Hamza normalization — only at word END, not middle."""
@@ -129,33 +173,61 @@ class AraSpellPostProcessor:
         return ' '.join(result)
     
     @staticmethod
+    def fix_common_hamza(text: str) -> str:
+        """
+        Fix common hamza placement errors using a whitelist.
+        These are the most frequent informal Arabic spelling mistakes.
+        """
+        words = text.split()
+        result = []
+        for word in words:
+            # Check exact match first
+            if word in AraSpellPostProcessor.HAMZA_WHITELIST:
+                result.append(AraSpellPostProcessor.HAMZA_WHITELIST[word])
+            else:
+                result.append(word)
+        return ' '.join(result)
+    
+    @staticmethod
     def fix_ha_ta_marbuta(text: str, vocab_manager=None) -> str:
         """
         Smart ه → ة fix at end of words.
-        Strategy: Only convert if the ة version is IV (in tokenizer vocab).
+        Strategy: Always prefer ة when the previous char is a consonant,
+        UNLESS the ه form is specifically a known word and the ة form is NOT.
         """
         PROTECTED_ENDINGS = ['لله']
+        # Words that genuinely end in ه (not ة)
+        PROTECTED_HA_WORDS = {
+            'الله', 'لله', 'فيه', 'عليه', 'منه', 'به', 'له', 'إليه',
+            'وجه', 'نزه', 'سفه', 'فقه', 'نبه', 'شبه', 'مكره', 'تنبه',
+            'اتجه', 'توجه', 'تشابه',
+        }
         words = text.split()
         result = []
         for word in words:
             if any(word.endswith(e) for e in PROTECTED_ENDINGS):
                 result.append(word)
                 continue
-            if len(word) >= 4 and word.endswith('ه'):
+            if word in PROTECTED_HA_WORDS:
+                result.append(word)
+                continue
+            if len(word) >= 3 and word.endswith('ه'):
                 if word[-2] in AraSpellPostProcessor.ARABIC_CONSONANTS:
                     candidate_with_ta = word[:-1] + 'ة'
+                    # Default: prefer ة (correct Arabic orthography for feminine nouns)
                     if vocab_manager:
                         ta_iv = vocab_manager.is_iv(candidate_with_ta)
                         ha_iv = vocab_manager.is_iv(word)
                         if ta_iv:
+                            # Always prefer ة when it's a valid word
                             result.append(candidate_with_ta)
                             continue
                         elif ha_iv:
                             result.append(word)
                             continue
-                    else:
-                        result.append(candidate_with_ta)
-                        continue
+                    # No vocab manager — default to ة
+                    result.append(candidate_with_ta)
+                    continue
             result.append(word)
         return ' '.join(result)
     
@@ -263,6 +335,7 @@ class AraSpellPostProcessor:
         text = AraSpellPostProcessor.remove_hallucinations(text)
         text = AraSpellPostProcessor.unified_collapse_repeated(text)
         text = AraSpellPostProcessor.fix_hamza_conservative(text)
+        text = AraSpellPostProcessor.fix_common_hamza(text)  # Fix S3: hamza whitelist
         text = AraSpellPostProcessor.fix_ha_ta_marbuta(text, vocab_manager=vocab_manager)
         text = AraSpellPostProcessor.remove_word_repetition_with_wa(text)
         text = AraSpellPostProcessor.remove_duplicate_words(text)
@@ -588,6 +661,15 @@ class WordAligner:
         if in_iv and not out_iv:
             return input_word
         if in_iv and out_iv:
+            # Fix S1: When only difference is ه→ة at word end, prefer ة
+            # (correct Arabic orthography — ة is the standard feminine ending)
+            if (input_word.endswith('ه') and output_word.endswith('ة')
+                    and input_word[:-1] == output_word[:-1]):
+                return output_word
+            # Fix S1: Also handle ة→ه (don't regress a correct ة to ه)
+            if (input_word.endswith('ة') and output_word.endswith('ه')
+                    and input_word[:-1] == output_word[:-1]):
+                return input_word
             return input_word 
         if len(input_word) == len(output_word) and len(input_word) >= 3:
             for i in range(len(input_word)):

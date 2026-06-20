@@ -161,6 +161,85 @@ class ArabicGrammarGuard:
         text = re.sub(r'\b([وف]?ل)([أ-ي]{4,})(ون|ان)\b', r'\1\2ين', text)
         return text
 
+    def fix_subject_verb_agreement(self, text):
+        """
+        Fix G1: When a plural/dual noun PRECEDES a singular verb (SVO order),
+        the verb must agree in number and gender.
+
+        Arabic rule: In VSO order, verb can be singular even with plural subject.
+        But in SVO order, subject-verb agreement is required.
+        """
+        tokens = simple_word_tokenize(text)
+        if len(tokens) < 2:
+            return text
+        disambig_tokens = self.mle.disambiguate(tokens)
+        corrected_tokens = list(tokens)
+
+        # Common plural nouns (masculine sound plural) ending in ون/ين/ات
+        # and their expected verb conjugation patterns
+        for i in range(len(disambig_tokens) - 1):
+            noun_info = disambig_tokens[i].analyses[0] if disambig_tokens[i].analyses else None
+            verb_info = disambig_tokens[i+1].analyses[0] if disambig_tokens[i+1].analyses else None
+            if not noun_info or not verb_info:
+                continue
+
+            noun_pos = noun_info.analysis.get('pos', 'unknown')
+            verb_pos = verb_info.analysis.get('pos', 'unknown')
+            noun_word = corrected_tokens[i]
+            verb_word = corrected_tokens[i+1]
+
+            # Only process noun → verb patterns (SVO order)
+            if noun_pos != 'noun' or verb_pos != 'verb':
+                continue
+
+            noun_num = noun_info.analysis.get('num', 's')
+            noun_gen = noun_info.analysis.get('gen', 'm')
+            verb_num = verb_info.analysis.get('num', 's')
+
+            # Skip if verb is already plural
+            if verb_num != 's':
+                continue
+
+            # Detect plural nouns
+            is_plural_masc = (noun_word.endswith('ون') or noun_word.endswith('ين')
+                             or noun_num == 'p')
+            is_plural_fem = (noun_word.endswith('ات') or
+                            (noun_gen == 'f' and noun_num == 'p'))
+            # Common broken plurals and collective nouns
+            KNOWN_PLURALS_MASC = {
+                'الطلاب', 'طلاب', 'الرجال', 'رجال', 'الأولاد', 'أولاد',
+                'الأطباء', 'أطباء', 'الاطباء', 'اطباء',
+                'العمال', 'عمال', 'الناس', 'الشباب', 'الأبناء',
+            }
+            KNOWN_PLURALS_FEM = {
+                'الطالبات', 'طالبات', 'النساء', 'نساء', 'البنات', 'بنات',
+                'المعلمات', 'معلمات', 'الأمهات', 'أمهات',
+            }
+            if noun_word in KNOWN_PLURALS_MASC:
+                is_plural_masc = True
+            if noun_word in KNOWN_PLURALS_FEM:
+                is_plural_fem = True
+
+            if not is_plural_masc and not is_plural_fem:
+                continue
+
+            # Fix the verb to agree with the plural subject
+            # Past tense singular → plural
+            if is_plural_fem:
+                # Feminine plural: ذهب → ذهبن
+                if not verb_word.endswith('ن') and not verb_word.endswith('نَ'):
+                    # Check if it's a past tense verb (typically 3-5 chars, no prefix)
+                    if len(verb_word) >= 3 and not verb_word.startswith('ي') and not verb_word.startswith('ت'):
+                        corrected_tokens[i+1] = verb_word + 'ن'
+            elif is_plural_masc:
+                # Masculine plural: ذهب → ذهبوا
+                if (not verb_word.endswith('وا') and not verb_word.endswith('ون')
+                        and not verb_word.endswith('ين')):
+                    if len(verb_word) >= 3 and not verb_word.startswith('ي') and not verb_word.startswith('ت'):
+                        corrected_tokens[i+1] = verb_word + 'وا'
+
+        return " ".join(corrected_tokens)
+
     def regex_rules_fallback(self, text):
         # إن وأخواتها
         text = re.sub(r'\b(إن|أن|كأن|لكن|لعل|ليت)\s+(أبوك|أخوك|ذو|فوك)\b',
@@ -183,6 +262,8 @@ class ArabicGrammarGuard:
         text = self.fix_verbs_nasb_and_jazm(text)
         text = self.fix_gender_agreement(text)
         text = self.fix_prepositions_advanced(text)
+        text = self.fix_subject_verb_agreement(text)  # Fix G1
         text = self.regex_rules_fallback(text)
         text = re.sub(r'\s+', ' ', text).strip()
         return text
+
