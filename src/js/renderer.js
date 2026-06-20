@@ -162,7 +162,8 @@ function renderHighlightedText(text, suggestions) {
 
   const segments = createSegments(text, suggestions);
   let html = '';
-  let suggestionId = 0;
+  // Pipeline Hardening v3.3: Track which suggestion we're rendering for UUID lookup
+  let suggestionIdx = 0;
 
   segments.forEach((segment) => {
     if (segment.type === 'text') {
@@ -173,14 +174,16 @@ function renderHighlightedText(text, suggestions) {
       const { suggestion } = segment;
       const errorClass = getErrorClass(suggestion.type);
       const escapedText = escapeHtml(segment.text);
+      // Pipeline Hardening v3.3: Use suggestion.id (UUID) if available, fallback to index
+      const sid = suggestion.id || suggestionIdx;
 
-      html += `<span class="${errorClass}" data-suggestion-id="${suggestionId}" data-original="${escapeHtml(
+      html += `<span class="${errorClass}" data-suggestion-id="${sid}" data-original="${escapeHtml(
         suggestion.original
       )}" data-correction="${escapeHtml(
         suggestion.correction
       )}" data-type="${suggestion.type}" title="${suggestion.type}: ${escapeHtml(suggestion.correction)}">${escapedText}</span>`;
 
-      suggestionId++;
+      suggestionIdx++;
     }
   });
 
@@ -254,7 +257,6 @@ function overlaySuggestions(editor, suggestions) {
   const sorted = [...suggestions].sort((a, b) => b.start - a.start);
 
   sorted.forEach((suggestion, reverseIdx) => {
-    const realIdx = suggestions.length - 1 - reverseIdx;
     const { start, end } = suggestion;
     const errorClass = getErrorClass(suggestion.type);
 
@@ -265,7 +267,8 @@ function overlaySuggestions(editor, suggestions) {
     // Create the wrapper span
     const wrapper = document.createElement('span');
     wrapper.className = errorClass;
-    wrapper.dataset.suggestionId = String(realIdx);
+    // Pipeline Hardening v3.3: Use suggestion.id (UUID) instead of array index
+    wrapper.dataset.suggestionId = suggestion.id || String(reverseIdx);
     wrapper.dataset.original = suggestion.original || '';
     wrapper.dataset.correction = suggestion.correction || '';
     wrapper.dataset.type = suggestion.type || 'spelling';

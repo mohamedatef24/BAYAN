@@ -63,6 +63,8 @@ function buildSuggestionCardHTML(suggestion, index) {
   const badgeClass = `badge-${suggestion.type}`;
   const label = TYPE_LABELS[suggestion.type] || suggestion.type;
   const alts = suggestion.alternatives || [suggestion.correction, suggestion.original];
+  // Pipeline Hardening v3.3: Use suggestion.id (UUID) instead of array index
+  const suggestionId = suggestion.id || index;
 
   let altsHTML = '';
   alts.forEach((alt, i) => {
@@ -70,12 +72,12 @@ function buildSuggestionCardHTML(suggestion, index) {
     const isMain = i === 0;
     const cls = isKeep ? 'alt-chip alt-chip--keep' : (isMain ? 'alt-chip alt-chip--main' : 'alt-chip');
     const chipLabel = isKeep ? `${escapeHtml(alt)} ✓` : escapeHtml(alt);
-    altsHTML += `<button class="${cls}" data-card-alt="${escapeHtml(alt)}" data-card-index="${index}" type="button">${chipLabel}</button>`;
+    altsHTML += `<button class="${cls}" data-card-alt="${escapeHtml(alt)}" data-card-id="${suggestionId}" type="button">${chipLabel}</button>`;
   });
 
   return `
     <div class="suggestion-card" role="listitem" tabindex="0"
-      data-suggestion-index="${index}"
+      data-suggestion-id="${suggestionId}"
       aria-label="${label}: ${suggestion.original} إلى ${suggestion.correction}">
       <span class="suggestion-card-badge ${badgeClass}">${label}</span>
       <div class="suggestion-card-change">
@@ -134,15 +136,16 @@ function bindSuggestionCardEvents(container) {
   container.querySelectorAll('.suggestion-card').forEach((card) => {
     card.addEventListener('click', (e) => {
       if (e.target.closest('.alt-chip') || e.target.closest('.suggestion-card-apply')) return;
-      const idx = parseInt(card.dataset.suggestionIndex, 10);
-      scrollToSuggestion(idx);
-      focusSuggestionInEditor(idx);
+      // Pipeline Hardening v3.3: UUID-based lookup
+      const suggestionId = card.dataset.suggestionId;
+      scrollToSuggestion(suggestionId);
+      focusSuggestionInEditor(suggestionId);
     });
 
     card.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
-        const idx = parseInt(card.dataset.suggestionIndex, 10);
-        applySuggestionByIndex(idx);
+        const suggestionId = card.dataset.suggestionId;
+        applySuggestionById(suggestionId);
       }
     });
   });
@@ -151,10 +154,10 @@ function bindSuggestionCardEvents(container) {
   container.querySelectorAll('.alt-chip').forEach((chip) => {
     chip.addEventListener('click', (e) => {
       e.stopPropagation();
-      const idx = parseInt(chip.dataset.cardIndex, 10);
+      // Pipeline Hardening v3.3: UUID-based lookup
+      const suggestionId = chip.dataset.cardId;
       const altText = chip.dataset.cardAlt;
-      const suggestions = window.currentSuggestions || [];
-      const suggestion = suggestions[idx];
+      const suggestion = findSuggestionById(suggestionId);
       if (!suggestion) return;
 
       if (altText === suggestion.original) {
@@ -168,14 +171,15 @@ function bindSuggestionCardEvents(container) {
   container.querySelectorAll('.suggestion-card-apply').forEach((btn) => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      const idx = parseInt(btn.dataset.applyIndex, 10);
-      applySuggestionByIndex(idx);
+      const suggestionId = btn.dataset.applyId;
+      applySuggestionById(suggestionId);
     });
   });
 }
 
-function scrollToSuggestion(index) {
-  const span = document.querySelector(`[data-suggestion-id="${index}"]`);
+function scrollToSuggestion(suggestionId) {
+  // Pipeline Hardening v3.3: UUID-based span lookup
+  const span = document.querySelector(`[data-suggestion-id="${suggestionId}"]`);
   if (span) {
     span.scrollIntoView({ behavior: 'smooth', block: 'center' });
     span.classList.add('highlight-active');
@@ -184,8 +188,8 @@ function scrollToSuggestion(index) {
   }
 }
 
-function focusSuggestionInEditor(index) {
-  const span = document.querySelector(`[data-suggestion-id="${index}"]`);
+function focusSuggestionInEditor(suggestionId) {
+  const span = document.querySelector(`[data-suggestion-id="${suggestionId}"]`);
   if (span) showTooltip(span);
 }
 

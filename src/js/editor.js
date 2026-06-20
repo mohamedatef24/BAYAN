@@ -7,6 +7,9 @@ let _lastInputTime = 0;
 const ANALYZE_DEBOUNCE_MS = 1000;
 const MAX_ANALYZE_LENGTH = 5000;
 
+// Pipeline Hardening v3.3: Guard to prevent input events during suggestion apply
+let _isApplyingSuggestion = false;
+
 // ── Custom Undo/Redo Stack ──
 const _undoStack = [];
 const _redoStack = [];
@@ -77,6 +80,8 @@ function initEditor() {
   } catch (e) {}
 
   editor.addEventListener('input', () => {
+    // Pipeline Hardening v3.3: Skip re-analysis when programmatically applying suggestions
+    if (_isApplyingSuggestion) return;
     _lastInputTime = Date.now();
     updateEditorStats();
     updatePlaceholder();
@@ -229,8 +234,9 @@ function analyzeTextDelayed() {
 }
 
 function findSuggestionById(id) {
+  // Pipeline Hardening v3.3: UUID-based lookup instead of index
   const suggestions = window.currentSuggestions || [];
-  return suggestions[parseInt(id, 10)] || null;
+  return suggestions.find(s => s.id === id) || null;
 }
 
 function findSuggestionElement(id) {
@@ -432,73 +438,63 @@ function hideTooltip() {
 }
 
 function applySuggestionAtOffsets(suggestion) {
-  pushUndoState(); // Save state before correction
-  // Find the error span in the DOM and replace its text content
-  // This preserves formatting (bold, italic, etc.) around/inside the span
-  const idx = (window.currentSuggestions || []).indexOf(suggestion);
-  const errorSpan = idx >= 0 ? document.querySelector(`[data-suggestion-id="${idx}"]`) : null;
+  _isApplyingSuggestion = true;
+  try {
+    pushUndoState(); // Save state before correction
+    // Pipeline Hardening v3.3: UUID-based span lookup
+    const suggestionId = suggestion.id;
+    const errorSpan = suggestionId ? document.querySelector(`[data-suggestion-id="${suggestionId}"]`) : null;
 
-  if (errorSpan) {
-    // Replace the error span's text content with the correction
-    // while keeping it inside its formatting parent
-    const parent = errorSpan.parentNode;
-    const correctedNode = document.createTextNode(suggestion.correction);
-    parent.insertBefore(correctedNode, errorSpan);
-    parent.removeChild(errorSpan);
-    parent.normalize();
-  } else {
-    // Fallback: find span by matching original text
-    const allErrorSpans = document.querySelectorAll('.spelling-error, .grammar-error, .punctuation-suggestion');
-    let found = false;
-    allErrorSpans.forEach(span => {
-      if (!found && span.textContent === suggestion.original) {
-        const p = span.parentNode;
-        const correctedNode = document.createTextNode(suggestion.correction);
-        p.insertBefore(correctedNode, span);
-        p.removeChild(span);
-        p.normalize();
-        found = true;
-      }
-    });
-    if (!found) {
-      // Last resort: offset-based replacement
-      const text = getEditorText();
-      const before = text.substring(0, suggestion.start);
-      const after = text.substring(suggestion.end);
-      const newText = before + suggestion.correction + after;
-      setEditorHTML(escapeHtml(newText));
-    }
-  }
-  hideTooltip();
-  // Re-focus editor so Ctrl+Z works immediately after tooltip correction
-  const _ed = getEditorElement(); if (_ed) _ed.focus();
-
-  // Remove applied suggestion from list and re-index remaining spans
-  if (window.currentSuggestions) {
-    window.currentSuggestions = window.currentSuggestions.filter(
-      s => !(s.start === suggestion.start && s.end === suggestion.end && s.type === suggestion.type)
-    );
-
-    // Re-index remaining error spans to match updated array indices
-    const remainingSpans = document.querySelectorAll('.spelling-error, .grammar-error, .punctuation-suggestion');
-    remainingSpans.forEach(span => {
-      const newIdx = window.currentSuggestions.findIndex(s => {
-        return span.textContent === s.original && span.dataset.type === s.type;
+    if (errorSpan) {
+      const parent = errorSpan.parentNode;
+      const correctedNode = document.createTextNode(suggestion.correction);
+      parent.insertBefore(correctedNode, errorSpan);
+      parent.removeChild(errorSpan);
+      parent.normalize();
+    } else {
+      // Fallback: find span by matching original text
+      const allErrorSpans = document.querySelectorAll('.spelling-error, .grammar-error, .punctuation-suggestion');
+      let found = false;
+      allErrorSpans.forEach(span => {
+        if (!found && span.textContent === suggestion.original) {
+          const p = span.parentNode;
+          const correctedNode = document.createTextNode(suggestion.correction);
+          p.insertBefore(correctedNode, span);
+          p.removeChild(span);
+          p.normalize();
+          found = true;
+        }
       });
-      if (newIdx >= 0) {
-        span.dataset.suggestionId = newIdx;
+      if (!found) {
+        // Last resort: offset-based replacement
+        const text = getEditorText();
+        const before = text.substring(0, suggestion.start);
+        const after = text.substring(suggestion.end);
+        const newText = before + suggestion.correction + after;
+        setEditorHTML(escapeHtml(newText));
       }
-    });
+    }
+    hideTooltip();
+    // Re-focus editor so Ctrl+Z works immediately after tooltip correction
+    const _ed = getEditorElement(); if (_ed) _ed.focus();
 
-    const spellingCount = window.currentSuggestions.filter(s => s.type === 'spelling').length;
-    const grammarCount = window.currentSuggestions.filter(s => s.type === 'grammar').length;
-    const punctuationCount = window.currentSuggestions.filter(s => s.type === 'punctuation').length;
-    updateSuggestionCounts(spellingCount, grammarCount, punctuationCount);
-    updateWritingScore(spellingCount, grammarCount, punctuationCount);
-    updateSuggestionsList(window.currentSuggestions);
+    // Remove applied suggestion from list (UUID-based, no re-indexing needed)
+    if (window.currentSuggestions) {
+      window.currentSuggestions = window.currentSuggestions.filter(
+        s => s.id !== suggestion.id
+      );
+
+      const spellingCount = window.currentSuggestions.filter(s => s.type === 'spelling').length;
+      const grammarCount = window.currentSuggestions.filter(s => s.type === 'grammar').length;
+      const punctuationCount = window.currentSuggestions.filter(s => s.type === 'punctuation').length;
+      updateSuggestionCounts(spellingCount, grammarCount, punctuationCount);
+      updateWritingScore(spellingCount, grammarCount, punctuationCount);
+      updateSuggestionsList(window.currentSuggestions);
+    }
+    // Pipeline Hardening v3.3: Do NOT call analyzeTextDelayed() — prevents recursive re-analysis
+  } finally {
+    _isApplyingSuggestion = false;
   }
-
-  analyzeTextDelayed();
 }
 
 function applyCorrection() {
@@ -508,64 +504,60 @@ function applyCorrection() {
 }
 
 function applyAlternativeCorrection(suggestion, correctionText) {
-  pushUndoState(); // Save state before correction
-  const idx = (window.currentSuggestions || []).indexOf(suggestion);
-  const errorSpan = idx >= 0 ? document.querySelector(`[data-suggestion-id="${idx}"]`) : null;
+  _isApplyingSuggestion = true;
+  try {
+    pushUndoState(); // Save state before correction
+    // Pipeline Hardening v3.3: UUID-based span lookup
+    const suggestionId = suggestion.id;
+    const errorSpan = suggestionId ? document.querySelector(`[data-suggestion-id="${suggestionId}"]`) : null;
 
-  if (errorSpan) {
-    const parent = errorSpan.parentNode;
-    const correctedNode = document.createTextNode(correctionText);
-    parent.insertBefore(correctedNode, errorSpan);
-    parent.removeChild(errorSpan);
-    parent.normalize();
-  } else {
-    const allErrorSpans = document.querySelectorAll('.spelling-error, .grammar-error, .punctuation-suggestion');
-    let found = false;
-    allErrorSpans.forEach(span => {
-      if (!found && span.textContent === suggestion.original) {
-        const p = span.parentNode;
-        const correctedNode = document.createTextNode(correctionText);
-        p.insertBefore(correctedNode, span);
-        p.removeChild(span);
-        p.normalize();
-        found = true;
-      }
-    });
-    if (!found) {
-      const text = getEditorText();
-      const before = text.substring(0, suggestion.start);
-      const after = text.substring(suggestion.end);
-      const newText = before + correctionText + after;
-      setEditorHTML(escapeHtml(newText));
-    }
-  }
-  hideTooltip();
-  // Re-focus editor so Ctrl+Z works immediately after tooltip correction
-  const _ed2 = getEditorElement(); if (_ed2) _ed2.focus();
-  // Remove applied suggestion from list and re-index remaining spans
-  if (window.currentSuggestions) {
-    window.currentSuggestions = window.currentSuggestions.filter(
-      s => !(s.start === suggestion.start && s.end === suggestion.end && s.type === suggestion.type)
-    );
-
-    const remainingSpans = document.querySelectorAll('.spelling-error, .grammar-error, .punctuation-suggestion');
-    remainingSpans.forEach(span => {
-      const newIdx = window.currentSuggestions.findIndex(s => {
-        return span.textContent === s.original && span.dataset.type === s.type;
+    if (errorSpan) {
+      const parent = errorSpan.parentNode;
+      const correctedNode = document.createTextNode(correctionText);
+      parent.insertBefore(correctedNode, errorSpan);
+      parent.removeChild(errorSpan);
+      parent.normalize();
+    } else {
+      const allErrorSpans = document.querySelectorAll('.spelling-error, .grammar-error, .punctuation-suggestion');
+      let found = false;
+      allErrorSpans.forEach(span => {
+        if (!found && span.textContent === suggestion.original) {
+          const p = span.parentNode;
+          const correctedNode = document.createTextNode(correctionText);
+          p.insertBefore(correctedNode, span);
+          p.removeChild(span);
+          p.normalize();
+          found = true;
+        }
       });
-      if (newIdx >= 0) {
-        span.dataset.suggestionId = newIdx;
+      if (!found) {
+        const text = getEditorText();
+        const before = text.substring(0, suggestion.start);
+        const after = text.substring(suggestion.end);
+        const newText = before + correctionText + after;
+        setEditorHTML(escapeHtml(newText));
       }
-    });
+    }
+    hideTooltip();
+    // Re-focus editor so Ctrl+Z works immediately after tooltip correction
+    const _ed2 = getEditorElement(); if (_ed2) _ed2.focus();
+    // Remove applied suggestion (UUID-based, no re-indexing needed)
+    if (window.currentSuggestions) {
+      window.currentSuggestions = window.currentSuggestions.filter(
+        s => s.id !== suggestion.id
+      );
 
-    const spellingCount = window.currentSuggestions.filter(s => s.type === 'spelling').length;
-    const grammarCount = window.currentSuggestions.filter(s => s.type === 'grammar').length;
-    const punctuationCount = window.currentSuggestions.filter(s => s.type === 'punctuation').length;
-    updateSuggestionCounts(spellingCount, grammarCount, punctuationCount);
-    updateWritingScore(spellingCount, grammarCount, punctuationCount);
-    updateSuggestionsList(window.currentSuggestions);
+      const spellingCount = window.currentSuggestions.filter(s => s.type === 'spelling').length;
+      const grammarCount = window.currentSuggestions.filter(s => s.type === 'grammar').length;
+      const punctuationCount = window.currentSuggestions.filter(s => s.type === 'punctuation').length;
+      updateSuggestionCounts(spellingCount, grammarCount, punctuationCount);
+      updateWritingScore(spellingCount, grammarCount, punctuationCount);
+      updateSuggestionsList(window.currentSuggestions);
+    }
+    // Pipeline Hardening v3.3: Do NOT call analyzeTextDelayed() — prevents recursive re-analysis
+  } finally {
+    _isApplyingSuggestion = false;
   }
-  analyzeTextDelayed();
 }
 
 function dismissSuggestion(suggestion) {
@@ -577,8 +569,9 @@ function dismissSuggestion(suggestion) {
   }
 
   // Remove the error highlight but keep the text as-is
-  const idx = (window.currentSuggestions || []).indexOf(suggestion);
-  const errorSpan = idx >= 0 ? document.querySelector(`[data-suggestion-id="${idx}"]`) : null;
+  // Pipeline Hardening v3.3: UUID-based span lookup
+  const suggestionId = suggestion.id;
+  const errorSpan = suggestionId ? document.querySelector(`[data-suggestion-id="${suggestionId}"]`) : null;
 
   if (errorSpan) {
     // Unwrap: replace span with its text content
@@ -592,21 +585,9 @@ function dismissSuggestion(suggestion) {
 
   if (window.currentSuggestions) {
     window.currentSuggestions = window.currentSuggestions.filter(
-      s => !(s.start === suggestion.start && s.end === suggestion.end)
+      s => s.id !== suggestion.id
     );
-
-    // Re-index remaining error spans to match updated array indices
-    const remainingSpans = document.querySelectorAll('.spelling-error, .grammar-error, .punctuation-suggestion');
-    remainingSpans.forEach(span => {
-      const oldId = parseInt(span.dataset.suggestionId, 10);
-      // Find this span's suggestion in the updated array by matching start/end
-      const newIdx = window.currentSuggestions.findIndex(s => {
-        return span.textContent === s.original;
-      });
-      if (newIdx >= 0) {
-        span.dataset.suggestionId = newIdx;
-      }
-    });
+    // Pipeline Hardening v3.3: No re-indexing needed — UUID-based
 
     const spellingCount = window.currentSuggestions.filter(s => s.type === 'spelling').length;
     const grammarCount = window.currentSuggestions.filter(s => s.type === 'grammar').length;
@@ -620,9 +601,9 @@ function dismissSuggestion(suggestion) {
   const _ed3 = getEditorElement(); if (_ed3) _ed3.focus();
 }
 
-function applySuggestionByIndex(index) {
-  const suggestions = window.currentSuggestions || [];
-  const suggestion = suggestions[index];
+function applySuggestionById(id) {
+  // Pipeline Hardening v3.3: UUID-based lookup
+  const suggestion = findSuggestionById(id);
   if (!suggestion) return;
   applySuggestionAtOffsets(suggestion);
 }
@@ -630,27 +611,28 @@ function applySuggestionByIndex(index) {
 function applyAllSuggestions() {
   const suggestions = [...(window.currentSuggestions || [])].sort((a, b) => b.start - a.start);
   if (suggestions.length === 0) return;
-  pushUndoState(); // Save state before applying all
+  _isApplyingSuggestion = true;
+  try {
+    pushUndoState(); // Save state before applying all
 
-  let text = getEditorText();
-  suggestions.forEach((s) => {
-    text = text.substring(0, s.start) + s.correction + text.substring(s.end);
-  });
+    let text = getEditorText();
+    suggestions.forEach((s) => {
+      text = text.substring(0, s.start) + s.correction + text.substring(s.end);
+    });
 
-  setEditorHTML(escapeHtml(text));
-  hideTooltip();
+    setEditorHTML(escapeHtml(text));
+    hideTooltip();
 
-  // Track all applied corrections
-  suggestions.forEach(s => _trackAppliedCorrection(s.correction));
-
-  // Clear suggestions
-  window.currentSuggestions = [];
-  updateSuggestionCounts(0, 0, 0);
-  updateWritingScore(0, 0, 0);
-  updateSuggestionsList([]);
-
-  analyzeTextDelayed();
-  if (typeof showToast === 'function') showToast('✓ تم تطبيق ' + suggestions.length + ' تصحيح');
+    // Clear suggestions
+    window.currentSuggestions = [];
+    updateSuggestionCounts(0, 0, 0);
+    updateWritingScore(0, 0, 0);
+    updateSuggestionsList([]);
+    // Pipeline Hardening v3.3: Do NOT call analyzeTextDelayed() — prevents recursive re-analysis
+    if (typeof showToast === 'function') showToast('✓ تم تطبيق ' + suggestions.length + ' تصحيح');
+  } finally {
+    _isApplyingSuggestion = false;
+  }
 }
 
 function clearEditor() {
@@ -726,7 +708,7 @@ if (typeof module !== 'undefined' && module.exports) {
     showTooltip,
     hideTooltip,
     applyCorrection,
-    applySuggestionByIndex,
+    applySuggestionById,
     applyAllSuggestions
   };
 }
