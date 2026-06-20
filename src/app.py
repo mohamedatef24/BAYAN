@@ -1156,21 +1156,24 @@ def analyze_text():
                 for d in diffs:
                     # StageLocker: skip diffs that overlap with locked ranges
                     # BUT allow pure punctuation insertions near locked words
-                    if ctx.stage_locker.is_locked(d['start'], d['end']):
+                    lock_info = ctx.stage_locker.is_locked_by(d['start'], d['end'])
+                    if lock_info:
                         import re as _re
                         orig_alpha = _re.sub(r'[^\u0600-\u06FFa-zA-Z]', '', d.get('original', ''))
                         corr_alpha = _re.sub(r'[^\u0600-\u06FFa-zA-Z]', '', d.get('correction', ''))
+                        ls, le, owner = lock_info
                         if orig_alpha != corr_alpha:
                             # Diff changes actual words — block it
                             logger.info(
                                 f"[LOCK] Punctuation blocked on [{d['start']}:{d['end']}] "
-                                f"'{d.get('original','')}' \u2014 locked by previous stage"
+                                f"'{d.get('original','')}' \u2014 locked by {owner}[{ls}:{le}]"
                             )
                             continue
-                        # Arabic text unchanged \u2014 only punctuation added/moved. Allow through.
+                        # Arabic text unchanged — only punctuation added/moved. Allow through.
                         logger.info(
                             f"[LOCK] Punctuation ALLOWED through lock [{d['start']}:{d['end']}] "
-                            f"'{d.get('original','')}' \u2192 '{d.get('correction','')}' \u2014 pure punctuation"
+                            f"'{d.get('original','')}' \u2192 '{d.get('correction','')}' "
+                            f"(locked by {owner}[{ls}:{le}])"
                         )
                     # Punctuation safety layer: reject non-punctuation changes
                     if not validate_punctuation_diff(d):
