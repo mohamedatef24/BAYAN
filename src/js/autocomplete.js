@@ -153,7 +153,16 @@
       return;
     }
 
-    // Must end with a word (not just spaces)
+    // CRITICAL: Only trigger when the user just typed a SPACE
+    // (meaning they finished a word). Partial words like "عا" produce garbage.
+    var lastChar = context[context.length - 1];
+    if (lastChar !== ' ' && lastChar !== '\u00A0') {
+      // User is still typing a word — don't send partial word to backend
+      dismiss();
+      return;
+    }
+
+    // Trim trailing spaces for the API call (backend expects clean context)
     var trimmed = context.trimEnd();
     if (!trimmed || trimmed.length < MIN_CONTEXT_LEN) {
       dismiss();
