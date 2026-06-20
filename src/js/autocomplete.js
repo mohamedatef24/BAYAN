@@ -11,7 +11,7 @@
   // ─── Configuration ───────────────────────────────────────────────
   const DEBOUNCE_MS = 400;
   const MIN_CONTEXT_LEN = 3;
-  const MAX_SUGGESTIONS = 5;
+  const MAX_SUGGESTIONS = 3;
   const CONTEXT_CHARS = 200;
 
   // ─── State ───────────────────────────────────────────────────────

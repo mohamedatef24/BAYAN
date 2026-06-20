@@ -438,7 +438,7 @@ def autocomplete():
 
         data = request.get_json()
         context = data.get('context', '').strip()
-        n = int(data.get('n', 5))
+        n = int(data.get('n', 3))
 
         if not context or len(context) < 3:
             return jsonify({'suggestions': [], 'status': 'success'})
