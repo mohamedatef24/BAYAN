@@ -70,6 +70,9 @@ def get_grammar_model():
     
     Transient errors (rate limiting, network timeouts) are NOT cached —
     the next request will retry loading. Only permanent failures are cached.
+    
+    The Gradio Client connection retries up to 3 times with exponential backoff
+    to handle sleeping Spaces and rate-limit responses.
     """
     global _grammar_checker, _load_error
 
@@ -83,11 +86,37 @@ def get_grammar_model():
         t0 = time.time()
         logger.info("Loading Grammar model (lazy init)...")
 
-        # 1. Initialize Gradio Client
-        logger.info(f"Connecting to Gradio Space: {GRADIO_SPACE}")
+        # 1. Initialize Gradio Client — with retry for rate limiting / sleeping Spaces
         from gradio_client import Client
-        client = Client(GRADIO_SPACE)
-        logger.info("Gradio Client connected")
+        client = None
+        max_retries = 3
+        last_err = None
+
+        for attempt in range(1, max_retries + 1):
+            try:
+                logger.info(f"Connecting to Gradio Space: {GRADIO_SPACE} (attempt {attempt}/{max_retries})")
+                client = Client(GRADIO_SPACE)
+                logger.info("Gradio Client connected")
+                break
+            except Exception as conn_err:
+                last_err = conn_err
+                err_msg = str(conn_err).lower()
+                is_retryable = any(kw in err_msg for kw in [
+                    'too many requests', 'rate limit', '429',
+                    'timeout', 'connection', 'sleeping'
+                ])
+                if is_retryable and attempt < max_retries:
+                    wait = 2 ** attempt  # 2s, 4s, 8s
+                    logger.warning(
+                        f"Gradio connection attempt {attempt} failed ({conn_err}). "
+                        f"Retrying in {wait}s..."
+                    )
+                    time.sleep(wait)
+                else:
+                    raise  # Not retryable or last attempt — bubble up
+
+        if client is None:
+            raise RuntimeError(f"Gradio connection failed after {max_retries} attempts: {last_err}")
 
         # 2. Initialize rule-based post-processor (camel-tools)
         logger.info("Loading ArabicGrammarGuard (camel-tools MLE disambiguator)...")
@@ -111,7 +140,8 @@ def get_grammar_model():
         # Transient errors (rate limiting, network) should NOT be cached —
         # allow retry on next request
         transient_keywords = ['Too many requests', 'rate limit', 'timeout',
-                              'ConnectionError', 'ConnectTimeout', 'ReadTimeout']
+                              'ConnectionError', 'ConnectTimeout', 'ReadTimeout',
+                              '429', 'sleeping']
         is_transient = any(kw.lower() in error_msg.lower() for kw in transient_keywords)
 
         if is_transient:
