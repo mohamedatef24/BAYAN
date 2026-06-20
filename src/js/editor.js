@@ -451,6 +451,15 @@ function applySuggestionAtOffsets(suggestion) {
       parent.insertBefore(correctedNode, errorSpan);
       parent.removeChild(errorSpan);
       parent.normalize();
+      // Place cursor right after the corrected text
+      try {
+        const sel = window.getSelection();
+        const r = document.createRange();
+        r.setStartAfter(correctedNode);
+        r.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(r);
+      } catch(e) {}
     } else {
       // Fallback: find span by matching original text
       const allErrorSpans = document.querySelectorAll('.spelling-error, .grammar-error, .punctuation-suggestion');
@@ -462,6 +471,15 @@ function applySuggestionAtOffsets(suggestion) {
           p.insertBefore(correctedNode, span);
           p.removeChild(span);
           p.normalize();
+          // Place cursor right after the corrected text
+          try {
+            const sel = window.getSelection();
+            const r = document.createRange();
+            r.setStartAfter(correctedNode);
+            r.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(r);
+          } catch(e) {}
           found = true;
         }
       });
@@ -472,6 +490,8 @@ function applySuggestionAtOffsets(suggestion) {
         const after = text.substring(suggestion.end);
         const newText = before + suggestion.correction + after;
         setEditorHTML(escapeHtml(newText));
+        // Place cursor after the inserted correction
+        setCaretOffset(suggestion.start + suggestion.correction.length);
       }
     }
     hideTooltip();
@@ -517,6 +537,15 @@ function applyAlternativeCorrection(suggestion, correctionText) {
       parent.insertBefore(correctedNode, errorSpan);
       parent.removeChild(errorSpan);
       parent.normalize();
+      // Place cursor right after the corrected text
+      try {
+        const sel = window.getSelection();
+        const r = document.createRange();
+        r.setStartAfter(correctedNode);
+        r.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(r);
+      } catch(e) {}
     } else {
       const allErrorSpans = document.querySelectorAll('.spelling-error, .grammar-error, .punctuation-suggestion');
       let found = false;
@@ -527,6 +556,15 @@ function applyAlternativeCorrection(suggestion, correctionText) {
           p.insertBefore(correctedNode, span);
           p.removeChild(span);
           p.normalize();
+          // Place cursor right after the corrected text
+          try {
+            const sel = window.getSelection();
+            const r = document.createRange();
+            r.setStartAfter(correctedNode);
+            r.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(r);
+          } catch(e) {}
           found = true;
         }
       });
@@ -536,6 +574,8 @@ function applyAlternativeCorrection(suggestion, correctionText) {
         const after = text.substring(suggestion.end);
         const newText = before + correctionText + after;
         setEditorHTML(escapeHtml(newText));
+        // Place cursor after the inserted correction
+        setCaretOffset(suggestion.start + correctionText.length);
       }
     }
     hideTooltip();

@@ -67,6 +67,9 @@ def get_grammar_model():
     """
     Lazy-load the grammar model on first call.
     Returns the GrammarChecker instance, or raises RuntimeError if loading fails.
+    
+    Transient errors (rate limiting, network timeouts) are NOT cached —
+    the next request will retry loading. Only permanent failures are cached.
     """
     global _grammar_checker, _load_error
 
@@ -101,9 +104,22 @@ def get_grammar_model():
 
     except Exception as e:
         import traceback
-        _load_error = str(e)
+        error_msg = str(e)
         logger.error(f"Failed to load grammar model: {e}")
         logger.error(traceback.format_exc())
+
+        # Transient errors (rate limiting, network) should NOT be cached —
+        # allow retry on next request
+        transient_keywords = ['Too many requests', 'rate limit', 'timeout',
+                              'ConnectionError', 'ConnectTimeout', 'ReadTimeout']
+        is_transient = any(kw.lower() in error_msg.lower() for kw in transient_keywords)
+
+        if is_transient:
+            logger.warning(f"Grammar load error is TRANSIENT — will retry on next request: {error_msg}")
+            # Do NOT set _load_error — next call will retry
+        else:
+            _load_error = error_msg  # Cache permanent failures only
+
         raise RuntimeError(f"Grammar model load failed: {e}")
 
 
