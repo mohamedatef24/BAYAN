@@ -158,7 +158,7 @@ def health_check():
             'models': {
                 'summarization': summarization_model is not None,
                 'spelling': _spelling_available(),
-                'autocomplete': False,
+                'autocomplete': _autocomplete_available(),
                 'grammar': _grammar_available(),
                 'punctuation': _punctuation_available()
             },
@@ -250,6 +250,15 @@ def _punctuation_available():
     try:
         from nlp.punctuation.punctuation_service import is_loaded
         return is_loaded()
+    except Exception:
+        return False
+
+
+def _autocomplete_available():
+    """Check if autocomplete model is loaded (without triggering lazy load)."""
+    try:
+        from nlp.autocomplete.autocomplete_service import _instance
+        return _instance is not None and _instance.is_ready()
     except Exception:
         return False
 
@@ -409,50 +418,59 @@ def summarize():
 def autocomplete():
     """
     Get autocomplete suggestions for Arabic text.
-    
-    Expected JSON payload:
+    COMPLETELY INDEPENDENT — has zero interaction with /api/analyze.
+
+    Request JSON:
     {
-        "text": "Arabic text prefix",
-        "n": 5 (number of suggestions, optional)
+        "context": "<text before cursor>",
+        "n": 5 (optional)
+    }
+
+    Response JSON:
+    {
+        "status": "success",
+        "suggestions": ["word1", "word2", ...]
     }
     """
-    if not USE_HF_API and autocomplete_model is None:
-        return jsonify({
-            'error': 'Autocomplete model not loaded. Please check server logs.',
-            'status': 'error'
-        }), 503
-    
     try:
         if not request.is_json:
             return jsonify({'error': 'Request must be JSON', 'status': 'error'}), 400
-        
+
         data = request.get_json()
-        text = data.get('text', '').strip()
+        context = data.get('context', '').strip()
         n = int(data.get('n', 5))
-        
-        if not text:
-            return jsonify({'error': 'Text is required', 'status': 'error'}), 400
-        
-        logger.info(f"Getting autocomplete suggestions for: {text[:50]}...")
-        if USE_HF_API:
-            suggestions = hf_autocomplete(text, n=n)
-        else:
-            suggestions = autocomplete_model.predict(text, n=n)
-        logger.info(f"Autocomplete suggestions (n={n}): {suggestions}")
-        
+
+        if not context or len(context) < 3:
+            return jsonify({'suggestions': [], 'status': 'success'})
+
+        # Extract last ~200 chars (trimmed to word boundary)
+        from nlp.autocomplete.autocomplete_rules import extract_context
+        context = extract_context(context, max_chars=200)
+
+        # Lazy-load the model on first request
+        from nlp.autocomplete.autocomplete_service import get_autocomplete_model
+        ac_model = get_autocomplete_model()
+
+        if not ac_model.is_ready():
+            return jsonify({'suggestions': [], 'status': 'success'})
+
+        t0 = time.time()
+        suggestions = ac_model.predict(context, n=n)
+        elapsed = int((time.time() - t0) * 1000)
+        logger.info(f"[AUTOCOMPLETE] {elapsed}ms | mode={ac_model.get_mode()} | suggestions={suggestions}")
+
         return jsonify({
             'suggestions': suggestions,
             'status': 'success'
         })
-    
+
     except Exception as e:
         logger.error(f"Error during autocomplete: {str(e)}")
         logger.error(traceback.format_exc())
         return jsonify({
-            'error': 'An error occurred during autocomplete.',
-            'status': 'error',
-            'details': str(e) if app.debug else None
-        }), 500
+            'suggestions': [],
+            'status': 'success'  # Graceful degradation — never fail the UI
+        })
 
 
 @app.route('/api/grammar', methods=['POST'])

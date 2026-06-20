@@ -2794,3 +2794,119 @@ input[type="range"]::-moz-range-thumb {
   box-shadow: 0 4px 16px rgba(26, 29, 33, 0.15);
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   NLP-4: AutoComplete — Ghost Text + Dropdown
+   COMPLETELY INDEPENDENT from correction pipeline highlights.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Ghost Text Overlay ── */
+#autocomplete-ghost {
+  position: absolute;
+  pointer-events: none;
+  color: var(--color-text-muted, #6b7280);
+  opacity: 0.45;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  z-index: 5;
+  white-space: pre;
+  direction: rtl;
+  display: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ── Dropdown ── */
+#autocomplete-dropdown {
+  position: fixed;
+  background: var(--color-surface, #1a1d21);
+  border: 1px solid var(--color-border, rgba(255,255,255,0.1));
+  border-radius: 10px;
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+  z-index: 9999;
+  max-height: 220px;
+  overflow-y: auto;
+  direction: rtl;
+  min-width: 160px;
+  padding: 4px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  animation: ac-dropdown-in 0.15s ease;
+}
+
+@keyframes ac-dropdown-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Dropdown Items ── */
+.ac-dropdown-item {
+  padding: 8px 14px;
+  font-size: 0.95rem;
+  color: var(--color-text-primary, #e5e7eb);
+  cursor: pointer;
+  border-radius: 7px;
+  transition: background 0.12s ease, color 0.12s ease;
+  direction: rtl;
+  text-align: right;
+  font-family: inherit;
+  line-height: 1.5;
+}
+
+.ac-dropdown-item:hover,
+.ac-dropdown-item.ac-selected {
+  background: linear-gradient(135deg,
+    rgba(107, 163, 224, 0.15),
+    rgba(160, 131, 237, 0.12));
+  color: var(--color-primary, #6ba3e0);
+}
+
+.ac-dropdown-item.ac-selected {
+  font-weight: 600;
+}
+
+/* ── Scrollbar ── */
+#autocomplete-dropdown::-webkit-scrollbar {
+  width: 4px;
+}
+#autocomplete-dropdown::-webkit-scrollbar-track {
+  background: transparent;
+}
+#autocomplete-dropdown::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 2px;
+}
+
+/* ── Light theme overrides ── */
+[data-theme="light"] #autocomplete-ghost {
+  color: #9ca3af;
+  opacity: 0.5;
+}
+
+[data-theme="light"] #autocomplete-dropdown {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.12),
+    0 0 0 1px rgba(0, 0, 0, 0.04) inset;
+}
+
+[data-theme="light"] .ac-dropdown-item {
+  color: #374151;
+}
+
+[data-theme="light"] .ac-dropdown-item:hover,
+[data-theme="light"] .ac-dropdown-item.ac-selected {
+  background: rgba(107, 163, 224, 0.1);
+  color: #2563eb;
+}
+
+/* ── Print: hide autocomplete ── */
+@media print {
+  #autocomplete-ghost,
+  #autocomplete-dropdown {
+    display: none !important;
+  }
+}
