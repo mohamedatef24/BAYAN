@@ -734,10 +734,14 @@ def _levenshtein(a, b):
     return dp[m][n]
 
 
-def _is_small_spelling_change(orig_word, corr_word):
+def _is_small_spelling_change(orig_word, corr_word, vocab_manager=None):
     """
     Heuristic: only accept small spelling edits and ignore
     aggressive changes (to avoid over-editing).
+
+    CRITICAL: If both words are in-vocabulary (both are valid Arabic words),
+    only accept known orthographic fixes (ه→ة, hamza whitelist).
+    This prevents the model from corrupting correct words (e.g. وكان→وكأن).
     """
     if not orig_word or not corr_word:
         return False
@@ -757,6 +761,36 @@ def _is_small_spelling_change(orig_word, corr_word):
     if orig_word.endswith(feminine_endings) and not corr_word.endswith(feminine_endings):
         # Only reject if the correction is just the word minus the ending
         if corr_word == orig_word[:-1] or len(corr_word) < len(orig_word):
+            return False
+
+    # CRITICAL: If both words are valid Arabic words, only accept known fixes.
+    # This prevents the spelling model from changing one correct word to another
+    # (e.g. وكان→وكأن, which changes "and was" to "as if" — a meaning change).
+    if vocab_manager:
+        orig_iv = vocab_manager.is_iv(orig_word)
+        corr_iv = vocab_manager.is_iv(corr_word)
+        if orig_iv and corr_iv:
+            # Both are valid words — only accept known orthographic fixes:
+            # 1. ه→ة at word end (feminine marker fix)
+            if (orig_word.endswith('ه') and corr_word.endswith('ة')
+                    and orig_word[:-1] == corr_word[:-1]):
+                return True
+            # 2. ة→ه at word end (less common but valid)
+            if (orig_word.endswith('ة') and corr_word.endswith('ه')
+                    and orig_word[:-1] == corr_word[:-1]):
+                return True
+            # 3. Word is in the hamza whitelist (known common errors)
+            from nlp.spelling.araspell_rules import AraSpellPostProcessor
+            if orig_word in AraSpellPostProcessor.HAMZA_WHITELIST:
+                return True
+            # 4. Check prefixed hamza (و+whitelist word, etc.)
+            for prefix in AraSpellPostProcessor.HAMZA_PREFIXES:
+                if orig_word.startswith(prefix) and len(orig_word) > len(prefix) + 1:
+                    remainder = orig_word[len(prefix):]
+                    if remainder in AraSpellPostProcessor.HAMZA_WHITELIST:
+                        return True
+            # Both are valid words and change is NOT a known fix — REJECT
+            # This prevents وكان→وكأن, etc.
             return False
 
     dist = _levenshtein(orig_word, corr_word)
@@ -954,7 +988,8 @@ def analyze_text():
                                 # 1-word → 1-word: accept only small edits (typos)
                                 o_word = o_segment[0]
                                 c_word = c_segment[0]
-                                if _is_small_spelling_change(o_word, c_word):
+                                if _is_small_spelling_change(o_word, c_word, spell_checker.vocab_manager):
+                                    logger.info(f"[SPELLING] Accepted: '{o_word}'→'{c_word}'")
                                     new_words.append(c_word)
                                     ctx.add_patch(
                                         'spelling', start_idx, end_idx,
@@ -962,6 +997,7 @@ def analyze_text():
                                         alternatives=_get_spelling_alternatives(o_word, c_word, spell_checker),
                                     )
                                 else:
+                                    logger.info(f"[SPELLING] Rejected: '{o_word}'→'{c_word}' (filter blocked)")
                                     new_words.append(current_text[start_idx:end_idx])
                             elif len(o_segment) == 1 and len(c_segment) > 1:
                                 # 1-word → N words: accept word splits (e.g. فيالمدرسة → في المدرسة)
@@ -989,7 +1025,7 @@ def analyze_text():
                                     if ci < len(c_segment):
                                         c_word = c_segment[ci]
                                         # Check if this is a 1→1 small edit
-                                        if _is_small_spelling_change(o_word, c_word):
+                                        if _is_small_spelling_change(o_word, c_word, spell_checker.vocab_manager):
                                             new_words.append(c_word)
                                             ctx.add_patch(
                                                 'spelling', o_start, o_end,
@@ -1058,14 +1094,30 @@ def analyze_text():
                             f"'{d.get('original','')}' — locked by previous stage"
                         )
                         continue
+
+                    # Reject grammar hallucinations (e.g. جالس→جاكسون)
+                    orig_text = d.get('original', '')
+                    corr_text = d.get('correction', '')
+                    if orig_text and corr_text:
+                        orig_chars = set(orig_text.replace(' ', ''))
+                        corr_chars = set(corr_text.replace(' ', ''))
+                        if orig_chars and corr_chars:
+                            jaccard = len(orig_chars & corr_chars) / len(orig_chars | corr_chars)
+                            if jaccard < 0.3:
+                                logger.info(
+                                    f"[GRAMMAR] Rejected hallucination: '{orig_text}'→'{corr_text}' "
+                                    f"(jaccard={jaccard:.2f})"
+                                )
+                                continue
+
                     # Re-label: if grammar's change is purely orthographic
                     # (hamza, ه→ة, etc.), tag it as 'spelling' for correct UI icon
                     stage_label = 'grammar'
-                    if _is_spelling_only_change(d.get('original', ''), d.get('correction', '')):
+                    if _is_spelling_only_change(orig_text, corr_text):
                         stage_label = 'spelling'
                     ctx.add_patch(
                         stage_label, d['start'], d['end'],
-                        d['correction'], confidence=1.0
+                        corr_text, confidence=1.0
                     )
                 ctx.mutate_text(corrected_grammar, OffsetMapper)
                 current_text = ctx.current_text
