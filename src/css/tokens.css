@@ -30,15 +30,18 @@
   --spacing-md: 1rem;
   --spacing-lg: 1.5rem;
   --spacing-xl: 2rem;
+  --spacing-section: 6rem;
 
   --radius-sm: 0.5rem;
   --radius-md: 0.75rem;
   --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
   --radius-card: 1rem;
 
   --transition-fast: 0.15s ease;
   --transition-base: 0.2s ease;
   --transition-slow: 0.3s ease;
+  --transition-spring: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* ── Dark Theme — soft charcoal, easy on eyes ── */
@@ -70,9 +73,11 @@
 
   --focus-ring: rgba(107, 163, 224, 0.42);
 
+  --shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.16);
   --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.28);
   --shadow-popover: 0 16px 40px rgba(0, 0, 0, 0.38);
   --shadow-editor: 0 2px 16px rgba(0, 0, 0, 0.2);
+  --shadow-glow: 0 0 20px rgba(107, 163, 224, 0.15);
 
   --color-overlay: rgba(8, 10, 14, 0.62);
 
@@ -133,9 +138,11 @@
 
   --focus-ring: rgba(43, 108, 184, 0.32);
 
+  --shadow-xs: 0 1px 3px rgba(26, 29, 33, 0.05);
   --shadow-card: 0 6px 20px rgba(26, 29, 33, 0.07);
   --shadow-popover: 0 14px 36px rgba(26, 29, 33, 0.11);
   --shadow-editor: 0 1px 8px rgba(26, 29, 33, 0.05);
+  --shadow-glow: 0 0 20px rgba(43, 108, 184, 0.1);
 
   --color-overlay: rgba(26, 29, 33, 0.38);
 
