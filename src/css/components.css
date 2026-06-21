@@ -3208,3 +3208,177 @@ input[type="range"]::-moz-range-thumb {
     font-size: 20px;
   }
 }
+
+/* ═══════════════════════════════════════════
+   UI/UX Overhaul — New Components
+   ═══════════════════════════════════════════ */
+
+/* ── Enhanced Nav Glassmorphism ── */
+.site-nav {
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+}
+
+/* ── Card hover glow ── */
+.card-hover {
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+.card-hover:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-glow);
+}
+
+/* ── Empty State Component ── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  gap: 0.75rem;
+}
+.empty-state__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary-subtle-bg);
+  color: var(--color-primary);
+  margin-bottom: 0.25rem;
+}
+.empty-state__title {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+.empty-state__subtitle {
+  font-size: var(--font-size-caption);
+  color: var(--color-text-secondary);
+  max-width: 280px;
+  line-height: 1.6;
+}
+
+/* ── Confirmation Dialog ── */
+.confirm-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--color-overlay);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.15s ease-out;
+}
+.confirm-dialog {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-xl);
+  padding: 2rem;
+  max-width: 380px;
+  width: 90%;
+  box-shadow: var(--shadow-popover);
+  text-align: center;
+  animation: modalSlideUp 0.25s ease-out;
+}
+.confirm-dialog__title {
+  font-size: 1.125rem;
+  font-weight: var(--font-weight-bold);
+  margin-bottom: 0.5rem;
+}
+.confirm-dialog__message {
+  font-size: var(--font-size-caption);
+  color: var(--color-text-secondary);
+  margin-bottom: 1.5rem;
+  line-height: 1.7;
+}
+.confirm-dialog__actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+.confirm-dialog__btn {
+  padding: 0.6rem 1.5rem;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface-elevated);
+  color: var(--color-text-primary);
+  transition: all var(--transition-fast);
+  font-family: inherit;
+}
+.confirm-dialog__btn:hover {
+  background: var(--color-border);
+}
+.confirm-dialog__btn--danger {
+  background: var(--color-error);
+  color: white;
+  border-color: transparent;
+}
+.confirm-dialog__btn--danger:hover {
+  opacity: 0.9;
+}
+
+/* ── Modal entrance animation ── */
+@keyframes modalSlideUp {
+  from { opacity: 0; transform: translateY(16px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.quran-modal-panel,
+.auth-gate-panel,
+.confirm-dialog {
+  animation: modalSlideUp 0.25s ease-out;
+}
+
+/* ── Toast with icons ── */
+.toast--success::before { content: '✓ '; }
+.toast--error::before { content: '✕ '; }
+.toast--warning::before { content: '⚠ '; }
+
+/* ── Pricing card glow (active plan) ── */
+.pricing-glow {
+  position: relative;
+}
+.pricing-glow::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  z-index: -1;
+  opacity: 0.5;
+  filter: blur(12px);
+  animation: pricingPulse 3s ease-in-out infinite;
+}
+@keyframes pricingPulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
+}
+
+/* ── Beta banner shimmer ── */
+@keyframes betaShimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+.beta-shimmer {
+  background-size: 200% auto;
+  background-image: linear-gradient(90deg,
+    transparent 0%,
+    rgba(107, 163, 224, 0.06) 40%,
+    rgba(165, 148, 232, 0.08) 60%,
+    transparent 100%
+  );
+  animation: betaShimmer 4s linear infinite;
+}
+
+/* ── Disabled button state ── */
+button:disabled,
+button[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+  filter: grayscale(0.3);
+}

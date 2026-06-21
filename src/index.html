@@ -6,7 +6,7 @@
   <meta name="supabase-url" content="">
   <meta name="supabase-anon-key" content="">
   <title>بيان - مساعد الكتابة العربية الذكي</title>
-   <meta name="description" content="بيان — منصة ذكاء اصطناعي متكاملة لتصحيح الإملاء والنحو والترقيم وتلخيص النصوص والإكمال التلقائي — مصمّمة خصيصًا للغة العربية. جرّبه مجاناً!">
+   <meta name="description" content="بيان — منصة ذكاء اصطناعي متكاملة لتصحيح الإملاء والنحو والترقيم وتلخيص النصوص والإكمال التلقائي وتدقيق القرآن الكريم وتحويل اللهجات — مصمّمة خصيصًا للغة العربية. جرّبه مجاناً!">
    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -162,8 +162,8 @@
        <div class="text-center lg:text-right animate-fade-in">
 
         <h1 id="hero-headline" class="text-5xl lg:text-7xl font-bold leading-tight mb-6" style="line-height: 1.4;">اكتب العربية<br><span class="text-gradient">بثقة واحتراف</span></h1>
-        <p id="hero-subheadline" class="text-xl lg:text-2xl leading-relaxed mb-10" style="color: var(--text-secondary); line-height: 1.9;">منصة ذكاء اصطناعي متكاملة لتصحيح الإملاء والنحو والترقيم وتلخيص النصوص والإكمال التلقائي — مصمّمة خصيصًا للغة العربية.</p>
-        <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-12"><button id="hero-cta-primary" onclick="showPage('editor')" class="px-8 py-4 rounded-2xl text-lg font-bold text-white gradient-accent transition-all hover:scale-105 hover:shadow-2xl">ابدأ الكتابة مجانًا →</button> <button onclick="showPage('features')" class="px-8 py-4 rounded-2xl text-lg font-bold transition-all hover:scale-105 border-2" style="border-color: rgba(255, 255, 255, 0.35); color: var(--text-color); box-shadow: 0 0 20px rgba(107, 163, 224, 0.12);">اكتشف الميزات</button>
+        <p id="hero-subheadline" class="text-xl lg:text-2xl leading-relaxed mb-10" style="color: var(--text-secondary); line-height: 1.9;">تدقيق إملائي ونحوي وترقيم، تلخيص ذكي، إكمال تلقائي، تدقيق القرآن الكريم، وتحويل اللهجات — كل ذلك بالذكاء الاصطناعي، وباللغة العربية.</p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-12"><button id="hero-cta-primary" onclick="showPage('editor')" class="px-8 py-4 rounded-2xl text-lg font-bold text-white gradient-accent transition-all hover:scale-105 hover:shadow-2xl">← ابدأ الكتابة مجانًا</button> <button onclick="showPage('features')" class="px-8 py-4 rounded-2xl text-lg font-bold transition-all hover:scale-105 border-2" style="border-color: rgba(255, 255, 255, 0.35); color: var(--text-color); box-shadow: 0 0 20px rgba(107, 163, 224, 0.12);">اكتشف الميزات</button>
         </div><!-- Stats -->
         <div class="flex items-center gap-8 justify-center lg:justify-start">
          <div class="text-center">
@@ -307,7 +307,7 @@
          <p class="text-sm leading-relaxed" style="color: var(--text-secondary); line-height: 1.8;">بوابتك للقرآن والتفسير والسنة والمصادر السردية الموثقة</p>
         </div>
       </div>
-      <div class="text-center mt-12"><button onclick="showPage('features')" class="px-8 py-4 rounded-2xl text-lg font-bold border-2 transition-all hover:scale-105" style="border-color: var(--primary-color); color: var(--primary-color);">شاهد جميع الميزات →</button>
+      <div class="text-center mt-12"><button onclick="showPage('features')" class="px-8 py-4 rounded-2xl text-lg font-bold border-2 transition-all hover:scale-105" style="border-color: var(--primary-color); color: var(--primary-color);">← اكتشف جميع الميزات</button>
       </div>
      </div>
      </section>
@@ -348,7 +348,7 @@
         </div>
        </div>
        <div class="text-center mt-12">
-        <button onclick="showPage('editor')" class="px-8 py-4 rounded-2xl text-lg font-bold text-white gradient-accent transition-all hover:scale-105 hover:shadow-2xl">جرّب المحرر الآن →</button>
+        <button onclick="showPage('editor')" class="px-8 py-4 rounded-2xl text-lg font-bold text-white gradient-accent transition-all hover:scale-105 hover:shadow-2xl">← جرّب المحرر الآن</button>
        </div>
       </div>
      </section>
@@ -679,9 +679,9 @@
             </div>
             <span id="auto-save-status" class="text-xs text-secondary" style="opacity:0;transition:opacity 0.3s;"></span>
             <div class="window-dots" aria-hidden="true">
-             <span class="dot dot--red" title="إغلاق المستند" onclick="if(confirm('إغلاق المستند الحالي؟')){document.getElementById('editor-surface').innerHTML='';if(typeof updatePlaceholder==='function')updatePlaceholder();if(typeof updateEditorStats==='function')updateEditorStats()}" style="cursor:pointer;"></span>
-             <span class="dot dot--yellow" title="طي الاقتراحات" onclick="document.querySelector('.sidebar-desktop')?.classList.toggle('collapsed')" style="cursor:pointer;"></span>
-             <span class="dot dot--green" title="توسيع المحرر" onclick="document.querySelector('.editor-layout')?.classList.toggle('editor-fullscreen')" style="cursor:pointer;"></span>
+             <span class="dot dot--red" title="مسح المحرر" onclick="showConfirmDialog('مسح المحرر','هل تريد مسح جميع محتويات المحرر؟ لا يمكن التراجع عن هذا.',function(){document.getElementById('editor-surface').innerHTML='';if(typeof updatePlaceholder==='function')updatePlaceholder();if(typeof updateEditorStats==='function')updateEditorStats()})" style="cursor:pointer;"></span>
+             <span class="dot dot--yellow" title="طي لوحة الاقتراحات" onclick="document.querySelector('.sidebar-desktop')?.classList.toggle('collapsed')" style="cursor:pointer;"></span>
+             <span class="dot dot--green" title="توسيع المحرر للعرض الكامل" onclick="document.querySelector('.editor-layout')?.classList.toggle('editor-fullscreen')" style="cursor:pointer;"></span>
             </div>
            </div>
           </div>
@@ -980,7 +980,7 @@
        <p class="text-xl max-w-3xl mx-auto" style="color: var(--text-secondary); line-height: 1.9;">جميع الميزات متاحة مجانًا خلال الإصدار التجريبي. الخطط المدفوعة قادمة قريبًا.</p>
       </div>
       <!-- Beta Banner -->
-      <div class="text-center mb-12 p-6 rounded-2xl" style="background: linear-gradient(135deg, rgba(107, 163, 224, 0.1), rgba(165, 148, 232, 0.1)); border: 1px solid rgba(107, 163, 224, 0.2);">
+      <div class="text-center mb-12 p-6 rounded-2xl beta-shimmer" style="background: linear-gradient(135deg, rgba(107, 163, 224, 0.1), rgba(165, 148, 232, 0.1)); border: 1px solid rgba(107, 163, 224, 0.2);">
        <div class="flex items-center justify-center gap-2 mb-2">
         <span class="text-sm font-bold px-3 py-1 rounded-full text-white gradient-accent">BETA</span>
         <span class="text-lg font-bold">الإصدار التجريبي — مجاني بالكامل</span>
@@ -988,7 +988,7 @@
        <p class="text-base" style="color: var(--text-secondary);">استمتع بجميع ميزات بيان بدون أي قيود أثناء فترة التطوير</p>
       </div>
       <div class="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto"><!-- Current: Beta Free -->
-       <div class="p-8 rounded-3xl transition-all hover:scale-105 relative shadow-2xl" style="background: linear-gradient(165deg, var(--surface-color) 0%, rgba(59, 130, 246, 0.1) 100%); border: 2px solid var(--primary-color);">
+       <div class="p-8 rounded-3xl transition-all hover:scale-105 relative shadow-2xl pricing-glow" style="background: linear-gradient(165deg, var(--surface-color) 0%, rgba(59, 130, 246, 0.1) 100%); border: 2px solid var(--primary-color);">
         <div class="pricing-badge gradient-accent text-white">
          متاح الآن
         </div>
@@ -1012,8 +1012,12 @@
          <li class="flex items-center gap-3">
           <svg class="w-5 h-5" style="color: #22c55e;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><span class="text-base">تصدير PDF و Word</span></li>
          <li class="flex items-center gap-3">
+          <svg class="w-5 h-5" style="color: #22c55e;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><span class="text-base">تدقيق النص القرآني + ترجمة</span></li>
+         <li class="flex items-center gap-3">
+          <svg class="w-5 h-5" style="color: #22c55e;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><span class="text-base">تحويل اللهجات إلى الفصحى</span></li>
+         <li class="flex items-center gap-3">
           <svg class="w-5 h-5" style="color: #22c55e;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><span class="text-base">كلمات غير محدودة</span></li>
-        </ul><button onclick="showPage('editor')" class="w-full py-4 rounded-2xl text-lg font-bold text-white gradient-accent transition-all hover:scale-105 hover:shadow-2xl">ابدأ الكتابة مجانًا →</button>
+        </ul><button onclick="showPage('editor')" class="w-full py-4 rounded-2xl text-lg font-bold text-white gradient-accent transition-all hover:scale-105 hover:shadow-2xl">← ابدأ الكتابة مجانًا</button>
        </div><!-- Future: Pro Plan -->
        <div class="p-8 rounded-3xl transition-all hover:scale-105 relative" style="background: var(--surface-color); border: 1px solid rgba(255, 255, 255, 0.08); opacity: 0.7;">
         <div class="pricing-badge" style="background: var(--color-surface-elevated); color: var(--color-text-secondary);">
@@ -1077,7 +1081,7 @@
       <div class="text-8xl font-bold text-gradient mb-6">٤٠٤</div>
       <h2 class="text-3xl font-bold mb-4">الصفحة غير موجودة</h2>
       <p class="text-lg mb-8" style="color: var(--text-secondary);">يبدو أن الصفحة التي تبحث عنها غير متاحة.</p>
-      <button onclick="showPage('home')" class="px-8 py-4 rounded-2xl text-lg font-bold text-white gradient-accent transition-all hover:scale-105">العودة للرئيسية ←</button>
+      <button onclick="showPage('home')" class="px-8 py-4 rounded-2xl text-lg font-bold text-white gradient-accent transition-all hover:scale-105">→ العودة للرئيسية</button>
      </div>
     </section>
    </div><!-- Footer -->
@@ -1088,7 +1092,7 @@
         <div class="flex items-center gap-3 mb-4">
          <svg width="24" height="24" fill="none" stroke="url(#grad1)" viewBox="0 0 24 24" style="flex-shrink:0;"><defs><linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:var(--color-primary)"/><stop offset="100%" style="stop-color:var(--color-secondary)"/></linearGradient></defs><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg><span id="footer-brand" class="text-2xl font-bold text-gradient">بيان</span>
         </div>
-        <p class="text-sm leading-relaxed" style="color: var(--text-secondary); line-height: 1.8;">منصة ذكاء اصطناعي للكتابة العربية — تدقيق إملائي ونحوي، ترقيم، تلخيص، وإكمال تلقائي ذكي.</p>
+        <p class="text-sm leading-relaxed" style="color: var(--text-secondary); line-height: 1.8;">منصة ذكاء اصطناعي للكتابة العربية — تدقيق إملائي ونحوي، ترقيم، تلخيص، إكمال تلقائي، تدقيق القرآن، وتحويل اللهجات.</p>
        </div>
        <div>
         <h4 class="text-base font-bold mb-4">المنتج</h4>
@@ -1131,6 +1135,28 @@
         toast.classList.add('toast-out');
         setTimeout(() => toast.remove(), 300);
       }, duration);
+    }
+
+    // Custom confirmation dialog (replaces window.confirm)
+    function showConfirmDialog(title, message, onConfirm) {
+      var overlay = document.createElement('div');
+      overlay.className = 'confirm-dialog-overlay';
+      overlay.innerHTML =
+        '<div class="confirm-dialog" dir="rtl">' +
+          '<div class="confirm-dialog__title">' + title + '</div>' +
+          '<div class="confirm-dialog__message">' + message + '</div>' +
+          '<div class="confirm-dialog__actions">' +
+            '<button class="confirm-dialog__btn" id="confirm-cancel">\u0625\u0644\u063a\u0627\u0621</button>' +
+            '<button class="confirm-dialog__btn confirm-dialog__btn--danger" id="confirm-ok">\u062a\u0623\u0643\u064a\u062f</button>' +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(overlay);
+      overlay.querySelector('#confirm-cancel').onclick = function() { overlay.remove(); };
+      overlay.querySelector('#confirm-ok').onclick = function() { overlay.remove(); if (onConfirm) onConfirm(); };
+      overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+      document.addEventListener('keydown', function _esc(e) {
+        if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', _esc); }
+      });
     }
 
     // Scroll to top
