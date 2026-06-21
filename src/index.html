@@ -865,7 +865,10 @@
           <div id="dialect-result-card" class="is-hidden" style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 1rem; padding: 1.5rem;">
            <div class="flex items-center justify-between mb-3">
             <h3 class="text-base font-bold" style="color: var(--color-primary);">✓ النص بالعربية الفصحى</h3>
-            <button onclick="copyDialectResult()" class="btn-ghost text-sm" type="button">نسخ</button>
+            <div class="flex items-center gap-2">
+             <button onclick="copyDialectResult()" class="quran-copy-btn" type="button" title="نسخ">📋</button>
+             <button id="dialect-apply-btn" onclick="applyDialectResult()" class="quran-apply-btn is-hidden" type="button">تطبيق في المحرر ✓</button>
+            </div>
            </div>
            <div id="dialect-result" class="text-right text-lg editor-content" dir="rtl" style="line-height: 2;"></div>
           </div>
@@ -1192,8 +1195,57 @@
       else if (tab === 'summarize') { summarizeTab.classList.add('active'); summarizeArea.classList.remove('is-hidden'); if(formatToolbar)formatToolbar.style.display='none'; }
       else if (tab === 'dialect') { dialectTab.classList.add('active'); dialectArea.classList.remove('is-hidden'); if(formatToolbar)formatToolbar.style.display='none'; }
     }
-    function convertDialect(){var i=document.getElementById('dialect-input').value.trim();if(!i){if(typeof showToast==='function')showToast('الرجاء كتابة نص أولاً');return;}var r=document.getElementById('dialect-result-card');var d=document.getElementById('dialect-result');d.innerHTML='<p class="text-secondary text-center">⏳ جاري التحويل...</p>';r.classList.remove('is-hidden');setTimeout(function(){d.innerHTML='<p class="text-secondary text-center">🚧 هذه الميزة قيد التطوير — ستتوفر قريبًا</p>';},1000);}
-    function copyDialectResult(){var t=document.getElementById('dialect-result');if(t){navigator.clipboard.writeText(t.innerText);if(typeof showToast==='function')showToast('✓ تم النسخ');}}
+    let _dialectResult = '';
+    async function convertDialect() {
+      var input = document.getElementById('dialect-input').value.trim();
+      if (!input) { if (typeof showToast === 'function') showToast('الرجاء كتابة نص أولاً'); return; }
+
+      var resultCard = document.getElementById('dialect-result-card');
+      var resultDiv = document.getElementById('dialect-result');
+      var applyBtn = document.getElementById('dialect-apply-btn');
+      resultDiv.innerHTML = '<p class="text-secondary text-center">⏳ جاري التحويل...</p>';
+      resultCard.classList.remove('is-hidden');
+      if (applyBtn) applyBtn.classList.add('is-hidden');
+
+      try {
+        var resp = await fetch('/api/dialect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: input })
+        });
+        var data = await resp.json();
+        if (data.status === 'success' && data.converted_text) {
+          _dialectResult = data.converted_text;
+          var esc = function(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+          resultDiv.innerHTML = '<p style="font-size:20px; line-height:2; direction:rtl; text-align:center;">' + esc(data.converted_text) + '</p>';
+          if (applyBtn) applyBtn.classList.remove('is-hidden');
+        } else {
+          _dialectResult = '';
+          resultDiv.innerHTML = '<p class="text-secondary text-center">' + (data.error || 'حدث خطأ أثناء التحويل') + '</p>';
+        }
+      } catch (err) {
+        _dialectResult = '';
+        resultDiv.innerHTML = '<p class="text-secondary text-center">حدث خطأ — تأكد من الاتصال</p>';
+      }
+    }
+
+    function copyDialectResult() {
+      if (!_dialectResult) { var t = document.getElementById('dialect-result'); if (t) navigator.clipboard.writeText(t.innerText); }
+      else navigator.clipboard.writeText(_dialectResult);
+      if (typeof showToast === 'function') showToast('✓ تم النسخ');
+    }
+
+    function applyDialectResult() {
+      if (!_dialectResult) return;
+      var editor = document.getElementById('editor-container');
+      if (!editor) return;
+      pushUndoState();
+      var esc = function(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+      editor.innerHTML = esc(_dialectResult);
+      editor.dispatchEvent(new Event('input', { bubbles: true }));
+      switchTab('write');
+      if (typeof showToast === 'function') showToast('✓ تم تطبيق النص الفصيح في المحرر');
+    }
 
     /* ═══════════════════════════════════════════
        Quran Verification & Translation
