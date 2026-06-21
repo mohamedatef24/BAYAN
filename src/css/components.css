@@ -2518,6 +2518,21 @@ input[type="range"]::-webkit-slider-thumb {
   box-shadow: 0 0 0 2px var(--color-primary);
 }
 
+.fmt-color-swatch--reset {
+  background: var(--color-surface-elevated) !important;
+  border: 2px dashed var(--color-border-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+.fmt-color-swatch--reset:hover {
+  border-color: var(--color-error);
+  color: var(--color-error);
+}
+
 /* ── Item 10: Animated Theme Toggle ── */
 .theme-toggle-animated {
   display: flex;
@@ -3375,10 +3390,26 @@ input[type="range"]::-moz-range-thumb {
   animation: betaShimmer 4s linear infinite;
 }
 
-/* ── Disabled button state ── */
 button:disabled,
 button[disabled] {
   opacity: 0.55;
   cursor: not-allowed;
   filter: grayscale(0.3);
 }
+
+/* ── Nav bottom border glow on scroll ── */
+.site-nav.nav-scrolled {
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: 0 1px 12px rgba(107, 163, 224, 0.08);
+}
+
+/* ── Focus-visible ring for all interactive elements ── */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+[contenteditable]:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+

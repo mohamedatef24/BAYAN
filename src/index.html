@@ -1170,6 +1170,8 @@
       (sc === document.documentElement ? window : sc).addEventListener('scroll', () => {
         const st = sc === document.documentElement ? window.scrollY : sc.scrollTop;
         btn.classList.toggle('visible', st > 400);
+        const nav = document.querySelector('.site-nav');
+        if (nav) nav.classList.toggle('nav-scrolled', st > 20);
       });
       btn.addEventListener('click', () => {
         (sc === document.documentElement ? window : sc).scrollTo({ top: 0, behavior: 'smooth' });

@@ -79,6 +79,9 @@
   --shadow-editor: 0 2px 16px rgba(0, 0, 0, 0.2);
   --shadow-glow: 0 0 20px rgba(107, 163, 224, 0.15);
 
+  --gradient-primary: linear-gradient(135deg, #6BA3E0, #A594E8);
+  --gradient-surface: linear-gradient(180deg, var(--color-surface), var(--color-bg));
+
   --color-overlay: rgba(8, 10, 14, 0.62);
 
   --highlight-spelling-bg: rgba(232, 138, 138, 0.16);
@@ -143,6 +146,9 @@
   --shadow-popover: 0 14px 36px rgba(26, 29, 33, 0.11);
   --shadow-editor: 0 1px 8px rgba(26, 29, 33, 0.05);
   --shadow-glow: 0 0 20px rgba(43, 108, 184, 0.1);
+
+  --gradient-primary: linear-gradient(135deg, #2B6CB8, #6B57A8);
+  --gradient-surface: linear-gradient(180deg, var(--color-surface), var(--color-bg));
 
   --color-overlay: rgba(26, 29, 33, 0.38);
 

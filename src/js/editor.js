@@ -278,12 +278,19 @@ async function analyzeText() {
   try {
     const savedSelection = saveSelection();
 
+    // Network delay indicator: show message if API takes > 10s
+    const longerTimer = setTimeout(() => {
+      if (typeof showToast === 'function') showToast('\u0627\u0644\u062a\u062d\u0644\u064a\u0644 \u064a\u0623\u062e\u0630 \u0648\u0642\u062a\u064b\u0627 \u0623\u0637\u0648\u0644...', 'warning');
+    }, 10000);
+
     const response = await fetch('/api/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: textForApi }),
       signal: analyzeAbortController.signal
     });
+
+    clearTimeout(longerTimer);
 
     if (!response.ok) {
       console.error('Analyze API error:', response.status);
