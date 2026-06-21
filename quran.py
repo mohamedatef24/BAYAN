@@ -321,6 +321,13 @@ def search_bayan(query_text: str,
                 "uthmani": w.get("uthmani", ""),
             }
 
+    # منع تجاوز حدود السورة: اختر السورة الأكثر تمثيلاً فقط
+    sura_counts: dict[int, int] = {}
+    for w in matched_words:
+        sura_counts[w["sura_num"]] = sura_counts.get(w["sura_num"], 0) + 1
+    primary_sura = max(sura_counts, key=sura_counts.get)
+    involved = {k: v for k, v in involved.items() if k[0] == primary_sura}
+
     ayah_nums = [a_num for (_, a_num) in involved]
     sura_name = next(iter(involved.values()))["sura_name"]
 
