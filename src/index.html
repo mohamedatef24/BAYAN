@@ -1200,7 +1200,8 @@
        ═══════════════════════════════════════════ */
     let _quranCurrentQuery = '';
     let _quranSavedRange = null;
-    let _quranVerseClean = ''; // the verified uthmani text (for apply)
+    let _quranVerseClean = '';
+    let _quranTransClean = '';
 
     async function verifyQuranText() {
       const sel = window.getSelection();
@@ -1285,12 +1286,15 @@
         const transRef = refMatch ? refMatch[1] : '';
 
         textEl.textContent = transText;
+        _quranTransClean = transText;
         // Show reference in translated language
         const refEl = document.getElementById('quran-translation-ref');
         if (refEl) {
           refEl.textContent = transRef ? '[' + transRef + ']' : '';
           refEl.style.display = transRef ? '' : 'none';
         }
+        // Show apply translation button
+        document.getElementById('quran-apply-trans-btn').classList.remove('is-hidden');
 
       } catch (err) {
         textEl.innerHTML = '<span class="text-secondary">حدث خطأ في الترجمة</span>';
@@ -1302,58 +1306,41 @@
       document.body.style.overflow = '';
     }
 
+    function _replaceInEditor(newText) {
+      var editor = document.getElementById('editor');
+      if (!editor || !_quranCurrentQuery) return false;
+      // Simple: get all text content, find the query, build selection via window.find
+      closeQuranModal();
+      editor.focus();
+      // Try window.find to select the text
+      var found = window.find(_quranCurrentQuery, false, false, false, false, false, false);
+      if (found) {
+        document.execCommand('insertText', false, newText);
+        editor.dispatchEvent(new Event('input', { bubbles: true }));
+        return true;
+      }
+      return false;
+    }
+
     function applyQuranText() {
       if (!_quranVerseClean || !_quranCurrentQuery) {
         if (typeof showToast === 'function') showToast('لا يوجد نص للتطبيق');
         return;
       }
-      const editor = document.getElementById('editor');
-      if (!editor) return;
-
-      // Close modal first
-      closeQuranModal();
-      editor.focus();
-
-      // Walk text nodes to find the original query text
-      const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT, null, false);
-      const plainText = editor.textContent || '';
-      const queryIdx = plainText.indexOf(_quranCurrentQuery);
-
-      if (queryIdx === -1) {
+      if (_replaceInEditor(_quranVerseClean)) {
+        if (typeof showToast === 'function') showToast('✓ تم تطبيق النص القرآني المدقق');
+      } else {
         if (typeof showToast === 'function') showToast('لم يتم العثور على النص الأصلي');
+      }
+    }
+
+    function applyQuranTranslation() {
+      if (!_quranTransClean || !_quranCurrentQuery) {
+        if (typeof showToast === 'function') showToast('لا يوجد ترجمة للتطبيق');
         return;
       }
-
-      let charCount = 0;
-      let startNode = null, startOffset = 0;
-      let endNode = null, endOffset = 0;
-      const endIdx = queryIdx + _quranCurrentQuery.length;
-
-      while (walker.nextNode()) {
-        const node = walker.currentNode;
-        const nodeLen = node.textContent.length;
-        if (!startNode && charCount + nodeLen > queryIdx) {
-          startNode = node;
-          startOffset = queryIdx - charCount;
-        }
-        if (!endNode && charCount + nodeLen >= endIdx) {
-          endNode = node;
-          endOffset = endIdx - charCount;
-          break;
-        }
-        charCount += nodeLen;
-      }
-
-      if (startNode && endNode) {
-        const range = document.createRange();
-        range.setStart(startNode, startOffset);
-        range.setEnd(endNode, endOffset);
-        const sel = window.getSelection();
-        sel.removeAllRanges();
-        sel.addRange(range);
-        document.execCommand('insertText', false, _quranVerseClean);
-        if (typeof showToast === 'function') showToast('✓ تم تطبيق النص القرآني المدقق');
-        editor.dispatchEvent(new Event('input', { bubbles: true }));
+      if (_replaceInEditor(_quranTransClean)) {
+        if (typeof showToast === 'function') showToast('✓ تم تطبيق الترجمة');
       } else {
         if (typeof showToast === 'function') showToast('لم يتم العثور على النص الأصلي');
       }
@@ -1769,6 +1756,9 @@
      <div id="quran-translation-result" class="is-hidden p-4 rounded-xl" style="background:rgba(6,182,212,0.06); border:1px solid rgba(6,182,212,0.15);">
       <p id="quran-translation-text" style="font-size:20px; line-height:2; color:var(--color-text-primary); text-align:center;"></p>
       <p id="quran-translation-ref" class="quran-reference" style="display:none;"></p>
+      <div class="flex items-center justify-center mt-3">
+       <button id="quran-apply-trans-btn" onclick="applyQuranTranslation()" class="quran-apply-btn is-hidden" type="button">تطبيق الترجمة ✓</button>
+      </div>
      </div>
     </div>
    </div>
