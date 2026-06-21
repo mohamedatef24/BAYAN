@@ -1208,11 +1208,14 @@
       if (applyBtn) applyBtn.classList.add('is-hidden');
       if (convertBtn) { convertBtn.disabled = true; convertBtn.textContent = '⏳ جاري التحويل...'; }
 
+      var _abortCtrl = new AbortController();
+      var _timeout = setTimeout(function(){ _abortCtrl.abort(); }, 30000);
       try {
         var resp = await fetch('/api/dialect', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: input })
+          body: JSON.stringify({ text: input }),
+          signal: _abortCtrl.signal
         });
         var data = await resp.json();
         if (data.status === 'success' && data.converted_text) {
@@ -1222,12 +1225,15 @@
           if (applyBtn) applyBtn.classList.remove('is-hidden');
         } else {
           _dialectResult = '';
-          resultDiv.innerHTML = '<p class="text-secondary text-center">' + (data.error || 'حدث خطأ أثناء التحويل') + '</p>';
+          var errMsg = (data.error || 'حدث خطأ أثناء التحويل').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+          resultDiv.innerHTML = '<p class="text-secondary text-center">' + errMsg + '</p>';
         }
       } catch (err) {
         _dialectResult = '';
-        resultDiv.innerHTML = '<p class="text-secondary text-center">حدث خطأ — تأكد من الاتصال</p>';
+        var msg = err.name === 'AbortError' ? 'انتهى وقت الانتظار — حاول مرة أخرى' : 'حدث خطأ — تأكد من الاتصال';
+        resultDiv.innerHTML = '<p class="text-secondary text-center">' + msg + '</p>';
       } finally {
+        clearTimeout(_timeout);
         if (convertBtn) { convertBtn.disabled = false; convertBtn.textContent = 'تحويل إلى الفصحى'; }
       }
     }
