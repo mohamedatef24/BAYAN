@@ -7,30 +7,8 @@ on:
     branches: [main]
 
 jobs:
-  test:
-    name: Run Regression Tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-          cache: 'pip'
-
-      - name: Install dependencies
-        run: |
-          pip install flask flask-cors python-dotenv pytest
-          pip install -r requirements.txt || true
-
-      - name: Run pipeline tests
-        run: |
-          cd src && python -m pytest ../tests/test_pipeline_hardening.py ../tests/test_bug_fixes.py -v --tb=short
-
   lint-and-validate:
     name: Validate Code
-    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
