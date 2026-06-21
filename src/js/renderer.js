@@ -243,10 +243,15 @@ function overlaySuggestions(editor, suggestions) {
 
   if (!suggestions || suggestions.length === 0) return;
 
-  // 2. Collect text nodes with their character offsets
+  // 2. Collect text nodes with their character offsets (skip quran-applied)
   const textNodes = [];
   let offset = 0;
   walkTextNodes(editor, (node) => {
+    // Skip text inside quran-applied spans (protected from analysis)
+    if (node.parentElement && node.parentElement.closest('.quran-applied')) {
+      offset += node.length; // still count offset to keep positions correct
+      return;
+    }
     textNodes.push({ node, start: offset, end: offset + node.length });
     offset += node.length;
   });
