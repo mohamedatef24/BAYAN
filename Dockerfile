@@ -61,6 +61,8 @@ print('PuncAra-v1 cached!'); \
 
 # Copy application code
 COPY src/ ./src/
+COPY quran.py ./
+COPY quran_master.db ./
 COPY .env* ./
 
 # Set environment variables
