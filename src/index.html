@@ -1199,6 +1199,8 @@
        Quran Verification & Translation
        ═══════════════════════════════════════════ */
     let _quranCurrentQuery = '';
+    let _quranSavedRange = null;
+    let _quranVerseClean = ''; // the verified uthmani text (for apply)
 
     async function verifyQuranText() {
       const sel = window.getSelection();
@@ -1207,7 +1209,10 @@
         if (typeof showToast === 'function') showToast('علّم على النص القرآني أولاً');
         return;
       }
+      // Save selection range before modal steals focus
+      _quranSavedRange = (sel.rangeCount > 0) ? sel.getRangeAt(0).cloneRange() : null;
       _quranCurrentQuery = text;
+      _quranVerseClean = '';
 
       // Show modal with loading
       const modal = document.getElementById('quran-modal');
@@ -1239,8 +1244,11 @@
         const verseText = seg.replace(/\s*\[[^\]]+\]\s*$/, '').replace(/^\(/, '').replace(/\)$/, '');
         const reference = refMatch ? refMatch[1] : '';
 
+        _quranVerseClean = verseText;
         document.getElementById('quran-uthmani-text').textContent = verseText;
         document.getElementById('quran-reference').textContent = reference ? '[' + reference + ']' : '';
+        // Show apply button
+        document.getElementById('quran-apply-btn').classList.remove('is-hidden');
 
       } catch (err) {
         document.getElementById('quran-uthmani-text').innerHTML =
@@ -1283,6 +1291,26 @@
     function closeQuranModal() {
       document.getElementById('quran-modal').classList.add('is-hidden');
       document.body.style.overflow = '';
+    }
+
+    function applyQuranText() {
+      if (!_quranVerseClean || !_quranSavedRange) {
+        if (typeof showToast === 'function') showToast('لا يوجد نص للتطبيق');
+        return;
+      }
+      // Restore selection and replace
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(_quranSavedRange);
+      _quranSavedRange.deleteContents();
+      _quranSavedRange.insertNode(document.createTextNode(_quranVerseClean));
+      sel.removeAllRanges();
+      // Close modal
+      closeQuranModal();
+      if (typeof showToast === 'function') showToast('✓ تم تطبيق النص القرآني المدقق');
+      // Trigger editor update
+      const editor = document.getElementById('editor');
+      if (editor) editor.dispatchEvent(new Event('input', { bubbles: true }));
     }
     
 
@@ -1663,7 +1691,10 @@
     </div>
     <!-- Uthmani Result -->
     <div class="quran-result-card">
-     <div class="text-sm font-bold mb-3" style="color:#06b6d4;">✓ النص القرآني المدقق</div>
+     <div class="flex items-center justify-between mb-3">
+      <div class="text-sm font-bold" style="color:#06b6d4;">✓ النص القرآني المدقق</div>
+      <button id="quran-apply-btn" onclick="applyQuranText()" class="quran-apply-btn is-hidden" type="button">تطبيق ✓</button>
+     </div>
      <p id="quran-uthmani-text" class="quran-uthmani"></p>
      <p id="quran-reference" class="quran-reference"></p>
     </div>
