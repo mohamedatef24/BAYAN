@@ -76,6 +76,40 @@
   font-size: 0.9em;
 }
 
+.nav-bayyinah-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #14919b;
+  border: 1px solid rgba(20, 145, 155, 0.25);
+  background: rgba(20, 145, 155, 0.08);
+  text-decoration: none;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+}
+
+.nav-bayyinah-link:hover {
+  background: rgba(20, 145, 155, 0.18);
+  border-color: rgba(20, 145, 155, 0.5);
+  box-shadow: 0 0 12px rgba(20, 145, 155, 0.2);
+  transform: translateY(-1px);
+}
+
+.nav-bayyinah-arrow {
+  opacity: 0.5;
+  transition: opacity 0.2s, transform 0.2s;
+  font-size: 0.85em;
+}
+
+.nav-bayyinah-link:hover .nav-bayyinah-arrow {
+  opacity: 1;
+  transform: translate(1px, -1px);
+}
+
 .footer-external-link {
   color: var(--color-text-secondary);
 }

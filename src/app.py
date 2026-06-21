@@ -1711,6 +1711,21 @@ def analyze_text():
                             f"'{d.get('original','')}' → '{d.get('correction','')}' — not a safe punctuation change"
                         )
                         continue
+                    # ── Duplicate punctuation guard ──
+                    # Reject corrections that just append punctuation to already-punctuated text
+                    # e.g. "الحديقة." → "الحديقة.." or "..." → "...."
+                    import re as _re2
+                    orig_txt = d.get('original', '')
+                    corr_txt = d.get('correction', '')
+                    _PUNC_CHARS = set('.,،؛:!?؟…。')
+                    if orig_txt and corr_txt and len(corr_txt) > len(orig_txt):
+                        suffix_added = corr_txt[len(orig_txt):]
+                        if all(c in _PUNC_CHARS for c in suffix_added) and orig_txt[-1] in _PUNC_CHARS:
+                            logger.info(
+                                f"[PUNC-DUP] Rejected duplicate punctuation [{d['start']}:{d['end']}] "
+                                f"'{orig_txt}' → '{corr_txt}' — already has punctuation"
+                            )
+                            continue
                     ctx.add_patch(
                         'punctuation', d['start'], d['end'],
                         d['correction'], confidence=0.8

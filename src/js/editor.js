@@ -363,19 +363,19 @@ function showTooltip(element) {
   const alternativesEl = document.getElementById('tooltip-alternatives');
 
   const typeMap = {
-    spelling: { label: 'خطأ إملائي', icon: '🔤' },
-    grammar: { label: 'خطأ نحوي', icon: '📝' },
-    punctuation: { label: 'علامات ترقيم', icon: '✏️' }
+    spelling: { label: 'خطأ إملائي' },
+    grammar: { label: 'خطأ نحوي' },
+    punctuation: { label: 'علامات ترقيم' }
   };
 
   if (typeEl) {
-    const typeInfo = typeMap[suggestion.type] || { label: suggestion.type, icon: '📋' };
-    typeEl.innerHTML = `<span class="popover-type-icon">${typeInfo.icon}</span> ${typeInfo.label}`;
+    const typeInfo = typeMap[suggestion.type] || { label: suggestion.type };
+    typeEl.innerHTML = typeInfo.label;
     typeEl.className = `popover-type popover-type--${suggestion.type}`;
   }
 
   if (originalEl) {
-    originalEl.innerHTML = `<span class="popover-original-label">الأصل:</span> <span class="popover-original-word">${escapeHtml(suggestion.original)}</span>`;
+    originalEl.innerHTML = `<span class="popover-original-label">الكلمة:</span> <span class="popover-original-word">${escapeHtml(suggestion.original)}</span>`;
   }
 
   // Render alternatives
@@ -397,12 +397,6 @@ function showTooltip(element) {
     });
     // Render keep button at end
     html += `<button class="popover-alt-btn popover-alt-keep" data-alt-correction="${escapeHtml(suggestion.original)}" type="button">إبقاء كما هي</button>`;
-    // Render feedback buttons
-    html += `<div class="popover-feedback">
-      <span class="popover-feedback-label">هل الاقتراح مفيد؟</span>
-      <button class="popover-feedback-btn popover-feedback-yes" data-feedback="yes" type="button" title="مفيد">👍</button>
-      <button class="popover-feedback-btn popover-feedback-no" data-feedback="no" type="button" title="غير مفيد">👎</button>
-    </div>`;
     alternativesEl.innerHTML = html;
 
     // Bind click events for alternatives
@@ -414,15 +408,6 @@ function showTooltip(element) {
         } else {
           applyAlternativeCorrection(suggestion, correctionText);
         }
-      });
-    });
-
-    // Bind feedback buttons
-    alternativesEl.querySelectorAll('.popover-feedback-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const helpful = btn.dataset.feedback === 'yes';
-        _sendFeedback(suggestion, helpful);
-        btn.closest('.popover-feedback').innerHTML = '<span class="popover-feedback-thanks">شكراً لملاحظاتك! ✓</span>';
       });
     });
   }
