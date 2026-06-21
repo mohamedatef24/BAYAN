@@ -64,13 +64,21 @@ test("يس موجودة", "يسٓ" in r.get("matched_segment", "") or "يس" in 
 print("\n📖 2. البسملة")
 print("=" * 50)
 
-# الفاتحة - need unique verses (بسملة alone matches many surahs)
-r = get_result("الحمد لله رب العالمين الرحمن الرحيم مالك يوم الدين")
+# الفاتحة - البسملة + الحمد لله
+r = get_result("بسم الله الرحمن الرحيم الحمد لله رب العالمين")
 seg = r.get("matched_segment", "")
 ref_match = re.search(r'【([^】]+)】', seg)
 ref = ref_match.group(1) if ref_match else ""
-test("الفاتحة: آيات ٢-٤", "لْحَمْدُ" in seg and "(٤)" in seg, f"seg={seg[:80]}")
+test("الفاتحة: البسملة موجودة", "بِسْمِ" in seg, f"seg={seg[:60]}")
 test("الفاتحة: اسم السورة", "الفاتحة" in ref, f"ref={ref}")
+
+# الفاتحة - آيات بدون بسملة
+r2 = get_result("الحمد لله رب العالمين الرحمن الرحيم مالك يوم الدين")
+seg2 = r2.get("matched_segment", "")
+ref2 = re.search(r'【([^】]+)】', seg2)
+ref2 = ref2.group(1) if ref2 else ""
+test("الفاتحة ٢-٤: آيات صحيحة", "لْحَمْدُ" in seg2 and "(٤)" in seg2, f"seg={seg2[:60]}")
+test("الفاتحة ٢-٤: اسم السورة", "الفاتحة" in ref2, f"ref={ref2}")
 
 # سورة عادية - البسملة لازم تتشال
 r = get_result("الر تلك آيات الكتاب المبين")
