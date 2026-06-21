@@ -1278,10 +1278,19 @@
           return;
         }
 
-        // Parse translation text (remove brackets)
+        // Parse translation: "(text (ayah)) [SurahName: ayah]"
         const seg = data.matched_segment || '';
+        const refMatch = seg.match(/\[([^\]]+)\]/);
         const transText = seg.replace(/\s*\[[^\]]+\]\s*$/, '').replace(/^\(/, '').replace(/\)$/, '');
+        const transRef = refMatch ? refMatch[1] : '';
+
         textEl.textContent = transText;
+        // Show reference in translated language
+        const refEl = document.getElementById('quran-translation-ref');
+        if (refEl) {
+          refEl.textContent = transRef ? '[' + transRef + ']' : '';
+          refEl.style.display = transRef ? '' : 'none';
+        }
 
       } catch (err) {
         textEl.innerHTML = '<span class="text-secondary">حدث خطأ في الترجمة</span>';
@@ -1298,19 +1307,23 @@
         if (typeof showToast === 'function') showToast('لا يوجد نص للتطبيق');
         return;
       }
-      // Restore selection and replace
+      const editor = document.getElementById('editor');
+      if (!editor) return;
+
+      // Close modal first so editor can get focus
+      closeQuranModal();
+
+      // Focus editor and restore selection
+      editor.focus();
       const sel = window.getSelection();
       sel.removeAllRanges();
       sel.addRange(_quranSavedRange);
-      _quranSavedRange.deleteContents();
-      _quranSavedRange.insertNode(document.createTextNode(_quranVerseClean));
-      sel.removeAllRanges();
-      // Close modal
-      closeQuranModal();
+
+      // Use execCommand for proper replacement (supports undo)
+      document.execCommand('insertText', false, _quranVerseClean);
+
       if (typeof showToast === 'function') showToast('✓ تم تطبيق النص القرآني المدقق');
-      // Trigger editor update
-      const editor = document.getElementById('editor');
-      if (editor) editor.dispatchEvent(new Event('input', { bubbles: true }));
+      editor.dispatchEvent(new Event('input', { bubbles: true }));
     }
     
 
@@ -1721,7 +1734,8 @@
       </select>
      </div>
      <div id="quran-translation-result" class="is-hidden p-4 rounded-xl" style="background:rgba(6,182,212,0.06); border:1px solid rgba(6,182,212,0.15);">
-      <p id="quran-translation-text" class="text-base" style="line-height:1.9; color:var(--color-text-primary);"></p>
+      <p id="quran-translation-text" style="font-size:20px; line-height:2; color:var(--color-text-primary); text-align:center;"></p>
+      <p id="quran-translation-ref" class="quran-reference" style="display:none;"></p>
      </div>
     </div>
    </div>
