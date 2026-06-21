@@ -3126,9 +3126,9 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .quran-uthmani {
-  font-family: 'Traditional Arabic', 'Amiri', 'Scheherazade New', serif;
-  font-size: 24px;
-  line-height: 2.2;
+  font-family: 'Amiri Quran', 'Amiri', 'Traditional Arabic', 'Scheherazade New', serif;
+  font-size: 26px;
+  line-height: 2.4;
   color: var(--color-text-primary);
   text-align: center;
   direction: rtl;
@@ -3160,6 +3160,23 @@ input[type="range"]::-moz-range-thumb {
   box-shadow: 0 4px 12px rgba(6, 182, 212, 0.35);
 }
 .quran-apply-btn.is-hidden { display: none; }
+
+.quran-copy-btn {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  background: rgba(6, 182, 212, 0.1);
+  color: var(--color-text-primary);
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  line-height: 1;
+}
+.quran-copy-btn:hover {
+  background: rgba(6, 182, 212, 0.2);
+  transform: scale(1.05);
+}
+.quran-copy-btn.is-hidden { display: none; }
 
 .quran-lang-select {
   padding: 6px 12px;

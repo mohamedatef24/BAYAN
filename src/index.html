@@ -11,7 +11,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/tokens.css">
   <link rel="stylesheet" href="/css/base.css">
   <link rel="stylesheet" href="/css/components.css">
@@ -1251,8 +1251,9 @@
         _quranRef = reference;
         document.getElementById('quran-uthmani-text').textContent = verseText;
         document.getElementById('quran-reference').textContent = reference ? '[' + reference + ']' : '';
-        // Show apply button
+        // Show apply & copy buttons
         document.getElementById('quran-apply-btn').classList.remove('is-hidden');
+        document.getElementById('quran-copy-btn').classList.remove('is-hidden');
 
       } catch (err) {
         document.getElementById('quran-uthmani-text').innerHTML =
@@ -1309,6 +1310,26 @@
       document.getElementById('quran-modal').classList.add('is-hidden');
       document.body.style.overflow = '';
     }
+
+    function copyQuranResult() {
+      const verse = _quranVerseClean || '';
+      const ref = _quranRef ? ' [' + _quranRef + ']' : '';
+      const text = verse + ref;
+      if (!text.trim()) return;
+      navigator.clipboard.writeText(text).then(() => {
+        if (typeof showToast === 'function') showToast('✓ تم نسخ النص المدقق');
+        const btn = document.getElementById('quran-copy-btn');
+        if (btn) { btn.textContent = '✅'; setTimeout(() => { btn.textContent = '📋'; }, 1500); }
+      });
+    }
+
+    // Ctrl+Q → Quran verification shortcut
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'q' || e.key === 'Q')) {
+        e.preventDefault();
+        verifyQuranText();
+      }
+    });
 
     function _replaceInEditor(newText, ref) {
       var editor = document.getElementById('editor-container');
@@ -1736,7 +1757,10 @@
     <div class="quran-result-card">
      <div class="flex items-center justify-between mb-3">
       <div class="text-sm font-bold" style="color:#06b6d4;">✓ النص القرآني المدقق</div>
-      <button id="quran-apply-btn" onclick="applyQuranText()" class="quran-apply-btn is-hidden" type="button">تطبيق ✓</button>
+      <div class="flex items-center gap-2">
+       <button id="quran-copy-btn" onclick="copyQuranResult()" class="quran-copy-btn is-hidden" type="button" title="نسخ النص المدقق">📋</button>
+       <button id="quran-apply-btn" onclick="applyQuranText()" class="quran-apply-btn is-hidden" type="button">تطبيق ✓</button>
+      </div>
      </div>
      <p id="quran-uthmani-text" class="quran-uthmani"></p>
      <p id="quran-reference" class="quran-reference"></p>
