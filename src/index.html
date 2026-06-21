@@ -1303,27 +1303,60 @@
     }
 
     function applyQuranText() {
-      if (!_quranVerseClean || !_quranSavedRange) {
+      if (!_quranVerseClean || !_quranCurrentQuery) {
         if (typeof showToast === 'function') showToast('لا يوجد نص للتطبيق');
         return;
       }
       const editor = document.getElementById('editor');
       if (!editor) return;
 
-      // Close modal first so editor can get focus
+      // Close modal first
       closeQuranModal();
-
-      // Focus editor and restore selection
       editor.focus();
-      const sel = window.getSelection();
-      sel.removeAllRanges();
-      sel.addRange(_quranSavedRange);
 
-      // Use execCommand for proper replacement (supports undo)
-      document.execCommand('insertText', false, _quranVerseClean);
+      // Walk text nodes to find the original query text
+      const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT, null, false);
+      const plainText = editor.textContent || '';
+      const queryIdx = plainText.indexOf(_quranCurrentQuery);
 
-      if (typeof showToast === 'function') showToast('✓ تم تطبيق النص القرآني المدقق');
-      editor.dispatchEvent(new Event('input', { bubbles: true }));
+      if (queryIdx === -1) {
+        if (typeof showToast === 'function') showToast('لم يتم العثور على النص الأصلي');
+        return;
+      }
+
+      let charCount = 0;
+      let startNode = null, startOffset = 0;
+      let endNode = null, endOffset = 0;
+      const endIdx = queryIdx + _quranCurrentQuery.length;
+
+      while (walker.nextNode()) {
+        const node = walker.currentNode;
+        const nodeLen = node.textContent.length;
+        if (!startNode && charCount + nodeLen > queryIdx) {
+          startNode = node;
+          startOffset = queryIdx - charCount;
+        }
+        if (!endNode && charCount + nodeLen >= endIdx) {
+          endNode = node;
+          endOffset = endIdx - charCount;
+          break;
+        }
+        charCount += nodeLen;
+      }
+
+      if (startNode && endNode) {
+        const range = document.createRange();
+        range.setStart(startNode, startOffset);
+        range.setEnd(endNode, endOffset);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        document.execCommand('insertText', false, _quranVerseClean);
+        if (typeof showToast === 'function') showToast('✓ تم تطبيق النص القرآني المدقق');
+        editor.dispatchEvent(new Event('input', { bubbles: true }));
+      } else {
+        if (typeof showToast === 'function') showToast('لم يتم العثور على النص الأصلي');
+      }
     }
     
 
