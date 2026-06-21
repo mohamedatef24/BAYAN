@@ -210,8 +210,8 @@ function updatePlaceholder() {
   const editor = getEditorElement();
   if (!editor) return;
 
-  const text = getEditorText();
-  if (!text || text.trim().length === 0) {
+  const text = (editor.textContent || '').trim();
+  if (!text || text.length === 0) {
     editor.setAttribute('data-empty', 'true');
   } else {
     editor.removeAttribute('data-empty');
