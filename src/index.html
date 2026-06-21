@@ -1226,7 +1226,7 @@
     let _dialectResult = '';
     async function convertDialect() {
       var input = document.getElementById('dialect-input').value.trim();
-      if (!input) { if (typeof showToast === 'function') showToast('الرجاء كتابة نص أولاً'); return; }
+      if (!input) { if (typeof showToast === 'function') showToast('الرجاء كتابة نص أولاً', 'warning'); return; }
 
       var resultCard = document.getElementById('dialect-result-card');
       var resultDiv = document.getElementById('dialect-result');
@@ -1309,7 +1309,7 @@
       const sel = window.getSelection();
       const text = sel ? sel.toString().trim() : '';
       if (!text) {
-        if (typeof showToast === 'function') showToast('علّم على النص القرآني أولاً');
+        if (typeof showToast === 'function') showToast('علّم على النص القرآني أولاً', 'warning');
         return;
       }
       // Save selection range before modal steals focus
@@ -1500,25 +1500,25 @@
 
     function applyQuranText() {
       if (!_quranVerseClean || !_quranCurrentQuery) {
-        if (typeof showToast === 'function') showToast('لا يوجد نص للتطبيق');
+        if (typeof showToast === 'function') showToast('لا يوجد نص للتطبيق', 'warning');
         return;
       }
       if (_replaceInEditor(_quranVerseClean, _quranRef)) {
         if (typeof showToast === 'function') showToast('✓ تم تطبيق النص القرآني المدقق');
       } else {
-        if (typeof showToast === 'function') showToast('لم يتم العثور على النص الأصلي');
+        if (typeof showToast === 'function') showToast('لم يتم العثور على النص الأصلي', 'error');
       }
     }
 
     function applyQuranTranslation() {
       if (!_quranTransClean || !_quranCurrentQuery) {
-        if (typeof showToast === 'function') showToast('لا يوجد ترجمة للتطبيق');
+        if (typeof showToast === 'function') showToast('لا يوجد ترجمة للتطبيق', 'warning');
         return;
       }
       if (_replaceInEditor(_quranTransClean, _quranTransRef)) {
         if (typeof showToast === 'function') showToast('✓ تم تطبيق الترجمة');
       } else {
-        if (typeof showToast === 'function') showToast('لم يتم العثور على النص الأصلي');
+        if (typeof showToast === 'function') showToast('لم يتم العثور على النص الأصلي', 'error');
       }
     }
     

@@ -323,6 +323,7 @@ async function analyzeText() {
     if (error.name === 'AbortError') return;
     console.error('Analysis error:', error);
     renderWithoutSuggestions(text);
+    if (typeof showToast === 'function') showToast('\u062a\u0639\u0630\u0651\u0631 \u0627\u0644\u062a\u062d\u0644\u064a\u0644 \u2014 \u062a\u062d\u0642\u0642 \u0645\u0646 \u0627\u0644\u0627\u062a\u0635\u0627\u0644', 'error');
   } finally {
     setAnalyzingState(false);
   }
