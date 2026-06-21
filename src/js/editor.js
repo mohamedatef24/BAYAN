@@ -138,8 +138,9 @@ function initEditor() {
   });
 
   // Custom Undo/Redo — on editor only, capture phase to beat browser native undo
+  // Uses e.code instead of e.key so shortcuts work with any keyboard language
   editor.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+    if ((e.ctrlKey || e.metaKey) && e.code === 'KeyZ' && !e.shiftKey) {
       if (_undoStack.length > 0) {
         e.preventDefault();
         e.stopImmediatePropagation();
@@ -147,7 +148,7 @@ function initEditor() {
         return;
       }
     }
-    if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+    if ((e.ctrlKey || e.metaKey) && (e.code === 'KeyY' || (e.code === 'KeyZ' && e.shiftKey))) {
       if (_redoStack.length > 0) {
         e.preventDefault();
         e.stopImmediatePropagation();
