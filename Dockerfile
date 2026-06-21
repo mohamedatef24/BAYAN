@@ -59,6 +59,18 @@ EncoderDecoderModel.from_pretrained(repo); \
 print('PuncAra-v1 cached!'); \
 "
 
+# 5. Dialect-to-MSA model (mT5, float16)
+RUN python -c "\
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM; \
+import torch; \
+repo = 'bayan10/dialect-to-msa-model'; \
+print('Downloading dialect tokenizer...'); \
+AutoTokenizer.from_pretrained(repo); \
+print('Downloading dialect model (float16)...'); \
+AutoModelForSeq2SeqLM.from_pretrained(repo, torch_dtype=torch.float16); \
+print('Dialect model cached!'); \
+"
+
 # Copy application code
 COPY src/ ./src/
 COPY quran.py ./

@@ -174,7 +174,8 @@ def health_check():
                 'spelling': _spelling_available(),
                 'autocomplete': _autocomplete_available(),
                 'grammar': _grammar_available(),
-                'punctuation': _punctuation_available()
+                'punctuation': _punctuation_available(),
+                'dialect': _dialect_available()
             },
             'note': 'Free tier: summarization local, other models return input unchanged',
             'supabase': {
@@ -193,7 +194,8 @@ def health_check():
             'spelling': spelling_model is not None,
             'autocomplete': autocomplete_model is not None,
             'grammar': grammar_model is not None,
-            'punctuation': punctuation_model is not None
+            'punctuation': punctuation_model is not None,
+            'dialect': _dialect_available()
         },
         'supabase': {
             'configured': bool(SUPABASE_URL and SUPABASE_ANON_KEY),
@@ -273,6 +275,15 @@ def _autocomplete_available():
     try:
         from nlp.autocomplete.autocomplete_service import _instance
         return _instance is not None and _instance.is_ready()
+    except Exception:
+        return False
+
+
+def _dialect_available():
+    """Check if dialect model is loaded (without triggering lazy load)."""
+    try:
+        from nlp.dialect.dialect_service import is_loaded
+        return is_loaded()
     except Exception:
         return False
 
@@ -1071,6 +1082,71 @@ def _is_orthographic_variant(word1: str, word2: str) -> bool:
         else:
             return False  # Non-orthographic difference = grammar
     return diff_count > 0  # At least one orthographic difference
+
+
+@app.route('/api/dialect', methods=['POST'])
+def convert_dialect():
+    """
+    Convert dialect Arabic text to Modern Standard Arabic (MSA).
+
+    Request JSON:
+    {
+        "text": "عايز اشتكي من موظف في فرعكم"
+    }
+
+    Response JSON:
+    {
+        "status": "success",
+        "original_text": "...",
+        "converted_text": "..."
+    }
+    """
+    try:
+        if not request.is_json:
+            return jsonify({'error': 'Request must be JSON', 'status': 'error'}), 400
+
+        data = request.get_json()
+        text = data.get('text', '').strip()
+
+        if not text:
+            return jsonify({'error': 'Text is required', 'status': 'error'}), 400
+
+        if len(text) > MAX_TEXT_LENGTH:
+            return jsonify({
+                'error': f'Text too long. Maximum {MAX_TEXT_LENGTH} characters.',
+                'status': 'error'
+            }), 400
+
+        logger.info(f"[DIALECT] Conversion request: text_length={len(text)}")
+
+        from nlp.dialect.dialect_service import get_dialect_model
+        converter = get_dialect_model()
+        t0 = time.time()
+        result = converter.convert(text)
+        elapsed = int((time.time() - t0) * 1000)
+
+        logger.info(f"[DIALECT] {elapsed}ms | input='{text[:80]}' | output='{result[:80]}'")
+
+        return jsonify({
+            'original_text': text,
+            'converted_text': result,
+            'status': 'success'
+        }), 200
+
+    except RuntimeError as e:
+        logger.error(f"Dialect model error: {e}")
+        return jsonify({
+            'error': f'Dialect model unavailable: {str(e)[:200]}',
+            'status': 'error'
+        }), 503
+    except Exception as e:
+        logger.error(f"Error during dialect conversion: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({
+            'error': 'An error occurred during dialect conversion.',
+            'status': 'error',
+            'details': str(e) if app.debug else None
+        }), 500
 
 
 @app.route('/api/quran', methods=['POST'])
