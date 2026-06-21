@@ -325,11 +325,31 @@ def search_bayan(query_text: str,
     sura_name = next(iter(involved.values()))["sura_name"]
 
     # ── بناء النص الكامل من الآيات الكاملة (مش من الـ window بس) ──
-    # نجيب الآيات الكاملة من DB عبر involved
-    # target_text = النص الكامل للآية (uthmani أو الترجمة)
+    # إزالة البسملة من أول آية (مدمجة في الـ DB) — ماعدا الفاتحة
+    def _strip_basmala(text):
+        """Remove Basmala from beginning of verse text"""
+        words = text.split()
+        if len(words) < 4:
+            return text
+        # Normalize first 4 words and check against known Basmala forms
+        first4_norm = normalize_arabic(' '.join(words[:4]), deep=False)
+        # ٱ (Alef Wasla) gets stripped during normalization → 'بسم لله لرحمـن لرحيم'
+        basmala_forms = [
+            'بسم الله الرحمن الرحيم',    # standard alef
+            'بسم لله لرحمن لرحيم',        # alef wasla stripped
+            'بسم لله لرحمـن لرحيم',       # with tatweel ـ
+        ]
+        if first4_norm in basmala_forms:
+            return ' '.join(words[4:])
+        return text
+
     verse_parts = []
     for (s_num, a_num), data in involved.items():
-        verse_parts.append(f"{data['target_text']} ({fmt_num(a_num)})")
+        txt = data['target_text']
+        # شيل البسملة من الآية الأولى (إلا سورة الفاتحة)
+        if a_num == 1 and s_num != 1:
+            txt = _strip_basmala(txt)
+        verse_parts.append(f"{txt} ({fmt_num(a_num)})")
 
     combined_body = " ".join(verse_parts)
 
