@@ -1307,7 +1307,7 @@
     }
 
     function _replaceInEditor(newText) {
-      var editor = document.getElementById('editor');
+      var editor = document.getElementById('editor-container');
       if (!editor || !_quranCurrentQuery) return false;
       closeQuranModal();
       // Direct approach: get plain text, replace, set back
