@@ -182,14 +182,20 @@ function setCaretOffset(offset) {
 
 /**
  * Gets the text content of the editor
- * @returns {string} - Plain text content
+ * Masks quran-applied text with spaces to exclude from analysis
+ * @returns {string} - Plain text content (quran regions replaced with spaces)
  */
 function getEditorText() {
   const editor = document.getElementById('editor-container');
   if (!editor) return '';
-  // MUST use textContent to match the offset calculation in overlaySuggestions
-  // innerText adds '\n' for block elements which causes offset mismatch
-  return editor.textContent || '';
+  // Clone the editor to mask quran text without modifying the DOM
+  const clone = editor.cloneNode(true);
+  clone.querySelectorAll('.quran-applied').forEach(function(el) {
+    // Replace quran text with spaces of the same length to preserve offsets
+    var len = (el.textContent || '').length;
+    el.textContent = ' '.repeat(len);
+  });
+  return clone.textContent || '';
 }
 
 /**
