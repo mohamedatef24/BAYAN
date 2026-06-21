@@ -204,31 +204,43 @@ function focusSuggestionInEditor(suggestionId) {
   if (span) showTooltip(span);
 }
 
+let _analyzingTimer = null;
 function setAnalyzingState(isAnalyzing) {
   const editor = getEditorElement();
   const indicator = document.getElementById('analyzing-indicator');
 
   if (editor) {
-    editor.classList.toggle('analyzing', isAnalyzing);
     editor.setAttribute('aria-busy', isAnalyzing ? 'true' : 'false');
   }
-  if (indicator) {
-    indicator.classList.toggle('active', isAnalyzing);
-  }
 
-  // Show skeleton loading in suggestions panel
   if (isAnalyzing) {
-    const lists = [
-      document.getElementById('suggestions-list'),
-      document.getElementById('bottom-sheet-list')
-    ].filter(Boolean);
-    const skeletonHTML = `
-      <div style="padding: 16px;">
-        <div class="skeleton skeleton-line" style="width:80%"></div>
-        <div class="skeleton skeleton-line" style="width:100%"></div>
-        <div class="skeleton skeleton-line" style="width:65%"></div>
-      </div>`;
-    lists.forEach(el => { el.innerHTML = skeletonHTML; });
+    // Debounce: only show indicator after 400ms to prevent flicker on fast re-analyses
+    if (!_analyzingTimer) {
+      _analyzingTimer = setTimeout(() => {
+        if (editor) editor.classList.add('analyzing');
+        if (indicator) indicator.classList.add('active');
+        // Show skeleton loading in suggestions panel
+        const lists = [
+          document.getElementById('suggestions-list'),
+          document.getElementById('bottom-sheet-list')
+        ].filter(Boolean);
+        const skeletonHTML = `
+          <div style="padding: 16px;">
+            <div class="skeleton skeleton-line" style="width:80%"></div>
+            <div class="skeleton skeleton-line" style="width:100%"></div>
+            <div class="skeleton skeleton-line" style="width:65%"></div>
+          </div>`;
+        lists.forEach(el => { el.innerHTML = skeletonHTML; });
+      }, 400);
+    }
+  } else {
+    // Clear timer and hide immediately
+    if (_analyzingTimer) {
+      clearTimeout(_analyzingTimer);
+      _analyzingTimer = null;
+    }
+    if (editor) editor.classList.remove('analyzing');
+    if (indicator) indicator.classList.remove('active');
   }
 }
 
