@@ -296,6 +296,13 @@ def search_bayan(query_text: str,
     # ==========================================
     # تشكيل المخرجات
     # ==========================================
+
+    # تحويل الأرقام اللاتينية إلى عربية
+    def to_arabic_nums(n):
+        """Convert 31 → ٣١"""
+        ar_digits = '٠١٢٣٤٥٦٧٨٩'
+        return ''.join(ar_digits[int(d)] for d in str(n))
+
     matched_words = best_rows[best_match_idx: best_match_idx + n]
 
     # بناء matched_segment مع رقم كل آية
@@ -308,7 +315,7 @@ def search_bayan(query_text: str,
 
     if lang_code == "uthmani":
         seg_parts = [
-            " ".join(words) + f" ({a_num})"
+            " ".join(words) + f" ({to_arabic_nums(a_num)})"
             for (_, a_num), words in aya_words.items()
         ]
         matched_segment = " ".join(seg_parts)
@@ -319,7 +326,7 @@ def search_bayan(query_text: str,
             txt = words[0]  # target_text مكرر لكل كلمة، نأخذ الأول
             if txt not in seen_texts:
                 seen_texts.add(txt)
-                seg_parts.append(f"{txt} ({a_num})")
+                seg_parts.append(f"{txt} ({to_arabic_nums(a_num)})")
         matched_segment = " ".join(seg_parts)
 
     # الآيات المشمولة — مرتبة بالترتيب
@@ -334,15 +341,17 @@ def search_bayan(query_text: str,
 
     verse_body_parts = []
     for (s_num, a_num), data in involved.items():
-        verse_body_parts.append(f"{data['target_text']} ({a_num})")
+        verse_body_parts.append(f"{data['target_text']} ({to_arabic_nums(a_num)})")
 
     combined_body = " ".join(verse_body_parts)
 
+    # بناء المرجع: نطاق (من-إلى) بدل سرد كل الأرقام
     if len(ayah_nums) == 1:
-        ref = f"{sura_name}: {ayah_nums[0]}"
+        ref = f"{sura_name}: {to_arabic_nums(ayah_nums[0])}"
     else:
-        nums_str = "،".join(str(x) for x in ayah_nums)
-        ref = f"{sura_name}: {nums_str}"
+        first_ar = to_arabic_nums(ayah_nums[0])
+        last_ar = to_arabic_nums(ayah_nums[-1])
+        ref = f"{sura_name}: {first_ar}-{last_ar}"
 
     full_verse_formatted = f"({combined_body}) [{ref}]"
     matched_segment = f"({matched_segment}) [{ref}]"
