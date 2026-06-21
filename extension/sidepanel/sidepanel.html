@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>بيان — لوحة التحليل</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- Header -->
+  <!-- ══════════════════════════════════════════════ -->
+  <header class="sp-header">
+    <div class="sp-header-brand">
+      <svg class="sp-logo" width="24" height="24" viewBox="0 0 100 100" fill="none">
+        <circle cx="50" cy="50" r="46" fill="url(#spGrad)" />
+        <path d="M30 55 Q35 35, 50 30 Q65 35, 70 55 Q65 65, 50 70 Q35 65, 30 55Z" fill="rgba(255,255,255,0.9)" />
+        <circle cx="50" cy="42" r="4" fill="url(#spGrad)" />
+        <defs>
+          <linearGradient id="spGrad" x1="0" y1="0" x2="100" y2="100">
+            <stop offset="0%" stop-color="#6366f1"/>
+            <stop offset="100%" stop-color="#8b5cf6"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <span class="sp-header-title">بيان</span>
+    </div>
+    <div class="sp-header-status" id="status-indicator">
+      <span class="sp-status-dot"></span>
+      <span class="sp-status-text" id="status-text">جاري الاتصال...</span>
+    </div>
+  </header>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- Tab Navigation -->
+  <!-- ══════════════════════════════════════════════ -->
+  <nav class="sp-tabs" role="tablist">
+    <button class="sp-tab active" role="tab" aria-selected="true" data-tab="correct" id="tab-correct">
+      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      تصحيح
+    </button>
+    <button class="sp-tab" role="tab" aria-selected="false" data-tab="summarize" id="tab-summarize">
+      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h10M4 18h14"/></svg>
+      تلخيص
+    </button>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- Correct Panel -->
+  <!-- ══════════════════════════════════════════════ -->
+  <section class="sp-panel active" id="panel-correct" role="tabpanel">
+    <!-- Input area -->
+    <div class="sp-input-group">
+      <textarea
+        id="input-text"
+        class="sp-textarea"
+        dir="rtl"
+        placeholder="أدخل النص العربي أو اختر نصاً من أي صفحة..."
+        rows="4"
+        maxlength="5000"
+      ></textarea>
+      <div class="sp-meta-row">
+        <span class="sp-char-count"><span id="char-count">٠</span> حرف</span>
+        <span class="sp-word-count"><span id="word-count">٠</span> كلمة</span>
+      </div>
+    </div>
+
+    <!-- Action buttons -->
+    <div class="sp-actions">
+      <button class="sp-btn sp-btn-primary" id="btn-correct">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"/></svg>
+        تحليل وتصحيح
+      </button>
+      <button class="sp-btn sp-btn-ghost" id="btn-clear">مسح</button>
+    </div>
+
+    <!-- Score ring -->
+    <div class="sp-score is-hidden" id="score-section">
+      <div class="sp-score-ring">
+        <svg viewBox="0 0 160 160">
+          <circle cx="80" cy="80" r="70" fill="none" stroke="var(--sp-border)" stroke-width="8" />
+          <circle cx="80" cy="80" r="70" fill="none" stroke="var(--sp-primary)" stroke-width="8"
+            stroke-dasharray="440" stroke-dashoffset="440" stroke-linecap="round"
+            id="score-circle" transform="rotate(-90 80 80)" />
+        </svg>
+        <span class="sp-score-value" id="score-value">--</span>
+      </div>
+      <div class="sp-score-details">
+        <span class="sp-score-hint" id="score-hint"></span>
+        <div class="sp-score-counts">
+          <span class="sp-count-spelling">إملائي: <strong id="count-spelling">٠</strong></span>
+          <span class="sp-count-grammar">نحوي: <strong id="count-grammar">٠</strong></span>
+          <span class="sp-count-punctuation">ترقيم: <strong id="count-punctuation">٠</strong></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Corrected text result -->
+    <div class="sp-result is-hidden" id="result-section">
+      <div class="sp-result-header">
+        <span>النص المصحح</span>
+        <div class="sp-result-actions">
+          <button class="sp-btn-icon" id="btn-apply-all" title="تطبيق الكل">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          </button>
+          <button class="sp-btn-icon" id="btn-copy-result" title="نسخ">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="sp-result-text" id="result-text" dir="rtl"></div>
+    </div>
+
+    <!-- Suggestions list -->
+    <div class="sp-suggestions is-hidden" id="suggestions-section">
+      <div class="sp-suggestions-header">الاقتراحات</div>
+      <div class="sp-suggestions-list" id="suggestions-list" role="list"></div>
+    </div>
+
+    <!-- Timing info -->
+    <div class="sp-timing is-hidden" id="timing-section">
+      <span id="timing-text"></span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- Summarize Panel -->
+  <!-- ══════════════════════════════════════════════ -->
+  <section class="sp-panel" id="panel-summarize" role="tabpanel">
+    <div class="sp-input-group">
+      <textarea
+        id="summary-input-text"
+        class="sp-textarea"
+        dir="rtl"
+        placeholder="الصق النص المراد تلخيصه..."
+        rows="4"
+        maxlength="5000"
+      ></textarea>
+      <div class="sp-meta-row">
+        <span class="sp-char-count"><span id="summary-char-count">٠</span> حرف</span>
+      </div>
+    </div>
+
+    <!-- Summary length options -->
+    <div class="sp-radio-group">
+      <label class="sp-radio"><input type="radio" name="summary-length" value="1"> قصير</label>
+      <label class="sp-radio"><input type="radio" name="summary-length" value="2" checked> متوسط</label>
+      <label class="sp-radio"><input type="radio" name="summary-length" value="3"> طويل</label>
+    </div>
+
+    <div class="sp-actions">
+      <button class="sp-btn sp-btn-primary" id="btn-summarize">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h10M4 18h14"/></svg>
+        تلخيص
+      </button>
+    </div>
+
+    <!-- Summary result -->
+    <div class="sp-result is-hidden" id="summary-result-section">
+      <div class="sp-result-header">
+        <span>الملخص</span>
+        <button class="sp-btn-icon" id="btn-copy-summary" title="نسخ">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+        </button>
+      </div>
+      <div class="sp-result-text" id="summary-text" dir="rtl"></div>
+      <div class="sp-summary-meta" id="summary-meta"></div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- Loading Overlay -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="sp-loading is-hidden" id="loading-overlay">
+    <div class="sp-spinner"></div>
+    <span id="loading-text">جارٍ التحليل...</span>
+  </div>
+
+  <!-- Toast -->
+  <div class="sp-toast" id="toast"></div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- Scripts — reuse ALL shared modules -->
+  <!-- ══════════════════════════════════════════════ -->
+  <script src="../shared/constants.js"></script>
+  <script src="../shared/config.js"></script>
+  <script src="../shared/bayan-renderer.js"></script>
+  <script src="../shared/bayan-ui.js"></script>
+  <script src="../shared/bayan-patches.js"></script>
+  <script src="../shared/bayan-api.js"></script>
+  <script src="sidepanel.js"></script>
+</body>
+</html>

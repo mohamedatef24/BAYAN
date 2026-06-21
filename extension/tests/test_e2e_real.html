@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>Bayan — E2E Verification</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #0f0f14; color: #f0f0f5; padding: 24px; max-width: 800px; margin: 0 auto; }
+    h1 { color: #818cf8; font-size: 20px; margin-bottom: 20px; }
+    h2 { color: #9898ad; font-size: 16px; margin: 20px 0 10px; border-bottom: 1px solid #2d2d3d; padding-bottom: 6px; }
+    .test-group { margin-bottom: 16px; padding: 12px; background: #1a1a24; border-radius: 8px; border: 1px solid #2d2d3d; }
+    .pass { color: #22c55e; }
+    .fail { color: #ef4444; font-weight: bold; }
+    .result-line { font-size: 13px; margin: 4px 0; font-family: monospace; direction: ltr; text-align: left; }
+    .detail { color: #6b6b80; font-size: 12px; margin-left: 24px; direction: ltr; text-align: left; }
+    .summary { margin-top: 24px; padding: 16px; background: #1a1a24; border-radius: 8px; border: 2px solid #818cf8; font-size: 16px; font-weight: bold; direction: ltr; text-align: center; }
+    #log { white-space: pre-wrap; font-family: monospace; font-size: 12px; color: #9898ad; background: #111118; padding: 12px; border-radius: 8px; margin-top: 12px; direction: ltr; text-align: left; max-height: 300px; overflow-y: auto; }
+    .arabic-text { direction: rtl; text-align: right; font-size: 16px; padding: 8px; background: #22222e; border-radius: 6px; margin: 6px 0; }
+  </style>
+</head>
+<body>
+  <h1>🔬 Bayan — Real E2E Verification</h1>
+  <div id="output"></div>
+  <h2>Execution Log</h2>
+  <div id="log"></div>
+
+  <!-- Load extension modules -->
+  <script src="../shared/config.js"></script>
+  <script src="../shared/bayan-renderer.js"></script>
+  <script src="../shared/bayan-ui.js"></script>
+  <script src="../shared/bayan-patches.js"></script>
+  <script src="../shared/bayan-api.js"></script>
+
+  <script>
+    const outputEl = document.getElementById('output');
+    const logEl = document.getElementById('log');
+    let passed = 0;
+    let failed = 0;
+    let currentGroup = null;
+
+    function log(msg) {
+      logEl.textContent += msg + '\n';
+      console.log(msg);
+    }
+
+    function group(name) {
+      currentGroup = document.createElement('div');
+      currentGroup.className = 'test-group';
+      currentGroup.innerHTML = `<h2 style="margin:0 0 8px;font-size:14px;color:#818cf8">${name}</h2>`;
+      outputEl.appendChild(currentGroup);
+    }
+
+    function assert(condition, message) {
+      const el = document.createElement('div');
+      el.className = 'result-line';
+      if (condition) {
+        passed++;
+        el.innerHTML = `<span class="pass">✅</span> ${message}`;
+      } else {
+        failed++;
+        el.innerHTML = `<span class="fail">❌</span> ${message}`;
+      }
+      currentGroup.appendChild(el);
+    }
+
+    function assertEqual(actual, expected, message) {
+      if (actual === expected) {
+        assert(true, message);
+      } else {
+        assert(false, message);
+        const detail = document.createElement('div');
+        detail.className = 'detail';
+        detail.textContent = `Expected: "${expected}" | Actual: "${actual}"`;
+        currentGroup.appendChild(detail);
+      }
+    }
+
+    function showArabic(text) {
+      const el = document.createElement('div');
+      el.className = 'arabic-text';
+      el.textContent = text;
+      currentGroup.appendChild(el);
+    }
+
+    // ══════════════════════════════════════════════
+    // MAIN TEST RUNNER
+    // ══════════════════════════════════════════════
+    (async function runTests() {
+
+      // ═══════════════════════════════════════════
+      // TEST CASE 1: Basic Correction Flow
+      // ═══════════════════════════════════════════
+      group('TEST CASE 1: API Verification');
+      const INPUT_1 = 'انا ذهبت الي المدرسه اليوم';
+      log(`[TC1] Input: "${INPUT_1}"`);
+
+      let data1;
+      try {
+        data1 = await bayanAnalyze(INPUT_1);
+        log(`[TC1] API response received: status=${data1.status}, suggestions=${data1.suggestions?.length}`);
+        assert(true, 'API call succeeded (no network error)');
+      } catch (err) {
+        assert(false, `API call failed: ${err.message}`);
+        log(`[TC1] ERROR: ${err.message}`);
+        return;
+      }
+
+      // Schema validation
+      assertEqual(data1.status, 'success', 'Response status = "success"');
+      assert(typeof data1.original === 'string', 'Response has "original" (string)');
+      assert(typeof data1.corrected === 'string', 'Response has "corrected" (string)');
+      assert(Array.isArray(data1.suggestions), 'Response has "suggestions" (array)');
+      assert(typeof data1.timing_ms === 'object', 'Response has "timing_ms" (object)');
+      assert(data1.suggestions.length > 0, `Suggestions returned: ${data1.suggestions.length}`);
+
+      // Verify suggestion schema
+      if (data1.suggestions.length > 0) {
+        const s = data1.suggestions[0];
+        assert(typeof s.id === 'string', 'Suggestion has "id"');
+        assert(typeof s.start === 'number', 'Suggestion has "start"');
+        assert(typeof s.end === 'number', 'Suggestion has "end"');
+        assert(typeof s.original === 'string', 'Suggestion has "original"');
+        assert(typeof s.correction === 'string', 'Suggestion has "correction"');
+        assert(typeof s.type === 'string', 'Suggestion has "type"');
+      }
+
+      // Verify offsets match original text
+      group('TEST CASE 1: Offset Correctness');
+      const sorted1 = sortSuggestions(data1.suggestions);
+      sorted1.forEach((s, i) => {
+        const extracted = data1.original.slice(s.start, s.end);
+        assertEqual(extracted, s.original, `Suggestion ${i} offset [${s.start}:${s.end}] extracts "${s.original}"`);
+        log(`[TC1] Suggestion ${i}: [${s.type}] "${s.original}" → "${s.correction}" offset=[${s.start}:${s.end}]`);
+      });
+
+      // Apply All test
+      group('TEST CASE 1: Apply All');
+      const correctedText1 = applyAllPatches(data1.original, data1.suggestions);
+      showArabic(correctedText1);
+      assertEqual(correctedText1, data1.corrected, 'applyAllPatches() === API corrected text');
+      log(`[TC1] applyAllPatches result: "${correctedText1}"`);
+      log(`[TC1] API corrected field:    "${data1.corrected}"`);
+
+      // Highlighted text test
+      group('TEST CASE 1: Rendering');
+      const html1 = renderHighlightedText(data1.original, sorted1);
+      assert(html1.length > 0, 'renderHighlightedText produces non-empty HTML');
+      assert(html1.includes('bayan-spelling-error') || html1.includes('bayan-punctuation-suggestion'), 'HTML contains error highlight classes');
+      log(`[TC1] Highlighted HTML length: ${html1.length} chars`);
+
+      // Score test
+      group('TEST CASE 1: Score Calculation');
+      const counts1 = countByType(data1.suggestions);
+      const score1 = calculateWritingScore(counts1.spelling, counts1.grammar, counts1.punctuation);
+      assert(score1 >= 0 && score1 <= 100, `Score in valid range: ${score1}`);
+      log(`[TC1] Counts: spelling=${counts1.spelling}, grammar=${counts1.grammar}, punctuation=${counts1.punctuation}`);
+      log(`[TC1] Score: ${score1}/100`);
+
+      // ═══════════════════════════════════════════
+      // TEST CASE 2: Sequential Apply
+      // ═══════════════════════════════════════════
+      group('TEST CASE 2: API Call');
+      const INPUT_2 = 'انا ذاهب الي البت';
+      log(`\n[TC2] Input: "${INPUT_2}"`);
+
+      let data2;
+      try {
+        data2 = await bayanAnalyze(INPUT_2);
+        log(`[TC2] API response: status=${data2.status}, suggestions=${data2.suggestions?.length}`);
+        assert(true, 'API call succeeded');
+        assertEqual(data2.status, 'success', 'Status = success');
+      } catch (err) {
+        assert(false, `API call failed: ${err.message}`);
+        return;
+      }
+
+      // Show what the API actually detected
+      group('TEST CASE 2: API-Detected Corrections');
+      data2.suggestions.forEach((s, i) => {
+        assert(true, `[${s.type}] "${s.original}" → "${s.correction}" (${s.start}:${s.end})`);
+      });
+      showArabic(`API corrected: ${data2.corrected}`);
+
+      // Sequential apply using ACTUAL API response
+      group('TEST CASE 2: Sequential Apply (Actual API suggestions)');
+      let text2 = data2.original;
+      let sugs2 = sortSuggestions([...data2.suggestions]);
+      log(`[TC2] Starting sequential apply with ${sugs2.length} suggestions`);
+      log(`[TC2] Initial text: "${text2}"`);
+
+      const applyOrder = [...sugs2]; // Apply in sorted order
+      for (let i = 0; i < applyOrder.length; i++) {
+        const sug = sugs2.find(s => s.id === applyOrder[i].id);
+        if (!sug) {
+          log(`[TC2] Suggestion ${i} already removed, skipping`);
+          continue;
+        }
+
+        // Verify offset before apply
+        const beforeExtract = text2.slice(sug.start, sug.end);
+        assertEqual(beforeExtract, sug.original, `Step ${i+1}: Offset [${sug.start}:${sug.end}] extracts "${sug.original}" BEFORE apply`);
+
+        // Apply and rebase
+        const result = applyAndRebase(text2, sug, sug.correction, sugs2);
+        text2 = result.text;
+        sugs2 = result.suggestions;
+
+        log(`[TC2] Step ${i+1}: Applied "${sug.original}" → "${sug.correction}"`);
+        log(`[TC2] Step ${i+1}: Text now: "${text2}"`);
+        log(`[TC2] Step ${i+1}: Remaining suggestions: ${sugs2.length}`);
+        showArabic(`Step ${i+1}: ${text2}`);
+
+        // Verify ALL remaining suggestion offsets still extract correct text
+        sugs2.forEach((rs, j) => {
+          const extracted = text2.slice(rs.start, rs.end);
+          assertEqual(extracted, rs.original, `Step ${i+1}: Remaining[${j}] offset [${rs.start}:${rs.end}] extracts "${rs.original}"`);
+        });
+      }
+
+      assert(sugs2.length === 0, 'All suggestions applied (0 remaining)');
+      assertEqual(text2, data2.corrected, 'Sequential result === API corrected text');
+
+      // ═══════════════════════════════════════════
+      // TEST CASE 2b: Synthetic test with user's exact scenario
+      // ═══════════════════════════════════════════
+      group('TEST CASE 2b: Synthetic Sequential (User Scenario)');
+      // Simulate the exact scenario the user described,
+      // using manually-constructed suggestions
+      const SYNTH_TEXT = 'انا ذاهب الى البت';
+      const synthIdx_ana = SYNTH_TEXT.indexOf('انا');
+      const synthIdx_ala = SYNTH_TEXT.indexOf('الى');
+      const synthIdx_bet = SYNTH_TEXT.indexOf('البت');
+
+      log(`[TC2b] Synthetic text: "${SYNTH_TEXT}" (length: ${SYNTH_TEXT.length})`);
+      log(`[TC2b] indexOf('انا')=${synthIdx_ana}, indexOf('الى')=${synthIdx_ala}, indexOf('البت')=${synthIdx_bet}`);
+
+      const synthSugs = [
+        { id: 's1', start: synthIdx_ala, end: synthIdx_ala + 3, original: 'الى', correction: 'إلى', type: 'grammar' },
+        { id: 's2', start: synthIdx_bet, end: synthIdx_bet + 4, original: 'البت', correction: 'البيت', type: 'spelling' },
+        { id: 's3', start: synthIdx_ana, end: synthIdx_ana + 3, original: 'انا', correction: 'أنا', type: 'spelling' },
+      ];
+
+      // Verify offsets
+      synthSugs.forEach(s => {
+        assertEqual(SYNTH_TEXT.slice(s.start, s.end), s.original, `Offset check: [${s.start}:${s.end}] = "${s.original}"`);
+      });
+
+      // Step 1: Apply "الى" → "إلى"
+      let sText = SYNTH_TEXT;
+      let sSugs = [...synthSugs];
+      let r1 = applyAndRebase(sText, sSugs[0], 'إلى', sSugs);
+      sText = r1.text;
+      sSugs = r1.suggestions;
+      showArabic(`Step 1 (الى→إلى): ${sText}`);
+      assertEqual(sText, 'انا ذاهب إلى البت', 'Step 1 result correct');
+      assert(sSugs.length === 2, 'Step 1: 2 remaining');
+      // Verify remaining offsets
+      sSugs.forEach(s => {
+        assertEqual(sText.slice(s.start, s.end), s.original, `Step 1: Remaining "${s.original}" offset valid`);
+      });
+
+      // Step 2: Apply "البت" → "البيت" (should be at shifted offset)
+      const sugBet = sSugs.find(s => s.original === 'البت');
+      assert(!!sugBet, 'Found "البت" suggestion in remaining');
+      let r2 = applyAndRebase(sText, sugBet, 'البيت', sSugs);
+      sText = r2.text;
+      sSugs = r2.suggestions;
+      showArabic(`Step 2 (البت→البيت): ${sText}`);
+      assertEqual(sText, 'انا ذاهب إلى البيت', 'Step 2 result correct');
+      assert(sSugs.length === 1, 'Step 2: 1 remaining');
+      sSugs.forEach(s => {
+        assertEqual(sText.slice(s.start, s.end), s.original, `Step 2: Remaining "${s.original}" offset valid`);
+      });
+
+      // Step 3: Apply "انا" → "أنا"
+      const sugAna = sSugs.find(s => s.original === 'انا');
+      assert(!!sugAna, 'Found "انا" suggestion in remaining');
+      let r3 = applyAndRebase(sText, sugAna, 'أنا', sSugs);
+      sText = r3.text;
+      sSugs = r3.suggestions;
+      showArabic(`Step 3 (انا→أنا): ${sText}`);
+
+      // FINAL VERIFICATION
+      assertEqual(sText, 'أنا ذاهب إلى البيت', '🏁 FINAL RESULT matches expected');
+      assert(sSugs.length === 0, 'All suggestions consumed');
+
+      // Verify sequential === applyAllPatches
+      const bulkResult = applyAllPatches(SYNTH_TEXT, synthSugs);
+      assertEqual(sText, bulkResult, 'Sequential === applyAllPatches');
+
+      // ═══════════════════════════════════════════
+      // SUMMARY
+      // ═══════════════════════════════════════════
+      const summary = document.createElement('div');
+      summary.className = 'summary';
+      summary.style.color = failed > 0 ? '#ef4444' : '#22c55e';
+      summary.textContent = `Results: ${passed} passed, ${failed} failed`;
+      outputEl.appendChild(summary);
+
+      const verdict = document.createElement('div');
+      verdict.className = 'summary';
+      verdict.style.marginTop = '12px';
+      if (failed === 0) {
+        verdict.style.color = '#22c55e';
+        verdict.style.borderColor = '#22c55e';
+        verdict.textContent = 'HIGH-1 = COMPLETE (REAL VERIFIED) ✅';
+      } else {
+        verdict.style.color = '#ef4444';
+        verdict.style.borderColor = '#ef4444';
+        verdict.textContent = `HIGH-1 = INCOMPLETE (${failed} failures)`;
+      }
+      outputEl.appendChild(verdict);
+
+      log(`\n${'═'.repeat(50)}`);
+      log(`Results: ${passed} passed, ${failed} failed`);
+      log(`${'═'.repeat(50)}`);
+    })();
+  </script>
+</body>
+</html>
