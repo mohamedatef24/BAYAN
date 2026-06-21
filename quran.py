@@ -310,45 +310,28 @@ def search_bayan(query_text: str,
         """Arabic-Indic for uthmani, Latin for translations"""
         return to_arabic_nums(n) if lang_code == "uthmani" else str(n)
 
-    # بناء matched_segment مع رقم كل آية
-    aya_words: dict[tuple, list] = {}
-    for w in matched_words:
-        key = (w["sura_num"], w["aya_num"])
-        if key not in aya_words:
-            aya_words[key] = []
-        aya_words[key].append(w["uthmani"] if lang_code == "uthmani" else w["target_text"])
-
-    if lang_code == "uthmani":
-        seg_parts = [
-            " ".join(words) + f" ({fmt_num(a_num)})"
-            for (_, a_num), words in aya_words.items()
-        ]
-        matched_segment = " ".join(seg_parts)
-    else:
-        # للترجمات: نص الآية كامل + رقمها (بدون تكرار)
-        seen_texts, seg_parts = set(), []
-        for (_, a_num), words in aya_words.items():
-            txt = words[0]  # target_text مكرر لكل كلمة، نأخذ الأول
-            if txt not in seen_texts:
-                seen_texts.add(txt)
-                seg_parts.append(f"{txt} ({fmt_num(a_num)})")
-        matched_segment = " ".join(seg_parts)
-
-    # الآيات المشمولة — مرتبة بالترتيب
+    # الآيات المشمولة — مرتبة بالترتيب (من الـ matched window)
     involved: dict[tuple, dict] = {}
     for w in matched_words:
         key = (w["sura_num"], w["aya_num"])
         if key not in involved:
-            involved[key] = {"sura_name": w["sura_name"], "target_text": w["target_text"]}
+            involved[key] = {
+                "sura_name": w["sura_name"],
+                "target_text": w["target_text"],
+                "uthmani": w.get("uthmani", ""),
+            }
 
     ayah_nums = [a_num for (_, a_num) in involved]
     sura_name = next(iter(involved.values()))["sura_name"]
 
-    verse_body_parts = []
+    # ── بناء النص الكامل من الآيات الكاملة (مش من الـ window بس) ──
+    # نجيب الآيات الكاملة من DB عبر involved
+    # target_text = النص الكامل للآية (uthmani أو الترجمة)
+    verse_parts = []
     for (s_num, a_num), data in involved.items():
-        verse_body_parts.append(f"{data['target_text']} ({fmt_num(a_num)})")
+        verse_parts.append(f"{data['target_text']} ({fmt_num(a_num)})")
 
-    combined_body = " ".join(verse_body_parts)
+    combined_body = " ".join(verse_parts)
 
     # بناء المرجع: نطاق (من-إلى) بدل سرد كل الأرقام
     if len(ayah_nums) == 1:
@@ -358,12 +341,11 @@ def search_bayan(query_text: str,
         last = fmt_num(ayah_nums[-1])
         ref = f"{sura_name}: {first}-{last}"
 
-    full_verse_formatted = f"({combined_body}) 【{ref}】"
-    matched_segment = f"({matched_segment}) 【{ref}】"
+    result_text = f"({combined_body}) 【{ref}】"
 
     is_exact = best_score >= 0.999
     return {
-        "matched_segment": matched_segment,
-        "full_verse": full_verse_formatted,
+        "matched_segment": result_text,
+        "full_verse": result_text,
 
     }
