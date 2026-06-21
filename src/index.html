@@ -1309,17 +1309,16 @@
     function _replaceInEditor(newText) {
       var editor = document.getElementById('editor');
       if (!editor || !_quranCurrentQuery) return false;
-      // Simple: get all text content, find the query, build selection via window.find
       closeQuranModal();
+      // Direct approach: get plain text, replace, set back
+      var plain = editor.textContent || '';
+      if (plain.indexOf(_quranCurrentQuery) === -1) return false;
+      // Replace first occurrence only
+      var newPlain = plain.replace(_quranCurrentQuery, newText);
+      editor.textContent = newPlain;
       editor.focus();
-      // Try window.find to select the text
-      var found = window.find(_quranCurrentQuery, false, false, false, false, false, false);
-      if (found) {
-        document.execCommand('insertText', false, newText);
-        editor.dispatchEvent(new Event('input', { bubbles: true }));
-        return true;
-      }
-      return false;
+      editor.dispatchEvent(new Event('input', { bubbles: true }));
+      return true;
     }
 
     function applyQuranText() {
