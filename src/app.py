@@ -15,12 +15,17 @@ import re
 
 # Quran search
 import sys
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+_quran_root = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, _quran_root)
 try:
     from quran import search_bayan
     logger_quran_ok = True
-except ImportError:
+except Exception as _quran_err:
     logger_quran_ok = False
+    import logging as _ql
+    _ql.getLogger('app').warning(f'[QURAN] Failed to import quran module: {_quran_err}')
+    _ql.getLogger('app').warning(f'[QURAN] Searched path: {_quran_root}')
+    _ql.getLogger('app').warning(f'[QURAN] Files in root: {os.listdir(_quran_root) if os.path.isdir(_quran_root) else "DIR NOT FOUND"}')
 
 # Pipeline hardening modules
 from nlp.pipeline_context import PipelineContext
