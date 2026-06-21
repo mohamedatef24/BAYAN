@@ -139,8 +139,15 @@ function updateSuggestionsList(suggestions) {
   });
 
   const showApplyAll = suggestions.length >= 2;
-  if (applyAllBtn) applyAllBtn.classList.toggle('is-hidden', !showApplyAll);
-  if (applyAllSheet) applyAllSheet.classList.toggle('is-hidden', !showApplyAll);
+  const countLabel = suggestions.length.toLocaleString('ar-EG');
+  if (applyAllBtn) {
+    applyAllBtn.classList.toggle('is-hidden', !showApplyAll);
+    if (showApplyAll) applyAllBtn.textContent = '\u062a\u0637\u0628\u064a\u0642 \u0627\u0644\u0643\u0644 (' + countLabel + ')';
+  }
+  if (applyAllSheet) {
+    applyAllSheet.classList.toggle('is-hidden', !showApplyAll);
+    if (showApplyAll) applyAllSheet.textContent = '\u062a\u0637\u0628\u064a\u0642 \u0627\u0644\u0643\u0644 (' + countLabel + ')';
+  }
 }
 
 function bindSuggestionCardEvents(container) {
