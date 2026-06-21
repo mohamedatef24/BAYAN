@@ -375,7 +375,7 @@ function showTooltip(element) {
   }
 
   if (originalEl) {
-    originalEl.innerHTML = `<span class="popover-original-label">الكلمة:</span> <span class="popover-original-word">${escapeHtml(suggestion.original)}</span>`;
+    originalEl.innerHTML = `<span class="popover-original-word" style="text-decoration:line-through; opacity:0.6;">${escapeHtml(suggestion.original)}</span> <span class="popover-arrow">←</span> <span class="popover-correction-word" style="color:var(--color-success); font-weight:600;">${escapeHtml(suggestion.correction)}</span>`;
   }
 
   // Render alternatives
