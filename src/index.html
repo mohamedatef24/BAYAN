@@ -1241,10 +1241,10 @@
           return;
         }
 
-        // Parse matched_segment: "(verse text) [surah: ayah]"
+        // Parse matched_segment: "(verse text) 【surah: ayah】"
         const seg = data.matched_segment || '';
-        const refMatch = seg.match(/\[([^\]]+)\]/);
-        const verseText = seg.replace(/\s*\[[^\]]+\]\s*$/, '').replace(/^\(/, '').replace(/\)$/, '');
+        const refMatch = seg.match(/【([^】]+)】/);
+        const verseText = seg.replace(/\s*【[^】]+】\s*$/, '').replace(/^\(/, '').replace(/\)$/, '');
         const reference = refMatch ? refMatch[1] : '';
 
         _quranVerseClean = verseText;
@@ -1282,10 +1282,10 @@
           return;
         }
 
-        // Parse translation: "(text (ayah)) [SurahName: ayah]"
+        // Parse translation: "(text (ayah)) 【SurahName: ayah】"
         const seg = data.matched_segment || '';
-        const refMatch = seg.match(/\[([^\]]+)\]/);
-        const transText = seg.replace(/\s*\[[^\]]+\]\s*$/, '').replace(/^\(/, '').replace(/\)$/, '');
+        const refMatch = seg.match(/【([^】]+)】/);
+        const transText = seg.replace(/\s*【[^】]+】\s*$/, '').replace(/^\(/, '').replace(/\)$/, '');
         const transRef = refMatch ? refMatch[1] : '';
 
         textEl.textContent = transText;

@@ -358,8 +358,8 @@ def search_bayan(query_text: str,
         last = fmt_num(ayah_nums[-1])
         ref = f"{sura_name}: {first}-{last}"
 
-    full_verse_formatted = f"({combined_body}) [{ref}]"
-    matched_segment = f"({matched_segment}) [{ref}]"
+    full_verse_formatted = f"({combined_body}) 【{ref}】"
+    matched_segment = f"({matched_segment}) 【{ref}】"
 
     is_exact = best_score >= 0.999
     return {
