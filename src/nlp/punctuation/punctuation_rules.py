@@ -137,19 +137,5 @@ def validate_punctuation_diff(diff: dict) -> bool:
     if punct_delta > MAX_PUNCT_DELTA:
         return False
 
-    # ── Rule 6: Reject mid-word punctuation insertion ──
-    # If the correction ends with a punctuation mark followed by nothing,
-    # but the original word is a PREFIX of a longer word in context,
-    # this indicates mid-word split (e.g. الدفت→الدفت. when word was الدفتر).
-    # Detect by checking if correction has punctuation NOT at word boundary.
-    for pc in ARABIC_PUNCT_CHARS:
-        if pc in correction:
-            # Check if punctuation is followed by an Arabic letter (mid-word)
-            idx = correction.find(pc)
-            if idx >= 0 and idx < len(correction) - 1:
-                next_char = correction[idx + 1]
-                if '\u0600' <= next_char <= '\u06FF':
-                    return False
-
     return True
 
