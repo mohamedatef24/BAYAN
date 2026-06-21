@@ -859,7 +859,10 @@
            </div>
            <p class="text-sm mb-4" style="color: var(--text-secondary);">اكتب نصًا بأي لهجة عربية (مصرية، خليجية، شامية...) وسنحوّله إلى لغة عربية فصحى سليمة.</p>
           </div>
-          <textarea id="dialect-input" class="w-full p-4 rounded-xl text-right text-lg editor-content" dir="rtl" rows="6" placeholder="اكتب النص باللهجة هنا..." style="background: var(--color-surface); border: 1px solid var(--color-border); color: var(--color-text-primary); resize: vertical; font-family: inherit;"></textarea>
+          <textarea id="dialect-input" class="w-full p-4 rounded-xl text-right text-lg editor-content" dir="rtl" rows="6" placeholder="اكتب النص باللهجة هنا..." oninput="updateDialectCharCount()" style="background: var(--color-surface); border: 1px solid var(--color-border); color: var(--color-text-primary); resize: vertical; font-family: inherit;"></textarea>
+          <div class="flex items-center justify-between mt-1 mb-2" dir="rtl">
+           <span id="dialect-char-count" class="text-xs" style="color: var(--text-secondary);">٠ / ٥٬٠٠٠ حرف</span>
+          </div>
           <button id="dialect-convert-btn" onclick="convertDialect()" class="btn-primary w-full py-4 text-lg mt-4 mb-4" type="button">تحويل إلى الفصحى</button>
           <div id="dialect-result-card" class="is-hidden" style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 1rem; padding: 1.5rem;">
            <div class="flex items-center justify-between mb-3">
@@ -1256,6 +1259,16 @@
       if (typeof showToast === 'function') showToast('✓ تم تطبيق النص الفصيح في المحرر');
     }
 
+    function updateDialectCharCount() {
+      var input = document.getElementById('dialect-input');
+      var counter = document.getElementById('dialect-char-count');
+      if (!input || !counter) return;
+      var len = input.value.length;
+      var arabicLen = len.toLocaleString('ar-EG');
+      counter.textContent = arabicLen + ' / ٥٬٠٠٠ حرف';
+      counter.style.color = len > 5000 ? '#ef4444' : 'var(--text-secondary)';
+    }
+
     /* ═══════════════════════════════════════════
        Quran Verification & Translation
        ═══════════════════════════════════════════ */
@@ -1410,10 +1423,17 @@
     }
 
     // Ctrl+Q → Quran verification shortcut (e.code works with any keyboard language)
+    // Escape → Close Quran modal
     document.addEventListener('keydown', (e) => {
       if ((e.ctrlKey || e.metaKey) && e.code === 'KeyQ') {
         e.preventDefault();
         verifyQuranText();
+      }
+      if (e.key === 'Escape') {
+        var modal = document.getElementById('quran-modal');
+        if (modal && !modal.classList.contains('is-hidden')) {
+          closeQuranModal();
+        }
       }
     });
 
