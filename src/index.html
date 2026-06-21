@@ -1314,19 +1314,18 @@
       var editor = document.getElementById('editor-container');
       if (!editor || !_quranCurrentQuery) return false;
       closeQuranModal();
-      // Build the full text with reference
-      var fullText = newText;
-      if (ref) fullText += ' [' + ref + ']';
       // Replace in editor: wrap in quran-applied span to protect from analysis
       var plain = editor.textContent || '';
       var idx = plain.indexOf(_quranCurrentQuery);
       if (idx === -1) return false;
       var before = plain.substring(0, idx);
       var after = plain.substring(idx + _quranCurrentQuery.length);
-      // Build HTML: before (escaped) + quran span + after (escaped)
+      // Build HTML: before + quran span (verse + styled ref) + after
       var esc = function(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+      var refHTML = ref ? ' <span class="quran-ref-inline">[' + esc(ref) + ']</span>' : '';
       editor.innerHTML = esc(before) +
-        '<span class="quran-applied" contenteditable="false" data-quran="true">' + esc(fullText) + '</span>' +
+        '<span class="quran-applied" contenteditable="false" data-quran="true">' +
+        esc(newText) + refHTML + '</span>' +
         esc(after);
       editor.focus();
       editor.dispatchEvent(new Event('input', { bubbles: true }));

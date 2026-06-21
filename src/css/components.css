@@ -3083,6 +3083,13 @@ input[type="range"]::-moz-range-thumb {
   background: none !important;
   cursor: default !important;
 }
+.quran-ref-inline {
+  font-size: 0.72em;
+  opacity: 0.6;
+  font-weight: 600;
+  margin-right: 4px;
+  color: #06b6d4;
+}
 
 .quran-modal-backdrop {
   position: absolute;

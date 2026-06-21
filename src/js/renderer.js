@@ -221,6 +221,8 @@ function walkTextNodes(root, callback) {
 function clearOverlays(editor) {
   const errorSpans = editor.querySelectorAll('.spelling-error, .grammar-error, .punctuation-suggestion');
   errorSpans.forEach(span => {
+    // Skip spans inside quran-applied (they shouldn't be there, but safety)
+    if (span.closest('.quran-applied')) return;
     const parent = span.parentNode;
     while (span.firstChild) {
       parent.insertBefore(span.firstChild, span);
