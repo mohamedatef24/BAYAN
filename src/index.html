@@ -1300,6 +1300,7 @@
         }
         // Show apply translation button
         document.getElementById('quran-apply-trans-btn').classList.remove('is-hidden');
+        document.getElementById('quran-copy-trans-btn').classList.remove('is-hidden');
 
       } catch (err) {
         textEl.innerHTML = '<span class="text-secondary">حدث خطأ في الترجمة</span>';
@@ -1323,13 +1324,25 @@
       });
     }
 
-    // Ctrl+Q → Quran verification shortcut
+    // Ctrl+Q → Quran verification shortcut (e.code works with any keyboard language)
     document.addEventListener('keydown', (e) => {
-      if ((e.ctrlKey || e.metaKey) && (e.key === 'q' || e.key === 'Q')) {
+      if ((e.ctrlKey || e.metaKey) && e.code === 'KeyQ') {
         e.preventDefault();
         verifyQuranText();
       }
     });
+
+    function copyQuranTranslation() {
+      const trans = _quranTransClean || '';
+      const ref = _quranTransRef ? ' [' + _quranTransRef + ']' : '';
+      const text = trans + ref;
+      if (!text.trim()) return;
+      navigator.clipboard.writeText(text).then(() => {
+        if (typeof showToast === 'function') showToast('✓ تم نسخ الترجمة');
+        const btn = document.getElementById('quran-copy-trans-btn');
+        if (btn) { btn.textContent = '✅'; setTimeout(() => { btn.textContent = '📋'; }, 1500); }
+      });
+    }
 
     function _replaceInEditor(newText, ref) {
       var editor = document.getElementById('editor-container');
@@ -1790,7 +1803,8 @@
      <div id="quran-translation-result" class="is-hidden p-4 rounded-xl" style="background:rgba(6,182,212,0.06); border:1px solid rgba(6,182,212,0.15);">
       <p id="quran-translation-text" style="font-size:20px; line-height:2; color:var(--color-text-primary); text-align:center;"></p>
       <p id="quran-translation-ref" class="quran-reference" style="display:none;"></p>
-      <div class="flex items-center justify-center mt-3">
+      <div class="flex items-center justify-center gap-2 mt-3">
+       <button id="quran-copy-trans-btn" onclick="copyQuranTranslation()" class="quran-copy-btn is-hidden" type="button" title="نسخ الترجمة">📋</button>
        <button id="quran-apply-trans-btn" onclick="applyQuranTranslation()" class="quran-apply-btn is-hidden" type="button">تطبيق الترجمة ✓</button>
       </div>
      </div>
