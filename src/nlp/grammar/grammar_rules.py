@@ -289,5 +289,11 @@ class ArabicGrammarGuard:
         text = self.fix_subject_verb_agreement(text)  # Fix G1
         text = self.regex_rules_fallback(text)
         text = re.sub(r'\s+', ' ', text).strip()
+
+        # ── Phase 8 FIX (P3): Remove spaces before Arabic punctuation ──
+        # The grammar model sometimes inserts spaces before punctuation:
+        #   'حالك ؟' → 'حالك؟'   'مرحبا ،' → 'مرحبا،'
+        text = re.sub(r'\s+([،؛؟!.:,;?])', r'\1', text)
+
         return text
 

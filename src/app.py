@@ -1222,6 +1222,15 @@ def analyze_text():
                 'status': 'success'
             })
 
+        # ── Phase 8 FIX (P3): Skip text with zero Arabic content ──
+        # Numbers-only, emojis-only, etc. should not receive punctuation suggestions
+        if arabic_chars == 0:
+            return jsonify({
+                'original': text, 'corrected': text,
+                'suggestions': [], 'timing_ms': {},
+                'status': 'success'
+            })
+
         # Pipeline state — PipelineContext carries all shared state
         ctx = PipelineContext(text)
         current_text = text  # Local alias (updated alongside ctx.current_text)
@@ -1314,13 +1323,19 @@ def analyze_text():
                                 # 1-word → 1-word: accept only small edits (typos)
                                 o_word = o_segment[0]
                                 c_word = c_segment[0]
-                                _spell_conf = _is_small_spelling_change(o_word, c_word, spell_checker.vocab_manager)
-                                if _spell_conf:
-                                    logger.info(f"[SPELLING] Accepted: '{o_word}'→'{c_word}' (conf={_spell_conf})")
+
+                                # ── Phase 8 FIX (P2): Skip non-Arabic tokens ──
+                                # Protect foreign words/abbreviations (CSS, Python, etc.)
+                                _has_arabic = bool(re.search(r'[\u0600-\u06FF]', o_word))
+                                if not _has_arabic:
+                                    logger.info(f"[SPELLING] Skipped non-Arabic token: '{o_word}'")
+                                    new_words.append(current_text[start_idx:end_idx])
+                                elif (spell_conf := _is_small_spelling_change(o_word, c_word, spell_checker.vocab_manager)):
+                                    logger.info(f"[SPELLING] Accepted: '{o_word}'→'{c_word}' (conf={spell_conf})")
                                     new_words.append(c_word)
                                     ctx.add_patch(
                                         'spelling', start_idx, end_idx,
-                                        c_word, confidence=_spell_conf,
+                                        c_word, confidence=spell_conf,
                                         alternatives=_get_spelling_alternatives(o_word, c_word, spell_checker),
                                     )
                                 else:
@@ -1494,6 +1509,21 @@ def analyze_text():
                                     f"(jaccard={jaccard:.2f})"
                                 )
                                 continue
+
+                    # ── Phase 8 FIX (BUG #1): Reject punctuation-only diffs ──
+                    # The grammar model often strips trailing periods or adds
+                    # spaces before punctuation. These are NOT grammar fixes.
+                    # Filter: if the only difference is punctuation characters
+                    # or spacing around punctuation, skip this diff.
+                    _PUNCT_CHARS = set('.,،؛؟!:;? ')
+                    _orig_alpha = ''.join(c for c in orig_text if c not in _PUNCT_CHARS)
+                    _corr_alpha = ''.join(c for c in corr_text if c not in _PUNCT_CHARS)
+                    if _orig_alpha == _corr_alpha:
+                        logger.info(
+                            f"[GRAMMAR] Rejected punctuation-only diff: "
+                            f"'{orig_text}'→'{corr_text}' (not a grammar issue)"
+                        )
+                        continue
 
                     # ── Phase 4 (BUG-033/E10): Grammar output sanity check ──
                     # Reject grammar corrections that produce a non-word when
