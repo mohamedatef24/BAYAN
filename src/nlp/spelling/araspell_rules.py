@@ -156,15 +156,44 @@ class AraSpellPostProcessor:
         'الاولى': 'الأولى',
         'الاخير': 'الأخير', 'الاخيرة': 'الأخيرة',
         'واصدقائي': 'وأصدقائي',
+        # ── Phase 8 FIX (P1): Additional common hamza errors ──
+        'اردت': 'أردت', 'اراد': 'أراد',
+        'امتحان': 'امتحان',  # الامتحان handled via prefix
+        'اروح': 'أروح',
+        'اكتب': 'أكتب', 'اقرا': 'أقرأ',
+        'استطيع': 'أستطيع', 'استطعت': 'استطعت',
+        'انسان': 'إنسان',
+        'اسلام': 'إسلام', 'اسلامي': 'إسلامي',
+        'اعمال': 'أعمال',
+        'انتاج': 'إنتاج',
+        'اقتصاد': 'اقتصاد',  # الاقتصاد handled via prefix
+        'امكان': 'إمكان',
+        'احتياج': 'احتياج',
+        'ادارة': 'إدارة',
+        'اعلان': 'إعلان',
+        'ارسال': 'إرسال',
+        'انجاز': 'إنجاز',
+        # Prefixed forms (explicit entries for common ones)
+        'وانا': 'وأنا', 'فانا': 'فأنا',
+        'وانت': 'وأنت', 'فانت': 'فأنت',
+        'وانه': 'وأنه', 'فانه': 'فأنه',
+        'واذا': 'وإذا', 'فاذا': 'فإذا',
+        'بالامتحان': 'بالامتحان',  # doesn't need hamza fix
+        'الامتحان': 'الامتحان',  # امتحان starts with ا not hamza
     }
     
     @staticmethod
     def fix_hamza_conservative(text: str) -> str:
-        """Conservative Hamza normalization — only at word END, not middle."""
+        """Conservative Hamza normalization — only at word END, not middle.
+        Phase 8 FIX: Skip words with tanween (ً) to prevent جميلاً → جميلا."""
         words = text.split()
         result = []
         for word in words:
             if len(word) >= 3:
+                # Skip words ending with tanween+alef (اً) — these are correct
+                if word.endswith('اً') or word.endswith('ً'):
+                    result.append(word)
+                    continue
                 if word.endswith('أ'):
                     word = word[:-1] + 'ا'
                 if word.endswith('إ'):
