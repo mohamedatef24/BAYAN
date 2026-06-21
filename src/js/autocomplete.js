@@ -360,6 +360,9 @@
     // Build the text to insert: [optional space] + word + space
     var textToInsert = (needsSpaceBefore ? ' ' : '') + word + ' ';
 
+    // Save undo state before inserting
+    if (typeof pushUndoState === 'function') pushUndoState();
+
     // Use execCommand for reliable insertion in contenteditable
     // This preserves undo history and handles cursor position correctly
     document.execCommand('insertText', false, textToInsert);
