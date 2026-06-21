@@ -1194,7 +1194,96 @@
     }
     function convertDialect(){var i=document.getElementById('dialect-input').value.trim();if(!i){if(typeof showToast==='function')showToast('الرجاء كتابة نص أولاً');return;}var r=document.getElementById('dialect-result-card');var d=document.getElementById('dialect-result');d.innerHTML='<p class="text-secondary text-center">⏳ جاري التحويل...</p>';r.classList.remove('is-hidden');setTimeout(function(){d.innerHTML='<p class="text-secondary text-center">🚧 هذه الميزة قيد التطوير — ستتوفر قريبًا</p>';},1000);}
     function copyDialectResult(){var t=document.getElementById('dialect-result');if(t){navigator.clipboard.writeText(t.innerText);if(typeof showToast==='function')showToast('✓ تم النسخ');}}
-    function verifyQuranText(){var s=window.getSelection();var t=s?s.toString().trim():'';if(!t){if(typeof showToast==='function')showToast('علّم على النص القرآني أولاً');return;}if(typeof showToast==='function')showToast('🚧 تدقيق النص القرآني — قيد التطوير');}
+
+    /* ═══════════════════════════════════════════
+       Quran Verification & Translation
+       ═══════════════════════════════════════════ */
+    let _quranCurrentQuery = '';
+
+    async function verifyQuranText() {
+      const sel = window.getSelection();
+      const text = sel ? sel.toString().trim() : '';
+      if (!text) {
+        if (typeof showToast === 'function') showToast('علّم على النص القرآني أولاً');
+        return;
+      }
+      _quranCurrentQuery = text;
+
+      // Show modal with loading
+      const modal = document.getElementById('quran-modal');
+      document.getElementById('quran-input-display').textContent = text;
+      document.getElementById('quran-uthmani-text').innerHTML = '<span class="text-secondary">⏳ جاري البحث...</span>';
+      document.getElementById('quran-reference').textContent = '';
+      document.getElementById('quran-translation-result').classList.add('is-hidden');
+      document.getElementById('quran-lang-select').value = '';
+      modal.classList.remove('is-hidden');
+      document.body.style.overflow = 'hidden';
+
+      try {
+        const res = await fetch('/api/quran', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: text, language: 'تدقيق الايات' })
+        });
+        const data = await res.json();
+
+        if (data.error) {
+          document.getElementById('quran-uthmani-text').innerHTML =
+            '<span class="text-secondary">' + data.error + '</span>';
+          return;
+        }
+
+        // Parse matched_segment: "(verse text) [surah: ayah]"
+        const seg = data.matched_segment || '';
+        const refMatch = seg.match(/\[([^\]]+)\]/);
+        const verseText = seg.replace(/\s*\[[^\]]+\]\s*$/, '').replace(/^\(/, '').replace(/\)$/, '');
+        const reference = refMatch ? refMatch[1] : '';
+
+        document.getElementById('quran-uthmani-text').textContent = verseText;
+        document.getElementById('quran-reference').textContent = reference ? '[' + reference + ']' : '';
+
+      } catch (err) {
+        document.getElementById('quran-uthmani-text').innerHTML =
+          '<span class="text-secondary">حدث خطأ أثناء البحث — تأكد من الاتصال</span>';
+      }
+    }
+
+    async function translateQuranVerse() {
+      const lang = document.getElementById('quran-lang-select').value;
+      if (!lang || !_quranCurrentQuery) return;
+
+      const resultDiv = document.getElementById('quran-translation-result');
+      const textEl = document.getElementById('quran-translation-text');
+      textEl.innerHTML = '<span class="text-secondary">⏳ جاري الترجمة...</span>';
+      resultDiv.classList.remove('is-hidden');
+
+      try {
+        const res = await fetch('/api/quran', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: _quranCurrentQuery, language: lang })
+        });
+        const data = await res.json();
+
+        if (data.error) {
+          textEl.innerHTML = '<span class="text-secondary">' + data.error + '</span>';
+          return;
+        }
+
+        // Parse translation text (remove brackets)
+        const seg = data.matched_segment || '';
+        const transText = seg.replace(/\s*\[[^\]]+\]\s*$/, '').replace(/^\(/, '').replace(/\)$/, '');
+        textEl.textContent = transText;
+
+      } catch (err) {
+        textEl.innerHTML = '<span class="text-secondary">حدث خطأ في الترجمة</span>';
+      }
+    }
+
+    function closeQuranModal() {
+      document.getElementById('quran-modal').classList.add('is-hidden');
+      document.body.style.overflow = '';
+    }
     
 
 
@@ -1555,5 +1644,56 @@
       }
     });
   </script>
+  <!-- Quran Verification Modal -->
+  <div id="quran-modal" class="quran-modal is-hidden" role="dialog" aria-label="نتيجة التدقيق القرآني" aria-modal="true">
+   <div class="quran-modal-backdrop" onclick="closeQuranModal()"></div>
+   <div class="quran-modal-panel" dir="rtl">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-4">
+     <div class="flex items-center gap-2">
+      <svg width="20" height="20" fill="none" stroke="#06b6d4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+      <span class="text-lg font-bold">تدقيق النص القرآني</span>
+     </div>
+     <button onclick="closeQuranModal()" class="btn-ghost" style="font-size:18px;padding:4px 8px;" aria-label="إغلاق">✕</button>
+    </div>
+    <!-- Input text -->
+    <div class="p-3 rounded-xl mb-4" style="background: rgba(255,255,255,0.04); border: 1px solid var(--color-border);">
+     <span class="text-xs" style="color:var(--text-secondary);">📝 النص المحدد:</span>
+     <p id="quran-input-display" class="text-base mt-1" style="color:var(--color-text-primary);"></p>
+    </div>
+    <!-- Uthmani Result -->
+    <div class="quran-result-card">
+     <div class="text-sm font-bold mb-3" style="color:#06b6d4;">✓ النص القرآني المدقق</div>
+     <p id="quran-uthmani-text" class="quran-uthmani"></p>
+     <p id="quran-reference" class="quran-reference"></p>
+    </div>
+    <!-- Translation -->
+    <div class="mt-4 pt-4" style="border-top:1px solid var(--color-border);">
+     <div class="flex items-center gap-3 mb-3 flex-wrap">
+      <svg width="16" height="16" fill="none" stroke="#06b6d4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/></svg>
+      <span class="text-sm font-bold">ترجمة الآية</span>
+      <select id="quran-lang-select" onchange="translateQuranVerse()" class="quran-lang-select">
+       <option value="">— اختر لغة —</option>
+       <option value="english">🇬🇧 English</option>
+       <option value="french">🇫🇷 Français</option>
+       <option value="turkish">🇹🇷 Türkçe</option>
+       <option value="persian">🇮🇷 فارسی</option>
+       <option value="russian">🇷🇺 Русский</option>
+       <option value="spanish">🇪🇸 Español</option>
+       <option value="german">🇩🇪 Deutsch</option>
+       <option value="indonesian">🇮🇩 Indonesia</option>
+       <option value="malay">🇲🇾 Melayu</option>
+       <option value="bengali">🇧🇩 বাংলা</option>
+       <option value="bosnian">🇧🇦 Bosanski</option>
+       <option value="portuguese">🇵🇹 Português</option>
+       <option value="uzbek">🇺🇿 O'zbek</option>
+      </select>
+     </div>
+     <div id="quran-translation-result" class="is-hidden p-4 rounded-xl" style="background:rgba(6,182,212,0.06); border:1px solid rgba(6,182,212,0.15);">
+      <p id="quran-translation-text" class="text-base" style="line-height:1.9; color:var(--color-text-primary);"></p>
+     </div>
+    </div>
+   </div>
+  </div>
  </body>
 </html>
