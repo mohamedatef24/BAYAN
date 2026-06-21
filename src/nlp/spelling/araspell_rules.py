@@ -184,12 +184,27 @@ class AraSpellPostProcessor:
         Also handles prefixed words: و/ف/ب/ك/ل + whitelist word.
         e.g. واصدقائي → وأصدقائي, بالاسعار → بالأسعار
         """
+        # Words that must NOT be decomposed by prefix stripping
+        # كان (was) ≠ ك+أن, بان (appeared) ≠ ب+أن, لان (softened) ≠ ل+أن, فان (van) ≠ ف+أن
+        HAMZA_PREFIX_BLACKLIST = {
+            'كان', 'كانت', 'كانوا', 'كانا',
+            'بان', 'بانت', 'بانوا',
+            'لان', 'لانت',
+            'فان', 'فانت',
+            'وان', 'وانت',
+            'كانه', 'كانها', 'كانهم',
+        }
         words = text.split()
         result = []
         for word in words:
             # Check exact match first
             if word in AraSpellPostProcessor.HAMZA_WHITELIST:
                 result.append(AraSpellPostProcessor.HAMZA_WHITELIST[word])
+                continue
+
+            # Skip words in the blacklist — they are valid as-is
+            if word in HAMZA_PREFIX_BLACKLIST:
+                result.append(word)
                 continue
 
             # Try stripping common prefixes and looking up the remainder
