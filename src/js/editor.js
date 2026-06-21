@@ -79,6 +79,8 @@ function initEditor() {
     }
   } catch (e) {}
 
+  // Debounced undo push — saves state after 500ms of no typing
+  let _undoInputTimer = null;
   editor.addEventListener('input', () => {
     // Pipeline Hardening v3.3: Skip re-analysis when programmatically applying suggestions
     if (_isApplyingSuggestion) return;
@@ -86,6 +88,9 @@ function initEditor() {
     updateEditorStats();
     updatePlaceholder();
     analyzeTextDelayed();
+    // Push undo state after typing pauses
+    clearTimeout(_undoInputTimer);
+    _undoInputTimer = setTimeout(pushUndoState, 500);
     try {
       localStorage.setItem('bayan_editor_draft', editor.innerHTML);
     } catch (e) {}

@@ -8,6 +8,7 @@
  * @param {boolean} [keepSelection] - if true, don't collapse selection
  */
 function execFormat(command, value, keepSelection) {
+  pushUndoState(); // Save state before formatting
   document.execCommand(command, false, value !== undefined ? value : null);
   const editor = getEditorElement();
   if (editor) editor.focus();
@@ -29,9 +30,9 @@ function formatItalic() { execFormat('italic'); }
 function formatUnderline() { execFormat('underline'); }
 function formatStrikethrough() { execFormat('strikethrough'); }
 
-/* ── Undo / Redo (handles both typing and formatting) ── */
-function formatUndo() { execFormat('undo', undefined, true); }
-function formatRedo() { execFormat('redo', undefined, true); }
+/* ── Undo / Redo (uses custom stack — same as Ctrl+Z/Y) ── */
+function formatUndo() { editorUndo(); }
+function formatRedo() { editorRedo(); }
 
 /* ── Alignment (applies to paragraph containing selection/cursor) ── */
 function formatAlignRight() { execFormat('justifyRight'); }
