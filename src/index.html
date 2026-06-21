@@ -856,12 +856,12 @@
            <div class="flex items-center gap-2 mb-3">
             <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--color-primary);"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/></svg>
             <span class="text-base font-bold">تحويل اللهجات للفصحى</span>
-            <span class="text-xs px-2 py-0.5 rounded-full" style="background: rgba(var(--color-primary-rgb, 99, 102, 241), 0.15); color: var(--color-primary);">قيد التطوير</span>
+            <span class="text-xs px-2 py-0.5 rounded-full" style="background: rgba(34, 197, 94, 0.15); color: #22c55e;">جديد ✨</span>
            </div>
            <p class="text-sm mb-4" style="color: var(--text-secondary);">اكتب نصًا بأي لهجة عربية (مصرية، خليجية، شامية...) وسنحوّله إلى لغة عربية فصحى سليمة.</p>
           </div>
           <textarea id="dialect-input" class="w-full p-4 rounded-xl text-right text-lg editor-content" dir="rtl" rows="6" placeholder="اكتب النص باللهجة هنا..." style="background: var(--color-surface); border: 1px solid var(--color-border); color: var(--color-text-primary); resize: vertical; font-family: inherit;"></textarea>
-          <button onclick="convertDialect()" class="btn-primary w-full py-4 text-lg mt-4 mb-4" type="button">تحويل إلى الفصحى</button>
+          <button id="dialect-convert-btn" onclick="convertDialect()" class="btn-primary w-full py-4 text-lg mt-4 mb-4" type="button">تحويل إلى الفصحى</button>
           <div id="dialect-result-card" class="is-hidden" style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 1rem; padding: 1.5rem;">
            <div class="flex items-center justify-between mb-3">
             <h3 class="text-base font-bold" style="color: var(--color-primary);">✓ النص بالعربية الفصحى</h3>
@@ -1203,9 +1203,11 @@
       var resultCard = document.getElementById('dialect-result-card');
       var resultDiv = document.getElementById('dialect-result');
       var applyBtn = document.getElementById('dialect-apply-btn');
+      var convertBtn = document.getElementById('dialect-convert-btn');
       resultDiv.innerHTML = '<p class="text-secondary text-center">⏳ جاري التحويل...</p>';
       resultCard.classList.remove('is-hidden');
       if (applyBtn) applyBtn.classList.add('is-hidden');
+      if (convertBtn) { convertBtn.disabled = true; convertBtn.textContent = '⏳ جاري التحويل...'; }
 
       try {
         var resp = await fetch('/api/dialect', {
@@ -1226,6 +1228,8 @@
       } catch (err) {
         _dialectResult = '';
         resultDiv.innerHTML = '<p class="text-secondary text-center">حدث خطأ — تأكد من الاتصال</p>';
+      } finally {
+        if (convertBtn) { convertBtn.disabled = false; convertBtn.textContent = 'تحويل إلى الفصحى'; }
       }
     }
 
