@@ -1347,6 +1347,7 @@
     function _replaceInEditor(newText, ref) {
       var editor = document.getElementById('editor-container');
       if (!editor || !_quranCurrentQuery) return false;
+      pushUndoState(); // Save state before Quran replace
       closeQuranModal();
       // Replace in editor: wrap in quran-applied span to protect from analysis
       var plain = editor.textContent || '';
