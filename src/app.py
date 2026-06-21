@@ -1664,6 +1664,13 @@ def analyze_text():
             from nlp.punctuation.punctuation_service import get_punctuation_model
             punc_checker = get_punctuation_model()
             corrected_punc = punc_checker.correct(ctx.current_text)
+            # ── Post-process: strip duplicate trailing punctuation ──
+            # Model sometimes turns "..." into "...." or "." into ".."
+            import re as _punc_re
+            # Collapse non-dot duplicate punctuation: ,, → , ;; → ; etc.
+            corrected_punc = _punc_re.sub(r'([،؛:!?؟])\1+', r'\1', corrected_punc)
+            # Collapse 4+ dots into ellipsis (3 dots), preserve intentional ...
+            corrected_punc = _punc_re.sub(r'\.{4,}', '...', corrected_punc)
             timing_ms['punctuation_ms'] = int((time.time() - t0) * 1000)
             logger.info(f"[ANALYZE] Step 3: Punctuation done in {timing_ms['punctuation_ms']}ms")
             if corrected_punc != ctx.current_text:

@@ -768,8 +768,8 @@
 }
 
 #tooltip-original {
-  text-decoration: line-through;
-  color: var(--color-error);
+  text-decoration: none;
+  color: var(--color-text-secondary);
 }
 
 .popover-alternatives {
@@ -860,8 +860,8 @@
 }
 
 .popover-original-word {
-  text-decoration: line-through;
-  color: var(--color-error);
+  text-decoration: none;
+  color: var(--color-text-primary);
   font-weight: var(--font-weight-semibold);
 }
 
