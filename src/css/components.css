@@ -3052,3 +3052,97 @@ input[type="range"]::-moz-range-thumb {
     display: none !important;
   }
 }
+
+/* ── Quran Verification Modal ── */
+.quran-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.quran-modal.is-hidden { display: none; }
+
+.quran-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.quran-modal-panel {
+  position: relative;
+  width: 100%;
+  max-width: 580px;
+  max-height: 85vh;
+  overflow-y: auto;
+  background: var(--color-surface);
+  border-radius: 1.5rem;
+  border: 1px solid var(--color-border);
+  padding: 1.5rem;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
+  animation: quranModalIn 0.25s ease-out;
+}
+
+@keyframes quranModalIn {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.quran-result-card {
+  background: rgba(6, 182, 212, 0.08);
+  border-right: 4px solid #06b6d4;
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+}
+
+.quran-uthmani {
+  font-family: 'Traditional Arabic', 'Amiri', 'Scheherazade New', serif;
+  font-size: 24px;
+  line-height: 2.2;
+  color: var(--color-text-primary);
+  text-align: center;
+  direction: rtl;
+}
+
+.quran-reference {
+  color: var(--text-secondary);
+  font-size: 14px;
+  text-align: center;
+  margin-top: 8px;
+  font-weight: 600;
+}
+
+.quran-lang-select {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.quran-lang-select:hover {
+  border-color: #06b6d4;
+}
+.quran-lang-select:focus {
+  outline: none;
+  border-color: #06b6d4;
+  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.15);
+}
+
+@media (max-width: 640px) {
+  .quran-modal-panel {
+    max-width: 100%;
+    border-radius: 1.25rem;
+    padding: 1.25rem;
+  }
+  .quran-uthmani {
+    font-size: 20px;
+  }
+}

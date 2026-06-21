@@ -14,3 +14,4 @@ python-Levenshtein
 gunicorn
 python-dotenv
 gradio_client
+rapidfuzz

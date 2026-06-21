@@ -13,6 +13,15 @@ import traceback
 import difflib
 import re
 
+# Quran search
+import sys
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+try:
+    from quran import search_bayan
+    logger_quran_ok = True
+except ImportError:
+    logger_quran_ok = False
+
 # Pipeline hardening modules
 from nlp.pipeline_context import PipelineContext
 from nlp.punctuation.punctuation_rules import validate_punctuation_diff
@@ -1057,6 +1066,46 @@ def _is_orthographic_variant(word1: str, word2: str) -> bool:
         else:
             return False  # Non-orthographic difference = grammar
     return diff_count > 0  # At least one orthographic difference
+
+
+@app.route('/api/quran', methods=['POST'])
+def quran_verify():
+    """
+    Quran text verification and translation.
+    Accepts: {text: str, language: str (optional, default='تدقيق الايات')}
+    Returns: {matched_segment, full_verse} or {error}
+    """
+    try:
+        if not logger_quran_ok:
+            return jsonify({'error': 'Quran search module not available'}), 503
+
+        data = request.get_json(force=True)
+        text = data.get('text', '').strip()
+        language = data.get('language', 'تدقيق الايات').strip()
+
+        if not text:
+            return jsonify({'error': 'النص المُدخل فارغ'}), 400
+
+        if len(text) > 2000:
+            return jsonify({'error': 'النص طويل جداً (الحد الأقصى 2000 حرف)'}), 400
+
+        app.logger.info(f'[QURAN] Query: "{text[:60]}..." lang={language}')
+        start_time = time.time()
+
+        result = search_bayan(text, target_type=language)
+
+        elapsed = int((time.time() - start_time) * 1000)
+        app.logger.info(f'[QURAN] Done in {elapsed}ms')
+
+        if 'error' in result:
+            return jsonify(result), 404
+
+        return jsonify(result)
+
+    except Exception as e:
+        app.logger.error(f'[QURAN] Error: {e}')
+        app.logger.error(traceback.format_exc())
+        return jsonify({'error': 'حدث خطأ أثناء البحث في القرآن الكريم'}), 500
 
 
 @app.route('/api/analyze', methods=['POST'])
