@@ -1033,6 +1033,12 @@ def _is_small_spelling_change(orig_word, corr_word, vocab_manager=None):
         ('ء', 'أ'), ('أ', 'ء'),  # standalone hamza ↔ hamza on alef
         ('ء', 'ؤ'), ('ؤ', 'ء'),  # standalone hamza ↔ hamza on waw
         ('ء', 'ئ'), ('ئ', 'ء'),  # standalone hamza ↔ hamza on ya
+        # Common Arabic letter confusions (sound-alike pairs)
+        ('ص', 'س'), ('س', 'ص'),  # emphatic/plain sibilant (المدرصة→المدرسة)
+        ('ض', 'ظ'), ('ظ', 'ض'),  # emphatic pair confusion
+        ('ذ', 'ز'), ('ز', 'ذ'),  # voiced fricatives
+        ('ث', 'س'), ('س', 'ث'),  # voiceless fricatives
+        ('ط', 'ت'), ('ت', 'ط'),  # emphatic/plain stop
     }
     # Check every character pair — reject if ANY non-orthographic change
     if len(orig_word) != len(corr_word):
