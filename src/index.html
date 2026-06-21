@@ -1285,20 +1285,29 @@
       document.getElementById('quran-reference').textContent = '';
       document.getElementById('quran-translation-result').classList.add('is-hidden');
       document.getElementById('quran-lang-select').value = '';
+      // Hide apply/copy until result
+      var _applyBtn = document.getElementById('quran-apply-btn');
+      var _copyBtn = document.getElementById('quran-copy-btn');
+      if (_applyBtn) _applyBtn.classList.add('is-hidden');
+      if (_copyBtn) _copyBtn.classList.add('is-hidden');
       modal.classList.remove('is-hidden');
       document.body.style.overflow = 'hidden';
 
+      var _qAbort = new AbortController();
+      var _qTimeout = setTimeout(function(){ _qAbort.abort(); }, 30000);
       try {
         const res = await fetch('/api/quran', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: text, language: 'تدقيق الايات' })
+          body: JSON.stringify({ text: text, language: 'تدقيق الايات' }),
+          signal: _qAbort.signal
         });
         const data = await res.json();
 
         if (data.error) {
+          var _escErr = data.error.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
           document.getElementById('quran-uthmani-text').innerHTML =
-            '<span class="text-secondary">' + data.error + '</span>';
+            '<span class="text-secondary">' + _escErr + '</span>';
           return;
         }
 
@@ -1317,8 +1326,11 @@
         document.getElementById('quran-copy-btn').classList.remove('is-hidden');
 
       } catch (err) {
+        var _qMsg = err.name === 'AbortError' ? 'انتهى وقت الانتظار — حاول مرة أخرى' : 'حدث خطأ أثناء البحث — تأكد من الاتصال';
         document.getElementById('quran-uthmani-text').innerHTML =
-          '<span class="text-secondary">حدث خطأ أثناء البحث — تأكد من الاتصال</span>';
+          '<span class="text-secondary">' + _qMsg + '</span>';
+      } finally {
+        clearTimeout(_qTimeout);
       }
     }
 
@@ -1330,17 +1342,26 @@
       const textEl = document.getElementById('quran-translation-text');
       textEl.innerHTML = '<span class="text-secondary">⏳ جاري الترجمة...</span>';
       resultDiv.classList.remove('is-hidden');
+      // Hide apply/copy translation until result
+      var _applyTransBtn = document.getElementById('quran-apply-trans-btn');
+      var _copyTransBtn = document.getElementById('quran-copy-trans-btn');
+      if (_applyTransBtn) _applyTransBtn.classList.add('is-hidden');
+      if (_copyTransBtn) _copyTransBtn.classList.add('is-hidden');
 
+      var _tAbort = new AbortController();
+      var _tTimeout = setTimeout(function(){ _tAbort.abort(); }, 30000);
       try {
         const res = await fetch('/api/quran', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: _quranCurrentQuery, language: lang })
+          body: JSON.stringify({ text: _quranCurrentQuery, language: lang }),
+          signal: _tAbort.signal
         });
         const data = await res.json();
 
         if (data.error) {
-          textEl.innerHTML = '<span class="text-secondary">' + data.error + '</span>';
+          var _escTErr = data.error.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+          textEl.innerHTML = '<span class="text-secondary">' + _escTErr + '</span>';
           return;
         }
 
@@ -1364,7 +1385,10 @@
         document.getElementById('quran-copy-trans-btn').classList.remove('is-hidden');
 
       } catch (err) {
-        textEl.innerHTML = '<span class="text-secondary">حدث خطأ في الترجمة</span>';
+        var _tMsg = err.name === 'AbortError' ? 'انتهى وقت الانتظار — حاول مرة أخرى' : 'حدث خطأ في الترجمة';
+        textEl.innerHTML = '<span class="text-secondary">' + _tMsg + '</span>';
+      } finally {
+        clearTimeout(_tTimeout);
       }
     }
 
