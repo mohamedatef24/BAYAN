@@ -1202,6 +1202,8 @@
     let _quranSavedRange = null;
     let _quranVerseClean = '';
     let _quranTransClean = '';
+    let _quranRef = '';
+    let _quranTransRef = '';
 
     async function verifyQuranText() {
       const sel = window.getSelection();
@@ -1246,6 +1248,7 @@
         const reference = refMatch ? refMatch[1] : '';
 
         _quranVerseClean = verseText;
+        _quranRef = reference;
         document.getElementById('quran-uthmani-text').textContent = verseText;
         document.getElementById('quran-reference').textContent = reference ? '[' + reference + ']' : '';
         // Show apply button
@@ -1287,6 +1290,7 @@
 
         textEl.textContent = transText;
         _quranTransClean = transText;
+        _quranTransRef = transRef;
         // Show reference in translated language
         const refEl = document.getElementById('quran-translation-ref');
         if (refEl) {
@@ -1306,16 +1310,24 @@
       document.body.style.overflow = '';
     }
 
-    function _replaceInEditor(newText) {
+    function _replaceInEditor(newText, ref) {
       var editor = document.getElementById('editor-container');
       if (!editor || !_quranCurrentQuery) return false;
       closeQuranModal();
-      // Direct approach: get plain text, replace, set back
+      // Build the full text with reference
+      var fullText = newText;
+      if (ref) fullText += ' [' + ref + ']';
+      // Replace in editor: wrap in quran-applied span to protect from analysis
       var plain = editor.textContent || '';
-      if (plain.indexOf(_quranCurrentQuery) === -1) return false;
-      // Replace first occurrence only
-      var newPlain = plain.replace(_quranCurrentQuery, newText);
-      editor.textContent = newPlain;
+      var idx = plain.indexOf(_quranCurrentQuery);
+      if (idx === -1) return false;
+      var before = plain.substring(0, idx);
+      var after = plain.substring(idx + _quranCurrentQuery.length);
+      // Build HTML: before (escaped) + quran span + after (escaped)
+      var esc = function(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+      editor.innerHTML = esc(before) +
+        '<span class="quran-applied" contenteditable="false" data-quran="true">' + esc(fullText) + '</span>' +
+        esc(after);
       editor.focus();
       editor.dispatchEvent(new Event('input', { bubbles: true }));
       return true;
@@ -1326,7 +1338,7 @@
         if (typeof showToast === 'function') showToast('لا يوجد نص للتطبيق');
         return;
       }
-      if (_replaceInEditor(_quranVerseClean)) {
+      if (_replaceInEditor(_quranVerseClean, _quranRef)) {
         if (typeof showToast === 'function') showToast('✓ تم تطبيق النص القرآني المدقق');
       } else {
         if (typeof showToast === 'function') showToast('لم يتم العثور على النص الأصلي');
@@ -1338,7 +1350,7 @@
         if (typeof showToast === 'function') showToast('لا يوجد ترجمة للتطبيق');
         return;
       }
-      if (_replaceInEditor(_quranTransClean)) {
+      if (_replaceInEditor(_quranTransClean, _quranTransRef)) {
         if (typeof showToast === 'function') showToast('✓ تم تطبيق الترجمة');
       } else {
         if (typeof showToast === 'function') showToast('لم يتم العثور على النص الأصلي');

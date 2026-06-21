@@ -3065,6 +3065,25 @@ input[type="range"]::-moz-range-thumb {
 }
 .quran-modal.is-hidden { display: none; }
 
+/* Quran applied text — protected from analysis */
+.quran-applied {
+  display: inline;
+  background: rgba(6, 182, 212, 0.1);
+  border-bottom: 2px solid rgba(6, 182, 212, 0.4);
+  border-radius: 4px;
+  padding: 1px 4px;
+  cursor: default;
+  user-select: text;
+}
+.quran-applied .spelling-error,
+.quran-applied .grammar-error,
+.quran-applied .punctuation-suggestion {
+  text-decoration: none !important;
+  border-bottom: none !important;
+  background: none !important;
+  cursor: default !important;
+}
+
 .quran-modal-backdrop {
   position: absolute;
   inset: 0;
