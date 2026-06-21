@@ -305,6 +305,11 @@ def search_bayan(query_text: str,
 
     matched_words = best_rows[best_match_idx: best_match_idx + n]
 
+    # دالة تنسيق الرقم حسب اللغة
+    def fmt_num(n):
+        """Arabic-Indic for uthmani, Latin for translations"""
+        return to_arabic_nums(n) if lang_code == "uthmani" else str(n)
+
     # بناء matched_segment مع رقم كل آية
     aya_words: dict[tuple, list] = {}
     for w in matched_words:
@@ -315,7 +320,7 @@ def search_bayan(query_text: str,
 
     if lang_code == "uthmani":
         seg_parts = [
-            " ".join(words) + f" ({to_arabic_nums(a_num)})"
+            " ".join(words) + f" ({fmt_num(a_num)})"
             for (_, a_num), words in aya_words.items()
         ]
         matched_segment = " ".join(seg_parts)
@@ -326,7 +331,7 @@ def search_bayan(query_text: str,
             txt = words[0]  # target_text مكرر لكل كلمة، نأخذ الأول
             if txt not in seen_texts:
                 seen_texts.add(txt)
-                seg_parts.append(f"{txt} ({to_arabic_nums(a_num)})")
+                seg_parts.append(f"{txt} ({fmt_num(a_num)})")
         matched_segment = " ".join(seg_parts)
 
     # الآيات المشمولة — مرتبة بالترتيب
@@ -341,17 +346,17 @@ def search_bayan(query_text: str,
 
     verse_body_parts = []
     for (s_num, a_num), data in involved.items():
-        verse_body_parts.append(f"{data['target_text']} ({to_arabic_nums(a_num)})")
+        verse_body_parts.append(f"{data['target_text']} ({fmt_num(a_num)})")
 
     combined_body = " ".join(verse_body_parts)
 
     # بناء المرجع: نطاق (من-إلى) بدل سرد كل الأرقام
     if len(ayah_nums) == 1:
-        ref = f"{sura_name}: {to_arabic_nums(ayah_nums[0])}"
+        ref = f"{sura_name}: {fmt_num(ayah_nums[0])}"
     else:
-        first_ar = to_arabic_nums(ayah_nums[0])
-        last_ar = to_arabic_nums(ayah_nums[-1])
-        ref = f"{sura_name}: {first_ar}-{last_ar}"
+        first = fmt_num(ayah_nums[0])
+        last = fmt_num(ayah_nums[-1])
+        ref = f"{sura_name}: {first}-{last}"
 
     full_verse_formatted = f"({combined_body}) [{ref}]"
     matched_segment = f"({matched_segment}) [{ref}]"
