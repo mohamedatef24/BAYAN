@@ -207,9 +207,27 @@ function initFormatToolbar() {
     }
   });
 
-  // Close dropdowns on Escape
+  // Close dropdowns on Escape + keyboard navigation
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeAllFmtDropdowns();
+
+    // ArrowDown/ArrowUp navigation inside open dropdowns
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      const openDropdown = document.querySelector('.fmt-dropdown.open .fmt-dropdown__menu');
+      if (!openDropdown) return;
+      e.preventDefault();
+      const items = Array.from(openDropdown.querySelectorAll('.fmt-dropdown__item'));
+      if (!items.length) return;
+      const focused = document.activeElement;
+      const idx = items.indexOf(focused);
+      let next;
+      if (e.key === 'ArrowDown') {
+        next = idx < items.length - 1 ? idx + 1 : 0;
+      } else {
+        next = idx > 0 ? idx - 1 : items.length - 1;
+      }
+      items[next].focus();
+    }
   });
 
   // Item 8: Color pickers
@@ -232,7 +250,22 @@ function initColorPicker(prefix, command, barId) {
   const grid = document.getElementById(prefix + '-grid');
   if (!trigger || !wrap || !grid) return;
 
-  // Build swatches
+  // Build swatches — add reset button first
+  const resetSwatch = document.createElement('button');
+  resetSwatch.type = 'button';
+  resetSwatch.className = 'fmt-color-swatch fmt-color-swatch--reset';
+  resetSwatch.title = '\u0625\u0639\u0627\u062f\u0629 \u0627\u0644\u0627\u0641\u062a\u0631\u0627\u0636\u064a';
+  resetSwatch.textContent = '\u00d7';
+  resetSwatch.addEventListener('click', () => {
+    document.execCommand('removeFormat', false, null);
+    const bar = document.getElementById(barId);
+    if (bar) bar.style.background = command === 'foreColor' ? '#ECEEF2' : 'transparent';
+    closeAllFmtDropdowns();
+    const editor = getEditorElement();
+    if (editor) editor.focus();
+  });
+  grid.appendChild(resetSwatch);
+
   COLOR_PALETTE.forEach(color => {
     const swatch = document.createElement('button');
     swatch.type = 'button';
