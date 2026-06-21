@@ -153,6 +153,14 @@ def search_bayan(query_text: str,
 
     n = len(query_light)
 
+    # ── إذا بدأ الاستعلام بالبسملة → أعطِ الفاتحة أولوية ──
+    # بدون ده، "بسم الله الرحمن الرحيم الحمد لله" بيطابق ١١٢ سورة
+    _query_starts_basmala = False
+    if n >= 4:
+        first4_q = normalize_arabic(' '.join(query_light[:4]), deep=False)
+        if first4_q in ['بسم الله الرحمن الرحيم', 'بسم لله لرحمن لرحيم', 'بسم لله لرحمـن لرحيم']:
+            _query_starts_basmala = True
+
     # ==========================================
     # البحث بالمرساة الديناميكية (من الأطول للأقصر)
     # ==========================================
@@ -170,6 +178,15 @@ def search_bayan(query_text: str,
         candidate_starts = cursor.fetchall()
         if candidate_starts:
             break
+
+    # إذا بدأ بالبسملة → الفاتحة أولوية
+    if _query_starts_basmala:
+        fatiha = (1, 1)
+        if fatiha not in candidate_starts:
+            candidate_starts.insert(0, fatiha)
+        else:
+            candidate_starts.remove(fatiha)
+            candidate_starts.insert(0, fatiha)
 
     # إذا لم تجد شيئاً بالمرساة الخفيفة → جرّب المرساة العميقة
     # (يستخدم text_deep إذا كان موجوداً، وإلا يعود لـ text_clean)
@@ -244,6 +261,21 @@ def search_bayan(query_text: str,
         combined_light, combined_deep, word_map = [], [], []
         for row in fetched:
             s_num, a_num, t_clean, t_uthmani, t_target, s_name = row
+
+            # ── شيل البسملة من text_clean في البحث (مش الفاتحة) ──
+            # بدون ده، anchor "بسم الله الرحمن الرحيم" بيطابق ١١٢ سورة
+            if a_num == 1 and s_num != 1:
+                tc_words = t_clean.split()
+                if len(tc_words) >= 4:
+                    first4 = normalize_arabic(' '.join(tc_words[:4]), deep=False)
+                    basmala_norms = [
+                        'بسم الله الرحمن الرحيم',
+                        'بسم لله لرحمن لرحيم',
+                        'بسم لله لرحمـن لرحيم',
+                    ]
+                    if first4 in basmala_norms:
+                        t_clean = ' '.join(tc_words[4:])
+
             clean_w   = t_clean.split()
             uthmani_w = [
               token
