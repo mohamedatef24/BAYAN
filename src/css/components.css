@@ -839,6 +839,26 @@
   margin-top: var(--spacing-sm);
 }
 
+.popover-dismiss {
+  display: block;
+  width: 100%;
+  padding: 6px 0;
+  margin-top: 6px;
+  background: none;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-label);
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.popover-dismiss:hover {
+  color: var(--color-error);
+  border-color: var(--color-error);
+  background: rgba(232, 138, 138, 0.08);
+}
+
 /* ── Type Icon ── */
 .popover-type-icon {
   font-size: 16px;
