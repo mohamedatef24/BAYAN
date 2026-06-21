@@ -126,7 +126,14 @@ async function _loadAndRenderList() {
   const docs = await loadDocuments();
 
   if (!docs.length) {
-    listEl.innerHTML = `<p class="docs-empty">لا توجد مستندات بعد. أنشئ مستنداً جديداً!</p>`;
+    listEl.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state__icon">
+          <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        </div>
+        <div class="empty-state__title">\u0644\u0627 \u062a\u0648\u062c\u062f \u0645\u0633\u062a\u0646\u062f\u0627\u062a \u0628\u0639\u062f</div>
+        <div class="empty-state__subtitle">\u0623\u0646\u0634\u0626 \u0645\u0633\u062a\u0646\u062f\u064b\u0627 \u062c\u062f\u064a\u062f\u064b\u0627 \u0644\u0628\u062f\u0621 \u0627\u0644\u0643\u062a\u0627\u0628\u0629</div>
+      </div>`;
     return;
   }
 
@@ -289,21 +296,32 @@ async function _doRename(id, newTitle) {
 /* ── Delete ── */
 
 async function _confirmDelete(id, title) {
-  if (!confirm(`هل تريد حذف "${title}"؟ لا يمكن التراجع عن هذا الإجراء.`)) return;
+  if (typeof showConfirmDialog === 'function') {
+    showConfirmDialog(
+      '\u062d\u0630\u0641 \u0627\u0644\u0645\u0633\u062a\u0646\u062f',
+      '\u0647\u0644 \u062a\u0631\u064a\u062f \u062d\u0630\u0641 "' + title + '"\u061f \u0644\u0627 \u064a\u0645\u0643\u0646 \u0627\u0644\u062a\u0631\u0627\u062c\u0639 \u0639\u0646 \u0647\u0630\u0627 \u0627\u0644\u0625\u062c\u0631\u0627\u0621.',
+      function() { _doDelete(id); }
+    );
+  } else {
+    if (!confirm('\u0647\u0644 \u062a\u0631\u064a\u062f \u062d\u0630\u0641 "' + title + '"\u061f \u0644\u0627 \u064a\u0645\u0643\u0646 \u0627\u0644\u062a\u0631\u0627\u062c\u0639 \u0639\u0646 \u0647\u0630\u0627 \u0627\u0644\u0625\u062c\u0631\u0627\u0621.')) return;
+    _doDelete(id);
+  }
+}
 
+async function _doDelete(id) {
   const ok = await deleteDocument(id);
   if (!ok) {
-    if (typeof showDocToast === 'function') showDocToast('تعذّر الحذف', 'error');
+    if (typeof showDocToast === 'function') showDocToast('\u062a\u0639\u0630\u0651\u0631 \u0627\u0644\u062d\u0630\u0641', 'error');
     return;
   }
 
   const state = getDocState();
   if (state.currentDocumentId === id) {
-    setDocState({ currentDocumentId: null, currentDocumentTitle: 'مستند جديد', hasUnsavedChanges: false });
+    setDocState({ currentDocumentId: null, currentDocumentTitle: '\u0645\u0633\u062a\u0646\u062f \u062c\u062f\u064a\u062f', hasUnsavedChanges: false });
     _updateTitleBar();
   }
   await _loadAndRenderList();
-  if (typeof showDocToast === 'function') showDocToast('تم حذف المستند', 'success');
+  if (typeof showDocToast === 'function') showDocToast('\u062a\u0645 \u062d\u0630\u0641 \u0627\u0644\u0645\u0633\u062a\u0646\u062f', 'success');
 }
 
 /* ── Title bar ── */
