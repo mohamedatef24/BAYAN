@@ -674,21 +674,57 @@ function applySuggestionById(id) {
 
 function applyAllSuggestions() {
   // CRITICAL: Sort in REVERSE order (highest start offset first).
-  // Applying edits back-to-front preserves the offset validity of all
-  // subsequent edits. Front-to-back would invalidate every offset after
-  // the first edit due to text length changes. Do NOT change this sort.
   const suggestions = [...(window.currentSuggestions || [])].sort((a, b) => b.start - a.start);
   if (suggestions.length === 0) return;
   _isApplyingSuggestion = true;
   try {
     pushUndoState(); // Save state before applying all
 
-    let text = getEditorText();
+    // DOM-based approach: replace each error span individually to preserve formatting
+    let appliedCount = 0;
     suggestions.forEach((s) => {
-      text = text.substring(0, s.start) + s.correction + text.substring(s.end);
+      const sid = s.id;
+      const errorSpan = sid ? document.querySelector(`[data-suggestion-id="${sid}"]`) : null;
+      if (errorSpan) {
+        const parent = errorSpan.parentNode;
+        const correctedNode = document.createTextNode(s.correction);
+        parent.insertBefore(correctedNode, errorSpan);
+        parent.removeChild(errorSpan);
+        parent.normalize();
+        appliedCount++;
+      }
     });
 
-    setEditorHTML(escapeHtml(text));
+    // Fallback: if DOM approach missed some, do text-based replacement
+    if (appliedCount < suggestions.length) {
+      let text = getEditorText();
+      // Re-sort remaining by offset (they weren't found as spans)
+      const remaining = suggestions.filter(s => {
+        const sid = s.id;
+        return !sid || !document.querySelector(`[data-suggestion-id="${sid}"]`);
+      }).sort((a, b) => b.start - a.start);
+      remaining.forEach((s) => {
+        text = text.substring(0, s.start) + s.correction + text.substring(s.end);
+      });
+      if (remaining.length > 0) {
+        setEditorHTML(escapeHtml(text));
+      }
+    }
+
+    // Place cursor at end of editor content
+    const editor = getEditorElement();
+    if (editor) {
+      try {
+        const sel = window.getSelection();
+        const range = document.createRange();
+        range.selectNodeContents(editor);
+        range.collapse(false);
+        sel.removeAllRanges();
+        sel.addRange(range);
+      } catch(e) {}
+      editor.focus();
+    }
+
     hideTooltip();
 
     // Clear suggestions
@@ -696,7 +732,6 @@ function applyAllSuggestions() {
     updateSuggestionCounts(0, 0, 0);
     updateWritingScore(0, 0, 0);
     updateSuggestionsList([]);
-    // Pipeline Hardening v3.3: Do NOT call analyzeTextDelayed() — prevents recursive re-analysis
     if (typeof showToast === 'function') showToast('✓ تم تطبيق ' + suggestions.length + ' تصحيح');
   } finally {
     _isApplyingSuggestion = false;

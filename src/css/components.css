@@ -84,6 +84,15 @@
   color: var(--color-primary);
 }
 
+.footer-link-hover:hover {
+  color: var(--color-text-primary) !important;
+}
+
+.footer-bar {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
 .theme-toggle {
   display: flex;
   align-items: center;
@@ -928,18 +937,36 @@
 /* ── Suggestion cards ── */
 .suggestion-card {
   padding: var(--spacing-md);
+  padding-right: calc(var(--spacing-md) + 4px);
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
+  border-right: 4px solid var(--color-border-strong);
   background: var(--color-surface-elevated);
   cursor: pointer;
-  transition: border-color var(--transition-base), background var(--transition-base);
+  transition: border-color var(--transition-base), background var(--transition-base), transform var(--transition-base);
   text-align: right;
+}
+
+.suggestion-card[data-suggestion-type="spelling"],
+.suggestion-card:has(.badge-spelling) {
+  border-right-color: var(--color-error);
+}
+
+.suggestion-card[data-suggestion-type="grammar"],
+.suggestion-card:has(.badge-grammar) {
+  border-right-color: var(--color-warning);
+}
+
+.suggestion-card[data-suggestion-type="punctuation"],
+.suggestion-card:has(.badge-punctuation) {
+  border-right-color: var(--color-success);
 }
 
 .suggestion-card:hover,
 .suggestion-card.focused {
   border-color: var(--color-primary);
   background: var(--color-suggestion-hover-bg);
+  transform: translateX(-2px);
 }
 
 .suggestion-card-badge {
