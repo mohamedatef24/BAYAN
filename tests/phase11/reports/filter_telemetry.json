@@ -1,0 +1,675 @@
+{
+  "grammar_raw_outputs": 240,
+  "grammar_diffs_generated": 134,
+  "accepted": 44,
+  "rejected": 82,
+  "rejection_by_filter": {
+    "PunctuationGuard": 32,
+    "TanweenGuard": 30,
+    "LatinGuard": 9,
+    "DigitGuard": 5,
+    "IVtoOOV": 3,
+    "Jaccard_03": 2,
+    "StageLocker": 1
+  },
+  "rejection_details": [
+    {
+      "correction": "مهندسا",
+      "event": "filter_reject",
+      "filter": "TanweenGuard",
+      "original": "مهندساً",
+      "sample_id": "E004",
+      "dataset": "entities"
+    },
+    {
+      "correction": "GitHuب",
+      "event": "filter_reject",
+      "filter": "LatinGuard",
+      "original": "GitHub",
+      "sample_id": "E022",
+      "dataset": "entities"
+    },
+    {
+      "correction": "Teسla",
+      "event": "filter_reject",
+      "filter": "LatinGuard",
+      "original": "Tesla",
+      "sample_id": "E023",
+      "dataset": "entities"
+    },
+    {
+      "correction": "Node ، jة",
+      "event": "filter_reject",
+      "filter": "LatinGuard",
+      "original": "Node.js",
+      "sample_id": "E027",
+      "dataset": "entities"
+    },
+    {
+      "correction": "لعبوَ",
+      "event": "filter_reject",
+      "filter": "IVtoOOV",
+      "original": "لعب",
+      "sample_id": "G006",
+      "dataset": "grammar"
+    },
+    {
+      "correction": "جدا",
+      "event": "filter_reject",
+      "filter": "TanweenGuard",
+      "original": "جداً",
+      "sample_id": "G021",
+      "dataset": "grammar"
+    },
+    {
+      "correction": "يفعلوَ",
+      "event": "filter_reject",
+      "filter": "IVtoOOV",
+      "original": "يفعلون",
+      "sample_id": "G028",
+      "dataset": "grammar"
+    },
+    {
+      "correction": "كثيرا",
+      "event": "filter_reject",
+      "filter": "TanweenGuard",
+      "original": "كثيراً",
+      "sample_id": "G034",
+      "dataset": "grammar"
+    },
+    {
+      "correction": "غزيرا",
+      "event": "filter_reject",
+      "filter": "TanweenGuard",
+      "original": "غزيراً",
+      "sample_id": "G044",
+      "dataset": "grammar"
+    },
+    {
+      "correction": "البلاد",
+      "event": "filter_reject",
+      "filter": "PunctuationGuard",
+      "original": "البلاد.",
+      "sample_id": "H001",
+      "dataset": "hallucination"
+    },
+    {
+      "correction": "الماضية",
+      "event": "filter_reject",
+      "filter": "PunctuationGuard",
+      "original": "الماضية.",
+      "sample_id": "H002",
+      "dataset": "hallucination"
+    },
+    {
+      "correction": "تحديثا شاملا",
+      "event": "filter_reject",
+      "filter": "PunctuationGuard",
+      "original": "تحديثاً شاملاً.",
+      "sample_id": "H003",
+      "dataset": "hallucination"
+    },
+    {
+      "correction": "مشروعا جديدا",
+      "event": "filter_reject",
+      "filter": "TanweenGuard",
+      "original": "مشروعاً جديداً",
+      "sample_id": "H004",
+      "dataset": "hallucination"
+    },
+    {
+      "correction": "الغربية",
+      "event": "filter_reject",
+      "filter": "PunctuationGuard",
+      "original": "الغربية.",
+      "sample_id": "H004",
+      "dataset": "hallucination"
+    },
+    {
+      "correction": "نموا",
+      "event": "filter_reject",
+      "filter": "TanweenGuard",
+      "original": "نمواً",
+      "sample_id": "H005",
+      "dataset": "hallucination"
+    },
+    {
+      "correction": "الأول",
+      "event": "filter_reject",
+      "filter": "PunctuationGuard",
+      "original": "الأول.",
+      "sample_id": "H005",
+      "dataset": "hallucination"
+    },
+    {
+      "correction": "العالي",
+      "event": "filter_reject",
+      "filter": "PunctuationGuard",
+      "original": "العالي.",
+      "sample_id": "H006",
+      "dataset": "hallucination"
+    },
+    {
+      "correction": "المدروسين",
+      "event": "filter_reject",
+      "filter": "PunctuationGuard",
+      "original": "المدروسين.",
+      "sample_id": "H007",
+      "dataset": "hallucination"
+    },
+    {
+      "correction": "الظاهرة",
+      "event": "filter_reject",
+      "filter": "PunctuationGuard",
+      "original": "الظاهرة.",
+      "sample_id": "H008",
+      "dataset": "hallucination"
+    },
+    {
+      "correction": "العينة",
+      "event": "filter_reject",
+      "filter": "PunctuationGuard",
+      "original": "العينة.",
+      "sample_id": "H009",
+      "dataset": "hallucination"
+    },
+    {
+      "correction": "الفهم",
+      "event": "filter_reject",
+      "filter": "PunctuationGuard",
+      "original": "الفهم.",
+      "sample_id": "H010",
+      "dataset": "hallucination"
+    },
+    {
+      "correction": "تطبيقات",
+      "event": "filter_reject",
+      "filter": "PunctuationGuard",
+      "original": "تطبيقات.",
+      "sample_id": "H011",
+      "dataset": "hallucination"
+    },
+    {
+      "correction": "الأمامية",
+      "event": "filter_reject",
+      "filter": "PunctuationGuard",
+      "original": "الأمامية.",
+      "sample_id": "H012",
+      "dataset": "hallucination"
+    },
+    {
+      "correction": "الطبيعية",
+      "event": "filter_reject",
+      "filter": "PunctuationGuard",
+      "original": "الطبيعية.",
+      "sample_id": "H013",
+      "dataset": "hallucination"
+    },
+    {
+      "correction": "وفقا",
+      "event": "filter_reject",
+      "filter": "TanweenGuard",
+      "original": "وفقاً",
+      "sample_id": "H014",
+      "dataset": "hallucination"
+    },
+    {
+      "correction": "بالتعويض",
+      "event": "filter_reject",
+      "filter": "PunctuationGuard",
+      "original": "بالتعويض.",
+      "sample_id": "H014",
+      "dataset": "hallucination"
+    },
+    {
+      "correction": "يوما",
+      "event": "filter_reject",
+      "filter": "TanweenGuard",
+      "original": "يوماً",
+      "sample_id": "H015",
+      "dataset": "hallucination"
+    },
+    {
+      "correction": "التعاقد",
+      "event": "filter_reject",
+      "filter": "PunctuationGuard",
+      "original": "التعاقد.",
+      "sample_id": "H015",
+      "dataset": "hallucination"
+    },
+    {
+      "correction": "والأرجوان",
+      "event": "filter_reject",
+      "filter": "PunctuationGuard",
+      "original": "والأرجوان.",
+      "sample_id": "H016",
+      "dataset": "hallucination"
+    },
+    {
+      "correction": "سريعا",
+      "event": "filter_reject",
+      "filter": "TanweenGuard",
+      "original": "سريعاً",
+      "sample_id": "H018",
+      "dataset": "hallucination"
+    },
+    {
+      "correction": "القلوب",
+      "event": "filter_reject",
+      "filter": "PunctuationGuard",
+      "original": "القلوب.",
+      "sample_id": "H018",
+      "dataset": "hallucination"
+    },
+    {
+      "correction": "المكتبة",
+      "event": "filter_reject",
+      "filter": "PunctuationGuard",
+      "original": "المكتبة.",
+      "sample_id": "H019",
+      "dataset": "hallucination"
+    },
+    {
+      "correction": "خبزا",
+      "event": "filter_reject",
+      "filter": "PunctuationGuard",
+      "original": "خبزاً.",
+      "sample_id": "H020",
+      "dataset": "hallucination"
+    },
+    {
+      "correction": "بوضوح",
+      "event": "filter_reject",
+      "filter": "PunctuationGuard",
+      "original": "بوضوح.",
+      "sample_id": "H021",
+      "dataset": "hallucination"
+    },
+    {
+      "correction": "أجلها",
+      "event": "filter_reject",
+      "filter": "PunctuationGuard",
+      "original": "أجلها.",
+      "sample_id": "H022",
+      "dataset": "hallucination"
+    },
+    {
+      "correction": "المدارك",
+      "event": "filter_reject",
+      "filter": "PunctuationGuard",
+      "original": "المدارك.",
+      "sample_id": "H023",
+      "dataset": "hallucination"
+    },
+    {
+      "correction": "والصحة",
+      "event": "filter_reject",
+      "filter": "PunctuationGuard",
+      "original": "والصحة.",
+      "sample_id": "H024",
+      "dataset": "hallucination"
+    },
+    {
+      "correction": "الصغير",
+      "event": "filter_reject",
+      "filter": "PunctuationGuard",
+      "original": "الصغير.",
+      "sample_id": "H025",
+      "dataset": "hallucination"
+    },
+    {
+      "correction": "المستدامة",
+      "event": "filter_reject",
+      "filter": "PunctuationGuard",
+      "original": "المستدامة.",
+      "sample_id": "H026",
+      "dataset": "hallucination"
+    },
+    {
+      "correction": "التعليمية",
+      "event": "filter_reject",
+      "filter": "PunctuationGuard",
+      "original": "التعليمية.",
+      "sample_id": "H027",
+      "dataset": "hallucination"
+    },
+    {
+      "correction": "والجسدية",
+      "event": "filter_reject",
+      "filter": "PunctuationGuard",
+      "original": "والجسدية.",
+      "sample_id": "H028",
+      "dataset": "hallucination"
+    },
+    {
+      "correction": "البشرية",
+      "event": "filter_reject",
+      "filter": "PunctuationGuard",
+      "original": "البشرية.",
+      "sample_id": "H029",
+      "dataset": "hallucination"
+    },
+    {
+      "correction": "دورا مهما",
+      "event": "filter_reject",
+      "filter": "TanweenGuard",
+      "original": "دوراً مهماً",
+      "sample_id": "H030",
+      "dataset": "hallucination"
+    },
+    {
+      "correction": "المعاصر",
+      "event": "filter_reject",
+      "filter": "PunctuationGuard",
+      "original": "المعاصر.",
+      "sample_id": "H030",
+      "dataset": "hallucination"
+    },
+    {
+      "correction": "جدا",
+      "event": "filter_reject",
+      "filter": "TanweenGuard",
+      "original": "جداً",
+      "sample_id": "P005",
+      "dataset": "punctuation"
+    },
+    {
+      "correction": "خبزا ولحما",
+      "event": "filter_reject",
+      "filter": "TanweenGuard",
+      "original": "خبزاً ولحماً",
+      "sample_id": "P010",
+      "dataset": "punctuation"
+    },
+    {
+      "correction": "عدت",
+      "event": "filter_reject",
+      "filter": "PunctuationGuard",
+      "original": "عدت.",
+      "sample_id": "P011",
+      "dataset": "punctuation"
+    },
+    {
+      "correction": "بخير",
+      "event": "filter_reject",
+      "filter": "PunctuationGuard",
+      "original": "بخير.",
+      "sample_id": "P012",
+      "dataset": "punctuation"
+    },
+    {
+      "correction": "كتابا",
+      "event": "filter_reject",
+      "filter": "PunctuationGuard",
+      "original": "كتاباً.",
+      "sample_id": "P015",
+      "dataset": "punctuation"
+    },
+    {
+      "correction": "جدا",
+      "event": "filter_reject",
+      "filter": "TanweenGuard",
+      "original": "جداً",
+      "sample_id": "P020",
+      "dataset": "punctuation"
+    },
+    {
+      "correction": "خيرا",
+      "event": "filter_reject",
+      "filter": "TanweenGuard",
+      "original": "خيراً",
+      "sample_id": "R018",
+      "dataset": "religious"
+    },
+    {
+      "correction": "جدا",
+      "event": "filter_reject",
+      "filter": "TanweenGuard",
+      "original": "جداً",
+      "sample_id": "S003",
+      "dataset": "spelling"
+    },
+    {
+      "correction": "أرسلت",
+      "event": "filter_reject",
+      "filter": "StageLocker",
+      "original": "أرسل",
+      "sample_id": "S018",
+      "dataset": "spelling"
+    },
+    {
+      "correction": "فورو",
+      "event": "filter_reject",
+      "filter": "IVtoOOV",
+      "original": "فوراً",
+      "sample_id": "S018",
+      "dataset": "spelling"
+    },
+    {
+      "correction": "قليلا",
+      "event": "filter_reject",
+      "filter": "TanweenGuard",
+      "original": "قليلاً",
+      "sample_id": "S020",
+      "dataset": "spelling"
+    },
+    {
+      "correction": "غدا",
+      "event": "filter_reject",
+      "filter": "TanweenGuard",
+      "original": "غداً",
+      "sample_id": "S025",
+      "dataset": "spelling"
+    },
+    {
+      "correction": "جدا",
+      "event": "filter_reject",
+      "filter": "TanweenGuard",
+      "original": "جداً",
+      "sample_id": "S026",
+      "dataset": "spelling"
+    },
+    {
+      "correction": "جدا",
+      "event": "filter_reject",
+      "filter": "TanweenGuard",
+      "original": "جداً",
+      "sample_id": "S033",
+      "dataset": "spelling"
+    },
+    {
+      "correction": "جدا",
+      "event": "filter_reject",
+      "filter": "TanweenGuard",
+      "original": "جداً",
+      "sample_id": "S062",
+      "dataset": "spelling"
+    },
+    {
+      "correction": "ممطرا",
+      "event": "filter_reject",
+      "filter": "TanweenGuard",
+      "original": "ممطراً",
+      "sample_id": "S063",
+      "dataset": "spelling"
+    },
+    {
+      "correction": "جدا",
+      "event": "filter_reject",
+      "filter": "TanweenGuard",
+      "original": "جداً",
+      "sample_id": "S066",
+      "dataset": "spelling"
+    },
+    {
+      "correction": "دائما",
+      "event": "filter_reject",
+      "filter": "TanweenGuard",
+      "original": "دائماً",
+      "sample_id": "S069",
+      "dataset": "spelling"
+    },
+    {
+      "correction": "خبزا",
+      "event": "filter_reject",
+      "filter": "TanweenGuard",
+      "original": "خبزاً",
+      "sample_id": "S073",
+      "dataset": "spelling"
+    },
+    {
+      "correction": "جدا",
+      "event": "filter_reject",
+      "filter": "TanweenGuard",
+      "original": "جداً",
+      "sample_id": "S078",
+      "dataset": "spelling"
+    },
+    {
+      "correction": "https://example.comا",
+      "event": "filter_reject",
+      "filter": "LatinGuard",
+      "original": "https://example.com",
+      "sample_id": "SC001",
+      "dataset": "structured_content"
+    },
+    {
+      "correction": "عشرين 26-06-22ا",
+      "event": "filter_reject",
+      "filter": "DigitGuard",
+      "original": "2026-06-22",
+      "sample_id": "SC009",
+      "dataset": "structured_content"
+    },
+    {
+      "correction": "عصرا",
+      "event": "filter_reject",
+      "filter": "TanweenGuard",
+      "original": "عصراً",
+      "sample_id": "SC011",
+      "dataset": "structured_content"
+    },
+    {
+      "correction": "مساء",
+      "event": "filter_reject",
+      "filter": "TanweenGuard",
+      "original": "مساءً",
+      "sample_id": "SC012",
+      "dataset": "structured_content"
+    },
+    {
+      "correction": "09:00ا صباحا",
+      "event": "filter_reject",
+      "filter": "DigitGuard",
+      "original": "09:00 صباحاً",
+      "sample_id": "SC013",
+      "dataset": "structured_content"
+    },
+    {
+      "correction": "ثلاث عشر كيلومترا",
+      "event": "filter_reject",
+      "filter": "DigitGuard",
+      "original": "25.5 كيلومتر",
+      "sample_id": "SC014",
+      "dataset": "structured_content"
+    },
+    {
+      "correction": "1 , 000 , 000",
+      "event": "filter_reject",
+      "filter": "DigitGuard",
+      "original": "1,000,000",
+      "sample_id": "SC015",
+      "dataset": "structured_content"
+    },
+    {
+      "correction": "95 ، 7 %",
+      "event": "filter_reject",
+      "filter": "DigitGuard",
+      "original": "95.7%",
+      "sample_id": "SC016",
+      "dataset": "structured_content"
+    },
+    {
+      "correction": "مائة",
+      "event": "filter_reject",
+      "filter": "Jaccard_03",
+      "jaccard": 0.0,
+      "original": "100",
+      "sample_id": "SC018",
+      "dataset": "structured_content"
+    },
+    {
+      "correction": "35 ° C",
+      "event": "filter_reject",
+      "filter": "LatinGuard",
+      "original": "35°C",
+      "sample_id": "SC019",
+      "dataset": "structured_content"
+    },
+    {
+      "correction": "تقريبا",
+      "event": "filter_reject",
+      "filter": "TanweenGuard",
+      "original": "تقريباً",
+      "sample_id": "SC020",
+      "dataset": "structured_content"
+    },
+    {
+      "correction": "الوزن75kg",
+      "event": "filter_reject",
+      "filter": "LatinGuard",
+      "original": "الوزن 75kg",
+      "sample_id": "SC021",
+      "dataset": "structured_content"
+    },
+    {
+      "correction": "print ، ' مرحباا ،",
+      "event": "filter_reject",
+      "filter": "LatinGuard",
+      "original": "print('مرحبا')",
+      "sample_id": "SC022",
+      "dataset": "structured_content"
+    },
+    {
+      "correction": "خمسة ;",
+      "event": "filter_reject",
+      "filter": "Jaccard_03",
+      "jaccard": 0.167,
+      "original": "5;",
+      "sample_id": "SC023",
+      "dataset": "structured_content"
+    },
+    {
+      "correction": "test ، وذلك { }",
+      "event": "filter_reject",
+      "filter": "LatinGuard",
+      "original": "test() {}",
+      "sample_id": "SC024",
+      "dataset": "structured_content"
+    },
+    {
+      "correction": "{ \" name \" : \" Mohamed \" }",
+      "event": "filter_reject",
+      "filter": "LatinGuard",
+      "original": "{\"name\":\"Mohamed\"}",
+      "sample_id": "SC026",
+      "dataset": "structured_content"
+    },
+    {
+      "correction": "جدا",
+      "event": "filter_reject",
+      "filter": "TanweenGuard",
+      "original": "جداً",
+      "sample_id": "SC027",
+      "dataset": "structured_content"
+    },
+    {
+      "correction": "شكرا",
+      "event": "filter_reject",
+      "filter": "TanweenGuard",
+      "original": "شكراً",
+      "sample_id": "SC029",
+      "dataset": "structured_content"
+    }
+  ]
+}

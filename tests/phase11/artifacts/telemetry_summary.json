@@ -1,8 +1,16 @@
 {
-  "total_samples": 3,
-  "total_grammar_diffs": 0,
-  "total_accepted": 0,
-  "total_rejected": 0,
-  "rejection_by_filter": {},
-  "pass_rate": 66.66666666666666
+  "total_samples": 270,
+  "total_grammar_diffs": 134,
+  "total_accepted": 44,
+  "total_rejected": 82,
+  "rejection_by_filter": {
+    "PunctuationGuard": 32,
+    "TanweenGuard": 30,
+    "LatinGuard": 9,
+    "DigitGuard": 5,
+    "IVtoOOV": 3,
+    "Jaccard_03": 2,
+    "StageLocker": 1
+  },
+  "pass_rate": 82.96296296296296
 }
