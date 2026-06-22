@@ -350,7 +350,17 @@ class ArabicGrammarGuard:
         # حروف الجر المتصلة بدون مسافة (بأخوك، لأبوك -> بأخيك، لأبيك)
         text = re.sub(r'\b([وف]?[بل])(أبوك|أباك|أخوك|أخاك|ذو|ذا)\b',
                       lambda m: f"{m.group(1)}{m.group(2).replace('و', 'ي').replace('ا', 'ي')}", text)
+
+        # ── NEW: Preposition + ون→ين case (في المهندسون→المهندسين) ──
+        text = re.sub(r'\b([وف]?(?:في|من|إلى|على|عن|حتى))\s+([أ-ي]{4,})(ون|ان)\b', r'\1 \2ين', text)
+        text = re.sub(r'\b([وف]?[بلكف])ال([أ-ي]{4,})(ون|ان)\b', r'\1ال\2ين', text)
+        text = re.sub(r'\b([وف]?ل)([أ-ي]{4,})(ون|ان)\b', r'\1\2ين', text)
+
+        # ── NEW: Nasb/Jazm ون→وا (لن يذهبون→يذهبوا) ──
+        text = re.sub(r'\b(لن|لم|كي|لكي|حتى|أن)\s+([أ-ي]+)(ون)\b', r'\1 \2وا', text)
+
         return text
+
 
     def process(self, original_text, generated_text):
         """Apply all grammar rules to model output."""
