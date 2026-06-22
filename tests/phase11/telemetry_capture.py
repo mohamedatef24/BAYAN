@@ -119,6 +119,7 @@ def run_telemetry_capture(url, max_samples=None):
                 pipeline_output = result.get('corrected', text)
                 suggestions = result.get('suggestions', [])
                 timing = result.get('timing_ms', {})
+                events = result.get('telemetry', [])  # Phase 11: inline telemetry
             except Exception as e:
                 print(f"ERROR: {e}")
                 sample_results.append({
@@ -128,10 +129,7 @@ def run_telemetry_capture(url, max_samples=None):
                 })
                 continue
 
-            # Small delay then fetch logs
-            time.sleep(0.3)
-            log_lines = fetch_logs(200)
-            events = extract_telemetry_events(log_lines)
+            # Events come directly from API response (no HF log parsing needed)
 
             # Write events for this sample
             sample_record = {
