@@ -872,13 +872,19 @@ def _is_small_spelling_change(orig_word, corr_word, vocab_manager=None):
             #    E.g., فتأملته (fataamaltahu) → فتأملتة is WRONG.
             if (orig_word.endswith('ه') and corr_word.endswith('ة')
                     and orig_word[:-1] == corr_word[:-1]):
-                # Guard: if word ends in ته, the ه is likely a pronoun suffix
-                if len(orig_word) >= 3 and orig_word[-2] == 'ت':
-                    logger.info(
-                        f"[SPELLING] Blocked ه→ة at pronoun suffix: "
-                        f"'{orig_word}'→'{corr_word}' (ته pattern = pronoun 'him/it')"
-                    )
-                    return 0.0
+                # Guard: if ه is a pronoun suffix, block conversion to ة.
+                # Heuristic: if removing ه gives a valid standalone word,
+                # the ه is likely pronoun 'his/it' (عمله = عمل+ه).
+                # If removing ه gives an invalid word, it's ta-marbuta (مدرسه→مدرسة).
+                if len(orig_word) >= 3 and vocab_manager:
+                    stem_without_h = orig_word[:-1]
+                    if vocab_manager.is_iv(stem_without_h):
+                        logger.info(
+                            f"[SPELLING] Blocked ه→ة (pronoun suffix): "
+                            f"'{orig_word}'→'{corr_word}' "
+                            f"('{stem_without_h}' is valid IV → ه = 'his/it')"
+                        )
+                        return 0.0
                 return 0.9
             # 2. ة→ه at word end (less common but valid)
             if (orig_word.endswith('ة') and corr_word.endswith('ه')
@@ -1671,6 +1677,28 @@ def analyze_text():
                         # Demonstrative: هذان→هاتان, هاتان→هذان
                         elif ({orig_text, corr_text} <= {'هذان', 'هاتان'}):
                             _is_grammar_pattern = True
+                        # ── NEW: SV agreement suffix additions ──
+                        # Past tense masc plural: verb→verb+وا (ذهب→ذهبوا, حضر→حضروا)
+                        elif (corr_text.endswith('وا') and corr_text[:-2] == orig_text
+                                and len(orig_text) >= 3):
+                            _is_grammar_pattern = True
+                        # Past tense fem plural: verb→verb+ن (ذهب→ذهبن, حضر→حضرن)
+                        elif (corr_text.endswith('ن') and corr_text[:-1] == orig_text
+                                and len(orig_text) >= 3):
+                            _is_grammar_pattern = True
+                        # Present tense masc plural: يفعل→يفعلون (adding ون)
+                        elif (corr_text.endswith('ون') and corr_text[:-2] == orig_text
+                                and len(orig_text) >= 3):
+                            _is_grammar_pattern = True
+                        # Gender: adjective→adjective+ة (جميل→جميلة, كبير→كبيرة)
+                        elif (corr_text.endswith('ة') and corr_text[:-1] == orig_text
+                                and len(orig_text) >= 3):
+                            _is_grammar_pattern = True
+                        # Gender with ي: ذكي→ذكية
+                        elif (corr_text.endswith('ية') and corr_text[:-1] == orig_text[:-1] + 'ي'
+                                and orig_text.endswith('ي') and len(orig_text) >= 3):
+                            _is_grammar_pattern = True
+
 
                     if not _is_grammar_pattern:
                         if len(orig_text.split()) == 1 and len(corr_text.split()) == 1:
