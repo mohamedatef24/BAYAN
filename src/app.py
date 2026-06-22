@@ -2186,7 +2186,7 @@ def analyze_text():
                             f"(locked by {owner}[{ls}:{le}])"
                         )
                     # Punctuation safety layer: reject non-punctuation changes
-                    if not validate_punctuation_diff(d):
+                    if not validate_punctuation_diff(d, full_text=ctx.current_text):
                         logger.info(
                             f"[PUNC-SAFETY] Rejected diff [{d['start']}:{d['end']}] "
                             f"'{d.get('original','')}' → '{d.get('correction','')}' — not a safe punctuation change"
@@ -2215,7 +2215,7 @@ def analyze_text():
 
                 # FIX-05: Rebuild punctuation text from accepted diffs only
                 _safe_punc = ctx.current_text
-                _punc_accepted = [d for d in diffs if validate_punctuation_diff(d)]
+                _punc_accepted = [d for d in diffs if validate_punctuation_diff(d, full_text=ctx.current_text)]
                 for _pd in sorted(_punc_accepted, key=lambda x: x['start'], reverse=True):
                     _safe_punc = (_safe_punc[:_pd['start']] +
                                  _pd['correction'] +
