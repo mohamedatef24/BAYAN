@@ -1,0 +1,22 @@
+[
+  {"id":"P001","category":"missing_period","input":"ذهبت إلى المدرسة ثم عدت إلى البيت","should_add_punct":true,"severity":"minor"},
+  {"id":"P002","category":"missing_question","input":"هل أنت بخير يا صديقي","should_add_punct":true,"severity":"minor"},
+  {"id":"P003","category":"missing_comma","input":"مرحبا كيف حالك اليوم","should_add_punct":true,"severity":"minor"},
+  {"id":"P004","category":"missing_multi","input":"كيف حالك أنا بخير والحمد لله","should_add_punct":true,"severity":"minor"},
+  {"id":"P005","category":"missing_period","input":"هذا الكتاب مفيد جداً وأنصح بقراءته","should_add_punct":true,"severity":"minor"},
+  {"id":"P006","category":"missing_period","input":"العلم نور والجهل ظلام والتعليم مهم","should_add_punct":true,"severity":"minor"},
+  {"id":"P007","category":"missing_question","input":"ماذا تريد أن تفعل اليوم","should_add_punct":true,"severity":"minor"},
+  {"id":"P008","category":"missing_question","input":"لماذا لم تحضر أمس","should_add_punct":true,"severity":"minor"},
+  {"id":"P009","category":"missing_comma","input":"جاء أحمد ومحمد وعلي","should_add_punct":true,"severity":"minor"},
+  {"id":"P010","category":"missing_multi","input":"ذهبت إلى السوق واشتريت خبزاً ولحماً ثم عدت","should_add_punct":true,"severity":"minor"},
+  {"id":"P011","category":"already_correct","input":"ذهبت إلى المدرسة. ثم عدت.","should_add_punct":false,"severity":"major"},
+  {"id":"P012","category":"already_correct","input":"كيف حالك؟ أنا بخير.","should_add_punct":false,"severity":"major"},
+  {"id":"P013","category":"already_correct","input":"أحمد، كيف حالك؟ هل أنت بخير؟","should_add_punct":false,"severity":"major"},
+  {"id":"P014","category":"already_correct","input":"قال: أنا بخير، شكراً لك.","should_add_punct":false,"severity":"major"},
+  {"id":"P015","category":"already_correct","input":"ذهبت إلى المكتبة، واشتريت كتاباً.","should_add_punct":false,"severity":"major"},
+  {"id":"P016","category":"word_preservation","input":"ذهبت الي المدرسه أمس","expected_words_unchanged":true,"severity":"critical"},
+  {"id":"P017","category":"word_preservation","input":"انا طالب في الجامعه","expected_words_unchanged":true,"severity":"critical"},
+  {"id":"P018","category":"dialogue","input":"قال أحمد أنا سعيد بلقائك يا صديقي","should_add_punct":true,"severity":"minor"},
+  {"id":"P019","category":"enumeration","input":"أحتاج إلى خبز ولبن وجبن وبيض","should_add_punct":true,"severity":"minor"},
+  {"id":"P020","category":"exclamation","input":"يا إلهي هذا رائع جداً","should_add_punct":true,"severity":"minor"}
+]

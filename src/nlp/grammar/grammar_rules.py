@@ -146,6 +146,40 @@ class ArabicGrammarGuard:
 
         text = re.sub(r'\bإحدى عشرة\s+([أ-ي]+ا|رجل[اأ]|طالب[اأ]|مهندس[اأ])\b', r'أحد عشر \1', text)
         text = re.sub(r'\bإحدى عشر\s+([أ-ي]+ا|رجل[اأ]|طالب[اأ]|مهندس[اأ])\b', r'أحد عشر \1', text)
+
+        # ── Batch 6: Noun-adjective gender agreement ──
+        # When a feminine noun is followed by a masculine adjective, add ة
+        # e.g. السيارة جميل → السيارة جميلة
+        KNOWN_FEMININE_NOUNS = {
+            'السيارة', 'سيارة', 'المدرسة', 'مدرسة', 'المدينة', 'مدينة',
+            'البنت', 'الشمس', 'الأرض', 'الطالبة', 'طالبة',
+            'الجامعة', 'جامعة', 'الشركة', 'شركة', 'الحكومة', 'حكومة',
+            'الغرفة', 'غرفة', 'الحديقة', 'حديقة', 'المكتبة', 'مكتبة',
+            'الدولة', 'دولة', 'الرحلة', 'رحلة', 'اللغة', 'لغة',
+            'القصة', 'قصة', 'الفكرة', 'فكرة', 'النتيجة', 'نتيجة',
+        }
+        # Common adjectives that have masculine/feminine pairs
+        MASC_TO_FEM_ADJ = {
+            'جميل': 'جميلة', 'كبير': 'كبيرة', 'صغير': 'صغيرة',
+            'طويل': 'طويلة', 'قصير': 'قصيرة', 'جديد': 'جديدة',
+            'قديم': 'قديمة', 'بعيد': 'بعيدة', 'قريب': 'قريبة',
+            'سريع': 'سريعة', 'بطيء': 'بطيئة', 'واسع': 'واسعة',
+            'ضيق': 'ضيقة', 'عميق': 'عميقة', 'خفيف': 'خفيفة',
+            'ثقيل': 'ثقيلة', 'نظيف': 'نظيفة', 'مشرق': 'مشرقة',
+            'ذكي': 'ذكية', 'غني': 'غنية', 'فقير': 'فقيرة',
+            'متفوق': 'متفوقة', 'مجتهد': 'مجتهدة', 'ممتاز': 'ممتازة',
+        }
+        words = text.split()
+        for i in range(len(words) - 1):
+            noun = words[i]
+            adj = words[i + 1]
+            is_fem_noun = (noun in KNOWN_FEMININE_NOUNS or
+                          (noun.endswith('ة') and len(noun) >= 3) or
+                          (noun.startswith('ال') and noun.endswith('ة')))
+            if is_fem_noun and adj in MASC_TO_FEM_ADJ:
+                words[i + 1] = MASC_TO_FEM_ADJ[adj]
+        text = ' '.join(words)
+
         return text
 
     def fix_prepositions_advanced(self, text):
@@ -279,14 +313,27 @@ class ArabicGrammarGuard:
                 continue
 
             # Fix the verb to agree with the plural subject
-            if is_plural_fem:
-                if not verb_word.endswith('ن') and not verb_word.endswith('نَ'):
-                    if len(verb_word) >= 3 and not verb_word.startswith('ي') and not verb_word.startswith('ت'):
+            # Detect if verb is present tense (starts with ي/ت/ن/أ)
+            _is_present = (verb_word.startswith('ي') or verb_word.startswith('ت')
+                          or verb_word.startswith('ن') or verb_word.startswith('أ'))
+
+            if _is_present:
+                # Present tense: يذهب→يذهبون (masc) / يذهبن (fem)
+                if is_plural_fem:
+                    if not verb_word.endswith('ن') and not verb_word.endswith('نَ'):
                         corrected_tokens[i+1] = verb_word + 'ن'
-            elif is_plural_masc:
-                if (not verb_word.endswith('وا') and not verb_word.endswith('ون')
-                        and not verb_word.endswith('ين')):
-                    if len(verb_word) >= 3 and not verb_word.startswith('ي') and not verb_word.startswith('ت'):
+                elif is_plural_masc:
+                    if (not verb_word.endswith('ون') and not verb_word.endswith('وا')
+                            and not verb_word.endswith('ين')):
+                        corrected_tokens[i+1] = verb_word + 'ون'
+            else:
+                # Past tense: ذهب→ذهبوا (masc) / ذهبن (fem)
+                if is_plural_fem:
+                    if not verb_word.endswith('ن') and not verb_word.endswith('نَ'):
+                        corrected_tokens[i+1] = verb_word + 'ن'
+                elif is_plural_masc:
+                    if (not verb_word.endswith('وا') and not verb_word.endswith('ون')
+                            and not verb_word.endswith('ين')):
                         corrected_tokens[i+1] = verb_word + 'وا'
 
         return " ".join(corrected_tokens)

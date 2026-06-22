@@ -138,6 +138,45 @@ def validate_punctuation_diff(diff: dict) -> bool:
                     )
                     return False
 
+    # ── Rule 0b (Batch 4): Reject punct insertion when original has no punctuation ──
+    # If the original text has zero Arabic punctuation and the correction
+    # only adds commas/semicolons (not at the very end), it's overcorrection.
+    # This catches "already correct" texts that PuncAra sprinkles with commas.
+    orig_punct_count_r0b = sum(1 for c in original if c in ARABIC_PUNCT_CHARS)
+    if orig_punct_count_r0b == 0:
+        corr_punct_count_r0b = sum(1 for c in correction if c in ARABIC_PUNCT_CHARS)
+        if corr_punct_count_r0b > 0:
+            # Only allow if adding a single period/question at the very end
+            stripped_corr = correction.rstrip()
+            if stripped_corr and stripped_corr[-1] in '.؟?!':
+                # This is terminal punct (already handled by Rule 0)
+                pass
+            else:
+                # Mid-sentence punct insertion on a clean sentence → reject
+                logger.info(
+                    f"[PUNC-SAFETY] Rejected mid-sentence punct insertion on clean text: "
+                    f"'{original}' → '{correction}'"
+                )
+                return False
+
+    # ── Rule 0c (Batch 4): Reject punctuation rearrangement ──
+    # When original already has punctuation and the correction merely MOVES
+    # marks to different positions (same count, same chars), reject.
+    # e.g. "حالك؟ أنا" → "حالك أنا؟" = rearrangement
+    orig_punct_count_r0c = sum(1 for c in original if c in ARABIC_PUNCT_CHARS)
+    corr_punct_count_r0c = sum(1 for c in correction if c in ARABIC_PUNCT_CHARS)
+    if orig_punct_count_r0c > 0 and corr_punct_count_r0c > 0:
+        # Both have punctuation — check if it's just rearrangement
+        orig_punct_set = sorted(c for c in original if c in ARABIC_PUNCT_CHARS)
+        corr_punct_set = sorted(c for c in correction if c in ARABIC_PUNCT_CHARS)
+        if orig_punct_set == corr_punct_set:
+            # Same punct chars — only positions changed. This is rearrangement.
+            logger.info(
+                f"[PUNC-SAFETY] Rejected punct rearrangement: "
+                f"'{original}' → '{correction}'"
+            )
+            return False
+
     # ── Rule 1: Alphabetic content must be identical after normalization ──
     orig_alpha = re.sub(r'[.,،؛؟!:;?\s]', '', original)
     corr_alpha = re.sub(r'[.,،؛؟!:;?\s]', '', correction)
