@@ -97,6 +97,32 @@ autocomplete_model = None
 grammar_model = None
 punctuation_model = None
 
+# ── Directional Blocks: prevent meaning-changing substitutions ──
+# Used by both spelling confidence filter and grammar diff filter.
+_DIRECTIONAL_BLOCKS = {
+    # Demonstratives: هذه (correct feminine) → هذة (misspelling) = ALWAYS wrong
+    'هذه': {'هذة'},
+    'هذا': {'هذة', 'هذه'},    # masculine → don't flip to feminine forms
+    # Verb/particle confusion: كان (was) ↔ كأن (as if) = ALWAYS wrong
+    'كان': {'كأن'},
+    'كأن': {'كان'},
+    'كانت': {'كأنت'},      # H016: كانت → كأنت = ALWAYS wrong
+    'كانوا': {'كأنوا'},     # also block plural form
+    # Preposition confusion: different meanings, both valid
+    'إلى': {'على', 'علي'},
+    'على': {'إلى', 'علي'},
+    'علي': {'على'},           # proper name vs preposition
+    # Conjunction: لكن (correct) ↔ لاكن (misspelling of لكن, never valid)
+    'لكن': {'لاكن'},          # correct → misspelling = ALWAYS wrong
+    # Demonstrative: ذلك (correct) ↔ ذالك (common misspelling)
+    'ذلك': {'ذالك'},          # correct → misspelling = ALWAYS wrong
+    # Pronoun suffix: ه→ة corruption (G037: عمله→عملة)
+    'عمله': {'عملة'},          # عمله (his work) → عملة (currency) = WRONG
+    'لسانه': {'لسانة'},        # his tongue
+    'بيته': {'بيتة'},          # his house
+    'كتابه': {'كتابة'},        # his book → writing
+}
+
 
 def load_models():
     """Load models. In HF API mode, load summarization locally; other models gracefully degrade."""
@@ -812,29 +838,7 @@ def _is_small_spelling_change(orig_word, corr_word, vocab_manager=None):
     # AraSpell duplicates shadda-bearing words in ISOLATION: إنّ→إن إن, أنّ→أن أن.
     # In sentence context (e.g., "إنّ العلم نور"), the model handles shadda correctly.
     # This is an isolation-only AraSpell quirk — no pipeline filter needed.
-    _DIRECTIONAL_BLOCKS = {
-        # Demonstratives: هذه (correct feminine) → هذة (misspelling) = ALWAYS wrong
-        'هذه': {'هذة'},
-        'هذا': {'هذة', 'هذه'},    # masculine → don't flip to feminine forms
-        # Verb/particle confusion: كان (was) ↔ كأن (as if) = ALWAYS wrong
-        'كان': {'كأن'},
-        'كأن': {'كان'},
-        'كانت': {'كأنت'},      # H016: كانت → كأنت = ALWAYS wrong
-        'كانوا': {'كأنوا'},     # also block plural form
-        # Preposition confusion: different meanings, both valid
-        'إلى': {'على', 'علي'},
-        'على': {'إلى', 'علي'},
-        'علي': {'على'},           # proper name vs preposition
-        # Conjunction: لكن (correct) ↔ لاكن (misspelling of لكن, never valid)
-        'لكن': {'لاكن'},          # correct → misspelling = ALWAYS wrong
-        # Demonstrative: ذلك (correct) ↔ ذالك (common misspelling)
-        'ذلك': {'ذالك'},          # correct → misspelling = ALWAYS wrong
-        # Pronoun suffix: ه→ة corruption (G037: عمله→عملة)
-        'عمله': {'عملة'},          # عمله (his work) → عملة (currency) = WRONG
-        'لسانه': {'لسانة'},        # his tongue
-        'بيته': {'بيتة'},          # his house
-        'كتابه': {'كتابة'},        # his book → writing
-    }
+    # _DIRECTIONAL_BLOCKS is defined at module level (line ~100)
     if corr_word in _DIRECTIONAL_BLOCKS.get(orig_word, set()):
         return 0.0
 
