@@ -11,7 +11,7 @@ const BAYAN = {
   API_BASE: 'https://bayan10-bayan-api.hf.space',
 
   /** Network timeout for API calls (ms) */
-  API_TIMEOUT_MS: 20000,
+  API_TIMEOUT_MS: 60000,  // FIX-09: Increased from 20s to 60s for cold-start tolerance
 
   /** Max retries on network failure */
   MAX_RETRIES: 1,

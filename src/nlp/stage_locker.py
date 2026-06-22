@@ -49,6 +49,13 @@ class StageLocker:
                 return (ls, le, owner)
         return None
 
+    def unlock(self, start: int, end: int) -> None:
+        """FIX-18: Remove lock for a specific range (used when punctuation cap removes patches)."""
+        self.locked_spans = [
+            (ls, le, owner) for ls, le, owner in self.locked_spans
+            if not (ls == start and le == end)
+        ]
+
     def update_via_mapper(self, mapper) -> None:
         """
         Shift all locked spans to match the new CURRENT_TEXT after mutation.

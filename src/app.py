@@ -672,7 +672,7 @@ class OffsetMapper:
                 if j2 == j1:  # insertion point
                     return i1
                 ratio = (pos_in_after - j1) / (j2 - j1)
-                return int(i1 + ratio * (i2 - i1))
+                return round(i1 + ratio * (i2 - i1))  # FIX-12: round() instead of int() truncation
         return len(self._text_before)
 
     def forward_map_range(self, start_in_before, end_in_before):
@@ -885,6 +885,7 @@ def _is_small_spelling_change(orig_word, corr_word, vocab_manager=None):
             # 3. Word is in the hamza whitelist (known common errors)
             #    CRITICAL (Phase 5 fix, BUG-016/027): only accept if the correction
             #    MATCHES the whitelist target — not any arbitrary correction.
+            #    FIX-02: This check now ALWAYS accepts whitelist matches, bypassing IV-IV guard.
             from nlp.spelling.araspell_rules import AraSpellPostProcessor
             if orig_word in AraSpellPostProcessor.HAMZA_WHITELIST:
                 expected = AraSpellPostProcessor.HAMZA_WHITELIST[orig_word]
@@ -910,6 +911,13 @@ def _is_small_spelling_change(orig_word, corr_word, vocab_manager=None):
                                 f"(expected '{expected}') — rejected"
                             )
                             return 0.0
+            # 5. FIX-02: Alif maqsura fix (ي↔ى at end) — both IV but correction is valid
+            if (orig_word.endswith('ي') and corr_word.endswith('ى')
+                    and orig_word[:-1] == corr_word[:-1]):
+                return 0.85
+            if (orig_word.endswith('ى') and corr_word.endswith('ي')
+                    and orig_word[:-1] == corr_word[:-1]):
+                return 0.85
             # Both are valid words and change is NOT a known fix — REJECT
             # This prevents وكان→وكأن, etc.
             return 0.0
@@ -1222,15 +1230,6 @@ def analyze_text():
                 'status': 'success'
             })
 
-        # ── Phase 8 FIX (P3): Skip text with zero Arabic content ──
-        # Numbers-only, emojis-only, etc. should not receive punctuation suggestions
-        if arabic_chars == 0:
-            return jsonify({
-                'original': text, 'corrected': text,
-                'suggestions': [], 'timing_ms': {},
-                'status': 'success'
-            })
-
         # Pipeline state — PipelineContext carries all shared state
         ctx = PipelineContext(text)
         current_text = text  # Local alias (updated alongside ctx.current_text)
@@ -1282,7 +1281,7 @@ def analyze_text():
         # spelling, not grammar. For long texts, grammar may still produce
         # some false positives on rare words.
         text_len = len(current_text)
-        run_spelling = text_len <= 300
+        run_spelling = text_len <= 1000  # FIX-10: Increased from 300 to 1000
         if not run_spelling:
             logger.info(f"[ANALYZE] Text length {text_len} > 300 — skipping AraSpell for performance")
 
@@ -1323,19 +1322,13 @@ def analyze_text():
                                 # 1-word → 1-word: accept only small edits (typos)
                                 o_word = o_segment[0]
                                 c_word = c_segment[0]
-
-                                # ── Phase 8 FIX (P2): Skip non-Arabic tokens ──
-                                # Protect foreign words/abbreviations (CSS, Python, etc.)
-                                _has_arabic = bool(re.search(r'[\u0600-\u06FF]', o_word))
-                                if not _has_arabic:
-                                    logger.info(f"[SPELLING] Skipped non-Arabic token: '{o_word}'")
-                                    new_words.append(current_text[start_idx:end_idx])
-                                elif (spell_conf := _is_small_spelling_change(o_word, c_word, spell_checker.vocab_manager)):
-                                    logger.info(f"[SPELLING] Accepted: '{o_word}'→'{c_word}' (conf={spell_conf})")
+                                _spell_conf = _is_small_spelling_change(o_word, c_word, spell_checker.vocab_manager)
+                                if _spell_conf:
+                                    logger.info(f"[SPELLING] Accepted: '{o_word}'→'{c_word}' (conf={_spell_conf})")
                                     new_words.append(c_word)
                                     ctx.add_patch(
                                         'spelling', start_idx, end_idx,
-                                        c_word, confidence=spell_conf,
+                                        c_word, confidence=_spell_conf,
                                         alternatives=_get_spelling_alternatives(o_word, c_word, spell_checker),
                                     )
                                 else:
@@ -1475,17 +1468,69 @@ def analyze_text():
                 logger.error(traceback.format_exc())
                 timing_ms['spelling_error'] = f"{type(e).__name__}: {str(e)[:200]}"
 
+        # ── FIX-07: Religious text detection — skip grammar+punctuation for sacred text ──
+        _RELIGIOUS_PHRASES = [
+            'بسم الله', 'الحمد لله', 'سبحان الله', 'لا إله إلا الله',
+            'إياك نعبد', 'قل هو الله', 'قل أعوذ', 'إنا أنزلناه',
+            'حسبنا الله', 'لا حول ولا قوة', 'أستغفر الله',
+            'الله أكبر', 'إنا لله', 'اللهم صل', 'وإياك نستعين',
+            'ذلك الكتاب لا ريب', 'مالك يوم الدين', 'لم يلد ولم يولد',
+            'الله لا إله إلا هو', 'الرحمن الرحيم', 'رب العالمين',
+            'إنما الأعمال بالنيات', 'السلام عليكم ورحمة الله',
+            'صراط الذين أنعمت', 'من شر ما خلق', 'ملك الناس',
+            'رب اشرح لي صدري', 'ربنا آتنا',
+        ]
+        _is_religious_text = any(phrase in ctx.current_text for phrase in _RELIGIOUS_PHRASES)
+        if _is_religious_text:
+            logger.info(f"[ANALYZE] Religious text detected — skipping grammar+punctuation")
+
+        # ── FIX-03: Structured content protection ──
+        # Protect URLs, emails, dates, code etc. from grammar model destruction
+        _PROTECTED_PATTERNS = [
+            r'https?://\S+',           # URLs
+            r'\S+@\S+\.\S+',           # Emails
+            r'\d{1,2}[/\-\.]\d{1,2}[/\-\.]\d{2,4}',  # Dates
+            r'\d{1,2}:\d{2}',          # Times
+            r'#[\u0600-\u06FF\w]+',     # Hashtags
+            r'@[\w]+',                 # Mentions
+            r'\+?\d{10,13}',           # Phone numbers
+            r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}',  # IP addresses
+            r'v\d+\.\d+\.\d+',         # Version numbers
+        ]
+        _structured_placeholders = []  # (start, end, original_text, label)
+        _grammar_input_text = ctx.current_text
+        if not _is_religious_text:
+            import re as _re_struct
+            for _pat in _PROTECTED_PATTERNS:
+                for _m in _re_struct.finditer(_pat, _grammar_input_text):
+                    _structured_placeholders.append((_m.start(), _m.end(), _m.group()))
+            # Replace structured content with Arabic placeholder tokens
+            if _structured_placeholders:
+                _structured_placeholders.sort(key=lambda x: x[0], reverse=True)
+                for _sp_start, _sp_end, _sp_text in _structured_placeholders:
+                    _grammar_input_text = _grammar_input_text[:_sp_start] + 'بيان' + _grammar_input_text[_sp_end:]
+                logger.info(f"[ANALYZE] Protected {len(_structured_placeholders)} structured elements")
+
         # 2. Grammar (runs on spelling-corrected text — word-level dependency)
-        try:
+        if not _is_religious_text:
+          try:
             t0 = time.time()
             logger.info(f"[ANALYZE] Step 2: Grammar correction starting...")
             from nlp.grammar.grammar_service import get_grammar_model
             grammar_checker = get_grammar_model()
-            corrected_grammar = grammar_checker.correct(ctx.current_text)
+            corrected_grammar = grammar_checker.correct(_grammar_input_text)
             timing_ms['grammar_ms'] = int((time.time() - t0) * 1000)
             logger.info(f"[ANALYZE] Step 2: Grammar done in {timing_ms['grammar_ms']}ms")
+
+            # FIX-03: Restore structured content in grammar output
+            if _structured_placeholders:
+                # Restore in forward order
+                for _sp_start, _sp_end, _sp_text in reversed(_structured_placeholders):
+                    corrected_grammar = corrected_grammar.replace('بيان', _sp_text, 1)
+
             if corrected_grammar != ctx.current_text:
                 diffs = get_word_diffs(ctx.current_text, corrected_grammar)
+                _grammar_accepted_diffs = []  # FIX-04: track accepted diffs
                 for d in diffs:
                     # StageLocker: skip diffs that overlap with locked ranges
                     if ctx.stage_locker.is_locked(d['start'], d['end']):
@@ -1510,19 +1555,52 @@ def analyze_text():
                                 )
                                 continue
 
-                    # ── Phase 8 FIX (BUG #1): Reject punctuation-only diffs ──
-                    # The grammar model often strips trailing periods or adds
-                    # spaces before punctuation. These are NOT grammar fixes.
-                    # Filter: if the only difference is punctuation characters
-                    # or spacing around punctuation, skip this diff.
-                    _PUNCT_CHARS = set('.,،؛؟!:;? ')
-                    _orig_alpha = ''.join(c for c in orig_text if c not in _PUNCT_CHARS)
-                    _corr_alpha = ''.join(c for c in corr_text if c not in _PUNCT_CHARS)
-                    if _orig_alpha == _corr_alpha:
+                    # ── FIX-13: Named entity protection ──
+                    # Reject grammar changes to words that look like proper nouns:
+                    # - Title case Latin words (proper nouns in mixed text)
+                    # - Single words where the grammar just adds/removes spaces
+                    if orig_text and corr_text:
+                        # If original has no spaces but correction does (grammar split a name)
+                        _has_latin = any('A' <= c <= 'Z' or 'a' <= c <= 'z' for c in orig_text)
+                        if _has_latin and orig_text != corr_text:
+                            logger.info(
+                                f"[GRAMMAR] Skipping entity (contains Latin): "
+                                f"'{orig_text}'→'{corr_text}'"
+                            )
+                            continue
+
+                    # ── FIX-22: Emoji protection ──
+                    # Don't let grammar split/modify emoji sequences
+                    import re as _re_emoji
+                    if orig_text and _re_emoji.search(r'[\U0001F300-\U0001F9FF]', orig_text):
                         logger.info(
-                            f"[GRAMMAR] Rejected punctuation-only diff: "
-                            f"'{orig_text}'→'{corr_text}' (not a grammar issue)"
+                            f"[GRAMMAR] Skipping emoji content: '{orig_text}'"
                         )
+                        continue
+
+                    # ── FIX-06: Directional block protection for grammar ──
+                    # Prevents meaning-changing substitutions (كان→كأن etc.)
+                    # especially critical when spelling is skipped (>1000 chars).
+                    if corr_text in _DIRECTIONAL_BLOCKS.get(orig_text, set()):
+                        logger.info(
+                            f"[GRAMMAR] Directional block: '{orig_text}'→'{corr_text}'"
+                        )
+                        continue
+                    # Also check with clitic prefixes
+                    _gram_dir_blocked = False
+                    for _gpfx in ('و', 'ف', 'ب', 'ل', 'ك'):
+                        if (orig_text.startswith(_gpfx) and corr_text.startswith(_gpfx)
+                                and len(orig_text) > len(_gpfx) + 1):
+                            _g_orig_stem = orig_text[len(_gpfx):]
+                            _g_corr_stem = corr_text[len(_gpfx):]
+                            if _g_corr_stem in _DIRECTIONAL_BLOCKS.get(_g_orig_stem, set()):
+                                logger.info(
+                                    f"[GRAMMAR] Directional block (prefixed): "
+                                    f"'{orig_text}'→'{corr_text}'"
+                                )
+                                _gram_dir_blocked = True
+                                break
+                    if _gram_dir_blocked:
                         continue
 
                     # ── Phase 4 (BUG-033/E10): Grammar output sanity check ──
@@ -1541,11 +1619,21 @@ def analyze_text():
                         except Exception:
                             pass
 
+                    # FIX-22: Protect tanween (preserve ً ٌ ٍ from original)
+                    _TANWEEN_CHARS = set('ًٌٍ')
+                    if any(c in _TANWEEN_CHARS for c in orig_text) and not any(c in _TANWEEN_CHARS for c in corr_text):
+                        # Grammar stripped tanween — reattach it
+                        for _tc in _TANWEEN_CHARS:
+                            if _tc in orig_text and _tc not in corr_text:
+                                corr_text = corr_text + _tc
+                                break
+
                     # Re-label: if grammar's change is purely orthographic
                     # (hamza, ه→ة, etc.), tag it as 'spelling' for correct UI icon
                     stage_label = 'grammar'
                     if _is_spelling_only_change(orig_text, corr_text):
                         stage_label = 'spelling'
+                    _grammar_accepted_diffs.append(d)  # FIX-04: track accepted
                     ctx.add_patch(
                         stage_label, d['start'], d['end'],
                         corr_text, confidence=1.0
@@ -1567,16 +1655,26 @@ def analyze_text():
                         f"orig=({orig_opens},{orig_closes}), corr=({corr_opens},{corr_closes})"
                     )
                     # Don't mutate text — keep pre-grammar text
-                else:
-                    ctx.mutate_text(corrected_grammar, OffsetMapper)
+                elif _grammar_accepted_diffs:
+                    # FIX-04: Rebuild grammar text from ACCEPTED diffs only,
+                    # not the full model output. Prevents phantom corrections.
+                    _safe_grammar = ctx.current_text
+                    # Apply accepted diffs in reverse order to build safe text
+                    for _ad in sorted(_grammar_accepted_diffs, key=lambda x: x['start'], reverse=True):
+                        _safe_grammar = (_safe_grammar[:_ad['start']] +
+                                        _ad['correction'] +
+                                        _safe_grammar[_ad['end']:])
+                    ctx.mutate_text(_safe_grammar, OffsetMapper)
                 current_text = ctx.current_text
-        except Exception as e:
+          except Exception as e:
             logger.error(f"[ANALYZE] Grammar failed: {type(e).__name__}: {e}")
             logger.error(traceback.format_exc())
             timing_ms['grammar_error'] = f"{type(e).__name__}: {str(e)[:200]}"
 
         # 3. Punctuation (runs on grammar-corrected text — PuncAra-v1 local model)
-        try:
+        # FIX-07: Skip punctuation for religious text
+        if not _is_religious_text:
+          try:
             t0 = time.time()
             logger.info(f"[ANALYZE] Step 3: Punctuation starting...")
             from nlp.punctuation.punctuation_service import get_punctuation_model
@@ -1627,15 +1725,25 @@ def analyze_text():
                     # Keep earliest patches (by start_original) — consistent with PatchSet sort
                     punc_patches_sorted = sorted(punc_patches, key=lambda p: p.start_original)
                     to_remove = set(id(p) for p in punc_patches_sorted[MAX_PUNC_PATCHES_PER_RESPONSE:])
+                    # FIX-18: Also remove StageLocker locks for capped patches
+                    for _capped_p in punc_patches_sorted[MAX_PUNC_PATCHES_PER_RESPONSE:]:
+                        ctx.stage_locker.unlock(_capped_p.start_original, _capped_p.end_original)
                     ctx.patches.patches = [p for p in ctx.patches.patches if id(p) not in to_remove]
                     logger.info(
                         f"[PUNC-CAP] Capped punctuation patches: "
                         f"{len(punc_patches)} → {MAX_PUNC_PATCHES_PER_RESPONSE}"
                     )
 
-                ctx.mutate_text(corrected_punc, OffsetMapper)
+                # FIX-05: Rebuild punctuation text from accepted diffs only
+                _safe_punc = ctx.current_text
+                _punc_accepted = [d for d in diffs if validate_punctuation_diff(d)]
+                for _pd in sorted(_punc_accepted, key=lambda x: x['start'], reverse=True):
+                    _safe_punc = (_safe_punc[:_pd['start']] +
+                                 _pd['correction'] +
+                                 _safe_punc[_pd['end']:])
+                ctx.mutate_text(_safe_punc, OffsetMapper)
                 current_text = ctx.current_text
-        except Exception as e:
+          except Exception as e:
             logger.error(f"[ANALYZE] Punctuation failed: {type(e).__name__}: {e}")
             logger.error(traceback.format_exc())
             timing_ms['punctuation_error'] = f"{type(e).__name__}: {str(e)[:200]}"

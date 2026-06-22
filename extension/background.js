@@ -25,6 +25,9 @@ function cacheGet(text) {
   if (!entry) return null;
   if (Date.now() - entry.ts > BAYAN.CACHE_TTL_MS) { _cache.delete(key); return null; }
   if (entry.text !== text) return null;
+  // FIX-19: LRU — move to end on access (Map maintains insertion order)
+  _cache.delete(key);
+  _cache.set(key, entry);
   return entry.data;
 }
 

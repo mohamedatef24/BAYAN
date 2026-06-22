@@ -104,9 +104,39 @@ def validate_punctuation_diff(diff: dict) -> bool:
         - Punctuation spam: delta/word_count > 0.5 (multi-word diffs)
         - Short text (≤2 words): delta > 1
         - Any diff: delta > MAX_PUNCT_DELTA
+        - Adding terminal punctuation to a single word (FIX-01)
     """
     original = diff.get('original', '')
     correction = diff.get('correction', '')
+
+    # ── Rule 0 (FIX-01): Reject terminal punctuation injection on single words ──
+    # PuncAra-v1 unconditionally adds . or ؟ to every sentence.
+    # This rule catches the pattern: "word" → "word." / "word؟" / "word،"
+    # where the ONLY change is appending 1-2 terminal punctuation marks.
+    TERMINAL_PUNCT = set('.,،؛؟!:;?!')
+    orig_stripped = original.rstrip()
+    corr_stripped = correction.rstrip()
+    if orig_stripped and corr_stripped:
+        # Check if correction is just original + terminal punct
+        orig_alpha_r0 = re.sub(r'[.,،؛؟!:;?\s]', '', original)
+        corr_alpha_r0 = re.sub(r'[.,،؛؟!:;?\s]', '', correction)
+        if (_normalize_for_comparison(orig_alpha_r0) ==
+                _normalize_for_comparison(corr_alpha_r0)):
+            # Same word content — check if only terminal punct was added
+            orig_punct_end = sum(1 for c in original if c in TERMINAL_PUNCT)
+            corr_punct_end = sum(1 for c in correction if c in TERMINAL_PUNCT)
+            if corr_punct_end > orig_punct_end:
+                # Only adding punctuation — check if it's at the END (terminal)
+                orig_no_punct = re.sub(r'[.,،؛؟!:;?!]+$', '', original)
+                corr_no_punct = re.sub(r'[.,،؛؟!:;?!]+$', '', correction)
+                if _normalize_for_comparison(orig_no_punct.replace(' ', '')) == \
+                   _normalize_for_comparison(corr_no_punct.replace(' ', '')):
+                    # This is a pure terminal-punctuation addition — reject
+                    logger.info(
+                        f"[PUNC-SAFETY] Rejected terminal punct injection: "
+                        f"'{original}' → '{correction}'"
+                    )
+                    return False
 
     # ── Rule 1: Alphabetic content must be identical after normalization ──
     orig_alpha = re.sub(r'[.,،؛؟!:;?\s]', '', original)
