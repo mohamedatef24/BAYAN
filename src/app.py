@@ -1631,6 +1631,21 @@ def analyze_text():
                         )
                         continue
 
+                    # ── FIX-23: Tanween removal blocker ──
+                    # The grammar model often strips tanween (ً/ٌ/ٍ) from correct text.
+                    # Block diffs where the only change is tanween removal.
+                    if orig_text and corr_text:
+                        import re as _re_tnwn
+                        _TANWEEN = '\u064B\u064C\u064D'  # ً ٌ ٍ
+                        _orig_no_tnwn = _re_tnwn.sub(f'[{_TANWEEN}]', '', orig_text)
+                        _corr_no_tnwn = _re_tnwn.sub(f'[{_TANWEEN}]', '', corr_text)
+                        if _orig_no_tnwn == _corr_no_tnwn and orig_text != corr_text:
+                            logger.info(
+                                f"[GRAMMAR] Blocked tanween removal: "
+                                f"'{orig_text}'→'{corr_text}'"
+                            )
+                            continue
+
                     # ── FIX-06: Directional block protection for grammar ──
                     # Prevents meaning-changing substitutions (كان→كأن etc.)
                     # especially critical when spelling is skipped (>1000 chars).
