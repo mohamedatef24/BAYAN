@@ -159,20 +159,20 @@ def validate_punctuation_diff(diff: dict) -> bool:
                 )
                 return False
 
-    # ── Rule 0c (Batch 4): Reject punctuation rearrangement ──
+    # ── Rule 0c (Batch 4 + FIX-26): Reject punctuation rearrangement/substitution ──
     # When original already has punctuation and the correction merely MOVES
-    # marks to different positions (same count, same chars), reject.
-    # e.g. "حالك؟ أنا" → "حالك أنا؟" = rearrangement
+    # or SUBSTITUTES marks (e.g., ، → : or ، → ؛), reject.
+    # The PuncAra model should NOT replace existing punctuation.
     orig_punct_count_r0c = sum(1 for c in original if c in ARABIC_PUNCT_CHARS)
     corr_punct_count_r0c = sum(1 for c in correction if c in ARABIC_PUNCT_CHARS)
     if orig_punct_count_r0c > 0 and corr_punct_count_r0c > 0:
-        # Both have punctuation — check if it's just rearrangement
-        orig_punct_set = sorted(c for c in original if c in ARABIC_PUNCT_CHARS)
-        corr_punct_set = sorted(c for c in correction if c in ARABIC_PUNCT_CHARS)
-        if orig_punct_set == corr_punct_set:
-            # Same punct chars — only positions changed. This is rearrangement.
+        # Both have punctuation — check if alpha content is the same
+        orig_alpha_r0c = re.sub(r'[.,،؛؟!:;?\s]', '', original)
+        corr_alpha_r0c = re.sub(r'[.,،؛؟!:;?\s]', '', correction)
+        if _normalize_for_comparison(orig_alpha_r0c) == _normalize_for_comparison(corr_alpha_r0c):
+            # Same word content, but punct changed — reject any punct modification
             logger.info(
-                f"[PUNC-SAFETY] Rejected punct rearrangement: "
+                f"[PUNC-SAFETY] Rejected punct substitution: "
                 f"'{original}' → '{correction}'"
             )
             return False
