@@ -1646,6 +1646,32 @@ def analyze_text():
                             )
                             continue
 
+                    # ── FIX-24: Grammar punctuation stripping blocker ──
+                    # The grammar model removes periods/punctuation from end of text.
+                    # e.g., 'البلاد.' → 'البلاد' — this is WRONG, the period is correct.
+                    # Block diffs where the only change is punctuation removal/addition.
+                    if orig_text and corr_text:
+                        import re as _re_pstrip
+                        _PUNCT_CHARS = '.,،؛;:!؟?()[]{}«»\"\'…'
+                        _orig_stripped = orig_text.strip(_PUNCT_CHARS)
+                        _corr_stripped = corr_text.strip(_PUNCT_CHARS)
+                        if _orig_stripped == _corr_stripped and orig_text != corr_text:
+                            logger.info(
+                                f"[GRAMMAR] Blocked punct stripping: "
+                                f"'{orig_text}'→'{corr_text}'"
+                            )
+                            continue
+                        # Also block combined tanween + punct stripping
+                        _TANWEEN2 = '\u064B\u064C\u064D'
+                        _orig_clean = _re_pstrip.sub(f'[{_TANWEEN2}]', '', _orig_stripped)
+                        _corr_clean = _re_pstrip.sub(f'[{_TANWEEN2}]', '', _corr_stripped)
+                        if _orig_clean == _corr_clean and orig_text != corr_text:
+                            logger.info(
+                                f"[GRAMMAR] Blocked tanween+punct strip: "
+                                f"'{orig_text}'→'{corr_text}'"
+                            )
+                            continue
+
                     # ── FIX-06: Directional block protection for grammar ──
                     # Prevents meaning-changing substitutions (كان→كأن etc.)
                     # especially critical when spelling is skipped (>1000 chars).
