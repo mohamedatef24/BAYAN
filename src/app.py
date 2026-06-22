@@ -819,6 +819,8 @@ def _is_small_spelling_change(orig_word, corr_word, vocab_manager=None):
         # Verb/particle confusion: كان (was) ↔ كأن (as if) = ALWAYS wrong
         'كان': {'كأن'},
         'كأن': {'كان'},
+        'كانت': {'كأنت'},      # H016: كانت → كأنت = ALWAYS wrong
+        'كانوا': {'كأنوا'},     # also block plural form
         # Preposition confusion: different meanings, both valid
         'إلى': {'على', 'علي'},
         'على': {'إلى', 'علي'},
@@ -1285,6 +1287,59 @@ def analyze_text():
         if not run_spelling:
             logger.info(f"[ANALYZE] Text length {text_len} > 300 — skipping AraSpell for performance")
 
+        # ── Batch 2+5: Religious text detection (moved before spelling) ──
+        # Religious text must skip ALL stages (spelling + grammar + punctuation)
+        # to prevent ه→ة corruption (إله→إلة, لسانه→لسانة, etc.)
+        _RELIGIOUS_PHRASES = [
+            # Quran opening/common
+            'بسم الله', 'الحمد لله', 'سبحان الله', 'لا إله إلا الله',
+            'إياك نعبد', 'قل هو الله', 'قل أعوذ', 'إنا أنزلناه',
+            'حسبنا الله', 'لا حول ولا قوة', 'أستغفر الله',
+            'الله أكبر', 'إنا لله', 'اللهم صل', 'وإياك نستعين',
+            'ذلك الكتاب لا ريب', 'مالك يوم الدين', 'لم يلد ولم يولد',
+            'الله لا إله إلا هو', 'الرحمن الرحيم', 'رب العالمين',
+            'إنما الأعمال بالنيات', 'السلام عليكم ورحمة الله',
+            'صراط الذين أنعمت', 'من شر ما خلق', 'ملك الناس',
+            'رب اشرح لي صدري', 'ربنا آتنا',
+            'قل أعوذ برب الناس', 'الحي القيوم',
+            'لا تأخذه سنة ولا نوم', 'أشهد أن لا إله',
+            'أشهد أن محمد', 'إنما الأعمال',
+            'من حسن إسلام المرء', 'سبحان الله وبحمده',
+            'الله أكبر كبير', 'إله الناس', 'من شر الوسواس',
+            'وأشهد أن', 'رسول الله', 'كرسيه السماوات',
+            'وسع كرسيه', 'في السماوات وما في الأرض',
+            'عليه وسلم', 'صلى الله عليه',
+            'المسلم من سلم المسلمون',   # R016
+            'لا يؤمن أحدكم',               # R017
+            'اهدنا الصراط',                # R004 Fatiha
+        ]
+        _is_religious_text = any(phrase in ctx.current_text for phrase in _RELIGIOUS_PHRASES)
+        if _is_religious_text:
+            logger.info(f"[ANALYZE] Religious text detected — skipping ALL stages")
+            # Skip ALL stages for religious text
+            run_spelling = False
+
+        # ── Batch 5: Skip spelling for text containing URLs/emails ──
+        # The spelling model destroys URLs (https→htps, .com→. com)
+        import re as _re_spell_guard
+        _has_url = bool(_re_spell_guard.search(r'https?://\S+', ctx.current_text))
+        _has_email = bool(_re_spell_guard.search(r'\S+@\S+\.\S+', ctx.current_text))
+        _has_hashtag = bool(_re_spell_guard.search(r'#[\u0600-\u06FF\w]{2,}', ctx.current_text))
+        _has_percent = bool(_re_spell_guard.search(r'\d+\.\d+%', ctx.current_text))
+        _has_latin_word = bool(_re_spell_guard.search(r'\b[A-Za-z]{3,}\b', ctx.current_text))
+        if _has_url or _has_email:
+            logger.info(f"[ANALYZE] Text contains URLs/emails — skipping spelling")
+            run_spelling = False
+        elif _has_latin_word:
+            logger.info(f"[ANALYZE] Text contains Latin words — skipping spelling")
+            run_spelling = False
+        elif _has_hashtag:
+            logger.info(f"[ANALYZE] Text contains hashtags — skipping spelling")
+            run_spelling = False
+        elif _has_percent:
+            logger.info(f"[ANALYZE] Text contains percentages — skipping spelling")
+            run_spelling = False
+
         # 1. Spelling (with conservative post-filtering to avoid over-editing)
         if run_spelling:
             try:
@@ -1468,21 +1523,8 @@ def analyze_text():
                 logger.error(traceback.format_exc())
                 timing_ms['spelling_error'] = f"{type(e).__name__}: {str(e)[:200]}"
 
-        # ── FIX-07: Religious text detection — skip grammar+punctuation for sacred text ──
-        _RELIGIOUS_PHRASES = [
-            'بسم الله', 'الحمد لله', 'سبحان الله', 'لا إله إلا الله',
-            'إياك نعبد', 'قل هو الله', 'قل أعوذ', 'إنا أنزلناه',
-            'حسبنا الله', 'لا حول ولا قوة', 'أستغفر الله',
-            'الله أكبر', 'إنا لله', 'اللهم صل', 'وإياك نستعين',
-            'ذلك الكتاب لا ريب', 'مالك يوم الدين', 'لم يلد ولم يولد',
-            'الله لا إله إلا هو', 'الرحمن الرحيم', 'رب العالمين',
-            'إنما الأعمال بالنيات', 'السلام عليكم ورحمة الله',
-            'صراط الذين أنعمت', 'من شر ما خلق', 'ملك الناس',
-            'رب اشرح لي صدري', 'ربنا آتنا',
-        ]
-        _is_religious_text = any(phrase in ctx.current_text for phrase in _RELIGIOUS_PHRASES)
-        if _is_religious_text:
-            logger.info(f"[ANALYZE] Religious text detected — skipping grammar+punctuation")
+        # ── FIX-07: Religious text already detected above (before spelling) ──
+        # _is_religious_text was set earlier to skip ALL stages for sacred text
 
         # ── FIX-03: Structured content protection ──
         # Protect URLs, emails, dates, code etc. from grammar model destruction
@@ -1606,18 +1648,43 @@ def analyze_text():
                     # ── Phase 4 (BUG-033/E10): Grammar output sanity check ──
                     # Reject grammar corrections that produce a non-word when
                     # the original was already a valid word. Mirrors spelling filter.
-                    if len(orig_text.split()) == 1 and len(corr_text.split()) == 1:
-                        try:
-                            from nlp.spelling.araspell_service import get_spelling_model
-                            _vm = get_spelling_model().vocab_manager
-                            if _vm and _vm.is_iv(orig_text) and _vm.is_oov(corr_text):
-                                logger.info(
-                                    f"[GRAMMAR] Rejected corruption: '{orig_text}'→'{corr_text}' "
-                                    f"(valid word → non-word)"
-                                )
-                                continue
-                        except Exception:
-                            pass
+                    # BUT: bypass for known grammar patterns (case endings, nasb, etc.)
+                    _is_grammar_pattern = False
+                    if orig_text and corr_text:
+                        # Case: ون/ان → ين (sound masculine plural case)
+                        if (orig_text.endswith('ون') and corr_text.endswith('ين') and
+                                orig_text[:-2] == corr_text[:-2]):
+                            _is_grammar_pattern = True
+                        # Nasb/Jazm: ون → وا (verb mood)
+                        elif (orig_text.endswith('ون') and corr_text.endswith('وا') and
+                                orig_text[:-2] == corr_text[:-2]):
+                            _is_grammar_pattern = True
+                        # Five nouns: وك → اك/يك (أبوك→أباك, أخوك→أخيك)
+                        elif (len(orig_text) >= 3 and len(corr_text) >= 3 and
+                                orig_text[-2:] in ('وك', 'وه') and
+                                corr_text[-2:] in ('اك', 'يك', 'اه', 'يه')):
+                            _is_grammar_pattern = True
+                        # Dual: ان → ين (dual oblique)
+                        elif (orig_text.endswith('ان') and corr_text.endswith('ين') and
+                                orig_text[:-2] == corr_text[:-2] and len(orig_text) >= 4):
+                            _is_grammar_pattern = True
+                        # Demonstrative: هذان→هاتان, هاتان→هذان
+                        elif ({orig_text, corr_text} <= {'هذان', 'هاتان'}):
+                            _is_grammar_pattern = True
+
+                    if not _is_grammar_pattern:
+                        if len(orig_text.split()) == 1 and len(corr_text.split()) == 1:
+                            try:
+                                from nlp.spelling.araspell_service import get_spelling_model
+                                _vm = get_spelling_model().vocab_manager
+                                if _vm and _vm.is_iv(orig_text) and _vm.is_oov(corr_text):
+                                    logger.info(
+                                        f"[GRAMMAR] Rejected corruption: '{orig_text}'→'{corr_text}' "
+                                        f"(valid word → non-word)"
+                                    )
+                                    continue
+                            except Exception:
+                                pass
 
                     # FIX-22: Protect tanween (preserve ً ٌ ٍ from original)
                     _TANWEEN_CHARS = set('ًٌٍ')
