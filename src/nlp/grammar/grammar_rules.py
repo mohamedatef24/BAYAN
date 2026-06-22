@@ -365,13 +365,24 @@ class ArabicGrammarGuard:
     def process(self, original_text, generated_text):
         """Apply all grammar rules to model output."""
         text = self.preserve_numbers(original_text, generated_text)
-        text = self.fix_number_and_gender_agreement(text)
-        text = self.smart_asmaa_khamsa_fix(text)
-        text = self.fix_verbs_nasb_and_jazm(text)
-        text = self.fix_gender_agreement(text)
-        text = self.fix_prepositions_advanced(text)
-        text = self.fix_subject_verb_agreement(text)  # Fix G1
-        text = self.regex_rules_fallback(text)
+        
+        # Each rule is wrapped in try/except so that if camel-tools
+        # functions fail, the regex-based rules still execute.
+        for rule_name, rule_fn in [
+            ('fix_number_and_gender_agreement', self.fix_number_and_gender_agreement),
+            ('smart_asmaa_khamsa_fix', self.smart_asmaa_khamsa_fix),
+            ('fix_verbs_nasb_and_jazm', self.fix_verbs_nasb_and_jazm),
+            ('fix_gender_agreement', self.fix_gender_agreement),
+            ('fix_prepositions_advanced', self.fix_prepositions_advanced),
+            ('fix_subject_verb_agreement', self.fix_subject_verb_agreement),
+            ('regex_rules_fallback', self.regex_rules_fallback),
+        ]:
+            try:
+                text = rule_fn(text)
+            except Exception as e:
+                logger.warning(f"[GRAMMAR-RULES] {rule_name} failed: {e}")
+                # Continue with remaining rules
+        
         text = re.sub(r'\s+', ' ', text).strip()
         return text
 
