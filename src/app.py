@@ -1672,6 +1672,27 @@ def analyze_text():
                             )
                             continue
 
+                    # ── FIX-25: Grammar punctuation spacing blocker ──
+                    # The grammar model inserts spaces around punctuation:
+                    # e.g., 'حالك؟' → 'حالك ؟', 'المكتبة،' → 'المكتبة ،'
+                    # Block diffs where the only change is spacing around punct.
+                    if orig_text and corr_text:
+                        import re as _re_psp
+                        # Normalize: collapse spaces around common punct marks
+                        def _norm_punct_spacing(t):
+                            # Remove spaces before/after common punct
+                            t = _re_psp.sub(r'\s+([.,:;!?\u060C\u061B\u061F\u0021%$)}\]>])', r'\1', t)
+                            t = _re_psp.sub(r'([({\[<])\s+', r'\1', t)
+                            return t
+                        _orig_normed = _norm_punct_spacing(orig_text)
+                        _corr_normed = _norm_punct_spacing(corr_text)
+                        if _orig_normed == _corr_normed and orig_text != corr_text:
+                            logger.info(
+                                f"[GRAMMAR] Blocked punct spacing: "
+                                f"'{orig_text}'\u2192'{corr_text}'"
+                            )
+                            continue
+
                     # ── FIX-06: Directional block protection for grammar ──
                     # Prevents meaning-changing substitutions (كان→كأن etc.)
                     # especially critical when spelling is skipped (>1000 chars).
