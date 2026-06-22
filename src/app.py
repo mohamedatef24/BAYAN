@@ -990,6 +990,91 @@ def _is_small_spelling_change(orig_word, corr_word, vocab_manager=None):
         ('د', 'ض'), ('ض', 'د'),  # d/emphatic-d
         ('غ', 'ق'), ('ق', 'غ'),  # gh/q
     }
+
+    from nlp.spelling.araspell_rules import RulesBasedCorrector
+
+    # ── Phase 13: Adjacent character transposition detection ──
+    # Transpositions (e.g., العصوبات→الصعوبات) have Levenshtein=2 but are a
+    # single adjacent swap. Detect and accept when OOV→IV.
+    if len(orig_word) == len(corr_word) and dist == 2:
+        _transposition_found = False
+        for _ti in range(len(orig_word) - 1):
+            if (orig_word[_ti] == corr_word[_ti + 1] and
+                orig_word[_ti + 1] == corr_word[_ti] and
+                orig_word[:_ti] == corr_word[:_ti] and
+                orig_word[_ti + 2:] == corr_word[_ti + 2:]):
+                _transposition_found = True
+                break
+        if _transposition_found:
+            if vocab_manager:
+                _orig_oov = not vocab_manager.is_iv(orig_word)
+                _corr_iv = vocab_manager.is_iv(corr_word)
+                if _orig_oov and _corr_iv:
+                    logger.info(
+                        f"[SPELLING] Transposition accepted (OOV→IV): "
+                        f"'{orig_word}'→'{corr_word}'"
+                    )
+                    return 0.6  # Dampened confidence for transpositions
+                elif _orig_oov and not _corr_iv:
+                    # Both OOV — still accept transposition with lower confidence
+                    logger.info(
+                        f"[SPELLING] Transposition accepted (OOV→OOV): "
+                        f"'{orig_word}'→'{corr_word}' (low confidence)"
+                    )
+                    return 0.5
+            else:
+                return 0.6  # No vocab manager — accept with dampened confidence
+
+    # ── Phase 13: Single character insertion detection ──
+    # When the original has one extra character (user typed an extra letter),
+    # e.g., الكتتاب→الكتاب (extra ت). Levenshtein=1, lengths differ by 1.
+    if len(orig_word) == len(corr_word) + 1 and dist == 1:
+        # Find where the extra character is in orig_word
+        _insertion_valid = False
+        for _di in range(len(orig_word)):
+            # Try removing character at position _di from orig_word
+            _candidate = orig_word[:_di] + orig_word[_di + 1:]
+            if _candidate == corr_word:
+                _insertion_valid = True
+                break
+        if _insertion_valid:
+            if vocab_manager:
+                _orig_oov = not vocab_manager.is_iv(orig_word)
+                _corr_iv = vocab_manager.is_iv(corr_word)
+                if _orig_oov and _corr_iv:
+                    logger.info(
+                        f"[SPELLING] Insertion fix accepted (OOV→IV): "
+                        f"'{orig_word}'→'{corr_word}' (extra char removed)"
+                    )
+                    return 0.7
+            else:
+                return 0.6
+
+    # ── Phase 13: Single character deletion detection ──
+    # When the original is missing one character (user missed a key),
+    # e.g., الكتب→الكتاب (missing ا). Levenshtein=1, lengths differ by 1.
+    if len(corr_word) == len(orig_word) + 1 and dist == 1:
+        # Find where the missing character should be in corr_word
+        _deletion_valid = False
+        for _di in range(len(corr_word)):
+            # Try removing character at position _di from corr_word
+            _candidate = corr_word[:_di] + corr_word[_di + 1:]
+            if _candidate == orig_word:
+                _deletion_valid = True
+                break
+        if _deletion_valid:
+            if vocab_manager:
+                _orig_oov = not vocab_manager.is_iv(orig_word)
+                _corr_iv = vocab_manager.is_iv(corr_word)
+                if _orig_oov and _corr_iv:
+                    logger.info(
+                        f"[SPELLING] Deletion fix accepted (OOV→IV): "
+                        f"'{orig_word}'→'{corr_word}' (missing char added)"
+                    )
+                    return 0.7
+            else:
+                return 0.6
+
     # Check every character pair — reject if ANY non-orthographic change
     if len(orig_word) != len(corr_word):
         # Length change = structural change, not just orthographic
@@ -998,7 +1083,6 @@ def _is_small_spelling_change(orig_word, corr_word, vocab_manager=None):
             return 0.0
     # ── Phase 12 (A1): Keyboard-neighbor and phonetic acceptance ──
     # Check each differing character: ortho → full accept, keyboard/phonetic → dampened
-    from nlp.spelling.araspell_rules import RulesBasedCorrector
     _has_keyboard_or_phonetic = False
     for a, b in zip(orig_word, corr_word):
         if a != b:
@@ -1627,6 +1711,31 @@ def analyze_text():
                                             f"[SPELLING] Bidirectional fix: "
                                             f"'{_safe_words[_bi]}'(OOV)→'{_raw_words[_bi]}'(IV)"
                                         )
+                                        # ── Phase 13: Create patch for bidirectional fix ──
+                                        # Find this word's position in the ORIGINAL text so the
+                                        # user sees the correction as a suggestion in the UI.
+                                        try:
+                                            _orig_words_list = text.split()
+                                            if _bi < len(_orig_words_list):
+                                                _bidi_orig_word = _orig_words_list[_bi]
+                                                # Only create patch if the original word matches
+                                                # (bidirectional fix is correcting a filter-rejected word)
+                                                if _bidi_orig_word == _safe_words[_bi]:
+                                                    _bidi_pos = 0
+                                                    for _bw_idx in range(_bi):
+                                                        _next_pos = text.find(_orig_words_list[_bw_idx], _bidi_pos)
+                                                        if _next_pos >= 0:
+                                                            _bidi_pos = _next_pos + len(_orig_words_list[_bw_idx])
+                                                    _bidi_start = text.find(_bidi_orig_word, max(0, _bidi_pos))
+                                                    if _bidi_start >= 0:
+                                                        _bidi_end = _bidi_start + len(_bidi_orig_word)
+                                                        ctx.add_patch(
+                                                            'spelling', _bidi_start, _bidi_end,
+                                                            _raw_words[_bi], confidence=0.6,
+                                                            alternatives=[_raw_words[_bi], _bidi_orig_word],
+                                                        )
+                                        except Exception:
+                                            pass  # Patch creation is best-effort
                                         _safe_words[_bi] = _raw_words[_bi]
                                         _bidi_changed = True
                             if _bidi_changed:
@@ -2201,22 +2310,83 @@ def internal_error(error):
 _models_loaded = False
 
 def _ensure_models_loaded():
+    """Load ALL models at startup — no lazy loading.
+
+    Each model is wrapped in its own try/except so a single failure
+    doesn't prevent the server from starting. Models that fail to load
+    will gracefully degrade at request time.
+    """
     global _models_loaded
     if _models_loaded:
         return
     _models_loaded = True
-    logger.info("Loading models (production startup)...")
+
+    total_t0 = time.time()
+    logger.info("=" * 60)
+    logger.info("BAYAN — Loading ALL models at startup (eager mode)...")
+    logger.info("=" * 60)
+
+    # 1. Summarization (legacy load_models)
     if not load_models():
-        logger.error("Failed to load any models. Server will start but functionality will be limited.")
+        logger.error("Failed to load summarization model.")
+
+    # 2. Spelling model
+    try:
+        t0 = time.time()
+        from nlp.spelling.araspell_service import get_spelling_model
+        get_spelling_model()
+        logger.info(f"✓ Spelling model loaded in {time.time()-t0:.1f}s")
+    except Exception as e:
+        logger.error(f"✗ Spelling model failed to load: {e}")
+
+    # 3. Grammar model (Gradio client + camel-tools rules)
+    try:
+        t0 = time.time()
+        from nlp.grammar.grammar_service import get_grammar_model
+        get_grammar_model()
+        logger.info(f"✓ Grammar model loaded in {time.time()-t0:.1f}s")
+    except Exception as e:
+        logger.error(f"✗ Grammar model failed to load: {e}")
+
+    # 4. Punctuation model
+    try:
+        t0 = time.time()
+        from nlp.punctuation.punctuation_service import get_punctuation_model
+        get_punctuation_model()
+        logger.info(f"✓ Punctuation model loaded in {time.time()-t0:.1f}s")
+    except Exception as e:
+        logger.error(f"✗ Punctuation model failed to load: {e}")
+
+    # 5. Autocomplete model
+    try:
+        t0 = time.time()
+        from nlp.autocomplete.autocomplete_service import get_autocomplete_model
+        get_autocomplete_model()
+        logger.info(f"✓ Autocomplete model loaded in {time.time()-t0:.1f}s")
+    except Exception as e:
+        logger.error(f"✗ Autocomplete model failed to load: {e}")
+
+    # 6. Dialect model
+    try:
+        t0 = time.time()
+        from nlp.dialect.dialect_service import get_dialect_model
+        get_dialect_model()
+        logger.info(f"✓ Dialect model loaded in {time.time()-t0:.1f}s")
+    except Exception as e:
+        logger.error(f"✗ Dialect model failed to load: {e}")
+
+    total_elapsed = time.time() - total_t0
+    logger.info("=" * 60)
+    logger.info(f"BAYAN — All models loaded in {total_elapsed:.1f}s")
+    logger.info("=" * 60)
 
 # Load models on import (gunicorn imports this module, __name__ != '__main__')
 _ensure_models_loaded()
 
 
 if __name__ == '__main__':
-    # Load models on startup (development)
-    _ensure_models_loaded()
-    
+    # Models already loaded above via _ensure_models_loaded()
+
     # Run the app
     port = int(os.environ.get('PORT', 5000))
     debug = os.environ.get('DEBUG', 'False').lower() == 'true'
