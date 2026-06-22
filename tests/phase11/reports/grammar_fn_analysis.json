@@ -1,0 +1,184 @@
+{
+  "total_grammar_fn": 17,
+  "category_counts": {
+    "PATCH_FAILURE": 13,
+    "FILTER_FAILURE": 2,
+    "MODEL_FAILURE": 2
+  },
+  "classifications": [
+    {
+      "sample_id": "G001",
+      "input": "البنات ذهب إلى المدرسة",
+      "expected": "ذهبن/ذهبت",
+      "pipeline_output": "البنات ذهبن إلى المدرسة",
+      "classification": "PATCH_FAILURE",
+      "evidence": "Grammar patch accepted but final output doesn't match expected",
+      "filter_rejections": [],
+      "accepted_patches": 1
+    },
+    {
+      "sample_id": "G002",
+      "input": "الطلاب يذهب إلى الجامعة",
+      "expected": "يذهبون",
+      "pipeline_output": "الطلاب يذهبون إلى الجامعة",
+      "classification": "PATCH_FAILURE",
+      "evidence": "Grammar patch accepted but final output doesn't match expected",
+      "filter_rejections": [],
+      "accepted_patches": 1
+    },
+    {
+      "sample_id": "G003",
+      "input": "المهندسون حضر الاجتماع",
+      "expected": "حضروا",
+      "pipeline_output": "المهندسون حضرون الاجتماع",
+      "classification": "PATCH_FAILURE",
+      "evidence": "Grammar patch accepted but final output doesn't match expected",
+      "filter_rejections": [],
+      "accepted_patches": 1
+    },
+    {
+      "sample_id": "G004",
+      "input": "الرجال يعمل في المصنع",
+      "expected": "يعملون",
+      "pipeline_output": "الرجال يعملون في المصنع",
+      "classification": "PATCH_FAILURE",
+      "evidence": "Grammar patch accepted but final output doesn't match expected",
+      "filter_rejections": [],
+      "accepted_patches": 1
+    },
+    {
+      "sample_id": "G005",
+      "input": "النساء ذهب إلى السوق",
+      "expected": "ذهبن",
+      "pipeline_output": "النساء ذهبن إلى السوق",
+      "classification": "PATCH_FAILURE",
+      "evidence": "Grammar patch accepted but final output doesn't match expected",
+      "filter_rejections": [],
+      "accepted_patches": 1
+    },
+    {
+      "sample_id": "G006",
+      "input": "الأولاد لعب في الحديقة",
+      "expected": "لعبوا",
+      "pipeline_output": "الأولاد لعب في الحديقة",
+      "classification": "FILTER_FAILURE",
+      "evidence": "Rejected by: IVtoOOV",
+      "filter_rejections": [
+        "IVtoOOV"
+      ],
+      "accepted_patches": 0
+    },
+    {
+      "sample_id": "G007",
+      "input": "المعلمات حضر الاجتماع",
+      "expected": "حضرن",
+      "pipeline_output": "المعلمات حضرن الاجتماع",
+      "classification": "PATCH_FAILURE",
+      "evidence": "Grammar patch accepted but final output doesn't match expected",
+      "filter_rejections": [],
+      "accepted_patches": 1
+    },
+    {
+      "sample_id": "G008",
+      "input": "الأطباء يعالج المرضى",
+      "expected": "يعالجون",
+      "pipeline_output": "الأطباء يعالجون المرضى",
+      "classification": "PATCH_FAILURE",
+      "evidence": "Grammar patch accepted but final output doesn't match expected",
+      "filter_rejections": [],
+      "accepted_patches": 1
+    },
+    {
+      "sample_id": "G009",
+      "input": "العمال بنى المبنى",
+      "expected": "بنوا",
+      "pipeline_output": "العمال بنى المبنى",
+      "classification": "MODEL_FAILURE",
+      "evidence": "Grammar model returned input unchanged",
+      "filter_rejections": [],
+      "accepted_patches": 0
+    },
+    {
+      "sample_id": "G010",
+      "input": "الطالبات كتب الواجب",
+      "expected": "كتبن",
+      "pipeline_output": "الطالبات كتبن الواجب",
+      "classification": "PATCH_FAILURE",
+      "evidence": "Grammar patch accepted but final output doesn't match expected",
+      "filter_rejections": [],
+      "accepted_patches": 1
+    },
+    {
+      "sample_id": "G011",
+      "input": "السيارة جميل جداً",
+      "expected": "جميلة",
+      "pipeline_output": "السيارة جميلة جداً",
+      "classification": "PATCH_FAILURE",
+      "evidence": "Grammar patch accepted but final output doesn't match expected",
+      "filter_rejections": [],
+      "accepted_patches": 1
+    },
+    {
+      "sample_id": "G012",
+      "input": "البنت ذكي في المدرسة",
+      "expected": "ذكية",
+      "pipeline_output": "البنت ذكية في المدرسة",
+      "classification": "PATCH_FAILURE",
+      "evidence": "Grammar patch accepted but final output doesn't match expected",
+      "filter_rejections": [],
+      "accepted_patches": 1
+    },
+    {
+      "sample_id": "G013",
+      "input": "الطالبة متفوق في دراسته",
+      "expected": "متفوقة/دراستها",
+      "pipeline_output": "الطالب متفوق في دراسته",
+      "classification": "PATCH_FAILURE",
+      "evidence": "Grammar patch accepted but final output doesn't match expected",
+      "filter_rejections": [],
+      "accepted_patches": 1
+    },
+    {
+      "sample_id": "G014",
+      "input": "المدينة كبير وواسع",
+      "expected": "كبيرة وواسعة",
+      "pipeline_output": "المدينة كبيرة وواسعة",
+      "classification": "PATCH_FAILURE",
+      "evidence": "Grammar patch accepted but final output doesn't match expected",
+      "filter_rejections": [],
+      "accepted_patches": 1
+    },
+    {
+      "sample_id": "G015",
+      "input": "الشمس مشرق اليوم",
+      "expected": "مشرقة",
+      "pipeline_output": "الشمس مشرقة اليوم",
+      "classification": "PATCH_FAILURE",
+      "evidence": "Grammar patch accepted but final output doesn't match expected",
+      "filter_rejections": [],
+      "accepted_patches": 1
+    },
+    {
+      "sample_id": "G022",
+      "input": "رأيت أخوك في المسجد",
+      "expected": "أخاك",
+      "pipeline_output": "رأيت أخوك في المسجد",
+      "classification": "MODEL_FAILURE",
+      "evidence": "Grammar model returned input unchanged",
+      "filter_rejections": [],
+      "accepted_patches": 0
+    },
+    {
+      "sample_id": "G028",
+      "input": "لم يفعلون الواجب بعد",
+      "expected": "يفعلوا",
+      "pipeline_output": "لم يفعلون الواجب بعد",
+      "classification": "FILTER_FAILURE",
+      "evidence": "Rejected by: IVtoOOV",
+      "filter_rejections": [
+        "IVtoOOV"
+      ],
+      "accepted_patches": 0
+    }
+  ]
+}
