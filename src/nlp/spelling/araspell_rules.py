@@ -1530,5 +1530,12 @@ class ArabicSpellChecker:
                         raw_valid, _ = self.validator.validate(original, raw_model_output, "mixed")
                         if raw_valid:
                             result = raw_model_output
-        
+        # ── FINAL PASS: Hamza whitelist + Ta Marbuta fixes (unrevertable) ──
+        # These are applied AFTER all validation/safety steps so they can't
+        # be undone by Steps 8-10 which compare against raw_model_output.
+        # The root issue: Steps 8-10 use edit distance to INPUT (which has errors)
+        # so they revert corrections back to the erroneous form.
+        result = AraSpellPostProcessor.fix_common_hamza(result)
+        result = AraSpellPostProcessor.fix_ha_ta_marbuta(result, vocab_manager=self.vocab_manager)
+
         return result
