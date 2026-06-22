@@ -231,10 +231,29 @@ class ArabicGrammarGuard:
                 'الأطباء', 'أطباء', 'الاطباء', 'اطباء',
                 'العمال', 'عمال', 'الشباب', 'الأبناء',
                 'المهندسون', 'المعلمون', 'المهندسين', 'المعلمين',
+                # FIX-08: Expanded plural lists
+                'اللاعبون', 'اللاعبين', 'لاعبون', 'لاعبين',
+                'المسلمون', 'المسلمين', 'مسلمون', 'مسلمين',
+                'العرب', 'الناس', 'الأطفال', 'أطفال', 'اطفال',
+                'الأصدقاء', 'أصدقاء', 'اصدقاء',
+                'العلماء', 'علماء', 'الأعداء', 'أعداء',
+                'الوزراء', 'وزراء', 'الأمراء', 'أمراء',
+                'الكتّاب', 'كتّاب', 'الأدباء', 'أدباء',
+                'السكان', 'سكان', 'الجنود', 'جنود',
+                'الأساتذة', 'أساتذة', 'التلاميذ', 'تلاميذ',
+                'المواطنون', 'المواطنين', 'المسؤولون', 'المسؤولين',
+                'الطلبة', 'طلبة', 'الأقارب', 'أقارب',
             }
             KNOWN_PLURALS_FEM = {
                 'الطالبات', 'طالبات', 'النساء', 'نساء', 'البنات', 'بنات',
                 'المعلمات', 'معلمات', 'الأمهات', 'أمهات',
+                # FIX-08: Expanded feminine plurals
+                'المهندسات', 'مهندسات', 'الطبيبات', 'طبيبات',
+                'اللاعبات', 'لاعبات', 'الممثلات', 'ممثلات',
+                'الشركات', 'شركات', 'الجامعات', 'جامعات',
+                'المدارس', 'مدارس', 'المستشفيات', 'مستشفيات',
+                'الحكومات', 'حكومات', 'المنظمات', 'منظمات',
+                'الطائرات', 'طائرات', 'السيارات', 'سيارات',
             }
 
             if noun_word in KNOWN_PLURALS_MASC:
@@ -247,6 +266,14 @@ class ArabicGrammarGuard:
                     is_plural_masc = True
             elif noun_word.endswith('ات') and len(noun_word) >= 5:
                 is_plural_fem = True
+            # FIX-08: Broken plural heuristic — common patterns
+            elif noun_num == 'p':
+                # Trust POS tagger when it says plural AND word is long enough
+                if len(noun_word) >= 4:
+                    if noun_gen == 'f':
+                        is_plural_fem = True
+                    else:
+                        is_plural_masc = True
 
             if not is_plural_masc and not is_plural_fem:
                 continue
@@ -289,11 +316,5 @@ class ArabicGrammarGuard:
         text = self.fix_subject_verb_agreement(text)  # Fix G1
         text = self.regex_rules_fallback(text)
         text = re.sub(r'\s+', ' ', text).strip()
-
-        # ── Phase 8 FIX (P3): Remove spaces before Arabic punctuation ──
-        # The grammar model sometimes inserts spaces before punctuation:
-        #   'حالك ؟' → 'حالك؟'   'مرحبا ،' → 'مرحبا،'
-        text = re.sub(r'\s+([،؛؟!.:,;?])', r'\1', text)
-
         return text
 

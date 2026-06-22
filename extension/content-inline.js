@@ -257,7 +257,7 @@
       <div class="bayan-il-tooltip-body">
         <span class="bayan-il-tooltip-original">${esc(original)}</span>
         <span class="bayan-il-tooltip-arrow">←</span>
-        <span class="bayan-il-tooltip-correction">${esc(correction)}</span>
+        <span class="bayan-il-tooltip-correction">${correction ? esc(correction) : '<s style="opacity:0.5">حذف</s>'}</span>
       </div>
       <div class="bayan-il-tooltip-actions">
         <button class="bayan-il-tooltip-apply" data-action="apply">تطبيق</button>
@@ -325,13 +325,18 @@
       field.value = newText;
       field.dispatchEvent(new Event('input', { bubbles: true }));
     } else {
-      field.innerText = newText;
+      // FIX-17: Use textContent instead of innerText for better compatibility
+      // This preserves the DOM structure better than innerText assignment
+      field.textContent = newText;
     }
 
     if (suggestions.length > 0) {
       renderOverlay(field, newText, suggestions);
     } else {
       clearHighlights();
+      // FIX-21: Trigger re-analysis after applying last fix
+      // This catches any remaining errors that were masked by the fixed one
+      setTimeout(() => onFieldInput(), 500);
     }
     updateBadge(suggestions.length);
   }
@@ -443,7 +448,7 @@
     positionFab(field);
 
     field.addEventListener('input', onFieldInput);
-    field.addEventListener('keyup', onFieldInput);
+    // FIX-20: Removed redundant 'keyup' listener (input event already fires on every change)
 
     if (BayanController.hasArabic(getFieldText(field))) {
       onFieldInput();
@@ -453,7 +458,7 @@
   function detachField() {
     if (activeField) {
       activeField.removeEventListener('input', onFieldInput);
-      activeField.removeEventListener('keyup', onFieldInput);
+      // FIX-20: keyup listener no longer attached
       activeField.removeEventListener('scroll', syncOverlay);
     }
     clearHighlights();
