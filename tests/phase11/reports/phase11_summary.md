@@ -99,11 +99,27 @@ G028: `يفعلون` → `يفعلوَ` (fatha on waw)
 
 The model produces the correct ROOT form but adds a diacritical that makes it fail the IVtoOOV vocabulary check. The diacritical should be stripped before the vocab check.
 
-### Finding 6: Grammar model top failure modes
+### Finding 7: Spelling ORTHO_PAIRS blocks genuine keyboard typos
 
-1. **Returns unchanged** for أسماء الخمسة (five nouns): G022 `أخوك` should be `أخاك`
-2. **Wrong suffix**: G003 `حضرون` instead of `حضروا` (present tense suffix instead of past tense)
-3. **Diacritical pollution**: G006, G028 — adds فتحة to جزم corrections
+**Real-world case**: `بالرفم`→`بالرغم` (ف→غ, "despite")
+
+The spelling model correctly detects the fix. But `_is_small_spelling_change()` rejects it because:
+- Path 1 (IV-IV guard): Both words are valid Arabic → only known orthographic fixes allowed → ف↔غ NOT in ORTHO_PAIRS → **REJECT**
+- Path 2 (OOV path): Character check at line 966 → ف↔غ NOT in ORTHO_PAIRS → **REJECT**
+
+`ف` and `غ` are **adjacent on the Arabic keyboard** — this is a classic keyboard typo pattern.
+
+Affected letter pairs NOT in ORTHO_PAIRS:
+- ف↔غ (fa/ghayn — adjacent)
+- ق↔ف (qaf/fa — adjacent)  
+- ع↔غ (ain/ghayn — related)
+- ص↔ض (sad/dad — related)
+- ث↔ت (tha/ta — related)
+- ذ↔د (dhal/dal — related)
+- ز↔ر (zay/ra — adjacent)
+- ط↔ظ (ta/dha — related)
+- س↔ش (sin/shin — related)
+- ح↔خ (ha/kha — related)
 
 ---
 
@@ -133,8 +149,21 @@ StageLocker caused 1 rejection in 270 samples. It is functioning correctly.
 
 Zero conflicts in 270 samples. No architectural change needed.
 
+### Priority 6: Add keyboard-adjacent pairs to spelling ORTHO_PAIRS
+
+The spelling filter blocks genuine keyboard typos (`بالرفم`→`بالرغم`) because ف↔غ is not in ORTHO_PAIRS. Two approaches:
+
+**Option A**: Add keyboard-adjacent Arabic letter pairs to ORTHO_PAIRS (simple, ~10 pairs)
+- Risk: may allow some unwanted corrections between similar-sounding letters
+- Benefit: fixes the most common real-world typo pattern
+
+**Option B**: Create a separate `KEYBOARD_TYPO_PAIRS` set with weaker confidence (0.5)
+- Risk: more complex logic
+- Benefit: allows keyboard typos but with dampened confidence for user review
+
 ### Not Recommended
 
 - Adding NER — entity FP (3 cases) are minor compared to grammar issues
 - Replacing grammar model — the model IS producing correct corrections for most patterns
 - Redesigning OffsetMapper — edge case documented but not causing failures
+
