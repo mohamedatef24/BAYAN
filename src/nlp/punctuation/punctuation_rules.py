@@ -89,13 +89,14 @@ def _normalize_for_comparison(text: str) -> str:
     return text
 
 
-def validate_punctuation_diff(diff: dict) -> bool:
+def validate_punctuation_diff(diff: dict, full_text: str = '') -> bool:
     """
     Return True ONLY if the diff is a safe punctuation-only change.
 
     ALLOWED:
         - Inserting 1 punctuation mark (short text) or 1–3 (long text)
         - Replacing one punctuation mark with another
+        - Adding terminal punctuation to sentences (3+ words) that lack it
 
     REJECTED:
         - Adding/deleting/duplicating Arabic words
@@ -104,15 +105,21 @@ def validate_punctuation_diff(diff: dict) -> bool:
         - Punctuation spam: delta/word_count > 0.5 (multi-word diffs)
         - Short text (≤2 words): delta > 1
         - Any diff: delta > MAX_PUNCT_DELTA
-        - Adding terminal punctuation to a single word (FIX-01)
+        - Adding terminal punctuation to short fragments (≤2 words) (FIX-01)
+        - Adding terminal punctuation when text already ends with punct
     """
     original = diff.get('original', '')
     correction = diff.get('correction', '')
 
-    # ── Rule 0 (FIX-01): Reject terminal punctuation injection on single words ──
+    # ── Rule 0 (FIX-01): Reject terminal punctuation injection ──
     # PuncAra-v1 unconditionally adds . or ؟ to every sentence.
     # This rule catches the pattern: "word" → "word." / "word؟" / "word،"
     # where the ONLY change is appending 1-2 terminal punctuation marks.
+    #
+    # Phase 13: Allow terminal punct for multi-word sentences (3+ words)
+    # that don't already end with punctuation. Only block for:
+    #   - Short fragments (≤2 words in full text)
+    #   - Text that already has terminal punctuation
     TERMINAL_PUNCT = set('.,،؛؟!:;?!')
     orig_stripped = original.rstrip()
     corr_stripped = correction.rstrip()
@@ -131,12 +138,32 @@ def validate_punctuation_diff(diff: dict) -> bool:
                 corr_no_punct = re.sub(r'[.,،؛؟!:;?!]+$', '', correction)
                 if _normalize_for_comparison(orig_no_punct.replace(' ', '')) == \
                    _normalize_for_comparison(corr_no_punct.replace(' ', '')):
-                    # This is a pure terminal-punctuation addition — reject
-                    logger.info(
-                        f"[PUNC-SAFETY] Rejected terminal punct injection: "
-                        f"'{original}' → '{correction}'"
-                    )
-                    return False
+                    # This is a pure terminal-punctuation addition.
+                    # Decide whether to allow based on full text context.
+                    _full_word_count = len(re.findall(
+                        r'[\u0600-\u06FFa-zA-Z]+', full_text
+                    )) if full_text else 0
+                    _full_already_has_terminal = bool(
+                        re.search(r'[.،؛؟!?!][\s]*$', full_text)
+                    ) if full_text else False
+                    # Also check for ellipsis (... at end)
+                    _full_has_ellipsis = full_text.rstrip().endswith('...') if full_text else False
+
+                    if _full_word_count >= 3 and not _full_already_has_terminal and not _full_has_ellipsis:
+                        # Multi-word sentence without terminal punct → ALLOW
+                        logger.info(
+                            f"[PUNC-SAFETY] Allowed terminal punct for sentence "
+                            f"({_full_word_count} words): "
+                            f"'{original}' → '{correction}'"
+                        )
+                        # Fall through to remaining rules (don't return yet)
+                    else:
+                        # Short fragment OR already has terminal punct → REJECT
+                        logger.info(
+                            f"[PUNC-SAFETY] Rejected terminal punct injection: "
+                            f"'{original}' → '{correction}'"
+                        )
+                        return False
 
     # ── Rule 0b (Batch 4): Reject punct insertion when original has no punctuation ──
     # If the original text has zero Arabic punctuation and the correction
