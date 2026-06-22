@@ -1575,6 +1575,10 @@ def analyze_text():
             timing_ms['grammar_ms'] = int((time.time() - t0) * 1000)
             logger.info(f"[ANALYZE] Step 2: Grammar done in {timing_ms['grammar_ms']}ms")
 
+            # ── Phase 11: Telemetry — raw grammar output ──
+            import json as _tel_json
+            logger.info(f'[FILTER-TEL] {_tel_json.dumps({"event":"grammar_raw_output","input":_grammar_input_text[:200],"output":corrected_grammar[:200]})}')
+
             # FIX-03: Restore structured content in grammar output
             if _structured_placeholders:
                 # Restore in forward order
@@ -1584,18 +1588,22 @@ def analyze_text():
             if corrected_grammar != ctx.current_text:
                 diffs = get_word_diffs(ctx.current_text, corrected_grammar)
                 _grammar_accepted_diffs = []  # FIX-04: track accepted diffs
+                _grammar_total_diffs = len(diffs)
+                logger.info(f'[FILTER-TEL] {_tel_json.dumps({"event":"grammar_diffs_extracted","count":_grammar_total_diffs})}')
                 for d in diffs:
+                    orig_text = d.get('original', '')
+                    corr_text = d.get('correction', '')
+                    logger.info(f'[FILTER-TEL] {_tel_json.dumps({"event":"grammar_diff","original":orig_text[:80],"correction":corr_text[:80],"start":d["start"],"end":d["end"]})}')
                     # StageLocker: skip diffs that overlap with locked ranges
                     if ctx.stage_locker.is_locked(d['start'], d['end']):
                         logger.info(
                             f"[LOCK] Grammar blocked on [{d['start']}:{d['end']}] "
                             f"'{d.get('original','')}' — locked by previous stage"
                         )
+                        logger.info(f'[FILTER-TEL] {_tel_json.dumps({"event":"filter_reject","filter":"StageLocker","original":orig_text[:80],"correction":corr_text[:80]})}')
                         continue
 
                     # Reject grammar hallucinations (e.g. جالس→جاكسون)
-                    orig_text = d.get('original', '')
-                    corr_text = d.get('correction', '')
                     if orig_text and corr_text:
                         orig_chars = set(orig_text.replace(' ', ''))
                         corr_chars = set(corr_text.replace(' ', ''))
@@ -1606,6 +1614,7 @@ def analyze_text():
                                     f"[GRAMMAR] Rejected hallucination: '{orig_text}'→'{corr_text}' "
                                     f"(jaccard={jaccard:.2f})"
                                 )
+                                logger.info(f'[FILTER-TEL] {_tel_json.dumps({"event":"filter_reject","filter":"Jaccard_03","original":orig_text[:80],"correction":corr_text[:80],"jaccard":round(jaccard,3)})}')
                                 continue
 
                     # ── FIX-13: Named entity protection ──
@@ -1620,6 +1629,7 @@ def analyze_text():
                                 f"[GRAMMAR] Skipping entity (contains Latin): "
                                 f"'{orig_text}'→'{corr_text}'"
                             )
+                            logger.info(f'[FILTER-TEL] {_tel_json.dumps({"event":"filter_reject","filter":"LatinGuard","original":orig_text[:80],"correction":corr_text[:80]})}')
                             continue
 
                     # ── FIX-22: Emoji protection ──
@@ -1644,6 +1654,7 @@ def analyze_text():
                                 f"[GRAMMAR] Blocked tanween removal: "
                                 f"'{orig_text}'→'{corr_text}'"
                             )
+                            logger.info(f'[FILTER-TEL] {_tel_json.dumps({"event":"filter_reject","filter":"TanweenGuard","original":orig_text[:80],"correction":corr_text[:80]})}')
                             continue
 
                     # ── FIX-24: Grammar punctuation stripping blocker ──
@@ -1660,6 +1671,7 @@ def analyze_text():
                                 f"[GRAMMAR] Blocked punct stripping: "
                                 f"'{orig_text}'→'{corr_text}'"
                             )
+                            logger.info(f'[FILTER-TEL] {_tel_json.dumps({"event":"filter_reject","filter":"PunctuationGuard","original":orig_text[:80],"correction":corr_text[:80]})}')
                             continue
                         # Also block combined tanween + punct stripping
                         _TANWEEN2 = '\u064B\u064C\u064D'
@@ -1670,6 +1682,7 @@ def analyze_text():
                                 f"[GRAMMAR] Blocked tanween+punct strip: "
                                 f"'{orig_text}'→'{corr_text}'"
                             )
+                            logger.info(f'[FILTER-TEL] {_tel_json.dumps({"event":"filter_reject","filter":"PunctuationGuard","original":orig_text[:80],"correction":corr_text[:80]})}')
                             continue
 
                     # ── FIX-25: Grammar punctuation spacing blocker ──
@@ -1702,6 +1715,7 @@ def analyze_text():
                             f"[GRAMMAR] Blocked digit-containing diff: "
                             f"'{orig_text}'\u2192'{corr_text}'"
                         )
+                        logger.info(f'[FILTER-TEL] {_tel_json.dumps({"event":"filter_reject","filter":"DigitGuard","original":orig_text[:80],"correction":corr_text[:80]})}')
                         continue
 
                     # ── FIX-27b: Grammar hallucination guard (Jaccard) ──
@@ -1720,6 +1734,7 @@ def analyze_text():
                                     f"[GRAMMAR] Blocked low-Jaccard diff (j={_jac:.2f}): "
                                     f"'{orig_text}'\u2192'{corr_text}'"
                                 )
+                                logger.info(f'[FILTER-TEL] {_tel_json.dumps({"event":"filter_reject","filter":"Jaccard_05","original":orig_text[:80],"correction":corr_text[:80],"jaccard":round(_jac,3)})}')
                                 continue
 
                     # ── FIX-06: Directional block protection for grammar ──
@@ -1729,6 +1744,7 @@ def analyze_text():
                         logger.info(
                             f"[GRAMMAR] Directional block: '{orig_text}'→'{corr_text}'"
                         )
+                        logger.info(f'[FILTER-TEL] {_tel_json.dumps({"event":"filter_reject","filter":"DirectionalBlock","original":orig_text[:80],"correction":corr_text[:80]})}')
                         continue
                     # Also check with clitic prefixes
                     _gram_dir_blocked = False
@@ -1806,6 +1822,7 @@ def analyze_text():
                                         f"[GRAMMAR] Rejected corruption: '{orig_text}'→'{corr_text}' "
                                         f"(valid word → non-word)"
                                     )
+                                    logger.info(f'[FILTER-TEL] {_tel_json.dumps({"event":"filter_reject","filter":"IVtoOOV","original":orig_text[:80],"correction":corr_text[:80]})}')
                                     continue
                             except Exception:
                                 pass
@@ -1825,6 +1842,7 @@ def analyze_text():
                     if _is_spelling_only_change(orig_text, corr_text):
                         stage_label = 'spelling'
                     _grammar_accepted_diffs.append(d)  # FIX-04: track accepted
+                    logger.info(f'[FILTER-TEL] {_tel_json.dumps({"event":"patch_accepted","stage":stage_label,"original":orig_text[:80],"correction":corr_text[:80],"start":d["start"],"end":d["end"]})}')
                     ctx.add_patch(
                         stage_label, d['start'], d['end'],
                         corr_text, confidence=1.0
