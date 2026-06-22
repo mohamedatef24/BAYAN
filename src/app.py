@@ -1693,6 +1693,35 @@ def analyze_text():
                             )
                             continue
 
+                    # ── FIX-27a: Grammar structured data protection ──
+                    # Block grammar diffs where the original contains digits.
+                    # The grammar model corrupts dates/numbers/times/percentages.
+                    # e.g., '2026-06-22' → 'عشرين 26-06-22ا'
+                    if orig_text and any(c.isdigit() for c in orig_text):
+                        logger.info(
+                            f"[GRAMMAR] Blocked digit-containing diff: "
+                            f"'{orig_text}'\u2192'{corr_text}'"
+                        )
+                        continue
+
+                    # ── FIX-27b: Grammar hallucination guard (Jaccard) ──
+                    # Block grammar diffs where the correction is too different
+                    # from the original (character-level Jaccard < 0.5).
+                    # Catches: القانون→القانين, يعزف→يعزفون, للإنسان→للإنسين
+                    if orig_text and corr_text and len(orig_text) > 2:
+                        import re as _re_jac
+                        # Strip punctuation/spaces for comparison
+                        _o_chars = set(_re_jac.sub(r'[\s.,،؛؟!:;?]', '', orig_text))
+                        _c_chars = set(_re_jac.sub(r'[\s.,،؛؟!:;?]', '', corr_text))
+                        if _o_chars and _c_chars:
+                            _jac = len(_o_chars & _c_chars) / len(_o_chars | _c_chars)
+                            if _jac < 0.5:
+                                logger.info(
+                                    f"[GRAMMAR] Blocked low-Jaccard diff (j={_jac:.2f}): "
+                                    f"'{orig_text}'\u2192'{corr_text}'"
+                                )
+                                continue
+
                     # ── FIX-06: Directional block protection for grammar ──
                     # Prevents meaning-changing substitutions (كان→كأن etc.)
                     # especially critical when spelling is skipped (>1000 chars).
