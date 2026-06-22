@@ -829,6 +829,11 @@ def _is_small_spelling_change(orig_word, corr_word, vocab_manager=None):
         'لكن': {'لاكن'},          # correct → misspelling = ALWAYS wrong
         # Demonstrative: ذلك (correct) ↔ ذالك (common misspelling)
         'ذلك': {'ذالك'},          # correct → misspelling = ALWAYS wrong
+        # Pronoun suffix: ه→ة corruption (G037: عمله→عملة)
+        'عمله': {'عملة'},          # عمله (his work) → عملة (currency) = WRONG
+        'لسانه': {'لسانة'},        # his tongue
+        'بيته': {'بيتة'},          # his house
+        'كتابه': {'كتابة'},        # his book → writing
     }
     if corr_word in _DIRECTIONAL_BLOCKS.get(orig_word, set()):
         return 0.0
@@ -872,19 +877,15 @@ def _is_small_spelling_change(orig_word, corr_word, vocab_manager=None):
             #    E.g., فتأملته (fataamaltahu) → فتأملتة is WRONG.
             if (orig_word.endswith('ه') and corr_word.endswith('ة')
                     and orig_word[:-1] == corr_word[:-1]):
-                # Guard: if ه is a pronoun suffix, block conversion to ة.
-                # Heuristic: if removing ه gives a valid standalone word,
-                # the ه is likely pronoun 'his/it' (عمله = عمل+ه).
-                # If removing ه gives an invalid word, it's ta-marbuta (مدرسه→مدرسة).
-                if len(orig_word) >= 3 and vocab_manager:
-                    stem_without_h = orig_word[:-1]
-                    if vocab_manager.is_iv(stem_without_h):
-                        logger.info(
-                            f"[SPELLING] Blocked ه→ة (pronoun suffix): "
-                            f"'{orig_word}'→'{corr_word}' "
-                            f"('{stem_without_h}' is valid IV → ه = 'his/it')"
-                        )
-                        return 0.0
+                # Guard: if word ends in ته, the ه is likely a pronoun suffix
+                # Pattern: verb+ته = "verb + him/it", NOT ta marbuta.
+                # E.g., فتأملته → فتأملتة is WRONG.
+                if len(orig_word) >= 3 and orig_word[-2] == 'ت':
+                    logger.info(
+                        f"[SPELLING] Blocked ه→ة at pronoun suffix: "
+                        f"'{orig_word}'→'{corr_word}' (ته pattern = pronoun 'him/it')"
+                    )
+                    return 0.0
                 return 0.9
             # 2. ة→ه at word end (less common but valid)
             if (orig_word.endswith('ة') and corr_word.endswith('ه')
