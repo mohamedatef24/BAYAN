@@ -931,6 +931,28 @@ def _is_small_spelling_change(orig_word, corr_word, vocab_manager=None):
             if (orig_word.endswith('ى') and corr_word.endswith('ي')
                     and orig_word[:-1] == corr_word[:-1]):
                 return 0.85
+            # ── Phase 12 (A7): Vocab-aware IV-IV override ──
+            # Allow keyboard-adjacent single edits when correction is significantly
+            # more common. Prevents blocking genuine typos where both happen to be IV.
+            if len(orig_word) == len(corr_word):
+                from nlp.spelling.araspell_rules import RulesBasedCorrector
+                edit_dist = _levenshtein(orig_word, corr_word)
+                if edit_dist == 1:
+                    orig_rank = vocab_manager.get_frequency_rank(orig_word)
+                    corr_rank = vocab_manager.get_frequency_rank(corr_word)
+                    if corr_rank < orig_rank and corr_rank < 5000:
+                        # Check keyboard proximity for extra safety
+                        for a, b in zip(orig_word, corr_word):
+                            if a != b:
+                                if RulesBasedCorrector.is_keyboard_neighbor(a, b):
+                                    logger.info(
+                                        f"[SPELLING] Vocab-override (IV-IV): "
+                                        f"'{orig_word}'(rank={orig_rank})→"
+                                        f"'{corr_word}'(rank={corr_rank}) "
+                                        f"keyboard-adjacent '{a}'→'{b}'"
+                                    )
+                                    return 0.5
+                                break
             # Both are valid words and change is NOT a known fix — REJECT
             # This prevents وكان→وكأن, etc.
             return 0.0
@@ -956,15 +978,43 @@ def _is_small_spelling_change(orig_word, corr_word, vocab_manager=None):
         ('ء', 'ؤ'), ('ؤ', 'ء'),  # standalone hamza ↔ hamza on waw
         ('ء', 'ئ'), ('ئ', 'ء'),  # standalone hamza ↔ hamza on ya
     }
+    # ── Phase 12 (A2): Phonetically confusable pairs ──
+    # Arabic letters commonly confused due to similar pronunciation.
+    # From AraSpell.py ContextualCorrector.CONFUSION_PAIRS.
+    PHONETIC_PAIRS = {
+        ('ض', 'ظ'), ('ظ', 'ض'),  # emphatic d/z
+        ('ذ', 'ز'), ('ز', 'ذ'),  # z variants
+        ('ص', 'س'), ('س', 'ص'),  # s variants
+        ('ط', 'ت'), ('ت', 'ط'),  # t variants
+        ('ق', 'ك'), ('ك', 'ق'),  # k/q variants
+        ('د', 'ض'), ('ض', 'د'),  # d/emphatic-d
+        ('غ', 'ق'), ('ق', 'غ'),  # gh/q
+    }
     # Check every character pair — reject if ANY non-orthographic change
     if len(orig_word) != len(corr_word):
         # Length change = structural change, not just orthographic
         # Exception: if diff is just adding/removing ا at start (hamza)
         if abs(len(orig_word) - len(corr_word)) > 1:
             return 0.0
+    # ── Phase 12 (A1): Keyboard-neighbor and phonetic acceptance ──
+    # Check each differing character: ortho → full accept, keyboard/phonetic → dampened
+    from nlp.spelling.araspell_rules import RulesBasedCorrector
+    _has_keyboard_or_phonetic = False
     for a, b in zip(orig_word, corr_word):
-        if a != b and (a, b) not in ORTHO_PAIRS:
-            return 0.0
+        if a != b:
+            if (a, b) in ORTHO_PAIRS:
+                continue  # Orthographic — fully accepted
+            elif RulesBasedCorrector.is_keyboard_neighbor(a, b) or (a, b) in PHONETIC_PAIRS:
+                _has_keyboard_or_phonetic = True  # Mark for dampened confidence
+            else:
+                return 0.0  # Not ortho, not keyboard, not phonetic → reject
+    # If we reached here, all diffs are ortho or keyboard/phonetic
+    if _has_keyboard_or_phonetic:
+        logger.info(
+            f"[SPELLING] Keyboard/phonetic typo accepted: "
+            f"'{orig_word}'→'{corr_word}' (dampened to 0.6)"
+        )
+        return 0.6  # Dampened confidence for keyboard/phonetic typos
 
     # ── B3 (BUG-014/015): Pronoun suffix guard (OOV path) ──
     # Same guard as IV-IV path: block ه→ة when preceded by ت
@@ -1365,6 +1415,27 @@ def analyze_text():
                 timing_ms['spelling_ms'] = int((time.time() - t0) * 1000)
                 logger.info(f"[ANALYZE] Step 1: Spelling done in {timing_ms['spelling_ms']}ms")
 
+                # ── Phase 12 (A4): Output Stability Test ──
+                # If re-preprocessing the correction changes it significantly,
+                # the correction is unstable → fall back to re-preprocessed version.
+                if raw_corrected != current_text:
+                    try:
+                        re_preprocessed = spell_checker.preprocess(raw_corrected)
+                        _stab_dist = _levenshtein(
+                            raw_corrected.replace(' ', ''),
+                            re_preprocessed.replace(' ', '')
+                        )
+                        if _stab_dist > 0:
+                            _stab_ratio = _stab_dist / max(len(raw_corrected), 1)
+                            if _stab_ratio > 0.15:
+                                logger.info(
+                                    f"[SPELLING] Unstable correction "
+                                    f"(ratio={_stab_ratio:.2f}), using preprocessed"
+                                )
+                                raw_corrected = re_preprocessed
+                    except Exception:
+                        pass  # Stability check is optional
+
                 if raw_corrected != ctx.current_text:
                     orig_word_positions = get_word_positions(ctx.current_text)
                     corr_word_positions = get_word_positions(raw_corrected)
@@ -1393,6 +1464,13 @@ def analyze_text():
                                 c_word = c_segment[0]
                                 _spell_conf = _is_small_spelling_change(o_word, c_word, spell_checker.vocab_manager)
                                 if _spell_conf:
+                                    # ── Phase 12 (A3): Keyboard proximity bonus ──
+                                    # Boost confidence for keyboard-adjacent typo fixes
+                                    if len(o_word) == len(c_word):
+                                        from nlp.spelling.araspell_rules import RulesBasedCorrector
+                                        for _oc, _cc in zip(o_word, c_word):
+                                            if _oc != _cc and RulesBasedCorrector.is_keyboard_neighbor(_oc, _cc):
+                                                _spell_conf = min(_spell_conf * 1.05, 0.95)
                                     logger.info(f"[SPELLING] Accepted: '{o_word}'→'{c_word}' (conf={_spell_conf})")
                                     new_words.append(c_word)
                                     ctx.add_patch(
@@ -1530,6 +1608,61 @@ def analyze_text():
                             continue
 
                     safe_text = " ".join(new_words)
+
+                    # ── Phase 12 (A5): Bidirectional Word Validation ──
+                    # Compare assembled result with raw model output word-by-word.
+                    # If our pipeline corrupted a word the model got right, revert it.
+                    try:
+                        _safe_words = safe_text.split()
+                        _raw_words = raw_corrected.split()
+                        if len(_safe_words) == len(_raw_words):
+                            _bidi_changed = False
+                            for _bi in range(len(_safe_words)):
+                                if _safe_words[_bi] != _raw_words[_bi]:
+                                    _sw_iv = spell_checker.vocab_manager.is_iv(_safe_words[_bi])
+                                    _rw_iv = spell_checker.vocab_manager.is_iv(_raw_words[_bi])
+                                    # Our word is OOV but model's word is IV → take model's
+                                    if not _sw_iv and _rw_iv:
+                                        logger.info(
+                                            f"[SPELLING] Bidirectional fix: "
+                                            f"'{_safe_words[_bi]}'(OOV)→'{_raw_words[_bi]}'(IV)"
+                                        )
+                                        _safe_words[_bi] = _raw_words[_bi]
+                                        _bidi_changed = True
+                            if _bidi_changed:
+                                _new_safe = ' '.join(_safe_words)
+                                _new_oov = spell_checker.vocab_manager.count_oov_words(_new_safe)
+                                _old_oov = spell_checker.vocab_manager.count_oov_words(safe_text)
+                                if _new_oov <= _old_oov:
+                                    safe_text = _new_safe
+                    except Exception:
+                        pass  # Bidirectional check is optional
+
+                    # ── Phase 12 (A6): Safety Net — Raw Model Fallback ──
+                    # If raw model output has fewer OOV words, prefer it.
+                    try:
+                        _raw_oov = spell_checker.vocab_manager.count_oov_words(raw_corrected)
+                        _our_oov = spell_checker.vocab_manager.count_oov_words(safe_text)
+                        if _raw_oov == 0 and _our_oov > 0:
+                            logger.info(
+                                f"[SPELLING] Safety net: raw=0 OOV, ours={_our_oov} OOV "
+                                f"— using raw model output"
+                            )
+                            safe_text = raw_corrected
+                        elif _raw_oov == 0 and _our_oov == 0:
+                            # Both all-IV but raw is closer to input → prefer raw
+                            _raw_dist = _levenshtein(current_text, raw_corrected)
+                            _our_dist = _levenshtein(current_text, safe_text)
+                            _rvr_dist = _levenshtein(safe_text, raw_corrected)
+                            if _raw_dist < _our_dist and _rvr_dist <= 3:
+                                logger.info(
+                                    f"[SPELLING] Safety net: raw closer to input "
+                                    f"(raw_dist={_raw_dist}, our_dist={_our_dist})"
+                                )
+                                safe_text = raw_corrected
+                    except Exception:
+                        pass  # Safety net is optional
+
                     ctx.mutate_text(safe_text, OffsetMapper)
                     current_text = ctx.current_text
             except Exception as e:
@@ -1832,14 +1965,25 @@ def analyze_text():
                             try:
                                 from nlp.spelling.araspell_service import get_spelling_model
                                 _vm = get_spelling_model().vocab_manager
-                                if _vm and _vm.is_iv(orig_text) and _vm.is_oov(corr_text):
-                                    logger.info(
-                                        f"[GRAMMAR] Rejected corruption: '{orig_text}'→'{corr_text}' "
-                                        f"(valid word → non-word)"
-                                    )
-                                    logger.info(f'[FILTER-TEL] {_tel_json.dumps({"event":"filter_reject","filter":"IVtoOOV","original":orig_text[:80],"correction":corr_text[:80]})}')
-                                    _tel_events.append({"event":"filter_reject","filter":"IVtoOOV","original":orig_text[:80],"correction":corr_text[:80]})
-                                    continue
+                                if _vm:
+                                    # ── Phase 12 (B3): Strip diacritics before IV/OOV check ──
+                                    # Grammar model sometimes outputs correct words with
+                                    # diacritics (e.g. يفعلوَ) which fail OOV check.
+                                    # Strip diacritics for vocabulary check only.
+                                    _DIACRITICS_RE = re.compile(r'[\u064B-\u065F\u0670]')
+                                    _corr_clean = _DIACRITICS_RE.sub('', corr_text)
+                                    _orig_clean = _DIACRITICS_RE.sub('', orig_text)
+                                    if _vm.is_iv(_orig_clean) and _vm.is_oov(_corr_clean):
+                                        logger.info(
+                                            f"[GRAMMAR] Rejected corruption: '{orig_text}'→'{corr_text}' "
+                                            f"(valid word → non-word)"
+                                        )
+                                        logger.info(f'[FILTER-TEL] {_tel_json.dumps({"event":"filter_reject","filter":"IVtoOOV","original":orig_text[:80],"correction":corr_text[:80]})}')
+                                        _tel_events.append({"event":"filter_reject","filter":"IVtoOOV","original":orig_text[:80],"correction":corr_text[:80]})
+                                        continue
+                                    # Also strip diacritics from correction for cleaner output
+                                    if _corr_clean != corr_text and _vm.is_iv(_corr_clean):
+                                        corr_text = _corr_clean
                             except Exception:
                                 pass
 

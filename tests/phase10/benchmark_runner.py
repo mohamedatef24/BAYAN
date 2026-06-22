@@ -162,6 +162,31 @@ def run_spelling_benchmark(api: API, samples: list) -> List[BenchResult]:
         results.append(r)
     return results
 
+def _strip_diacritics(text):
+    """Strip Arabic diacritics for comparison."""
+    return re.sub(r'[\u064B-\u065F\u0670]', '', text)
+
+def _word_in_text(word, text):
+    """Check if word appears as a standalone word in text (not as substring of another word)."""
+    # Strip diacritics for fair comparison
+    word_clean = _strip_diacritics(word)
+    text_clean = _strip_diacritics(text)
+    text_words = text_clean.split()
+    return word_clean in text_words
+
+def _expected_fix_present(expected_fix, output):
+    """Check if the expected fix (or any alternative) is present in the output.
+    expected_fix can contain / for alternatives: 'ذهبن/ذهبت' """
+    if not expected_fix:
+        return False
+    output_clean = _strip_diacritics(output)
+    output_words = output_clean.split()
+    alternatives = [_strip_diacritics(alt.strip()) for alt in expected_fix.split('/')]
+    for alt in alternatives:
+        if alt in output_words:
+            return True
+    return False
+
 def run_grammar_benchmark(api: API, samples: list) -> List[BenchResult]:
     results = []
     for i, s in enumerate(samples):
@@ -188,6 +213,7 @@ def run_grammar_benchmark(api: API, samples: list) -> List[BenchResult]:
         changed = r.pipeline_output != original
         error_words = s.get('error_words', [])
         has_errors = len(error_words) > 0
+        expected_fix = s.get('expected_fix', '')
 
         # Span check
         for sg in r.pipeline_suggestions:
@@ -198,12 +224,22 @@ def run_grammar_benchmark(api: API, samples: list) -> List[BenchResult]:
                 break
 
         if has_errors:
-            unfixed = [w for w in error_words if w in r.pipeline_output]
-            if unfixed:
+            # ── Phase 12 (B2): Improved grammar comparison ──
+            # Use word-boundary matching instead of substring matching.
+            # Also check if expected_fix is present in output (sentence-level validation).
+            unfixed = [w for w in error_words if _word_in_text(w, r.pipeline_output)]
+
+            # Secondary check: even if error word seems present,
+            # check if the expected fix is ALSO present (grammar may have
+            # added the fix while the error word exists in context)
+            fix_present = _expected_fix_present(expected_fix, r.pipeline_output) if expected_fix else False
+
+            if unfixed and not fix_present:
                 r.pipeline_verdict = "FN"
                 r.pipeline_detail = f"Errors NOT fixed: {unfixed}"
                 # Root cause: did raw grammar fix it?
-                raw_fixed = all(w not in r.grammar_raw_output for w in error_words)
+                raw_unfixed = [w for w in error_words if _word_in_text(w, r.grammar_raw_output)]
+                raw_fixed = len(raw_unfixed) == 0
                 if raw_fixed:
                     r.root_cause_component = "PIPELINE"
                     r.root_cause_stage = "integration"
@@ -214,7 +250,10 @@ def run_grammar_benchmark(api: API, samples: list) -> List[BenchResult]:
                     r.root_cause_detail = f"Grammar model did not fix: {unfixed}"
             else:
                 r.pipeline_verdict = "TP"
-                r.pipeline_detail = f"Fixed"
+                if fix_present:
+                    r.pipeline_detail = f"Fixed (expected fix present)"
+                else:
+                    r.pipeline_detail = f"Fixed (error word removed)"
         else:
             if changed:
                 sugg_types = [sg.get('type','') for sg in r.pipeline_suggestions]
@@ -241,8 +280,8 @@ def run_grammar_benchmark(api: API, samples: list) -> List[BenchResult]:
 
         # Regression: did grammar fix get lost in pipeline?
         if has_errors and r.grammar_raw_output != s['input']:
-            raw_fixed_words = [w for w in error_words if w not in r.grammar_raw_output]
-            pipeline_fixed = [w for w in error_words if w not in r.pipeline_output]
+            raw_fixed_words = [w for w in error_words if not _word_in_text(w, r.grammar_raw_output)]
+            pipeline_fixed = [w for w in error_words if not _word_in_text(w, r.pipeline_output)]
             lost = set(raw_fixed_words) - set(pipeline_fixed)
             if lost:
                 r.regression_type = "fix_lost"
