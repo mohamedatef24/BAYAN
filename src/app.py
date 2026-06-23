@@ -2101,6 +2101,10 @@ def analyze_text():
                         elif (corr_text.endswith('ن') and corr_text[:-1] == orig_text
                                 and len(orig_text) >= 3):
                             _is_grammar_pattern = True
+                        # Present tense fem plural: ون → ن (يلعبون → يلعبن)
+                        elif (orig_text.endswith('ون') and corr_text.endswith('ن') and
+                                orig_text[:-2] == corr_text[:-1] and len(orig_text) >= 3):
+                            _is_grammar_pattern = True
                         # Present tense masc plural: يفعل→يفعلون (adding ون)
                         elif (corr_text.endswith('ون') and corr_text[:-2] == orig_text
                                 and len(orig_text) >= 3):
