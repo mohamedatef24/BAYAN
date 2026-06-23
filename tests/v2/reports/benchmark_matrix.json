@@ -1,36 +1,71 @@
 {
-  "timestamp": "2026-06-23T19:01:36Z",
-  "l1_timestamp": "2026-06-23T19:01:36Z",
-  "l2_timestamp": "2026-06-23T18:55:12Z",
-  "l3_timestamp": "2026-06-23T19:00:34Z",
-  "l2_summary": {
+  "timestamp": "2026-06-23T20:07:04Z",
+  "l1_timestamp": "2026-06-23T19:26:59Z",
+  "l2_timestamp": "2026-06-23T19:55:43Z",
+  "l3_timestamp": "2026-06-23T20:07:04Z",
+  "l1_summary": {
     "spelling": {
-      "TP": 0,
-      "TN": 19,
-      "FP": 11,
-      "FN": 0,
-      "pass_rate": 0.6333
+      "TP": 88,
+      "TN": 115,
+      "FP": 112,
+      "FN": 5,
+      "ERR": 0,
+      "changed": 200,
+      "total": 320,
+      "change_rate": 0.625,
+      "pass_rate": 0.6344
     },
     "grammar": {
-      "TP": 0,
-      "TN": 25,
-      "FP": 5,
-      "FN": 0,
-      "pass_rate": 0.8333
+      "TP": 86,
+      "TN": 101,
+      "FP": 110,
+      "FN": 23,
+      "ERR": 0,
+      "changed": 196,
+      "total": 320,
+      "change_rate": 0.6125,
+      "pass_rate": 0.5844
     },
     "punctuation": {
       "TP": 0,
-      "TN": 1,
-      "FP": 29,
-      "FN": 0,
-      "pass_rate": 0.0333
+      "TN": 160,
+      "FP": 158,
+      "FN": 2,
+      "ERR": 0,
+      "changed": 285,
+      "total": 320,
+      "change_rate": 0.8906,
+      "pass_rate": 0.5
+    }
+  },
+  "l2_summary": {
+    "spelling": {
+      "TP": 88,
+      "TN": 115,
+      "FP": 112,
+      "FN": 5,
+      "pass_rate": 0.6344
+    },
+    "grammar": {
+      "TP": 86,
+      "TN": 101,
+      "FP": 110,
+      "FN": 23,
+      "pass_rate": 0.5844
+    },
+    "punctuation": {
+      "TP": 0,
+      "TN": 111,
+      "FP": 207,
+      "FN": 2,
+      "pass_rate": 0.3469
     }
   },
   "l3_summary": {
-    "TP": 49,
-    "TN": 17,
-    "FP": 14,
+    "TP": 88,
+    "TN": 154,
+    "FP": 78,
     "FN": 0,
-    "pass_rate": 0.825
+    "pass_rate": 0.7562
   }
 }
