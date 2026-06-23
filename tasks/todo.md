@@ -1,41 +1,52 @@
-# Task List: Phase 1 Editor Stabilization Refactor
+# BAYAN v2.0 — Task List
 
-## Milestone 1: Modularize Editor Logic
-- [ ] Create folder `src/js/` if it doesn't exist
-- [ ] Create `src/js/api.js` to handle all API communications
-- [ ] Create `src/js/editor.js` to manage editor elements, events, and debouncing
-- [ ] Create `src/js/renderer.js` to handle HTML escape and offset-based highlighting
-- [ ] Create `src/js/selection.js` to save and restore range/cursor selections
-- [ ] Create `src/js/ui.js` to handle tooltips, lists, scores, and loading spinners
-- [ ] Update `src/index.html` to load modular JS files instead of inline scripts
-- [ ] Verify that the frontend loads correctly and contains no console errors
+## Phase A: Test Infrastructure ✅
+- [x] Create `tests/v2/test_level1_raw.py` — Raw model tests with TP/FP/FN/TN verdicts
+- [x] Create `tests/v2/test_level2_solo.py` — Solo API endpoint tests
+- [x] Create `tests/v2/test_level3_integrated.py` — Full pipeline tests
+- [x] Create `tests/v2/benchmark_matrix.py` — Master comparison runner
+- [x] Fix verdict logic (strip terminal punctuation before comparison)
+- [x] Run baseline on entities + spelling datasets
+- [ ] Run full 320-test baseline across all 3 levels
 
-## Milestone 2: Selection & Caret Preservation
-- [ ] Implement `saveSelection` and `restoreSelection` based on character offset in `src/js/selection.js`
-- [ ] Implement `getCaretCharacterOffsetWithin` and `setCaretCharacterOffsetWithin`
-- [ ] Integrate selection restore before and after highlight updates
-- [ ] Verify that typing does not cause cursor jumps or selection losses
+## Phase A.1: Project Cleanup ✅
+- [x] Archive legacy scripts (AraSpell.py, Grammer_Rules.py, PuncAra.py)
+- [x] Archive 36 old phase/verification reports
+- [x] Archive 23 old test files + 8 phase10 helpers
+- [x] Delete 35 orphaned debug/temp files
+- [x] Fix .gitignore corruption (binary null bytes)
+- [x] Fix PROJECT_DESCRIPTION.md stale reference
+- [x] Archive docs/audit + docs/audits
 
-## Milestone 3: Backend Offset Support
-- [x] Implement `get_word_positions` in `src/app.py`
-- [x] Implement `OffsetMapper` coordinate transform class in `src/app.py`
-- [x] Rewrite `/api/analyze` in `src/app.py` to calculate exact character offsets (`start`, `end`) for all suggestions
-- [ ] Verify using the test script `reproduce_issue.py` or `test_analyze_api.py` that the backend returns `start` and `end` offsets for all suggestions
+## Phase B: Extract Stages (NOT STARTED)
+- [ ] Create `src/nlp/stages/spelling_stage.py`
+- [ ] Create `src/nlp/stages/grammar_stage.py`
+- [ ] Create `src/nlp/stages/punctuation_stage.py`
+- [ ] Each stage wraps: model call → filter → verdict
+- [ ] Hash (comment out) old inline stage code in `app.py`
+- [ ] Re-run v2 benchmark → must match Phase A baseline
 
-## Milestone 4: Offset-Based Rendering
-- [ ] Write offset-based rendering parser in `src/js/renderer.js`
-- [ ] Ensure the renderer splits the text into highlighted spans and normal text nodes based on sorted, non-overlapping suggestions
-- [ ] Support multiple occurrences of duplicate words by matching exact start/end offsets
+## Phase C: Extract Filters (NOT STARTED)
+- [ ] Create `src/nlp/filters/` module
+- [ ] Extract overlap resolution, religious guard, entity guard
+- [ ] Hash old filter code in `app.py`
+- [ ] Re-run v2 benchmark → must match baseline
 
-## Milestone 5: Secure Rendering
-- [ ] Implement `escapeHtml` utility in `src/js/renderer.js`
-- [ ] Ensure all user inputs, suggestion corrections, and text are escaped before DOM insertion to prevent XSS
+## Phase D: Extract Preprocessors (NOT STARTED)
+- [ ] Create `src/nlp/preprocessors/` module
+- [ ] Extract text normalization, diacritic handling, chunk splitting
+- [ ] Hash old preprocessor code in `app.py`
+- [ ] Re-run v2 benchmark → must match baseline
 
-## Milestone 6: Tooltip Mapping
-- [ ] Assign unique `data-suggestion-id` (index in suggestions list) to each highlight span
-- [ ] Wire click event listeners on the editor container to detect suggestion spans, retrieve the suggestion, and open the tooltip dynamically
+## Phase E: Create Pipeline Orchestrator (NOT STARTED)
+- [ ] Create `src/nlp/pipeline.py` — orchestrates stages via PipelineContext
+- [ ] Wire `app.py` /api/analyze to use `pipeline.run(text)`
+- [ ] Hash old monolithic analyze code in `app.py`
+- [ ] Re-run v2 benchmark → must match baseline
 
-## Milestone 7: Integration & Validation
-- [ ] Launch backend local server using `run_app.py`
-- [ ] Run end-to-end browser check to verify that highlights, suggestions, cursor, and metrics work perfectly
-- [ ] Document final results in `tasks/todo.md` and lessons in `tasks/lessons.md`
+## Phase F: Clean app.py (NOT STARTED)
+- [ ] Move helpers (get_word_positions, OffsetMapper, etc.) to utility modules
+- [ ] Remove all hashed (commented) code blocks
+- [ ] app.py should only contain: Flask routes + pipeline.run() calls
+- [ ] Final v2 benchmark → must match baseline
+- [ ] Target: app.py < 500 lines
