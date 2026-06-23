@@ -1,8 +1,8 @@
 {
-  "timestamp": "2026-06-23T18:55:12Z",
-  "l1_timestamp": null,
+  "timestamp": "2026-06-23T19:01:36Z",
+  "l1_timestamp": "2026-06-23T19:01:36Z",
   "l2_timestamp": "2026-06-23T18:55:12Z",
-  "l3_timestamp": "2026-06-23T18:54:52Z",
+  "l3_timestamp": "2026-06-23T19:00:34Z",
   "l2_summary": {
     "spelling": {
       "TP": 0,
@@ -27,10 +27,10 @@
     }
   },
   "l3_summary": {
-    "TP": 22,
-    "TN": 0,
-    "FP": 58,
+    "TP": 49,
+    "TN": 17,
+    "FP": 14,
     "FN": 0,
-    "pass_rate": 0.275
+    "pass_rate": 0.825
   }
 }
