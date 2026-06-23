@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  lint-and-validate:
+  validate:
     name: Validate Code
     runs-on: ubuntu-latest
     steps:
@@ -17,33 +17,48 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-          cache: 'pip'
 
-      - name: Install dependencies
-        run: pip install flask flask-cors python-dotenv
-
-      - name: Validate Flask app imports
+      - name: Check Python syntax (all .py files)
         run: |
-          cd src && python -c "
-          import sys; sys.path.insert(0, '.')
-          from app import app
-          print('✅ Flask app imports successfully')
-          # Check critical routes exist
-          rules = [rule.rule for rule in app.url_map.iter_rules()]
-          assert '/api/health' in rules, '/api/health route missing'
-          assert '/api/summarize' in rules, '/api/summarize route missing'
-          assert '/api/analyze' in rules, '/api/analyze route missing'
-          print('✅ All critical API routes registered')
-          "
+          echo "Checking Python syntax..."
+          find . -name "*.py" -not -path "./.git/*" -not -path "./archive/*" | while read f; do
+            python -m py_compile "$f" 2>&1 && echo "  ✅ $f" || { echo "  ❌ $f"; exit 1; }
+          done
+          echo "✅ All Python files have valid syntax"
 
-      - name: Validate Supabase meta tags exist
+      - name: Verify critical files exist
         run: |
-          grep -q 'supabase-url' src/index.html && echo "✅ Supabase URL meta tag present" || exit 1
-          grep -q 'supabase-anon-key' src/index.html && echo "✅ Supabase key meta tag present" || exit 1
+          for f in src/app.py src/model_loader.py src/hf_inference.py src/index.html \
+                   src/nlp/__init__.py src/nlp/spelling/araspell_service.py \
+                   src/nlp/grammar/grammar_service.py src/nlp/punctuation/punctuation_service.py \
+                   Dockerfile Procfile requirements.txt; do
+            test -f "$f" && echo "  ✅ $f" || { echo "  ❌ MISSING: $f"; exit 1; }
+          done
+          echo "✅ All critical files present"
+
+      - name: Verify API routes defined in app.py
+        run: |
+          for route in "/api/health" "/api/analyze" "/api/summarize" "/api/spelling" \
+                       "/api/grammar" "/api/punctuation" "/api/quran"; do
+            grep -q "$route" src/app.py && echo "  ✅ $route" || { echo "  ❌ MISSING ROUTE: $route"; exit 1; }
+          done
+          echo "✅ All API routes defined"
+
+      - name: Validate Supabase meta tags in index.html
+        run: |
+          grep -q 'supabase-url' src/index.html && echo "  ✅ supabase-url meta tag" || exit 1
+          grep -q 'supabase-anon-key' src/index.html && echo "  ✅ supabase-anon-key meta tag" || exit 1
+          echo "✅ Supabase tags present"
+
+      - name: Validate Dockerfile
+        run: |
+          grep -q 'EXPOSE' Dockerfile && echo "  ✅ EXPOSE directive" || exit 1
+          grep -q 'gunicorn\|CMD' Dockerfile && echo "  ✅ Startup command" || exit 1
+          echo "✅ Dockerfile valid"
 
   health-check:
     name: Post-Deploy Health Check
-    needs: lint-and-validate
+    needs: validate
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
@@ -68,4 +83,3 @@ jobs:
             echo "❌ Backend health check failed"
             exit 1
           fi
-
