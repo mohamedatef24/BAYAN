@@ -1843,10 +1843,11 @@ def analyze_text():
                     logger.info(f'[FILTER-TEL] {_tel_json.dumps({"event":"grammar_diff","original":orig_text[:80],"correction":corr_text[:80],"start":d["start"],"end":d["end"]})}')
                     _tel_events.append({"event":"grammar_diff","original":orig_text[:80],"correction":corr_text[:80],"start":d["start"],"end":d["end"]})
                     # StageLocker: skip diffs that overlap with locked ranges
-                    if ctx.stage_locker.is_locked(d['start'], d['end']):
+                    # Phase 11: Hierarchy-aware — grammar (3) overrides spelling (2)
+                    if ctx.stage_locker.is_locked_for(d['start'], d['end'], 'grammar'):
                         logger.info(
                             f"[LOCK] Grammar blocked on [{d['start']}:{d['end']}] "
-                            f"'{d.get('original','')}' — locked by previous stage"
+                            f"'{d.get('original','')}' — locked by equal/higher priority stage"
                         )
                         logger.info(f'[FILTER-TEL] {_tel_json.dumps({"event":"filter_reject","filter":"StageLocker","original":orig_text[:80],"correction":corr_text[:80]})}')
                         _tel_events.append({"event":"filter_reject","filter":"StageLocker","original":orig_text[:80],"correction":corr_text[:80]})
@@ -2166,7 +2167,8 @@ def analyze_text():
                 for d in diffs:
                     # StageLocker: skip diffs that overlap with locked ranges
                     # BUT allow pure punctuation insertions near locked words
-                    lock_info = ctx.stage_locker.is_locked_by(d['start'], d['end'])
+                    # Phase 11: Hierarchy-aware — punctuation (1) blocked by spelling (2) and grammar (3)
+                    lock_info = ctx.stage_locker.is_locked_by_for(d['start'], d['end'], 'punctuation')
                     if lock_info:
                         import re as _re
                         orig_alpha = _re.sub(r'[^\u0600-\u06FFa-zA-Z]', '', d.get('original', ''))
