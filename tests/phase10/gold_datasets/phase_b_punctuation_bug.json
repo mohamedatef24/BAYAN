@@ -1,0 +1,34 @@
+[
+  {
+    "id": "punct_bug_1",
+    "category": "entities",
+    "input": "شركة أبل",
+    "expected": "شركة أبل",
+    "severity": "low",
+    "description": "Ensure punctuation is not added to single entity names."
+  },
+  {
+    "id": "punct_bug_2",
+    "category": "short_phrase",
+    "input": "مرحبا بكم في لوحة التحكم",
+    "expected": "مرحبا بكم في لوحة التحكم",
+    "severity": "medium",
+    "description": "Ensure punctuation is not added to short standalone phrases."
+  },
+  {
+    "id": "punct_bug_3",
+    "category": "structured",
+    "input": "الاسم: أحمد، العمر: 30",
+    "expected": "الاسم: أحمد، العمر: 30",
+    "severity": "medium",
+    "description": "Ensure punctuation is not added to structured text fragments."
+  },
+  {
+    "id": "punct_bug_4",
+    "category": "grammar_preservation",
+    "input": "يذهبون المهندسون الى العمل",
+    "expected": "يذهب المهندسون إلى العمل",
+    "severity": "high",
+    "description": "Grammar fixes should not be overwritten or corrupted by the punctuation model."
+  }
+]
