@@ -1,23 +1,23 @@
 {
-  "timestamp": "2026-06-23T18:54:52Z",
+  "timestamp": "2026-06-23T19:00:34Z",
   "target": "https://bayan10-bayan-api.hf.space",
   "analysis": {
     "total": 80,
     "aggregate": {
-      "TP": 22,
-      "TN": 0,
-      "FP": 58,
+      "TP": 49,
+      "TN": 17,
+      "FP": 14,
       "FN": 0,
-      "pass_rate": 0.275
+      "pass_rate": 0.825
     },
     "by_dataset": {
       "spelling": {
-        "TP": 22,
-        "TN": 0,
-        "FP": 58,
+        "TP": 49,
+        "TN": 17,
+        "FP": 14,
         "FN": 0,
         "total": 80,
-        "pass_rate": 0.275
+        "pass_rate": 0.825
       }
     }
   },
@@ -31,12 +31,12 @@
       "severity": "major",
       "pipeline_corrected": "أنا طالب في الجامعة.",
       "pipeline_suggestions": 2,
-      "pipeline_ms": 8033,
-      "spelling_ms": 3645,
-      "grammar_ms": 670,
-      "punctuation_ms": 2748,
-      "verdict": "FP",
-      "detail": "Wrong correction"
+      "pipeline_ms": 2089,
+      "spelling_ms": 497,
+      "grammar_ms": 593,
+      "punctuation_ms": 412,
+      "verdict": "TP",
+      "detail": "Exact match"
     },
     {
       "id": "S002",
@@ -47,12 +47,12 @@
       "severity": "major",
       "pipeline_corrected": "إذا جاء الربيع تزهر الأشجار.",
       "pipeline_suggestions": 2,
-      "pipeline_ms": 5444,
-      "spelling_ms": 3501,
-      "grammar_ms": 586,
-      "punctuation_ms": 522,
-      "verdict": "FP",
-      "detail": "Wrong correction"
+      "pipeline_ms": 3020,
+      "spelling_ms": 786,
+      "grammar_ms": 594,
+      "punctuation_ms": 1421,
+      "verdict": "TP",
+      "detail": "Exact match"
     },
     {
       "id": "S003",
@@ -63,10 +63,10 @@
       "severity": "major",
       "pipeline_corrected": "ايضا هذا الأمر مهم جداً.",
       "pipeline_suggestions": 1,
-      "pipeline_ms": 5593,
-      "spelling_ms": 3361,
-      "grammar_ms": 654,
-      "punctuation_ms": 664,
+      "pipeline_ms": 2143,
+      "spelling_ms": 677,
+      "grammar_ms": 646,
+      "punctuation_ms": 605,
       "verdict": "FP",
       "detail": "Wrong correction"
     },
@@ -79,12 +79,12 @@
       "severity": "major",
       "pipeline_corrected": "لأن الأمر يتعلق بالمستقبل.",
       "pipeline_suggestions": 2,
-      "pipeline_ms": 5150,
-      "spelling_ms": 3364,
-      "grammar_ms": 494,
-      "punctuation_ms": 569,
-      "verdict": "FP",
-      "detail": "Wrong correction"
+      "pipeline_ms": 2039,
+      "spelling_ms": 661,
+      "grammar_ms": 497,
+      "punctuation_ms": 663,
+      "verdict": "TP",
+      "detail": "Exact match"
     },
     {
       "id": "S005",
@@ -95,12 +95,12 @@
       "severity": "major",
       "pipeline_corrected": "أين ذهبت أمس؟",
       "pipeline_suggestions": 2,
-      "pipeline_ms": 3457,
-      "spelling_ms": 1889,
-      "grammar_ms": 436,
-      "punctuation_ms": 338,
-      "verdict": "FP",
-      "detail": "Wrong correction"
+      "pipeline_ms": 1601,
+      "spelling_ms": 604,
+      "grammar_ms": 386,
+      "punctuation_ms": 394,
+      "verdict": "TP",
+      "detail": "Exact match"
     },
     {
       "id": "S006",
@@ -111,10 +111,10 @@
       "severity": "major",
       "pipeline_corrected": "اول مرة أزور هذا المكان.",
       "pipeline_suggestions": 1,
-      "pipeline_ms": 5318,
-      "spelling_ms": 3370,
-      "grammar_ms": 655,
-      "punctuation_ms": 558,
+      "pipeline_ms": 2175,
+      "spelling_ms": 796,
+      "grammar_ms": 547,
+      "punctuation_ms": 613,
       "verdict": "FP",
       "detail": "Wrong correction"
     },
@@ -127,12 +127,12 @@
       "severity": "major",
       "pipeline_corrected": "هذا أو ذاك لا فرق.",
       "pipeline_suggestions": 2,
-      "pipeline_ms": 6027,
-      "spelling_ms": 4153,
-      "grammar_ms": 604,
-      "punctuation_ms": 701,
-      "verdict": "FP",
-      "detail": "Wrong correction"
+      "pipeline_ms": 1792,
+      "spelling_ms": 637,
+      "grammar_ms": 536,
+      "punctuation_ms": 400,
+      "verdict": "TP",
+      "detail": "Exact match"
     },
     {
       "id": "S008",
@@ -143,12 +143,12 @@
       "severity": "major",
       "pipeline_corrected": "أكبر مدينة في العالم؟",
       "pipeline_suggestions": 2,
-      "pipeline_ms": 8374,
-      "spelling_ms": 4040,
-      "grammar_ms": 610,
-      "punctuation_ms": 2543,
-      "verdict": "FP",
-      "detail": "Wrong correction"
+      "pipeline_ms": 1641,
+      "spelling_ms": 464,
+      "grammar_ms": 493,
+      "punctuation_ms": 465,
+      "verdict": "TP",
+      "detail": "Exact match"
     },
     {
       "id": "S009",
@@ -159,12 +159,12 @@
       "severity": "major",
       "pipeline_corrected": "أصغر طالب في الصف؟",
       "pipeline_suggestions": 2,
-      "pipeline_ms": 4214,
-      "spelling_ms": 2207,
-      "grammar_ms": 595,
-      "punctuation_ms": 513,
-      "verdict": "FP",
-      "detail": "Wrong correction"
+      "pipeline_ms": 1794,
+      "spelling_ms": 573,
+      "grammar_ms": 638,
+      "punctuation_ms": 364,
+      "verdict": "TP",
+      "detail": "Exact match"
     },
     {
       "id": "S010",
@@ -175,12 +175,12 @@
       "severity": "major",
       "pipeline_corrected": "أبناء الوطن يعملون بجد.",
       "pipeline_suggestions": 2,
-      "pipeline_ms": 4294,
-      "spelling_ms": 2184,
-      "grammar_ms": 699,
-      "punctuation_ms": 620,
-      "verdict": "FP",
-      "detail": "Wrong correction"
+      "pipeline_ms": 1696,
+      "spelling_ms": 536,
+      "grammar_ms": 531,
+      "punctuation_ms": 405,
+      "verdict": "TP",
+      "detail": "Exact match"
     },
     {
       "id": "S011",
@@ -191,12 +191,12 @@
       "severity": "major",
       "pipeline_corrected": "أطفال المدرسة يلعبون.",
       "pipeline_suggestions": 2,
-      "pipeline_ms": 4345,
-      "spelling_ms": 2268,
-      "grammar_ms": 542,
-      "punctuation_ms": 567,
-      "verdict": "FP",
-      "detail": "Wrong correction"
+      "pipeline_ms": 1582,
+      "spelling_ms": 481,
+      "grammar_ms": 477,
+      "punctuation_ms": 408,
+      "verdict": "TP",
+      "detail": "Exact match"
     },
     {
       "id": "S012",
@@ -207,12 +207,12 @@
       "severity": "major",
       "pipeline_corrected": "أخيراً وصلنا إلى الهدف.",
       "pipeline_suggestions": 2,
-      "pipeline_ms": 6255,
-      "spelling_ms": 4085,
-      "grammar_ms": 596,
-      "punctuation_ms": 729,
-      "verdict": "FP",
-      "detail": "Wrong correction"
+      "pipeline_ms": 1954,
+      "spelling_ms": 660,
+      "grammar_ms": 535,
+      "punctuation_ms": 543,
+      "verdict": "TP",
+      "detail": "Exact match"
     },
     {
       "id": "S013",
@@ -223,12 +223,12 @@
       "severity": "major",
       "pipeline_corrected": "وقف أمام المدرسة.",
       "pipeline_suggestions": 2,
-      "pipeline_ms": 2917,
-      "spelling_ms": 1380,
-      "grammar_ms": 441,
-      "punctuation_ms": 481,
-      "verdict": "FP",
-      "detail": "Wrong correction"
+      "pipeline_ms": 1380,
+      "spelling_ms": 393,
+      "grammar_ms": 386,
+      "punctuation_ms": 386,
+      "verdict": "TP",
+      "detail": "Exact match"
     },
     {
       "id": "S014",
@@ -239,12 +239,12 @@
       "severity": "major",
       "pipeline_corrected": "أنت طالب مجتهد.",
       "pipeline_suggestions": 2,
-      "pipeline_ms": 3440,
-      "spelling_ms": 1755,
-      "grammar_ms": 535,
-      "punctuation_ms": 337,
-      "verdict": "FP",
-      "detail": "Wrong correction"
+      "pipeline_ms": 1359,
+      "spelling_ms": 399,
+      "grammar_ms": 479,
+      "punctuation_ms": 260,
+      "verdict": "TP",
+      "detail": "Exact match"
     },
     {
       "id": "S015",
@@ -255,10 +255,10 @@
       "severity": "major",
       "pipeline_corrected": "اننا نحب الوطن.",
       "pipeline_suggestions": 1,
-      "pipeline_ms": 4129,
-      "spelling_ms": 2441,
-      "grammar_ms": 440,
-      "punctuation_ms": 463,
+      "pipeline_ms": 1566,
+      "spelling_ms": 540,
+      "grammar_ms": 433,
+      "punctuation_ms": 377,
       "verdict": "FP",
       "detail": "Wrong correction"
     },
@@ -271,12 +271,12 @@
       "severity": "major",
       "pipeline_corrected": "إن شاء الله سنفوز.",
       "pipeline_suggestions": 2,
-      "pipeline_ms": 5342,
-      "spelling_ms": 3569,
-      "grammar_ms": 636,
-      "punctuation_ms": 533,
-      "verdict": "FP",
-      "detail": "Wrong correction"
+      "pipeline_ms": 1891,
+      "spelling_ms": 670,
+      "grammar_ms": 529,
+      "punctuation_ms": 474,
+      "verdict": "TP",
+      "detail": "Exact match"
     },
     {
       "id": "S017",
@@ -287,12 +287,12 @@
       "severity": "none",
       "pipeline_corrected": "اقترب الموعد النهائي.",
       "pipeline_suggestions": 1,
-      "pipeline_ms": 4093,
-      "spelling_ms": 1957,
-      "grammar_ms": 754,
-      "punctuation_ms": 584,
-      "verdict": "FP",
-      "detail": "Modified correct text"
+      "pipeline_ms": 1622,
+      "spelling_ms": 483,
+      "grammar_ms": 478,
+      "punctuation_ms": 444,
+      "verdict": "TN",
+      "detail": "Only punctuation added"
     },
     {
       "id": "S018",
@@ -303,12 +303,12 @@
       "severity": "major",
       "pipeline_corrected": "أرسل الرسالة فوراً.",
       "pipeline_suggestions": 2,
-      "pipeline_ms": 4064,
-      "spelling_ms": 2103,
-      "grammar_ms": 651,
-      "punctuation_ms": 518,
-      "verdict": "FP",
-      "detail": "Wrong correction"
+      "pipeline_ms": 1576,
+      "spelling_ms": 428,
+      "grammar_ms": 531,
+      "punctuation_ms": 395,
+      "verdict": "TP",
+      "detail": "Exact match"
     },
     {
       "id": "S019",
@@ -319,12 +319,12 @@
       "severity": "major",
       "pipeline_corrected": "آخر الأخبار في المساء.",
       "pipeline_suggestions": 2,
-      "pipeline_ms": 4463,
-      "spelling_ms": 2236,
-      "grammar_ms": 549,
-      "punctuation_ms": 721,
-      "verdict": "FP",
-      "detail": "Wrong correction"
+      "pipeline_ms": 1721,
+      "spelling_ms": 493,
+      "grammar_ms": 486,
+      "punctuation_ms": 526,
+      "verdict": "TP",
+      "detail": "Exact match"
     },
     {
       "id": "S020",
@@ -335,12 +335,12 @@
       "severity": "major",
       "pipeline_corrected": "أسرع في المشي قليلاً!",
       "pipeline_suggestions": 2,
-      "pipeline_ms": 6099,
-      "spelling_ms": 3801,
-      "grammar_ms": 705,
-      "punctuation_ms": 588,
-      "verdict": "FP",
-      "detail": "Wrong correction"
+      "pipeline_ms": 2011,
+      "spelling_ms": 554,
+      "grammar_ms": 634,
+      "punctuation_ms": 608,
+      "verdict": "TP",
+      "detail": "Exact match"
     },
     {
       "id": "S021",
@@ -351,12 +351,12 @@
       "severity": "major",
       "pipeline_corrected": "أجمل مكان في العالم؟",
       "pipeline_suggestions": 2,
-      "pipeline_ms": 4010,
-      "spelling_ms": 2218,
-      "grammar_ms": 540,
-      "punctuation_ms": 408,
-      "verdict": "FP",
-      "detail": "Wrong correction"
+      "pipeline_ms": 1706,
+      "spelling_ms": 623,
+      "grammar_ms": 485,
+      "punctuation_ms": 378,
+      "verdict": "TP",
+      "detail": "Exact match"
     },
     {
       "id": "S022",
@@ -367,10 +367,10 @@
       "severity": "major",
       "pipeline_corrected": "اعلن الرئيس عن القرار.",
       "pipeline_suggestions": 1,
-      "pipeline_ms": 4267,
-      "spelling_ms": 2265,
-      "grammar_ms": 497,
-      "punctuation_ms": 598,
+      "pipeline_ms": 1783,
+      "spelling_ms": 648,
+      "grammar_ms": 478,
+      "punctuation_ms": 440,
       "verdict": "FP",
       "detail": "Wrong correction"
     },
@@ -383,12 +383,12 @@
       "severity": "major",
       "pipeline_corrected": "أكد الوزير على الخطة.",
       "pipeline_suggestions": 2,
-      "pipeline_ms": 4566,
-      "spelling_ms": 2472,
-      "grammar_ms": 554,
-      "punctuation_ms": 519,
-      "verdict": "FP",
-      "detail": "Wrong correction"
+      "pipeline_ms": 1680,
+      "spelling_ms": 586,
+      "grammar_ms": 496,
+      "punctuation_ms": 382,
+      "verdict": "TP",
+      "detail": "Exact match"
     },
     {
       "id": "S024",
@@ -399,12 +399,12 @@
       "severity": "major",
       "pipeline_corrected": "أشار التقرير إلى ذلك.",
       "pipeline_suggestions": 2,
-      "pipeline_ms": 4563,
-      "spelling_ms": 2521,
-      "grammar_ms": 590,
-      "punctuation_ms": 568,
-      "verdict": "FP",
-      "detail": "Wrong correction"
+      "pipeline_ms": 1766,
+      "spelling_ms": 689,
+      "grammar_ms": 487,
+      "punctuation_ms": 370,
+      "verdict": "TP",
+      "detail": "Exact match"
     },
     {
       "id": "S025",
@@ -415,12 +415,12 @@
       "severity": "major",
       "pipeline_corrected": "أعتقد انه سيحضر غداً.",
       "pipeline_suggestions": 2,
-      "pipeline_ms": 4144,
-      "spelling_ms": 2119,
-      "grammar_ms": 652,
-      "punctuation_ms": 578,
-      "verdict": "FP",
-      "detail": "Wrong correction"
+      "pipeline_ms": 1719,
+      "spelling_ms": 561,
+      "grammar_ms": 530,
+      "punctuation_ms": 413,
+      "verdict": "TP",
+      "detail": "Partial improvement"
     },
     {
       "id": "S026",
@@ -431,12 +431,12 @@
       "severity": "major",
       "pipeline_corrected": "والأسعار مرتفعة جداً.",
       "pipeline_suggestions": 2,
-      "pipeline_ms": 4880,
-      "spelling_ms": 2705,
-      "grammar_ms": 593,
-      "punctuation_ms": 585,
-      "verdict": "FP",
-      "detail": "Wrong correction"
+      "pipeline_ms": 1905,
+      "spelling_ms": 589,
+      "grammar_ms": 592,
+      "punctuation_ms": 506,
+      "verdict": "TP",
+      "detail": "Exact match"
     },
     {
       "id": "S027",
@@ -447,12 +447,12 @@
       "severity": "major",
       "pipeline_corrected": "بالإضافة إلى ذلك.",
       "pipeline_suggestions": 2,
-      "pipeline_ms": 4101,
-      "spelling_ms": 2414,
-      "grammar_ms": 438,
-      "punctuation_ms": 442,
-      "verdict": "FP",
-      "detail": "Wrong correction"
+      "pipeline_ms": 1555,
+      "spelling_ms": 538,
+      "grammar_ms": 429,
+      "punctuation_ms": 371,
+      "verdict": "TP",
+      "detail": "Exact match"
     },
     {
       "id": "S028",
@@ -463,10 +463,10 @@
       "severity": "major",
       "pipeline_corrected": "فالانسان يحتاج للعلم.",
       "pipeline_suggestions": 1,
-      "pipeline_ms": 5749,
-      "spelling_ms": 3787,
-      "grammar_ms": 484,
-      "punctuation_ms": 692,
+      "pipeline_ms": 1849,
+      "spelling_ms": 576,
+      "grammar_ms": 483,
+      "punctuation_ms": 575,
       "verdict": "FP",
       "detail": "Wrong correction"
     },
@@ -479,10 +479,10 @@
       "severity": "major",
       "pipeline_corrected": "كلا الأطفال في اللعب.",
       "pipeline_suggestions": 2,
-      "pipeline_ms": 6739,
-      "spelling_ms": 4640,
-      "grammar_ms": 701,
-      "punctuation_ms": 540,
+      "pipeline_ms": 2995,
+      "spelling_ms": 1635,
+      "grammar_ms": 636,
+      "punctuation_ms": 413,
       "verdict": "FP",
       "detail": "Wrong correction"
     },
@@ -495,12 +495,12 @@
       "severity": "major",
       "pipeline_corrected": "للأسف لم ينجح.",
       "pipeline_suggestions": 2,
-      "pipeline_ms": 4198,
-      "spelling_ms": 2413,
+      "pipeline_ms": 1590,
+      "spelling_ms": 498,
       "grammar_ms": 437,
-      "punctuation_ms": 476,
-      "verdict": "FP",
-      "detail": "Wrong correction"
+      "punctuation_ms": 437,
+      "verdict": "TP",
+      "detail": "Exact match"
     },
     {
       "id": "S031",
@@ -511,12 +511,12 @@
       "severity": "major",
       "pipeline_corrected": "المدرسة كبيرة وجميلة.",
       "pipeline_suggestions": 3,
-      "pipeline_ms": 3680,
-      "spelling_ms": 1927,
-      "grammar_ms": 494,
-      "punctuation_ms": 654,
+      "pipeline_ms": 2278,
+      "spelling_ms": 832,
+      "grammar_ms": 498,
+      "punctuation_ms": 730,
       "verdict": "TP",
-      "detail": "Partial improvement"
+      "detail": "Exact match"
     },
     {
       "id": "S032",
@@ -527,12 +527,12 @@
       "severity": "major",
       "pipeline_corrected": "الجامعة في القاهرة.",
       "pipeline_suggestions": 2,
-      "pipeline_ms": 6067,
-      "spelling_ms": 4080,
-      "grammar_ms": 537,
-      "punctuation_ms": 527,
+      "pipeline_ms": 1974,
+      "spelling_ms": 741,
+      "grammar_ms": 492,
+      "punctuation_ms": 520,
       "verdict": "TP",
-      "detail": "Partial improvement"
+      "detail": "Exact match"
     },
     {
       "id": "S033",
@@ -543,12 +543,12 @@
       "severity": "major",
       "pipeline_corrected": "السيارة سريعة جداً.",
       "pipeline_suggestions": 3,
-      "pipeline_ms": 4645,
-      "spelling_ms": 2783,
-      "grammar_ms": 595,
-      "punctuation_ms": 423,
+      "pipeline_ms": 1858,
+      "spelling_ms": 688,
+      "grammar_ms": 535,
+      "punctuation_ms": 418,
       "verdict": "TP",
-      "detail": "Partial improvement"
+      "detail": "Exact match"
     },
     {
       "id": "S034",
@@ -559,12 +559,12 @@
       "severity": "major",
       "pipeline_corrected": "الشجرة طويلة وجميلة.",
       "pipeline_suggestions": 3,
-      "pipeline_ms": 3937,
-      "spelling_ms": 2031,
-      "grammar_ms": 496,
+      "pipeline_ms": 2099,
+      "spelling_ms": 865,
+      "grammar_ms": 495,
       "punctuation_ms": 519,
       "verdict": "TP",
-      "detail": "Partial improvement"
+      "detail": "Exact match"
     },
     {
       "id": "S035",
@@ -575,12 +575,12 @@
       "severity": "major",
       "pipeline_corrected": "الحياة صعبة في المدينة.",
       "pipeline_suggestions": 3,
-      "pipeline_ms": 4159,
-      "spelling_ms": 2357,
-      "grammar_ms": 535,
-      "punctuation_ms": 577,
+      "pipeline_ms": 2175,
+      "spelling_ms": 742,
+      "grammar_ms": 594,
+      "punctuation_ms": 622,
       "verdict": "TP",
-      "detail": "Partial improvement"
+      "detail": "Exact match"
     },
     {
       "id": "S036",
@@ -591,12 +591,12 @@
       "severity": "major",
       "pipeline_corrected": "المكتبة قريبة من البيت.",
       "pipeline_suggestions": 3,
-      "pipeline_ms": 5008,
-      "spelling_ms": 3269,
-      "grammar_ms": 597,
-      "punctuation_ms": 503,
+      "pipeline_ms": 2074,
+      "spelling_ms": 701,
+      "grammar_ms": 536,
+      "punctuation_ms": 573,
       "verdict": "TP",
-      "detail": "Partial improvement"
+      "detail": "Exact match"
     },
     {
       "id": "S037",
@@ -607,12 +607,12 @@
       "severity": "major",
       "pipeline_corrected": "الغرفة نظيفة ومرتبة.",
       "pipeline_suggestions": 3,
-      "pipeline_ms": 2678,
-      "spelling_ms": 811,
-      "grammar_ms": 653,
-      "punctuation_ms": 459,
+      "pipeline_ms": 4644,
+      "spelling_ms": 3274,
+      "grammar_ms": 610,
+      "punctuation_ms": 540,
       "verdict": "TP",
-      "detail": "Partial improvement"
+      "detail": "Exact match"
     },
     {
       "id": "S038",
@@ -623,12 +623,12 @@
       "severity": "major",
       "pipeline_corrected": "القصة مثيرة للاهتمام!",
       "pipeline_suggestions": 3,
-      "pipeline_ms": 2345,
-      "spelling_ms": 526,
-      "grammar_ms": 536,
-      "punctuation_ms": 599,
+      "pipeline_ms": 3675,
+      "spelling_ms": 2465,
+      "grammar_ms": 483,
+      "punctuation_ms": 511,
       "verdict": "TP",
-      "detail": "Partial improvement"
+      "detail": "Exact match"
     },
     {
       "id": "S039",
@@ -639,12 +639,12 @@
       "severity": "major",
       "pipeline_corrected": "الرحلة طويلة ومتعبة.",
       "pipeline_suggestions": 3,
-      "pipeline_ms": 2842,
-      "spelling_ms": 993,
-      "grammar_ms": 615,
-      "punctuation_ms": 478,
+      "pipeline_ms": 3737,
+      "spelling_ms": 2430,
+      "grammar_ms": 599,
+      "punctuation_ms": 488,
       "verdict": "TP",
-      "detail": "Partial improvement"
+      "detail": "Exact match"
     },
     {
       "id": "S040",
@@ -655,12 +655,12 @@
       "severity": "major",
       "pipeline_corrected": "الوظيفة صعبة لكنها مفيدة.",
       "pipeline_suggestions": 3,
-      "pipeline_ms": 2828,
-      "spelling_ms": 824,
-      "grammar_ms": 496,
-      "punctuation_ms": 759,
+      "pipeline_ms": 4159,
+      "spelling_ms": 2751,
+      "grammar_ms": 491,
+      "punctuation_ms": 695,
       "verdict": "TP",
-      "detail": "Partial improvement"
+      "detail": "Exact match"
     },
     {
       "id": "S041",
@@ -671,10 +671,10 @@
       "severity": "major",
       "pipeline_corrected": "بالمدرسة الكبيرة",
       "pipeline_suggestions": 2,
-      "pipeline_ms": 2387,
-      "spelling_ms": 782,
-      "grammar_ms": 348,
-      "punctuation_ms": 477,
+      "pipeline_ms": 4988,
+      "spelling_ms": 4001,
+      "grammar_ms": 327,
+      "punctuation_ms": 439,
       "verdict": "TP",
       "detail": "Exact match"
     },
@@ -687,10 +687,10 @@
       "severity": "major",
       "pipeline_corrected": "والجامعة المصرية",
       "pipeline_suggestions": 2,
-      "pipeline_ms": 2143,
-      "spelling_ms": 481,
-      "grammar_ms": 441,
-      "punctuation_ms": 415,
+      "pipeline_ms": 3656,
+      "spelling_ms": 2532,
+      "grammar_ms": 392,
+      "punctuation_ms": 500,
       "verdict": "TP",
       "detail": "Exact match"
     },
@@ -703,10 +703,10 @@
       "severity": "major",
       "pipeline_corrected": "السيارة الجديدة",
       "pipeline_suggestions": 2,
-      "pipeline_ms": 2365,
-      "spelling_ms": 764,
-      "grammar_ms": 336,
-      "punctuation_ms": 402,
+      "pipeline_ms": 4550,
+      "spelling_ms": 3621,
+      "grammar_ms": 333,
+      "punctuation_ms": 375,
       "verdict": "TP",
       "detail": "Partial improvement"
     },
@@ -719,10 +719,10 @@
       "severity": "major",
       "pipeline_corrected": "كالمدرسه قديمة",
       "pipeline_suggestions": 1,
-      "pipeline_ms": 2443,
-      "spelling_ms": 706,
-      "grammar_ms": 434,
-      "punctuation_ms": 407,
+      "pipeline_ms": 4082,
+      "spelling_ms": 3050,
+      "grammar_ms": 432,
+      "punctuation_ms": 381,
       "verdict": "FP",
       "detail": "Wrong correction"
     },
@@ -735,10 +735,10 @@
       "severity": "major",
       "pipeline_corrected": "للمدرسة الابتدائية",
       "pipeline_suggestions": 2,
-      "pipeline_ms": 2449,
-      "spelling_ms": 770,
-      "grammar_ms": 332,
-      "punctuation_ms": 661,
+      "pipeline_ms": 4153,
+      "spelling_ms": 2978,
+      "grammar_ms": 327,
+      "punctuation_ms": 594,
       "verdict": "TP",
       "detail": "Exact match"
     },
@@ -751,12 +751,12 @@
       "severity": "major",
       "pipeline_corrected": "ذهبت إلى المكتبة؟",
       "pipeline_suggestions": 2,
-      "pipeline_ms": 2163,
-      "spelling_ms": 492,
-      "grammar_ms": 435,
-      "punctuation_ms": 434,
+      "pipeline_ms": 2945,
+      "spelling_ms": 1796,
+      "grammar_ms": 443,
+      "punctuation_ms": 487,
       "verdict": "TP",
-      "detail": "Partial improvement"
+      "detail": "Exact match"
     },
     {
       "id": "S047",
@@ -767,10 +767,10 @@
       "severity": "major",
       "pipeline_corrected": "المستشفى الكبير",
       "pipeline_suggestions": 1,
-      "pipeline_ms": 1927,
-      "spelling_ms": 514,
-      "grammar_ms": 336,
-      "punctuation_ms": 436,
+      "pipeline_ms": 2470,
+      "spelling_ms": 1529,
+      "grammar_ms": 326,
+      "punctuation_ms": 401,
       "verdict": "TP",
       "detail": "Exact match"
     },
@@ -783,10 +783,10 @@
       "severity": "major",
       "pipeline_corrected": "هدى الطالبة ممتازة",
       "pipeline_suggestions": 2,
-      "pipeline_ms": 2224,
-      "spelling_ms": 443,
-      "grammar_ms": 545,
-      "punctuation_ms": 436,
+      "pipeline_ms": 2781,
+      "spelling_ms": 1610,
+      "grammar_ms": 519,
+      "punctuation_ms": 431,
       "verdict": "FP",
       "detail": "Wrong correction"
     },
@@ -799,12 +799,12 @@
       "severity": "major",
       "pipeline_corrected": "مصطفى طالب مجتهد.",
       "pipeline_suggestions": 2,
-      "pipeline_ms": 2224,
-      "spelling_ms": 589,
-      "grammar_ms": 534,
-      "punctuation_ms": 320,
-      "verdict": "FP",
-      "detail": "Wrong correction"
+      "pipeline_ms": 2432,
+      "spelling_ms": 1465,
+      "grammar_ms": 482,
+      "punctuation_ms": 267,
+      "verdict": "TP",
+      "detail": "Exact match"
     },
     {
       "id": "S050",
@@ -815,12 +815,12 @@
       "severity": "major",
       "pipeline_corrected": "موسى نبي عظيم.",
       "pipeline_suggestions": 2,
-      "pipeline_ms": 1946,
-      "spelling_ms": 521,
-      "grammar_ms": 438,
-      "punctuation_ms": 318,
-      "verdict": "FP",
-      "detail": "Wrong correction"
+      "pipeline_ms": 2483,
+      "spelling_ms": 1626,
+      "grammar_ms": 376,
+      "punctuation_ms": 267,
+      "verdict": "TP",
+      "detail": "Exact match"
     },
     {
       "id": "S051",
@@ -831,12 +831,12 @@
       "severity": "none",
       "pipeline_corrected": "علي يدرس في الكلية.",
       "pipeline_suggestions": 1,
-      "pipeline_ms": 2092,
-      "spelling_ms": 516,
-      "grammar_ms": 540,
-      "punctuation_ms": 455,
-      "verdict": "FP",
-      "detail": "Modified correct text"
+      "pipeline_ms": 2644,
+      "spelling_ms": 1528,
+      "grammar_ms": 490,
+      "punctuation_ms": 409,
+      "verdict": "TN",
+      "detail": "Only punctuation added"
     },
     {
       "id": "S052",
@@ -847,12 +847,12 @@
       "severity": "major",
       "pipeline_corrected": "ذهب إلى السوق.",
       "pipeline_suggestions": 2,
-      "pipeline_ms": 2033,
-      "spelling_ms": 604,
-      "grammar_ms": 408,
-      "punctuation_ms": 393,
+      "pipeline_ms": 2478,
+      "spelling_ms": 1516,
+      "grammar_ms": 437,
+      "punctuation_ms": 306,
       "verdict": "TP",
-      "detail": "Partial improvement"
+      "detail": "Exact match"
     },
     {
       "id": "S053",
@@ -863,12 +863,12 @@
       "severity": "major",
       "pipeline_corrected": "بنى المبنى الجديد.",
       "pipeline_suggestions": 2,
-      "pipeline_ms": 2459,
-      "spelling_ms": 635,
-      "grammar_ms": 436,
-      "punctuation_ms": 513,
-      "verdict": "FP",
-      "detail": "Wrong correction"
+      "pipeline_ms": 2441,
+      "spelling_ms": 1448,
+      "grammar_ms": 381,
+      "punctuation_ms": 395,
+      "verdict": "TP",
+      "detail": "Exact match"
     },
     {
       "id": "S054",
@@ -879,10 +879,10 @@
       "severity": "major",
       "pipeline_corrected": "ذهبت في البيت",
       "pipeline_suggestions": 1,
-      "pipeline_ms": 2495,
-      "spelling_ms": 836,
-      "grammar_ms": 424,
-      "punctuation_ms": 490,
+      "pipeline_ms": 2773,
+      "spelling_ms": 1751,
+      "grammar_ms": 391,
+      "punctuation_ms": 415,
       "verdict": "TP",
       "detail": "Exact match"
     },
@@ -895,10 +895,10 @@
       "severity": "major",
       "pipeline_corrected": "خرج منالمدرسة.",
       "pipeline_suggestions": 1,
-      "pipeline_ms": 2287,
-      "spelling_ms": 611,
-      "grammar_ms": 395,
-      "punctuation_ms": 552,
+      "pipeline_ms": 3061,
+      "spelling_ms": 2075,
+      "grammar_ms": 386,
+      "punctuation_ms": 384,
       "verdict": "FP",
       "detail": "Wrong correction"
     },
@@ -911,10 +911,10 @@
       "severity": "major",
       "pipeline_corrected": "بقي عندالباب.",
       "pipeline_suggestions": 1,
-      "pipeline_ms": 7894,
-      "spelling_ms": 682,
-      "grammar_ms": 468,
-      "punctuation_ms": 408,
+      "pipeline_ms": 2616,
+      "spelling_ms": 1640,
+      "grammar_ms": 490,
+      "punctuation_ms": 269,
       "verdict": "FP",
       "detail": "Wrong correction"
     },
@@ -927,10 +927,10 @@
       "severity": "major",
       "pipeline_corrected": "جلس عندالنافذة.",
       "pipeline_suggestions": 1,
-      "pipeline_ms": 2314,
-      "spelling_ms": 540,
-      "grammar_ms": 488,
-      "punctuation_ms": 435,
+      "pipeline_ms": 2763,
+      "spelling_ms": 1517,
+      "grammar_ms": 585,
+      "punctuation_ms": 445,
       "verdict": "FP",
       "detail": "Wrong correction"
     },
@@ -943,10 +943,10 @@
       "severity": "major",
       "pipeline_corrected": "رجع الىالبيت.",
       "pipeline_suggestions": 1,
-      "pipeline_ms": 2280,
-      "spelling_ms": 659,
-      "grammar_ms": 437,
-      "punctuation_ms": 380,
+      "pipeline_ms": 3082,
+      "spelling_ms": 2096,
+      "grammar_ms": 431,
+      "punctuation_ms": 338,
       "verdict": "FP",
       "detail": "Wrong correction"
     },
@@ -959,12 +959,12 @@
       "severity": "major",
       "pipeline_corrected": "خرج من الباب الخلفي.",
       "pipeline_suggestions": 2,
-      "pipeline_ms": 5938,
-      "spelling_ms": 512,
-      "grammar_ms": 487,
-      "punctuation_ms": 554,
-      "verdict": "FP",
-      "detail": "Wrong correction"
+      "pipeline_ms": 2927,
+      "spelling_ms": 1719,
+      "grammar_ms": 497,
+      "punctuation_ms": 494,
+      "verdict": "TP",
+      "detail": "Exact match"
     },
     {
       "id": "S060",
@@ -975,10 +975,10 @@
       "severity": "major",
       "pipeline_corrected": "نظر الىالسماء.",
       "pipeline_suggestions": 1,
-      "pipeline_ms": 2092,
-      "spelling_ms": 653,
-      "grammar_ms": 484,
-      "punctuation_ms": 327,
+      "pipeline_ms": 2998,
+      "spelling_ms": 1978,
+      "grammar_ms": 479,
+      "punctuation_ms": 323,
       "verdict": "FP",
       "detail": "Wrong correction"
     },
@@ -991,12 +991,12 @@
       "severity": "none",
       "pipeline_corrected": "أنا ذهبت إلى الجامعة.",
       "pipeline_suggestions": 1,
-      "pipeline_ms": 2067,
-      "spelling_ms": 563,
-      "grammar_ms": 487,
-      "punctuation_ms": 449,
-      "verdict": "FP",
-      "detail": "Modified correct text"
+      "pipeline_ms": 3099,
+      "spelling_ms": 1856,
+      "grammar_ms": 489,
+      "punctuation_ms": 536,
+      "verdict": "TN",
+      "detail": "Only punctuation added"
     },
     {
       "id": "S062",
@@ -1007,12 +1007,12 @@
       "severity": "none",
       "pipeline_corrected": "هذه المدرسة جميلة جداً.",
       "pipeline_suggestions": 1,
-      "pipeline_ms": 4721,
-      "spelling_ms": 500,
-      "grammar_ms": 694,
-      "punctuation_ms": 532,
-      "verdict": "FP",
-      "detail": "Modified correct text"
+      "pipeline_ms": 4323,
+      "spelling_ms": 2252,
+      "grammar_ms": 642,
+      "punctuation_ms": 464,
+      "verdict": "TN",
+      "detail": "Only punctuation added"
     },
     {
       "id": "S063",
@@ -1023,12 +1023,12 @@
       "severity": "none",
       "pipeline_corrected": "كان الجو ممطراً اليوم؟",
       "pipeline_suggestions": 1,
-      "pipeline_ms": 2771,
-      "spelling_ms": 823,
-      "grammar_ms": 738,
-      "punctuation_ms": 585,
-      "verdict": "FP",
-      "detail": "Modified correct text"
+      "pipeline_ms": 4450,
+      "spelling_ms": 2278,
+      "grammar_ms": 729,
+      "punctuation_ms": 497,
+      "verdict": "TN",
+      "detail": "Only punctuation added"
     },
     {
       "id": "S064",
@@ -1039,12 +1039,12 @@
       "severity": "none",
       "pipeline_corrected": "وكان أحمد في المنزل.",
       "pipeline_suggestions": 1,
-      "pipeline_ms": 2497,
-      "spelling_ms": 614,
-      "grammar_ms": 499,
-      "punctuation_ms": 659,
-      "verdict": "FP",
-      "detail": "Modified correct text"
+      "pipeline_ms": 3157,
+      "spelling_ms": 1560,
+      "grammar_ms": 485,
+      "punctuation_ms": 454,
+      "verdict": "TN",
+      "detail": "Only punctuation added"
     },
     {
       "id": "S065",
@@ -1055,12 +1055,12 @@
       "severity": "none",
       "pipeline_corrected": "إلى اللقاء يا صديقي.",
       "pipeline_suggestions": 1,
-      "pipeline_ms": 6038,
-      "spelling_ms": 665,
-      "grammar_ms": 484,
-      "punctuation_ms": 440,
-      "verdict": "FP",
-      "detail": "Modified correct text"
+      "pipeline_ms": 3780,
+      "spelling_ms": 2220,
+      "grammar_ms": 480,
+      "punctuation_ms": 367,
+      "verdict": "TN",
+      "detail": "Only punctuation added"
     },
     {
       "id": "S066",
@@ -1071,12 +1071,12 @@
       "severity": "none",
       "pipeline_corrected": "ذلك الكتاب مفيد جداً.",
       "pipeline_suggestions": 1,
-      "pipeline_ms": 2372,
-      "spelling_ms": 502,
-      "grammar_ms": 589,
-      "punctuation_ms": 411,
-      "verdict": "FP",
-      "detail": "Modified correct text"
+      "pipeline_ms": 3597,
+      "spelling_ms": 1896,
+      "grammar_ms": 588,
+      "punctuation_ms": 374,
+      "verdict": "TN",
+      "detail": "Only punctuation added"
     },
     {
       "id": "S067",
@@ -1087,12 +1087,12 @@
       "severity": "none",
       "pipeline_corrected": "لكن الأمر صعب علينا.",
       "pipeline_suggestions": 1,
-      "pipeline_ms": 2401,
-      "spelling_ms": 617,
-      "grammar_ms": 485,
-      "punctuation_ms": 424,
-      "verdict": "FP",
-      "detail": "Modified correct text"
+      "pipeline_ms": 3659,
+      "spelling_ms": 2195,
+      "grammar_ms": 492,
+      "punctuation_ms": 447,
+      "verdict": "TN",
+      "detail": "Only punctuation added"
     },
     {
       "id": "S068",
@@ -1103,12 +1103,12 @@
       "severity": "none",
       "pipeline_corrected": "هذا أو ذاك سواء عندي.",
       "pipeline_suggestions": 1,
-      "pipeline_ms": 6476,
-      "spelling_ms": 636,
-      "grammar_ms": 683,
-      "punctuation_ms": 435,
-      "verdict": "FP",
-      "detail": "Modified correct text"
+      "pipeline_ms": 4575,
+      "spelling_ms": 2778,
+      "grammar_ms": 578,
+      "punctuation_ms": 426,
+      "verdict": "TN",
+      "detail": "Only punctuation added"
     },
     {
       "id": "S069",
@@ -1119,12 +1119,12 @@
       "severity": "none",
       "pipeline_corrected": "الطالب المجتهد ينجح دائماً.",
       "pipeline_suggestions": 1,
-      "pipeline_ms": 2658,
-      "spelling_ms": 548,
-      "grammar_ms": 645,
-      "punctuation_ms": 579,
-      "verdict": "FP",
-      "detail": "Modified correct text"
+      "pipeline_ms": 3740,
+      "spelling_ms": 1907,
+      "grammar_ms": 586,
+      "punctuation_ms": 544,
+      "verdict": "TN",
+      "detail": "Only punctuation added"
     },
     {
       "id": "S070",
@@ -1135,12 +1135,12 @@
       "severity": "none",
       "pipeline_corrected": "العلم نور والجهل ظلام.",
       "pipeline_suggestions": 1,
-      "pipeline_ms": 2694,
-      "spelling_ms": 608,
-      "grammar_ms": 726,
-      "punctuation_ms": 582,
-      "verdict": "FP",
-      "detail": "Modified correct text"
+      "pipeline_ms": 4941,
+      "spelling_ms": 3158,
+      "grammar_ms": 694,
+      "punctuation_ms": 511,
+      "verdict": "TN",
+      "detail": "Only punctuation added"
     },
     {
       "id": "S071",
@@ -1151,12 +1151,12 @@
       "severity": "none",
       "pipeline_corrected": "أحب القراءة والكتابة.",
       "pipeline_suggestions": 1,
-      "pipeline_ms": 5967,
-      "spelling_ms": 627,
-      "grammar_ms": 437,
-      "punctuation_ms": 485,
-      "verdict": "FP",
-      "detail": "Modified correct text"
+      "pipeline_ms": 3160,
+      "spelling_ms": 1507,
+      "grammar_ms": 443,
+      "punctuation_ms": 523,
+      "verdict": "TN",
+      "detail": "Only punctuation added"
     },
     {
       "id": "S072",
@@ -1167,12 +1167,12 @@
       "severity": "none",
       "pipeline_corrected": "المعلم يشرح الدرس.",
       "pipeline_suggestions": 1,
-      "pipeline_ms": 2178,
-      "spelling_ms": 549,
-      "grammar_ms": 431,
-      "punctuation_ms": 466,
-      "verdict": "FP",
-      "detail": "Modified correct text"
+      "pipeline_ms": 3649,
+      "spelling_ms": 1720,
+      "grammar_ms": 430,
+      "punctuation_ms": 492,
+      "verdict": "TN",
+      "detail": "Only punctuation added"
     },
     {
       "id": "S073",
@@ -1183,12 +1183,12 @@
       "severity": "none",
       "pipeline_corrected": "ذهبت إلى السوق واشتريت خبزاً.",
       "pipeline_suggestions": 1,
-      "pipeline_ms": 3214,
-      "spelling_ms": 720,
-      "grammar_ms": 837,
-      "punctuation_ms": 828,
-      "verdict": "FP",
-      "detail": "Modified correct text"
+      "pipeline_ms": 6100,
+      "spelling_ms": 3889,
+      "grammar_ms": 810,
+      "punctuation_ms": 758,
+      "verdict": "TN",
+      "detail": "Only punctuation added"
     },
     {
       "id": "S074",
@@ -1199,12 +1199,12 @@
       "severity": "none",
       "pipeline_corrected": "الطقس جميل في الربيع.",
       "pipeline_suggestions": 1,
-      "pipeline_ms": 5596,
-      "spelling_ms": 497,
-      "grammar_ms": 637,
-      "punctuation_ms": 424,
-      "verdict": "FP",
-      "detail": "Modified correct text"
+      "pipeline_ms": 3330,
+      "spelling_ms": 1617,
+      "grammar_ms": 532,
+      "punctuation_ms": 417,
+      "verdict": "TN",
+      "detail": "Only punctuation added"
     },
     {
       "id": "S075",
@@ -1215,12 +1215,12 @@
       "severity": "none",
       "pipeline_corrected": "نحن نعمل بجد كل يوم.",
       "pipeline_suggestions": 1,
-      "pipeline_ms": 2688,
-      "spelling_ms": 619,
-      "grammar_ms": 785,
-      "punctuation_ms": 360,
-      "verdict": "FP",
-      "detail": "Modified correct text"
+      "pipeline_ms": 4609,
+      "spelling_ms": 2915,
+      "grammar_ms": 591,
+      "punctuation_ms": 406,
+      "verdict": "TN",
+      "detail": "Only punctuation added"
     },
     {
       "id": "S076",
@@ -1231,12 +1231,12 @@
       "severity": "critical",
       "pipeline_corrected": "أنا ذهبت إلى المدرسة.",
       "pipeline_suggestions": 3,
-      "pipeline_ms": 2497,
-      "spelling_ms": 630,
-      "grammar_ms": 485,
-      "punctuation_ms": 442,
+      "pipeline_ms": 5931,
+      "spelling_ms": 4275,
+      "grammar_ms": 536,
+      "punctuation_ms": 580,
       "verdict": "TP",
-      "detail": "Partial improvement"
+      "detail": "Exact match"
     },
     {
       "id": "S077",
@@ -1247,12 +1247,12 @@
       "severity": "critical",
       "pipeline_corrected": "أيضا الجامعة كبيرة.",
       "pipeline_suggestions": 2,
-      "pipeline_ms": 5834,
-      "spelling_ms": 557,
-      "grammar_ms": 582,
-      "punctuation_ms": 406,
+      "pipeline_ms": 4776,
+      "spelling_ms": 2819,
+      "grammar_ms": 595,
+      "punctuation_ms": 482,
       "verdict": "TP",
-      "detail": "Partial improvement"
+      "detail": "Exact match"
     },
     {
       "id": "S078",
@@ -1263,12 +1263,12 @@
       "severity": "critical",
       "pipeline_corrected": "لأن المدرسة بعيدة جداً.",
       "pipeline_suggestions": 4,
-      "pipeline_ms": 2671,
-      "spelling_ms": 669,
-      "grammar_ms": 648,
-      "punctuation_ms": 531,
+      "pipeline_ms": 4641,
+      "spelling_ms": 2773,
+      "grammar_ms": 642,
+      "punctuation_ms": 540,
       "verdict": "TP",
-      "detail": "Partial improvement"
+      "detail": "Exact match"
     },
     {
       "id": "S079",
@@ -1279,10 +1279,10 @@
       "severity": "critical",
       "pipeline_corrected": "اين أن الجامعة الكبيرة",
       "pipeline_suggestions": 2,
-      "pipeline_ms": 2619,
-      "spelling_ms": 710,
-      "grammar_ms": 493,
-      "punctuation_ms": 456,
+      "pipeline_ms": 2614,
+      "spelling_ms": 696,
+      "grammar_ms": 496,
+      "punctuation_ms": 510,
       "verdict": "FP",
       "detail": "Wrong correction"
     },
@@ -1295,12 +1295,12 @@
       "severity": "critical",
       "pipeline_corrected": "أول مرة أزور المكتبة.",
       "pipeline_suggestions": 4,
-      "pipeline_ms": 5759,
-      "spelling_ms": 799,
-      "grammar_ms": 513,
-      "punctuation_ms": 483,
+      "pipeline_ms": 2637,
+      "spelling_ms": 808,
+      "grammar_ms": 496,
+      "punctuation_ms": 522,
       "verdict": "TP",
-      "detail": "Partial improvement"
+      "detail": "Exact match"
     }
   ]
 }

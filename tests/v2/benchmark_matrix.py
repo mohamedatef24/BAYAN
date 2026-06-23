@@ -62,6 +62,22 @@ def load_report(level: int) -> dict:
     return None
 
 
+def _compute_f1(tp, fp, fn):
+    """Compute F1 score from TP/FP/FN."""
+    precision = tp / (tp + fp) if (tp + fp) > 0 else 0
+    recall = tp / (tp + fn) if (tp + fn) > 0 else 0
+    f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0
+    return round(f1, 4), round(precision, 4), round(recall, 4)
+
+
+def _extract_model_metrics(report, model_key):
+    """Extract TP/TN/FP/FN for a model from a report."""
+    a = report.get("analysis", {})
+    by_model = a.get("by_model", {})
+    data = by_model.get(model_key, {})
+    return data.get("TP", 0), data.get("TN", 0), data.get("FP", 0), data.get("FN", 0)
+
+
 def print_comparison_matrix():
     """Load all 3 reports and print side-by-side comparison."""
     l1 = load_report(1)
@@ -72,27 +88,29 @@ def print_comparison_matrix():
     print("BAYAN v2.0 — BENCHMARK COMPARISON MATRIX")
     print(f"{'='*70}")
 
-    # Timestamps
     for level, report, name in [(1, l1, "L1-Raw"), (2, l2, "L2-Solo"), (3, l3, "L3-Pipeline")]:
         if report:
             ts = report.get("timestamp", "N/A")
-            print(f"  {name}: {ts}")
+            total = report.get("analysis", {}).get("total", "?")
+            print(f"  {name}: {ts} ({total} tests)")
         else:
             print(f"  {name}: NOT RUN")
 
     # ── Level 1 Summary ──
     if l1:
         print(f"\n{'─'*70}")
-        print("Level 1: RAW MODEL OUTPUT (no filters)")
+        print("Level 1: RAW MODEL OUTPUT (through solo API endpoints)")
         print(f"{'─'*70}")
         a = l1.get("analysis", {})
         by_model = a.get("by_model", {})
+        print(f"  {'Model':<12} {'TP':>4} {'TN':>4} {'FP':>4} {'FN':>4} {'Pass%':>7} {'ChgRate':>8} {'F1':>6}")
+        print(f"  {'-'*12} {'-'*4} {'-'*4} {'-'*4} {'-'*4} {'-'*7} {'-'*8} {'-'*6}")
         for model, data in by_model.items():
-            changed = data.get("changed", 0)
-            unchanged = data.get("unchanged", 0)
-            total = changed + unchanged + data.get("errors", 0)
-            rate = changed / total * 100 if total else 0
-            print(f"  {model:<12}: {changed}/{total} texts modified ({rate:.1f}%)")
+            tp, tn, fp, fn = data.get("TP",0), data.get("TN",0), data.get("FP",0), data.get("FN",0)
+            pr = data.get("pass_rate", 0) * 100
+            cr = data.get("change_rate", 0) * 100
+            f1, _, _ = _compute_f1(tp, fp, fn)
+            print(f"  {model:<12} {tp:>4} {tn:>4} {fp:>4} {fn:>4} {pr:>6.1f}% {cr:>6.1f}%  {f1:.3f}")
 
     # ── Level 2 Summary ──
     if l2:
@@ -101,12 +119,13 @@ def print_comparison_matrix():
         print(f"{'─'*70}")
         a = l2.get("analysis", {})
         by_model = a.get("by_model", {})
-        print(f"  {'Model':<12} {'TP':>4} {'TN':>4} {'FP':>4} {'FN':>4} {'Pass%':>7}")
-        print(f"  {'-'*12} {'-'*4} {'-'*4} {'-'*4} {'-'*4} {'-'*7}")
+        print(f"  {'Model':<12} {'TP':>4} {'TN':>4} {'FP':>4} {'FN':>4} {'Pass%':>7} {'F1':>6}")
+        print(f"  {'-'*12} {'-'*4} {'-'*4} {'-'*4} {'-'*4} {'-'*7} {'-'*6}")
         for model, data in by_model.items():
+            tp, tn, fp, fn = data.get("TP",0), data.get("TN",0), data.get("FP",0), data.get("FN",0)
             pr = data.get("pass_rate", 0) * 100
-            print(f"  {model:<12} {data.get('TP',0):>4} {data.get('TN',0):>4} "
-                  f"{data.get('FP',0):>4} {data.get('FN',0):>4} {pr:>6.1f}%")
+            f1, _, _ = _compute_f1(tp, fp, fn)
+            print(f"  {model:<12} {tp:>4} {tn:>4} {fp:>4} {fn:>4} {pr:>6.1f}% {f1:.3f}")
 
     # ── Level 3 Summary ──
     if l3:
@@ -117,32 +136,50 @@ def print_comparison_matrix():
         agg = a.get("aggregate", {})
         total = a.get("total", 0)
         pr = agg.get("pass_rate", 0) * 100
+        tp, tn, fp, fn = agg.get("TP",0), agg.get("TN",0), agg.get("FP",0), agg.get("FN",0)
+        f1, prec, rec = _compute_f1(tp, fp, fn)
         print(f"  Overall: {pr:.1f}% pass ({total} tests)")
-        print(f"  TP={agg.get('TP',0)} TN={agg.get('TN',0)} "
-              f"FP={agg.get('FP',0)} FN={agg.get('FN',0)}")
+        print(f"  TP={tp} TN={tn} FP={fp} FN={fn}")
+        print(f"  F1={f1:.3f}  Precision={prec:.3f}  Recall={rec:.3f}")
 
-        print(f"\n  {'Dataset':<14} {'Pass%':>7} {'TP':>4} {'TN':>4} {'FP':>4} {'FN':>4}")
-        print(f"  {'-'*14} {'-'*7} {'-'*4} {'-'*4} {'-'*4} {'-'*4}")
+        print(f"\n  {'Dataset':<14} {'Pass%':>7} {'TP':>4} {'TN':>4} {'FP':>4} {'FN':>4} {'F1':>6}")
+        print(f"  {'-'*14} {'-'*7} {'-'*4} {'-'*4} {'-'*4} {'-'*4} {'-'*6}")
         by_ds = a.get("by_dataset", {})
         for ds in sorted(by_ds.keys()):
             d = by_ds[ds]
             dp = d.get("pass_rate", 0) * 100
-            print(f"  {ds:<14} {dp:>6.1f}% {d.get('TP',0):>4} {d.get('TN',0):>4} "
-                  f"{d.get('FP',0):>4} {d.get('FN',0):>4}")
+            dtp, dtn, dfp, dfn = d.get("TP",0), d.get("TN",0), d.get("FP",0), d.get("FN",0)
+            df1, _, _ = _compute_f1(dtp, dfp, dfn)
+            print(f"  {ds:<14} {dp:>6.1f}% {dtp:>4} {dtn:>4} {dfp:>4} {dfn:>4} {df1:.3f}")
 
     # ── Cross-Level Comparison ──
+    if l1 and l2:
+        print(f"\n{'─'*70}")
+        print("CROSS-LEVEL: L1 (Raw) vs L2 (Solo) — Filter Impact")
+        print(f"{'─'*70}")
+        print(f"  {'Model':<12} {'L1-Pass%':>9} {'L2-Pass%':>9} {'Delta':>7} {'L1-F1':>7} {'L2-F1':>7}")
+        print(f"  {'-'*12} {'-'*9} {'-'*9} {'-'*7} {'-'*7} {'-'*7}")
+        for model in ("spelling", "grammar", "punctuation"):
+            l1m = l1.get("analysis",{}).get("by_model",{}).get(model,{})
+            l2m = l2.get("analysis",{}).get("by_model",{}).get(model,{})
+            l1p = l1m.get("pass_rate",0) * 100
+            l2p = l2m.get("pass_rate",0) * 100
+            delta = l2p - l1p
+            l1f1, _, _ = _compute_f1(l1m.get("TP",0), l1m.get("FP",0), l1m.get("FN",0))
+            l2f1, _, _ = _compute_f1(l2m.get("TP",0), l2m.get("FP",0), l2m.get("FN",0))
+            print(f"  {model:<12} {l1p:>8.1f}% {l2p:>8.1f}% {delta:>+6.1f}% {l1f1:>6.3f}  {l2f1:>6.3f}")
+
     if l2 and l3:
         print(f"\n{'─'*70}")
-        print("CROSS-LEVEL COMPARISON: Solo vs Integrated")
+        print("CROSS-LEVEL: L2 (Solo) vs L3 (Pipeline) — Integration Impact")
         print(f"{'─'*70}")
 
         l2_ds = l2.get("analysis", {}).get("by_dataset", {})
         l3_ds = l3.get("analysis", {}).get("by_dataset", {})
-
         all_datasets = sorted(set(list(l2_ds.keys()) + list(l3_ds.keys())))
 
-        print(f"  {'Dataset':<14} {'L2-Spell':>10} {'L2-Gram':>10} {'L2-Punct':>10} {'L3-Pipeline':>12} {'Delta':>7}")
-        print(f"  {'-'*14} {'-'*10} {'-'*10} {'-'*10} {'-'*12} {'-'*7}")
+        print(f"  {'Dataset':<14} {'L2-Best':>8} {'L3-Pipe':>8} {'Delta':>7}")
+        print(f"  {'-'*14} {'-'*8} {'-'*8} {'-'*7}")
 
         for ds in all_datasets:
             l2d = l2_ds.get(ds, {})
@@ -152,13 +189,9 @@ def print_comparison_matrix():
             l2_g = l2d.get("grammar", {}).get("pass_rate", 0) * 100
             l2_p = l2d.get("punctuation", {}).get("pass_rate", 0) * 100
             l3_p = l3d.get("pass_rate", 0) * 100
-
-            # Best solo model vs pipeline
             best_solo = max(l2_s, l2_g, l2_p)
             delta = l3_p - best_solo
-
-            delta_str = f"{delta:+.1f}%"
-            print(f"  {ds:<14} {l2_s:>9.1f}% {l2_g:>9.1f}% {l2_p:>9.1f}% {l3_p:>11.1f}% {delta_str:>7}")
+            print(f"  {ds:<14} {best_solo:>7.1f}% {l3_p:>7.1f}% {delta:>+6.1f}%")
 
     # Save comparison
     comparison = {
@@ -166,6 +199,7 @@ def print_comparison_matrix():
         "l1_timestamp": l1.get("timestamp") if l1 else None,
         "l2_timestamp": l2.get("timestamp") if l2 else None,
         "l3_timestamp": l3.get("timestamp") if l3 else None,
+        "l1_summary": l1.get("analysis", {}).get("by_model") if l1 else None,
         "l2_summary": l2.get("analysis", {}).get("by_model") if l2 else None,
         "l3_summary": l3.get("analysis", {}).get("aggregate") if l3 else None,
     }
