@@ -203,11 +203,15 @@ Verify that you have placed the model files under the `models/` directory:
 - Punctuation: `models/Punctuation/Model/`
 
 ### 3. Run the Server
-Use the standard run script:
+Use gunicorn (production) or Flask dev server:
 ```bash
-python run_app.py
+# Production (matches Procfile)
+cd src && gunicorn app:app --bind 0.0.0.0:7860 --timeout 120 --workers 1
+
+# Development
+cd src && python -c "from app import app; app.run(host='0.0.0.0', port=7860, debug=True)"
 ```
-This runs the server locally on port `5000` by default. Open your web browser and navigate to:
+Open your web browser and navigate to:
 ```
-http://localhost:5000
+http://localhost:7860
 ```
