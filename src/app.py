@@ -2009,58 +2009,61 @@ def analyze_text():
                     # Evaluate grammar patterns early to bypass heuristic blocks.
                     _is_grammar_pattern = False
                     if orig_text and corr_text:
-                        # Case: ون/ان → ين (sound masculine plural case)
-                        if (orig_text.endswith('ون') and corr_text.endswith('ين') and
-                                orig_text[:-2] == corr_text[:-2]):
+                        _o_cl = orig_text.rstrip('.,،؛;:!؟?()[]{}«»"\'…')
+                        _c_cl = corr_text.rstrip('.,،؛;:!؟?()[]{}«»"\'…')
+                        
+                        # Case: ون/ان → ين (sound masculine plural / dual case change)
+                        if (_o_cl.endswith('ون') and _c_cl.endswith('ين') and _o_cl[:-2] == _c_cl[:-2]):
+                            _is_grammar_pattern = True
+                        elif (_o_cl.endswith('ان') and _c_cl.endswith('ين') and _o_cl[:-2] == _c_cl[:-2] and len(_o_cl) >= 4):
                             _is_grammar_pattern = True
                         # Nasb/Jazm: ون → وا (verb mood)
-                        elif (orig_text.rstrip('.,،؛;:!؟?()[]{}«»"\'…').endswith('ون') and corr_text.rstrip('.,،؛;:!؟?()[]{}«»"\'…').endswith('وا') and len(orig_text.rstrip('.,،؛;:!؟?()[]{}«»"\'…')) >= 3):
-                            _o_cl = orig_text.rstrip('.,،؛;:!؟?()[]{}«»"\'…')
-                            _c_cl = corr_text.rstrip('.,،؛;:!؟?()[]{}«»"\'…')
+                        elif (_o_cl.endswith('ون') and _c_cl.endswith('وا') and len(_o_cl) >= 3):
                             _o_stem = _o_cl[:-2]
                             _c_stem = _c_cl[:-2]
                             if _o_stem == _c_stem or (len(_o_stem) > 1 and _o_stem[1:] == _c_stem[1:] and _o_stem[0] in 'يت' and _c_stem[0] in 'يت'):
                                 _is_grammar_pattern = True
-                        # Five nouns: وك → اك/يك (أبوك→أباك, أخوك→أخيك)
-                        elif (len(orig_text) >= 3 and len(corr_text) >= 3 and
-                                orig_text[-2:] in ('وك', 'وه') and
-                                corr_text[-2:] in ('اك', 'يك', 'اه', 'يه')):
-                            _is_grammar_pattern = True
-                        # Dual: ان → ين (dual oblique)
-                        elif (orig_text.endswith('ان') and corr_text.endswith('ين') and
-                                orig_text[:-2] == corr_text[:-2] and len(orig_text) >= 4):
+                        # Five nouns: وك → اك/يك
+                        elif (len(_o_cl) >= 3 and len(_c_cl) >= 3 and _o_cl[-2:] in ('وك', 'وه') and _c_cl[-2:] in ('اك', 'يك', 'اه', 'يه')):
                             _is_grammar_pattern = True
                         # Demonstrative: هذان→هاتان, هاتان→هذان
-                        elif ({orig_text, corr_text} <= {'هذان', 'هاتان'}):
+                        elif ({_o_cl, _c_cl} <= {'هذان', 'هاتان'}):
                             _is_grammar_pattern = True
-                        # ── NEW: SV agreement suffix additions ──
-                        # Past tense masc plural: verb→verb+وا (ذهب→ذهبوا, حضر→حضروا)
-                        elif (corr_text.endswith('وا') and corr_text[:-2] == orig_text
-                                and len(orig_text) >= 3):
+                        # Past tense masc plural: verb→verb+وا
+                        elif (_c_cl.endswith('وا') and _c_cl[:-2] == _o_cl and len(_o_cl) >= 3):
                             _is_grammar_pattern = True
-                        # Past tense fem plural: verb→verb+ن (ذهب→ذهبن, حضر→حضرن)
-                        elif (corr_text.endswith('ن') and corr_text[:-1] == orig_text
-                                and len(orig_text) >= 3):
+                        # Past tense fem plural: verb→verb+ن
+                        elif (_c_cl.endswith('ن') and _c_cl[:-1] == _o_cl and len(_o_cl) >= 3):
                             _is_grammar_pattern = True
-                        # Present tense fem plural: ون → ن (يلعبون → يلعبن or يلعبون → تلعبن)
-                        elif (orig_text.rstrip('.,،؛;:!؟?()[]{}«»"\'…').endswith('ون') and corr_text.rstrip('.,،؛;:!؟?()[]{}«»"\'…').endswith('ن') and len(orig_text.rstrip('.,،؛;:!؟?()[]{}«»"\'…')) >= 3):
-                            _o_cl = orig_text.rstrip('.,،؛;:!؟?()[]{}«»"\'…')
-                            _c_cl = corr_text.rstrip('.,،؛;:!؟?()[]{}«»"\'…')
+                        # Present tense fem plural: ون → ن
+                        elif (_o_cl.endswith('ون') and _c_cl.endswith('ن') and len(_o_cl) >= 3):
                             _o_stem = _o_cl[:-2]
                             _c_stem = _c_cl[:-1]
                             if _o_stem == _c_stem or (len(_o_stem) > 1 and _o_stem[1:] == _c_stem[1:] and _o_stem[0] in 'يت' and _c_stem[0] in 'يت'):
                                 _is_grammar_pattern = True
-                        # Present tense masc plural: يفعل→يفعلون (adding ون)
-                        elif (corr_text.endswith('ون') and corr_text[:-2] == orig_text
-                                and len(orig_text) >= 3):
+                        # Masc Plural Addition: +ون
+                        elif (_c_cl.endswith('ون') and _c_cl[:-2] == _o_cl and len(_o_cl) >= 3):
                             _is_grammar_pattern = True
-                        # Gender: adjective→adjective+ة (جميل→جميلة, كبير→كبيرة)
-                        elif (corr_text.endswith('ة') and corr_text[:-1] == orig_text
-                                and len(orig_text) >= 3):
+                        # Dual Addition: +ان or +ين
+                        elif ((_c_cl.endswith('ان') or _c_cl.endswith('ين')) and _c_cl[:-2] == _o_cl and len(_o_cl) >= 3):
+                            _is_grammar_pattern = True
+                        # Feminine Dual Addition: +تان / +تين
+                        elif (_c_cl.endswith('تان') or _c_cl.endswith('تين')):
+                            if _o_cl.endswith('ة') and _c_cl[:-3] == _o_cl[:-1] and len(_o_cl) >= 3:
+                                _is_grammar_pattern = True
+                            elif _c_cl[:-3] == _o_cl and len(_o_cl) >= 3:
+                                _is_grammar_pattern = True
+                        # Feminine Plural Addition: +ات
+                        elif (_c_cl.endswith('ات') and len(_c_cl) >= 4):
+                            if _o_cl.endswith('ة') and _c_cl[:-2] == _o_cl[:-1]:
+                                _is_grammar_pattern = True
+                            elif _c_cl[:-2] == _o_cl:
+                                _is_grammar_pattern = True
+                        # Gender: +ة (جميل→جميلة)
+                        elif (_c_cl.endswith('ة') and _c_cl[:-1] == _o_cl and len(_o_cl) >= 3):
                             _is_grammar_pattern = True
                         # Gender with ي: ذكي→ذكية
-                        elif (corr_text.endswith('ية') and corr_text[:-1] == orig_text[:-1] + 'ي'
-                                and orig_text.endswith('ي') and len(orig_text) >= 3):
+                        elif (_c_cl.endswith('ية') and _c_cl[:-1] == _o_cl[:-1] + 'ي' and _o_cl.endswith('ي') and len(_o_cl) >= 3):
                             _is_grammar_pattern = True
 
 
