@@ -2127,32 +2127,6 @@ def analyze_text():
                     if _gram_dir_blocked:
                         continue
 
-                    if not _is_grammar_pattern:
-                        if len(orig_text.split()) == 1 and len(corr_text.split()) == 1:
-                            try:
-                                from nlp.spelling.araspell_service import get_spelling_model
-                                _vm = get_spelling_model().vocab_manager
-                                if _vm:
-                                    # ── Phase 12 (B3): Strip diacritics before IV/OOV check ──
-                                    # Grammar model sometimes outputs correct words with
-                                    # diacritics (e.g. يفعلوَ) which fail OOV check.
-                                    # Strip diacritics for vocabulary check only.
-                                    _DIACRITICS_RE = re.compile(r'[\u064B-\u065F\u0670]')
-                                    _corr_clean = _DIACRITICS_RE.sub('', corr_text)
-                                    _orig_clean = _DIACRITICS_RE.sub('', orig_text)
-                                    if _vm.is_iv(_orig_clean) and _vm.is_oov(_corr_clean):
-                                        logger.info(
-                                            f"[GRAMMAR] Rejected corruption: '{orig_text}'→'{corr_text}' "
-                                            f"(valid word → non-word)"
-                                        )
-                                        logger.info(f'[FILTER-TEL] {_tel_json.dumps({"event":"filter_reject","filter":"IVtoOOV","original":orig_text[:80],"correction":corr_text[:80]})}')
-                                        _tel_events.append({"event":"filter_reject","filter":"IVtoOOV","original":orig_text[:80],"correction":corr_text[:80]})
-                                        continue
-                                    # Also strip diacritics from correction for cleaner output
-                                    if _corr_clean != corr_text and _vm.is_iv(_corr_clean):
-                                        corr_text = _corr_clean
-                            except Exception:
-                                pass
 
                     # FIX-22: Protect tanween (preserve ً ٌ ٍ from original)
                     _TANWEEN_CHARS = set('ًٌٍ')
