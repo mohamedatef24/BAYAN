@@ -1,0 +1,36 @@
+{
+  "timestamp": "2026-06-23T18:55:12Z",
+  "l1_timestamp": null,
+  "l2_timestamp": "2026-06-23T18:55:12Z",
+  "l3_timestamp": "2026-06-23T18:54:52Z",
+  "l2_summary": {
+    "spelling": {
+      "TP": 0,
+      "TN": 19,
+      "FP": 11,
+      "FN": 0,
+      "pass_rate": 0.6333
+    },
+    "grammar": {
+      "TP": 0,
+      "TN": 25,
+      "FP": 5,
+      "FN": 0,
+      "pass_rate": 0.8333
+    },
+    "punctuation": {
+      "TP": 0,
+      "TN": 1,
+      "FP": 29,
+      "FN": 0,
+      "pass_rate": 0.0333
+    }
+  },
+  "l3_summary": {
+    "TP": 22,
+    "TN": 0,
+    "FP": 58,
+    "FN": 0,
+    "pass_rate": 0.275
+  }
+}

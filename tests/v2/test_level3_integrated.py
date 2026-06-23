@@ -115,11 +115,18 @@ def classify_pipeline(input_text, corrected_text, expected_text, dataset, entity
         # Correction dataset
         needs_correction = (inp_n != exp_n)
         
+        # Strip trailing punctuation from output for comparison
+        # Pipeline may add . or ؟ via PuncAra even when the correction is correct
+        _TERMINAL_PUNCT = '.،؛؟!?!'
+        out_stripped = out_n.rstrip(_TERMINAL_PUNCT).rstrip()
+        
         if needs_correction:
-            if out_n == exp_n:
+            if out_n == exp_n or out_stripped == exp_n:
                 return "TP", "Exact match"
-            elif text_changed and _closer(out_n, inp_n, exp_n):
+            elif text_changed and _closer(out_stripped, inp_n, exp_n):
                 return "TP", "Partial improvement"
+            elif text_changed and _closer(out_n, inp_n, exp_n):
+                return "TP", "Partial improvement (with punct)"
             elif not text_changed:
                 return "FN", "No correction applied"
             else:
@@ -127,6 +134,9 @@ def classify_pipeline(input_text, corrected_text, expected_text, dataset, entity
         else:
             if not text_changed:
                 return "TN", "Correctly unchanged"
+            elif out_stripped == inp_n:
+                # Only punctuation was added — count as TN for correction datasets
+                return "TN", "Only punctuation added"
             else:
                 return "FP", f"Modified correct text"
 
