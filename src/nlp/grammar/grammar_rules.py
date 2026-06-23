@@ -358,6 +358,55 @@ class ArabicGrammarGuard:
 
         return text
 
+    def fix_conditional_sentences(self, text):
+        conditional_particles = {'إن', 'من', 'ما', 'متى', 'مهما', 'أينما', 'حيثما', 'أيان', 'كيفما', 'أنى'}
+        tokens = simple_word_tokenize(text)
+        disambig_tokens = self.mle.disambiguate(tokens)
+        corrected_tokens = list(tokens)
+        
+        # Lookahead for 2nd person context
+        has_2nd_person_context = any(t.endswith('كم') or t.endswith('كمو') or t.startswith('ت') for t in tokens)
+        
+        in_cond = False
+        verbs_jazmed = 0
+        
+        for i, token_info in enumerate(disambig_tokens):
+            word = corrected_tokens[i]
+            pos_tag = token_info.analyses[0].analysis.get('pos', 'unknown') if token_info.analyses else 'unknown'
+            
+            if word in conditional_particles:
+                # To prevent overcorrection (e.g. 'إن الأطباء' treating 'إن' as conditional),
+                # ensure the immediately following word is a verb.
+                next_pos = 'unknown'
+                if i + 1 < len(disambig_tokens):
+                    if disambig_tokens[i+1].analyses:
+                        next_pos = disambig_tokens[i+1].analyses[0].analysis.get('pos', 'unknown')
+                
+                if next_pos == 'verb':
+                    in_cond = True
+                    verbs_jazmed = 0
+                continue
+                
+            if in_cond and pos_tag == 'verb':
+                # Apply jazm to present tense verbs ending in ون, ان, ين
+                if word.endswith('ون'):
+                    word = word[:-2] + 'وا'
+                elif word.endswith('ان'):
+                    word = word[:-2] + 'ا'
+                elif word.endswith('ين'):
+                    word = word[:-2] + 'ي'
+                    
+                # Fix pronoun mismatch if 2nd person context exists
+                if has_2nd_person_context and word.startswith('ي') and (word.endswith('وا') or word.endswith('ا') or word.endswith('ي')):
+                    word = 'ت' + word[1:]
+                    
+                corrected_tokens[i] = word
+                verbs_jazmed += 1
+                if verbs_jazmed >= 2:
+                    in_cond = False
+                    
+        return " ".join(corrected_tokens)
+
 
     def process(self, original_text, generated_text):
         """Apply all grammar rules to model output."""
@@ -372,6 +421,7 @@ class ArabicGrammarGuard:
             ('fix_gender_agreement', self.fix_gender_agreement),
             ('fix_prepositions_advanced', self.fix_prepositions_advanced),
             ('fix_subject_verb_agreement', self.fix_subject_verb_agreement),
+            ('fix_conditional_sentences', self.fix_conditional_sentences),
             ('regex_rules_fallback', self.regex_rules_fallback),
         ]:
             try:
