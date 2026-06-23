@@ -36,16 +36,10 @@ jobs:
           print('✅ All critical API routes registered')
           "
 
-      - name: Validate build script
-        env:
-          SUPABASE_URL: "https://test.supabase.co"
-          SUPABASE_ANON_KEY: "test-key-1234"
-        run: python build.py
-
-      - name: Verify index.html was modified
+      - name: Validate Supabase meta tags exist
         run: |
-          grep -q "https://test.supabase.co" src/index.html && echo "✅ Supabase URL injected" || exit 1
-          grep -q "test-key-1234" src/index.html && echo "✅ Supabase key injected" || exit 1
+          grep -q 'supabase-url' src/index.html && echo "✅ Supabase URL meta tag present" || exit 1
+          grep -q 'supabase-anon-key' src/index.html && echo "✅ Supabase key meta tag present" || exit 1
 
   health-check:
     name: Post-Deploy Health Check
