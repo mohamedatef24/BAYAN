@@ -2006,70 +2006,7 @@ def analyze_text():
                             )
                             continue
 
-                    # ── FIX-27a: Grammar structured data protection ──
-                    # Block grammar diffs where the original contains digits.
-                    # The grammar model corrupts dates/numbers/times/percentages.
-                    # e.g., '2026-06-22' → 'عشرين 26-06-22ا'
-                    if orig_text and any(c.isdigit() for c in orig_text):
-                        logger.info(
-                            f"[GRAMMAR] Blocked digit-containing diff: "
-                            f"'{orig_text}'\u2192'{corr_text}'"
-                        )
-                        logger.info(f'[FILTER-TEL] {_tel_json.dumps({"event":"filter_reject","filter":"DigitGuard","original":orig_text[:80],"correction":corr_text[:80]})}')
-                        _tel_events.append({"event":"filter_reject","filter":"DigitGuard","original":orig_text[:80],"correction":corr_text[:80]})
-                        continue
-
-                    # ── FIX-27b: Grammar hallucination guard (Jaccard) ──
-                    # Block grammar diffs where the correction is too different
-                    # from the original (character-level Jaccard < 0.5).
-                    # Catches: القانون→القانين, يعزف→يعزفون, للإنسان→للإنسين
-                    if orig_text and corr_text and len(orig_text) > 2:
-                        import re as _re_jac
-                        # Strip punctuation/spaces for comparison
-                        _o_chars = set(_re_jac.sub(r'[\s.,،؛؟!:;?]', '', orig_text))
-                        _c_chars = set(_re_jac.sub(r'[\s.,،؛؟!:;?]', '', corr_text))
-                        if _o_chars and _c_chars:
-                            _jac = len(_o_chars & _c_chars) / len(_o_chars | _c_chars)
-                            if _jac < 0.5:
-                                logger.info(
-                                    f"[GRAMMAR] Blocked low-Jaccard diff (j={_jac:.2f}): "
-                                    f"'{orig_text}'\u2192'{corr_text}'"
-                                )
-                                logger.info(f'[FILTER-TEL] {_tel_json.dumps({"event":"filter_reject","filter":"Jaccard_05","original":orig_text[:80],"correction":corr_text[:80],"jaccard":round(_jac,3)})}')
-                                _tel_events.append({"event":"filter_reject","filter":"Jaccard_05","original":orig_text[:80],"correction":corr_text[:80],"jaccard":round(_jac,3)})
-                                continue
-
-                    # ── FIX-06: Directional block protection for grammar ──
-                    # Prevents meaning-changing substitutions (كان→كأن etc.)
-                    # especially critical when spelling is skipped (>1000 chars).
-                    if corr_text in _DIRECTIONAL_BLOCKS.get(orig_text, set()):
-                        logger.info(
-                            f"[GRAMMAR] Directional block: '{orig_text}'→'{corr_text}'"
-                        )
-                        logger.info(f'[FILTER-TEL] {_tel_json.dumps({"event":"filter_reject","filter":"DirectionalBlock","original":orig_text[:80],"correction":corr_text[:80]})}')
-                        _tel_events.append({"event":"filter_reject","filter":"DirectionalBlock","original":orig_text[:80],"correction":corr_text[:80]})
-                        continue
-                    # Also check with clitic prefixes
-                    _gram_dir_blocked = False
-                    for _gpfx in ('و', 'ف', 'ب', 'ل', 'ك'):
-                        if (orig_text.startswith(_gpfx) and corr_text.startswith(_gpfx)
-                                and len(orig_text) > len(_gpfx) + 1):
-                            _g_orig_stem = orig_text[len(_gpfx):]
-                            _g_corr_stem = corr_text[len(_gpfx):]
-                            if _g_corr_stem in _DIRECTIONAL_BLOCKS.get(_g_orig_stem, set()):
-                                logger.info(
-                                    f"[GRAMMAR] Directional block (prefixed): "
-                                    f"'{orig_text}'→'{corr_text}'"
-                                )
-                                _gram_dir_blocked = True
-                                break
-                    if _gram_dir_blocked:
-                        continue
-
-                    # ── Phase 4 (BUG-033/E10): Grammar output sanity check ──
-                    # Reject grammar corrections that produce a non-word when
-                    # the original was already a valid word. Mirrors spelling filter.
-                    # BUT: bypass for known grammar patterns (case endings, nasb, etc.)
+                    # Evaluate grammar patterns early to bypass heuristic blocks.
                     _is_grammar_pattern = False
                     if orig_text and corr_text:
                         # Case: ون/ان → ين (sound masculine plural case)
@@ -2077,9 +2014,13 @@ def analyze_text():
                                 orig_text[:-2] == corr_text[:-2]):
                             _is_grammar_pattern = True
                         # Nasb/Jazm: ون → وا (verb mood)
-                        elif (orig_text.endswith('ون') and corr_text.endswith('وا') and
-                                orig_text[:-2] == corr_text[:-2]):
-                            _is_grammar_pattern = True
+                        elif (orig_text.rstrip('.,،؛;:!؟?()[]{}«»"\'…').endswith('ون') and corr_text.rstrip('.,،؛;:!؟?()[]{}«»"\'…').endswith('وا') and len(orig_text.rstrip('.,،؛;:!؟?()[]{}«»"\'…')) >= 3):
+                            _o_cl = orig_text.rstrip('.,،؛;:!؟?()[]{}«»"\'…')
+                            _c_cl = corr_text.rstrip('.,،؛;:!؟?()[]{}«»"\'…')
+                            _o_stem = _o_cl[:-2]
+                            _c_stem = _c_cl[:-2]
+                            if _o_stem == _c_stem or (len(_o_stem) > 1 and _o_stem[1:] == _c_stem[1:] and _o_stem[0] in 'يت' and _c_stem[0] in 'يت'):
+                                _is_grammar_pattern = True
                         # Five nouns: وك → اك/يك (أبوك→أباك, أخوك→أخيك)
                         elif (len(orig_text) >= 3 and len(corr_text) >= 3 and
                                 orig_text[-2:] in ('وك', 'وه') and
@@ -2122,6 +2063,66 @@ def analyze_text():
                                 and orig_text.endswith('ي') and len(orig_text) >= 3):
                             _is_grammar_pattern = True
 
+
+                    # ── FIX-27a: Grammar structured data protection ──
+                    # Block grammar diffs where the original contains digits.
+                    # The grammar model corrupts dates/numbers/times/percentages.
+                    # e.g., '2026-06-22' → 'عشرين 26-06-22ا'
+                    if orig_text and any(c.isdigit() for c in orig_text):
+                        logger.info(
+                            f"[GRAMMAR] Blocked digit-containing diff: "
+                            f"'{orig_text}'\u2192'{corr_text}'"
+                        )
+                        logger.info(f'[FILTER-TEL] {_tel_json.dumps({"event":"filter_reject","filter":"DigitGuard","original":orig_text[:80],"correction":corr_text[:80]})}')
+                        _tel_events.append({"event":"filter_reject","filter":"DigitGuard","original":orig_text[:80],"correction":corr_text[:80]})
+                        continue
+
+                    # ── FIX-27b: Grammar hallucination guard (Jaccard) ──
+                    # Block grammar diffs where the correction is too different
+                    # from the original (character-level Jaccard < 0.5).
+                    # Catches: القانون→القانين, يعزف→يعزفون, للإنسان→للإنسين
+                    if not _is_grammar_pattern and orig_text and corr_text and len(orig_text) > 2:
+                        import re as _re_jac
+                        # Strip punctuation/spaces for comparison
+                        _o_chars = set(_re_jac.sub(r'[\s.,،؛؟!:;?]', '', orig_text))
+                        _c_chars = set(_re_jac.sub(r'[\s.,،؛؟!:;?]', '', corr_text))
+                        if _o_chars and _c_chars:
+                            _jac = len(_o_chars & _c_chars) / len(_o_chars | _c_chars)
+                            if _jac < 0.5:
+                                logger.info(
+                                    f"[GRAMMAR] Blocked low-Jaccard diff (j={_jac:.2f}): "
+                                    f"'{orig_text}'\u2192'{corr_text}'"
+                                )
+                                logger.info(f'[FILTER-TEL] {_tel_json.dumps({"event":"filter_reject","filter":"Jaccard_05","original":orig_text[:80],"correction":corr_text[:80],"jaccard":round(_jac,3)})}')
+                                _tel_events.append({"event":"filter_reject","filter":"Jaccard_05","original":orig_text[:80],"correction":corr_text[:80],"jaccard":round(_jac,3)})
+                                continue
+
+                    # ── FIX-06: Directional block protection for grammar ──
+                    # Prevents meaning-changing substitutions (كان→كأن etc.)
+                    # especially critical when spelling is skipped (>1000 chars).
+                    if not _is_grammar_pattern and corr_text in _DIRECTIONAL_BLOCKS.get(orig_text, set()):
+                        logger.info(
+                            f"[GRAMMAR] Directional block: '{orig_text}'→'{corr_text}'"
+                        )
+                        logger.info(f'[FILTER-TEL] {_tel_json.dumps({"event":"filter_reject","filter":"DirectionalBlock","original":orig_text[:80],"correction":corr_text[:80]})}')
+                        _tel_events.append({"event":"filter_reject","filter":"DirectionalBlock","original":orig_text[:80],"correction":corr_text[:80]})
+                        continue
+                    # Also check with clitic prefixes
+                    _gram_dir_blocked = False
+                    for _gpfx in ('و', 'ف', 'ب', 'ل', 'ك'):
+                        if (orig_text.startswith(_gpfx) and corr_text.startswith(_gpfx)
+                                and len(orig_text) > len(_gpfx) + 1):
+                            _g_orig_stem = orig_text[len(_gpfx):]
+                            _g_corr_stem = corr_text[len(_gpfx):]
+                            if _g_corr_stem in _DIRECTIONAL_BLOCKS.get(_g_orig_stem, set()):
+                                logger.info(
+                                    f"[GRAMMAR] Directional block (prefixed): "
+                                    f"'{orig_text}'→'{corr_text}'"
+                                )
+                                _gram_dir_blocked = True
+                                break
+                    if _gram_dir_blocked:
+                        continue
 
                     if not _is_grammar_pattern:
                         if len(orig_text.split()) == 1 and len(corr_text.split()) == 1:
