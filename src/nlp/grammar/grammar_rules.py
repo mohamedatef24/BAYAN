@@ -407,6 +407,103 @@ class ArabicGrammarGuard:
                     
         return " ".join(corrected_tokens)
 
+    def fix_demonstrative_agreement(self, text):
+        tokens = simple_word_tokenize(text)
+        disambig_tokens = self.mle.disambiguate(tokens)
+        corrected_tokens = list(tokens)
+        
+        for i in range(len(disambig_tokens) - 1):
+            w1 = corrected_tokens[i]
+            w2 = corrected_tokens[i+1]
+            
+            if w1 not in ['هذا', 'هذه', 'هذان', 'هاتان', 'هذين', 'هاتين', 'هؤلاء']:
+                continue
+                
+            w2_info = disambig_tokens[i+1].analyses[0].analysis if disambig_tokens[i+1].analyses else {}
+            w2_num = w2_info.get('num', 's')
+            w2_gen = w2_info.get('gen', 'm')
+            
+            # Use heuristics to override or reinforce POS tags for duals
+            if w2.endswith('تان') or w2.endswith('تين'):
+                if w2_num == 'd':
+                    w2_gen = 'f'
+            
+            if w2_num == 'd':
+                is_nom = w2.endswith('ان') or w2.endswith('تان')
+                if w2_gen == 'f':
+                    corrected_tokens[i] = 'هاتان' if is_nom else 'هاتين'
+                elif w2_gen == 'm':
+                    corrected_tokens[i] = 'هذان' if is_nom else 'هذين'
+                    
+        return " ".join(corrected_tokens)
+
+    def fix_noun_adjective_agreement_advanced(self, text):
+        tokens = simple_word_tokenize(text)
+        disambig_tokens = self.mle.disambiguate(tokens)
+        corrected_tokens = list(tokens)
+        
+        MASC_TO_FEM_ADJ = {
+            'جميل': 'جميلة', 'كبير': 'كبيرة', 'صغير': 'صغيرة',
+            'طويل': 'طويلة', 'قصير': 'قصيرة', 'جديد': 'جديدة',
+            'قديم': 'قديمة', 'بعيد': 'بعيدة', 'قريب': 'قريبة',
+            'سريع': 'سريعة', 'بطيء': 'بطيئة', 'واسع': 'واسعة',
+            'ضيق': 'ضيقة', 'عميق': 'عميقة', 'خفيف': 'خفيفة',
+            'ثقيل': 'ثقيلة', 'نظيف': 'نظيفة', 'مشرق': 'مشرقة',
+            'ذكي': 'ذكية', 'غني': 'غنية', 'فقير': 'فقيرة',
+            'متفوق': 'متفوقة', 'مجتهد': 'مجتهدة', 'ممتاز': 'ممتازة',
+        }
+        
+        for i in range(len(disambig_tokens) - 1):
+            w1 = corrected_tokens[i]
+            w2 = corrected_tokens[i+1]
+            
+            w1_info = disambig_tokens[i].analyses[0].analysis if disambig_tokens[i].analyses else {}
+            w1_pos = w1_info.get('pos', 'unknown')
+            w1_num = w1_info.get('num', 's')
+            w1_gen = w1_info.get('gen', 'm')
+            
+            # Heuristic override for duals (camel_tools sometimes gets them wrong)
+            if w1.endswith('تان') or w1.endswith('تين'):
+                w1_gen = 'f'
+                w1_num = 'd'
+            elif w1.endswith('ان') or w1.endswith('ين'):
+                if len(w1) > 4:
+                    w1_num = 'd'
+            
+            # Dual Adjective Agreement
+            if w1_num == 'd' and w1_pos in ['noun', 'unknown', 'noun_prop']:
+                base_adj = None
+                for suffix in ['ان', 'ين', 'تان', 'تين', 'ة', 'ون', 'ات', '']:
+                    stem = w2[:-len(suffix)] if suffix else w2
+                    if stem in MASC_TO_FEM_ADJ:
+                        base_adj = stem
+                        break
+                
+                if base_adj:
+                    is_nom = w1.endswith('ان') or w1.endswith('تان')
+                    if w1_gen == 'f':
+                        corrected_tokens[i+1] = base_adj + ('تان' if is_nom else 'تين')
+                    else:
+                        corrected_tokens[i+1] = base_adj + ('ان' if is_nom else 'ين')
+                        
+            # Plural Human Adjective Agreement
+            elif w1_num == 'p' and w1_pos in ['noun', 'unknown']:
+                base_adj = None
+                for suffix in ['ان', 'ين', 'تان', 'تين', 'ة', 'ون', 'ات', 'ين', '']:
+                    stem = w2[:-len(suffix)] if suffix else w2
+                    if stem in MASC_TO_FEM_ADJ:
+                        base_adj = stem
+                        break
+                
+                if base_adj:
+                    if w1.endswith('ون') or w1.endswith('ين') or w1_gen == 'm':
+                        is_nom = w1.endswith('ون')
+                        corrected_tokens[i+1] = base_adj + ('ون' if is_nom else 'ين')
+                    elif w1.endswith('ات') or w1_gen == 'f':
+                        corrected_tokens[i+1] = base_adj + 'ات'
+
+        return " ".join(corrected_tokens)
+
 
     def process(self, original_text, generated_text):
         """Apply all grammar rules to model output."""
@@ -415,10 +512,12 @@ class ArabicGrammarGuard:
         # Each rule is wrapped in try/except so that if camel-tools
         # functions fail, the regex-based rules still execute.
         for rule_name, rule_fn in [
+            ('fix_demonstrative_agreement', self.fix_demonstrative_agreement),
             ('fix_number_and_gender_agreement', self.fix_number_and_gender_agreement),
             ('smart_asmaa_khamsa_fix', self.smart_asmaa_khamsa_fix),
             ('fix_verbs_nasb_and_jazm', self.fix_verbs_nasb_and_jazm),
             ('fix_gender_agreement', self.fix_gender_agreement),
+            ('fix_noun_adjective_agreement_advanced', self.fix_noun_adjective_agreement_advanced),
             ('fix_prepositions_advanced', self.fix_prepositions_advanced),
             ('fix_subject_verb_agreement', self.fix_subject_verb_agreement),
             ('fix_conditional_sentences', self.fix_conditional_sentences),
