@@ -852,6 +852,26 @@ def _is_small_spelling_change(orig_word, corr_word, vocab_manager=None):
             if _corr_stem in _DIRECTIONAL_BLOCKS.get(_orig_stem, set()):
                 return 0.0
 
+    # ── FIX-30: Prefix-stripping protection ──
+    # Block corrections that strip a clitic prefix from a valid compound:
+    #   وبالمستشفيات → والمستشفيات  (stripped ب from وب prefix chain)
+    #   فبالتالي → وبالتالي         (swapped ف→و)
+    # These destroy the meaning of the prefix (بال = by the, و = and, ف = so/then)
+    _COMPOUND_PREFIXES = ['وبال', 'فبال', 'وال', 'فال', 'بال', 'كال', 'ول', 'فل',
+                          'وب', 'فب', 'وك', 'فك']
+    for _cpfx in _COMPOUND_PREFIXES:
+        if orig_word.startswith(_cpfx) and len(orig_word) > len(_cpfx) + 2:
+            if not corr_word.startswith(_cpfx):
+                # Original has compound prefix but correction doesn't — check if
+                # the stem is the same (meaning only the prefix was stripped)
+                _stem = orig_word[len(_cpfx):]
+                for _alt_pfx in _COMPOUND_PREFIXES + list(_CLITIC_PREFIXES) + ['ال', '']:
+                    if corr_word.startswith(_alt_pfx):
+                        _corr_stem2 = corr_word[len(_alt_pfx):]
+                        if _stem == _corr_stem2 or _levenshtein(_stem, _corr_stem2) <= 1:
+                            return 0.0
+            break  # Only check the longest matching prefix
+
     # Ignore tokens that contain non-letters (numbers / punctuation)
     # Arabic letters range plus basic Latin letters.
     if re.search(r'[^ء-يآأإىa-zA-Z]', orig_word):
@@ -1707,6 +1727,31 @@ def analyze_text():
                                     _rw_iv = spell_checker.vocab_manager.is_iv(_raw_words[_bi])
                                     # Our word is OOV but model's word is IV → take model's
                                     if not _sw_iv and _rw_iv:
+                                        # ── FIX-28a: Digit guard for bidirectional path ──
+                                        # Numbers (2020, 150, etc.) are OOV but must NOT be
+                                        # replaced with Arabic words (يناير, خمسين).
+                                        _BIDI_DIGITS = set('0123456789٠١٢٣٤٥٦٧٨٩')
+                                        if any(c in _BIDI_DIGITS for c in _safe_words[_bi]):
+                                            logger.info(
+                                                f"[SPELLING] Bidirectional blocked (digit): "
+                                                f"'{_safe_words[_bi]}'→'{_raw_words[_bi]}'"
+                                            )
+                                            continue
+                                        # ── FIX-28b: Prefix-change guard ──
+                                        # Prevent changing leading clitics: فبالتالي→وبالتالي
+                                        # If the words share the same stem but differ only in
+                                        # the leading prefix (و↔ف↔ب↔ل↔ك), reject.
+                                        _CLITIC_PFX = ('و', 'ف', 'ب', 'ل', 'ك')
+                                        _sw = _safe_words[_bi]
+                                        _rw = _raw_words[_bi]
+                                        if (len(_sw) > 3 and len(_rw) > 3
+                                                and _sw[0] in _CLITIC_PFX and _rw[0] in _CLITIC_PFX
+                                                and _sw[0] != _rw[0] and _sw[1:] == _rw[1:]):
+                                            logger.info(
+                                                f"[SPELLING] Bidirectional blocked (prefix swap): "
+                                                f"'{_sw}'→'{_rw}'"
+                                            )
+                                            continue
                                         logger.info(
                                             f"[SPELLING] Bidirectional fix: "
                                             f"'{_safe_words[_bi]}'(OOV)→'{_raw_words[_bi]}'(IV)"
