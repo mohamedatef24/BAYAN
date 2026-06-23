@@ -141,212 +141,212 @@
   },
   {
     "id": "PC021",
-    "category": "multi_stage_collision",
-    "input": "السياره سريع والرجال يعمل في المصنع",
-    "expected": "السيارة سريعة والرجال يعملون في المصنع",
+    "category": "spelling_blocks_grammar",
+    "input": "الجامعه قريب من البيت",
+    "expected": "الجامعة قريبة من البيت",
     "severity": "critical"
   },
   {
     "id": "PC022",
-    "category": "multi_stage_collision",
-    "input": "السياره سريع والرجال يعمل في المصنع",
-    "expected": "السيارة سريعة والرجال يعملون في المصنع",
+    "category": "spelling_blocks_grammar",
+    "input": "الطائره سريع جدا",
+    "expected": "الطائرة سريعة جداً",
     "severity": "critical"
   },
   {
     "id": "PC023",
-    "category": "multi_stage_collision",
-    "input": "السياره سريع والرجال يعمل في المصنع",
-    "expected": "السيارة سريعة والرجال يعملون في المصنع",
+    "category": "spelling_blocks_grammar",
+    "input": "القصه طويل ومملل",
+    "expected": "القصة طويلة ومملة",
     "severity": "critical"
   },
   {
     "id": "PC024",
-    "category": "multi_stage_collision",
-    "input": "السياره سريع والرجال يعمل في المصنع",
-    "expected": "السيارة سريعة والرجال يعملون في المصنع",
+    "category": "spelling_blocks_grammar",
+    "input": "الحديقه واسع وجميل",
+    "expected": "الحديقة واسعة وجميلة",
     "severity": "critical"
   },
   {
     "id": "PC025",
-    "category": "multi_stage_collision",
-    "input": "السياره سريع والرجال يعمل في المصنع",
-    "expected": "السيارة سريعة والرجال يعملون في المصنع",
+    "category": "spelling_blocks_grammar",
+    "input": "المكتبه كبير ومنظم",
+    "expected": "المكتبة كبيرة ومنظمة",
     "severity": "critical"
   },
   {
     "id": "PC026",
-    "category": "multi_stage_collision",
-    "input": "السياره سريع والرجال يعمل في المصنع",
-    "expected": "السيارة سريعة والرجال يعملون في المصنع",
-    "severity": "critical"
+    "category": "punctuation_near_spelling",
+    "input": "ذهبت الي المدرسه وقابلت صديقتي",
+    "expected": "ذهبت إلى المدرسة وقابلت صديقتي",
+    "severity": "major"
   },
   {
     "id": "PC027",
-    "category": "multi_stage_collision",
-    "input": "السياره سريع والرجال يعمل في المصنع",
-    "expected": "السيارة سريعة والرجال يعملون في المصنع",
-    "severity": "critical"
+    "category": "punctuation_near_spelling",
+    "input": "الكتاب مفيد جدا وانا احبه",
+    "expected": "الكتاب مفيد جداً وأنا أحبه",
+    "severity": "major"
   },
   {
     "id": "PC028",
-    "category": "multi_stage_collision",
-    "input": "السياره سريع والرجال يعمل في المصنع",
-    "expected": "السيارة سريعة والرجال يعملون في المصنع",
-    "severity": "critical"
+    "category": "punctuation_near_spelling",
+    "input": "المعلمه شرحت الدرس واعطت واجب",
+    "expected": "المعلمة شرحت الدرس وأعطت واجب",
+    "severity": "major"
   },
   {
     "id": "PC029",
-    "category": "multi_stage_collision",
-    "input": "السياره سريع والرجال يعمل في المصنع",
-    "expected": "السيارة سريعة والرجال يعملون في المصنع",
-    "severity": "critical"
+    "category": "punctuation_near_spelling",
+    "input": "قرأت الكتاب كله ولكن لم افهمه",
+    "expected": "قرأت الكتاب كله ولكن لم أفهمه",
+    "severity": "major"
   },
   {
     "id": "PC030",
-    "category": "multi_stage_collision",
-    "input": "السياره سريع والرجال يعمل في المصنع",
-    "expected": "السيارة سريعة والرجال يعملون في المصنع",
-    "severity": "critical"
+    "category": "punctuation_near_spelling",
+    "input": "الطقس بارد جدا واحتاج معطف",
+    "expected": "الطقس بارد جداً وأحتاج معطف",
+    "severity": "major"
   },
   {
     "id": "PC031",
-    "category": "multi_stage_collision",
+    "category": "three_stage_collision",
     "input": "السياره سريع والرجال يعمل في المصنع",
     "expected": "السيارة سريعة والرجال يعملون في المصنع",
     "severity": "critical"
   },
   {
     "id": "PC032",
-    "category": "multi_stage_collision",
-    "input": "السياره سريع والرجال يعمل في المصنع",
-    "expected": "السيارة سريعة والرجال يعملون في المصنع",
+    "category": "three_stage_collision",
+    "input": "الطالبه ذكي وذهبت الي المدرسه",
+    "expected": "الطالبة ذكية وذهبت إلى المدرسة",
     "severity": "critical"
   },
   {
     "id": "PC033",
-    "category": "multi_stage_collision",
-    "input": "السياره سريع والرجال يعمل في المصنع",
-    "expected": "السيارة سريعة والرجال يعملون في المصنع",
+    "category": "three_stage_collision",
+    "input": "المدرسه كبير والطلاب يدرس بجد",
+    "expected": "المدرسة كبيرة والطلاب يدرسون بجد",
     "severity": "critical"
   },
   {
     "id": "PC034",
-    "category": "multi_stage_collision",
-    "input": "السياره سريع والرجال يعمل في المصنع",
-    "expected": "السيارة سريعة والرجال يعملون في المصنع",
+    "category": "three_stage_collision",
+    "input": "الحكومه اعلن قرار جديد والمواطنون يتابع",
+    "expected": "الحكومة أعلنت قراراً جديداً والمواطنون يتابعون",
     "severity": "critical"
   },
   {
     "id": "PC035",
-    "category": "multi_stage_collision",
-    "input": "السياره سريع والرجال يعمل في المصنع",
-    "expected": "السيارة سريعة والرجال يعملون في المصنع",
+    "category": "three_stage_collision",
+    "input": "الشركه نجح في المشرووع والموظفون يحتفل",
+    "expected": "الشركة نجحت في المشروع والموظفون يحتفلون",
     "severity": "critical"
   },
   {
     "id": "PC036",
-    "category": "multi_stage_collision",
-    "input": "السياره سريع والرجال يعمل في المصنع",
-    "expected": "السيارة سريعة والرجال يعملون في المصنع",
+    "category": "adjacent_corrections",
+    "input": "الولد الصغيره ذهب الي المدرسه",
+    "expected": "الولد الصغير ذهب إلى المدرسة",
     "severity": "critical"
   },
   {
     "id": "PC037",
-    "category": "multi_stage_collision",
-    "input": "السياره سريع والرجال يعمل في المصنع",
-    "expected": "السيارة سريعة والرجال يعملون في المصنع",
-    "severity": "critical"
+    "category": "adjacent_corrections",
+    "input": "قال المعلمون للطالبه ادرسي بجد",
+    "expected": "قال المعلمون للطالبة ادرسي بجد",
+    "severity": "major"
   },
   {
     "id": "PC038",
-    "category": "multi_stage_collision",
-    "input": "السياره سريع والرجال يعمل في المصنع",
-    "expected": "السيارة سريعة والرجال يعملون في المصنع",
-    "severity": "critical"
+    "category": "adjacent_corrections",
+    "input": "الكتب القديمه في المكتبه الكبيره",
+    "expected": "الكتب القديمة في المكتبة الكبيرة",
+    "severity": "major"
   },
   {
     "id": "PC039",
-    "category": "multi_stage_collision",
-    "input": "السياره سريع والرجال يعمل في المصنع",
-    "expected": "السيارة سريعة والرجال يعملون في المصنع",
-    "severity": "critical"
+    "category": "adjacent_corrections",
+    "input": "رأيت البنت الجميله في الحديقه",
+    "expected": "رأيت البنت الجميلة في الحديقة",
+    "severity": "major"
   },
   {
     "id": "PC040",
-    "category": "multi_stage_collision",
-    "input": "السياره سريع والرجال يعمل في المصنع",
-    "expected": "السيارة سريعة والرجال يعملون في المصنع",
-    "severity": "critical"
+    "category": "adjacent_corrections",
+    "input": "المعلمه الجديده شرحت الدرس",
+    "expected": "المعلمة الجديدة شرحت الدرس",
+    "severity": "major"
   },
   {
     "id": "PC041",
     "category": "multi_stage_collision",
-    "input": "السياره سريع والرجال يعمل في المصنع",
-    "expected": "السيارة سريعة والرجال يعملون في المصنع",
+    "input": "الدكتور كتب التقريير والممرضات ساعد المرضى",
+    "expected": "الدكتور كتب التقرير والممرضات ساعدن المرضى",
     "severity": "critical"
   },
   {
     "id": "PC042",
     "category": "multi_stage_collision",
-    "input": "السياره سريع والرجال يعمل في المصنع",
-    "expected": "السيارة سريعة والرجال يعملون في المصنع",
+    "input": "الطلاب حضر المحاضره والاستاذ شرح الدرس",
+    "expected": "الطلاب حضروا المحاضرة والأستاذ شرح الدرس",
     "severity": "critical"
   },
   {
     "id": "PC043",
     "category": "multi_stage_collision",
-    "input": "السياره سريع والرجال يعمل في المصنع",
-    "expected": "السيارة سريعة والرجال يعملون في المصنع",
+    "input": "الامهات طبخ الطعام والاطفال لعب في الحديقه",
+    "expected": "الأمهات طبخن الطعام والأطفال لعبوا في الحديقة",
     "severity": "critical"
   },
   {
     "id": "PC044",
-    "category": "multi_stage_collision",
-    "input": "السياره سريع والرجال يعمل في المصنع",
-    "expected": "السيارة سريعة والرجال يعملون في المصنع",
+    "category": "spelling_grammar_overlap",
+    "input": "المهندسات صممو المشرووع الكبير",
+    "expected": "المهندسات صممن المشروع الكبير",
     "severity": "critical"
   },
   {
     "id": "PC045",
-    "category": "multi_stage_collision",
-    "input": "السياره سريع والرجال يعمل في المصنع",
-    "expected": "السيارة سريعة والرجال يعملون في المصنع",
+    "category": "spelling_grammar_overlap",
+    "input": "الطبيبات عالج المرضي في المستشفي",
+    "expected": "الطبيبات عالجن المرضى في المستشفى",
     "severity": "critical"
   },
   {
     "id": "PC046",
-    "category": "multi_stage_collision",
-    "input": "السياره سريع والرجال يعمل في المصنع",
-    "expected": "السيارة سريعة والرجال يعملون في المصنع",
+    "category": "three_stage_collision",
+    "input": "المديره وافق علي المشرووع والموظفين يعمل بجد",
+    "expected": "المديرة وافقت على المشروع والموظفون يعملون بجد",
     "severity": "critical"
   },
   {
     "id": "PC047",
-    "category": "multi_stage_collision",
-    "input": "السياره سريع والرجال يعمل في المصنع",
-    "expected": "السيارة سريعة والرجال يعملون في المصنع",
+    "category": "three_stage_collision",
+    "input": "الوزاره اصدر قرار والمعلمين ينفذ التعليمات",
+    "expected": "الوزارة أصدرت قراراً والمعلمون ينفذون التعليمات",
     "severity": "critical"
   },
   {
     "id": "PC048",
-    "category": "multi_stage_collision",
-    "input": "السياره سريع والرجال يعمل في المصنع",
-    "expected": "السيارة سريعة والرجال يعملون في المصنع",
+    "category": "adjacent_corrections",
+    "input": "المنزل القديمه في الشارع الضيقه",
+    "expected": "المنزل القديم في الشارع الضيق",
     "severity": "critical"
   },
   {
     "id": "PC049",
-    "category": "multi_stage_collision",
-    "input": "السياره سريع والرجال يعمل في المصنع",
-    "expected": "السيارة سريعة والرجال يعملون في المصنع",
+    "category": "adjacent_corrections",
+    "input": "الرجل الطويله وقف بجانب البنايه",
+    "expected": "الرجل الطويل وقف بجانب البناية",
     "severity": "critical"
   },
   {
     "id": "PC050",
     "category": "multi_stage_collision",
-    "input": "السياره سريع والرجال يعمل في المصنع",
-    "expected": "السيارة سريعة والرجال يعملون في المصنع",
+    "input": "اللاعبون تدرب في الملعب والمدربه شجعتهم",
+    "expected": "اللاعبون تدربوا في الملعب والمدربة شجعتهم",
     "severity": "critical"
   }
 ]

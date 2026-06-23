@@ -539,6 +539,83 @@ def run_hallucination_benchmark(api: API, samples: list) -> List[BenchResult]:
         results.append(r)
     return results
 
+def run_collision_benchmark(api: API, samples: list) -> List[BenchResult]:
+    """Phase 11: Pipeline collision benchmark (spelling↔grammar↔punctuation interactions)."""
+    results = []
+    for i, s in enumerate(samples):
+        print(f"  [{i+1}/{len(samples)}] {s['id']} ({s.get('category','')})... ", end="", flush=True)
+        r = BenchResult(
+            s['id'], 'collision', s.get('category', ''), s['input'],
+            expected=s.get('expected', ''), severity=s.get('severity', '')
+        )
+
+        resp = api.analyze(s['input'])
+        r.pipeline_ms = resp.get('_ms', 0)
+        r.pipeline_timing = resp.get('timing_ms', {})
+
+        if 'error' in resp:
+            r.pipeline_verdict = "ERROR"
+            r.pipeline_detail = resp.get('error', '')
+            print(f"💥 ERROR")
+            results.append(r)
+            continue
+
+        r.pipeline_output = resp.get('corrected', '')
+        r.pipeline_suggestions = resp.get('suggestions', [])
+
+        # Normalize for comparison (strip diacritics + collapse whitespace)
+        norm_output = re.sub(r'\s+', ' ', _strip_diacritics(r.pipeline_output)).strip()
+        norm_expected = re.sub(r'\s+', ' ', _strip_diacritics(s.get('expected', ''))).strip()
+
+        if norm_output == norm_expected:
+            r.pipeline_verdict = "TP"
+            r.pipeline_detail = "All corrections applied correctly"
+        else:
+            r.pipeline_verdict = "FN"
+            category = s.get('category', '')
+            stages = [sg.get('type', '') for sg in r.pipeline_suggestions]
+
+            # Root cause classification
+            if category == 'spelling_blocks_grammar':
+                if 'spelling' in stages and 'grammar' not in stages:
+                    r.root_cause_component = "PIPELINE"
+                    r.root_cause_stage = "integration"
+                    r.root_cause_detail = "Spelling lock blocked grammar (StageLocker)"
+                else:
+                    r.root_cause_component = "MODEL"
+                    r.root_cause_stage = "grammar"
+                    r.root_cause_detail = "Grammar model missed correction"
+            elif category in ('grammar_drops_spelling', 'spelling_grammar_overlap'):
+                r.root_cause_component = "PIPELINE"
+                r.root_cause_stage = "integration"
+                r.root_cause_detail = f"{category}: stage interaction failure"
+            elif category == 'multi_stage_collision':
+                r.root_cause_component = "PIPELINE" if 'grammar' in stages else "MODEL"
+                r.root_cause_stage = "integration" if 'grammar' in stages else "grammar"
+                r.root_cause_detail = "Multi-stage collision failure"
+            elif category == 'three_stage_collision':
+                r.root_cause_component = "PIPELINE"
+                r.root_cause_stage = "integration"
+                r.root_cause_detail = "Three-stage collision failure"
+            elif category == 'adjacent_corrections':
+                r.root_cause_component = "PIPELINE"
+                r.root_cause_stage = "integration"
+                r.root_cause_detail = "Adjacent corrections interfered"
+            else:
+                r.root_cause_component = "UNKNOWN"
+                r.root_cause_stage = "unknown"
+                r.root_cause_detail = f"Unclassified: {category}"
+
+            exp_words = set(norm_expected.split())
+            act_words = set(norm_output.split())
+            missing = exp_words - act_words
+            r.pipeline_detail = f"Missing: {list(missing)[:5]}" if missing else "Output mismatch"
+
+        icon = {"TP":"✅","TN":"✅","FP":"❌","FN":"⚠️","ERROR":"💥"}.get(r.pipeline_verdict,"?")
+        print(f"{icon} {r.pipeline_verdict} ({r.pipeline_ms}ms)")
+        results.append(r)
+    return results
+
 # ═══════════════════════════════════════════════════════════════
 # Metrics
 # ═══════════════════════════════════════════════════════════════
@@ -618,6 +695,7 @@ def main():
         "religious":    (GOLD_DIR/"religious.json",     run_religious_benchmark),
         "structured":   (GOLD_DIR/"structured_content.json", run_structured_benchmark),
         "hallucination":(GOLD_DIR/"hallucination.json", run_hallucination_benchmark),
+        "collision":    (GOLD_DIR/"pipeline_collision.json", run_collision_benchmark),
     }
 
     for name, (path, runner) in DATASETS.items():
