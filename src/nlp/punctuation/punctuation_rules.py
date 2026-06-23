@@ -150,6 +150,21 @@ def validate_punctuation_diff(diff: dict, full_text: str = '') -> bool:
                     _full_has_ellipsis = full_text.rstrip().endswith('...') if full_text else False
 
                     if _full_word_count >= 3 and not _full_already_has_terminal and not _full_has_ellipsis:
+                        # ── FIX-29: Exclamation mark guard ──
+                        # PuncAra sometimes adds ! to declarative sentences.
+                        # Only allow ! if text contains exclamatory cues.
+                        _added_punct = correction[len(orig_stripped):]
+                        if '!' in _added_punct or '؟' in _added_punct:
+                            # Check for question/exclamation words
+                            _EXCL_CUES = {'يا', 'ما', 'كم', 'لا', 'هل', 'أين', 'متى',
+                                          'كيف', 'لماذا', 'ماذا', 'أي', 'لعل', 'ليت'}
+                            _has_cue = any(w in _EXCL_CUES for w in full_text.split())
+                            if not _has_cue:
+                                logger.info(
+                                    f"[PUNC-SAFETY] Blocked !/?  on declarative sentence: "
+                                    f"'{original}' → '{correction}'"
+                                )
+                                return False
                         # Multi-word sentence without terminal punct → ALLOW
                         logger.info(
                             f"[PUNC-SAFETY] Allowed terminal punct for sentence "
