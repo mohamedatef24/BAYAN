@@ -31,6 +31,59 @@ class GrammarChecker:
         self.client = client
         self.rules = rules
 
+    @staticmethod
+    def _preserve_punctuation(original: str, corrected: str) -> str:
+        """
+        Preserve punctuation from the original text if the grammar model removed it.
+        """
+        PUNCT_CHARS = set('.,;:!?،؛؟!.:«»"\'()-–—…')
+        orig_words = original.split()
+        corr_words = corrected.split()
+        
+        if not orig_words or not corr_words:
+            return corrected
+
+        # If word count matches exactly, we can restore punctuation word-by-word
+        if len(orig_words) == len(corr_words):
+            result = []
+            for o_w, c_w in zip(orig_words, corr_words):
+                prefix = ""
+                for ch in o_w:
+                    if ch in PUNCT_CHARS: prefix += ch
+                    else: break
+                suffix = ""
+                for ch in reversed(o_w):
+                    if ch in PUNCT_CHARS: suffix = ch + suffix
+                    else: break
+                
+                c_base = c_w.strip('.,;:!?،؛؟!.:«»"\'()-–—…')
+                if not c_base:
+                    c_base = c_w
+                result.append(prefix + c_base + suffix)
+            return " ".join(result)
+            
+        # Global prefix/suffix if lengths differ
+        prefix = ""
+        for ch in original:
+            if ch in PUNCT_CHARS: prefix += ch
+            elif not ch.isspace(): break
+            
+        suffix = ""
+        for ch in reversed(original):
+            if ch in PUNCT_CHARS: suffix = ch + suffix
+            elif not ch.isspace(): break
+            
+        c_stripped = corrected.strip('.,;:!?،؛؟!.:«»"\'()-–—… \t\n')
+        
+        # Only add prefix/suffix if the corrected text doesn't already have them
+        if prefix and c_stripped.startswith(prefix):
+            prefix = ""
+        if suffix and c_stripped.endswith(suffix):
+            suffix = ""
+            
+        return prefix + c_stripped + suffix
+
+
     def correct(self, text: str) -> str:
         """
         Run grammar correction on text.
@@ -53,6 +106,10 @@ class GrammarChecker:
 
             # 2. Rule-based post-processing
             corrected = self.rules.process(text, model_output)
+            
+            # 3. Preserve original punctuation if the model stripped it
+            corrected = self._preserve_punctuation(text, corrected)
+            
             logger.info(f"Grammar rules output: '{corrected[:80]}...'")
 
             return corrected
