@@ -106,22 +106,29 @@ def classify_result(input_text, output_text, expected_text, dataset):
         # For correction tests
         needs_correction = (inp_n != exp_n)
         
+        # Strip trailing punctuation from output for comparison
+        _TERMINAL_PUNCT = '.،؛؟!?!'
+        out_stripped = out_n.rstrip(_TERMINAL_PUNCT).rstrip()
+        
         if needs_correction:
             if text_changed:
-                # Check if output matches expected (or is closer to expected)
-                if out_n == exp_n:
+                if out_n == exp_n or out_stripped == exp_n:
                     return "TP"  # Perfect correction
-                elif _edit_distance(out_n, exp_n) < _edit_distance(inp_n, exp_n):
+                elif _edit_distance(out_stripped, exp_n) < _edit_distance(inp_n, exp_n):
                     return "TP"  # Partial but improving correction
+                elif _edit_distance(out_n, exp_n) < _edit_distance(inp_n, exp_n):
+                    return "TP"  # Improving (with punct)
                 else:
                     return "FP"  # Changed but not in right direction
             else:
                 return "FN"  # Should have corrected but didn't
         else:
-            if text_changed:
-                return "FP"  # Changed text that was already correct
-            else:
+            if not text_changed:
                 return "TN"  # Correctly left unchanged
+            elif out_stripped == inp_n:
+                return "TN"  # Only punctuation added
+            else:
+                return "FP"  # Changed text that was already correct
 
 
 def _edit_distance(a, b):
