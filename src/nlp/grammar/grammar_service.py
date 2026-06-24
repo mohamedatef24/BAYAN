@@ -112,7 +112,8 @@ class GrammarChecker:
             # 3. Preserve original punctuation if the model stripped it
             corrected = self._preserve_punctuation(text, corrected)
             
-            logger.info(f"Grammar rules output: '{corrected[:80]}...'")
+            _cr_display = corrected[:80] + ('...' if len(corrected) > 80 else '')
+            logger.info(f"Grammar rules output: '{_cr_display}'")
 
             return corrected
 
