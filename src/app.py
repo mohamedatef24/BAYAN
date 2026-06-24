@@ -987,6 +987,24 @@ def _is_small_spelling_change(orig_word, corr_word, vocab_manager=None):
                 # Strategy (from legacy AraSpell WordAligner): if the STEM (word without ه)
                 # is itself IV, then ه is likely a pronoun suffix → block the change.
                 # If the stem is NOT IV, ه is likely a misspelled ة → allow.
+                #
+                # FIX-50: Whitelist bypass — known feminine nouns always allowed.
+                # BERT vocab includes subword fragments (الحكوم, المدرس) as IV,
+                # causing false pronoun detection. These known words bypass the guard.
+                _KNOWN_FEMININE = {
+                    'الحكومه', 'المدرسه', 'الشركه', 'الجامعه', 'المدينه',
+                    'القصه', 'المكتبه', 'الطائره', 'الوزاره', 'المديره',
+                    'المعلمه', 'الطالبه', 'القريه', 'الحديقه', 'المحكمه',
+                    'المنطقه', 'الدوله', 'السياره', 'الغرفه', 'المحطه',
+                    'الوظيفه', 'العائله', 'الحياه', 'الصلاه',
+                    'حكومه', 'مدرسه', 'شركه', 'جامعه', 'مدينه',
+                    'قصه', 'مكتبه', 'طائره', 'وزاره', 'مديره',
+                    'معلمه', 'طالبه', 'قريه', 'حديقه', 'محكمه',
+                    'منطقه', 'دوله', 'سياره', 'غرفه', 'محطه',
+                    'وظيفه', 'عائله', 'حياه', 'صلاه',
+                }
+                if orig_word in _KNOWN_FEMININE:
+                    return 0.9
                 stem = orig_word[:-1]
                 if len(stem) >= 2 and vocab_manager.is_iv(stem):
                     logger.info(
