@@ -1062,6 +1062,26 @@ def _is_small_spelling_change(orig_word, corr_word, vocab_manager=None):
                 _orig_oov = not vocab_manager.is_iv(orig_word)
                 _corr_iv = vocab_manager.is_iv(corr_word)
                 if _orig_oov and _corr_iv:
+                    # FIX-35: Don't strip valid conjugation suffixes.
+                    # If the "extra char" is at the END and is a common
+                    # Arabic verb/noun suffix, this is likely a grammar
+                    # conjugation, not a typo. Skip it.
+                    _CONJUGATION_SUFFIXES = {'ن', 'ت', 'ا', 'ي', 'ة', 'و', 'ه'}
+                    _removed_char = None
+                    for _di2 in range(len(orig_word)):
+                        if orig_word[:_di2] + orig_word[_di2 + 1:] == corr_word:
+                            _removed_char = orig_word[_di2]
+                            _removed_pos = _di2
+                            break
+                    if (_removed_char in _CONJUGATION_SUFFIXES
+                            and _removed_pos == len(orig_word) - 1
+                            and len(corr_word) >= 3):
+                        logger.info(
+                            f"[SPELLING] Rejected suffix strip: "
+                            f"'{orig_word}'→'{corr_word}' "
+                            f"(removing suffix '{_removed_char}' likely strips conjugation)"
+                        )
+                        return 0.0
                     logger.info(
                         f"[SPELLING] Insertion fix accepted (OOV→IV): "
                         f"'{orig_word}'→'{corr_word}' (extra char removed)"
