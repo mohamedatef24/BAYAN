@@ -531,7 +531,9 @@ function applySuggestionAtOffsets(suggestion) {
     }
     // Pipeline Hardening v3.3: Do NOT call analyzeTextDelayed() — prevents recursive re-analysis
   } finally {
-    _isApplyingSuggestion = false;
+    // FIX-32: Delay guard reset until AFTER re-analysis fires,
+    // preventing normalize()/input events from triggering double analysis.
+    setTimeout(() => { _isApplyingSuggestion = false; }, 400);
   }
   // P2/User Request: Auto re-analyze after applying suggestion
   // Calls analyzeText() DIRECTLY (not delayed) for instant re-analysis.
@@ -617,7 +619,8 @@ function applyAlternativeCorrection(suggestion, correctionText) {
     }
     // Pipeline Hardening v3.3: Do NOT call analyzeTextDelayed() — prevents recursive re-analysis
   } finally {
-    _isApplyingSuggestion = false;
+    // FIX-32: Delay guard reset until AFTER re-analysis fires.
+    setTimeout(() => { _isApplyingSuggestion = false; }, 400);
   }
   // P2/User Request: Auto re-analyze after applying alternative correction
   setTimeout(() => { analyzeText(); }, 300);
@@ -679,36 +682,19 @@ function applyAllSuggestions() {
   try {
     pushUndoState(); // Save state before applying all
 
-    // DOM-based approach: replace each error span individually to preserve formatting
-    let appliedCount = 0;
+    // FIX-32: Use PURE TEXT-BASED approach to avoid DOM/offset mismatch.
+    // The old mixed DOM+fallback approach caused word duplication because
+    // after DOM-based fixes shifted the text, the fallback's stale offsets
+    // would insert corrections at wrong positions.
+    // Reverse-order text replacement is safe — each patch's offsets are
+    // valid because we haven't modified anything before them yet.
+    let text = getEditorText();
     suggestions.forEach((s) => {
-      const sid = s.id;
-      const errorSpan = sid ? document.querySelector(`[data-suggestion-id="${sid}"]`) : null;
-      if (errorSpan) {
-        const parent = errorSpan.parentNode;
-        const correctedNode = document.createTextNode(s.correction);
-        parent.insertBefore(correctedNode, errorSpan);
-        parent.removeChild(errorSpan);
-        parent.normalize();
-        appliedCount++;
+      if (s.start >= 0 && s.end <= text.length && s.start <= s.end) {
+        text = text.substring(0, s.start) + s.correction + text.substring(s.end);
       }
     });
-
-    // Fallback: if DOM approach missed some, do text-based replacement
-    if (appliedCount < suggestions.length) {
-      let text = getEditorText();
-      // Re-sort remaining by offset (they weren't found as spans)
-      const remaining = suggestions.filter(s => {
-        const sid = s.id;
-        return !sid || !document.querySelector(`[data-suggestion-id="${sid}"]`);
-      }).sort((a, b) => b.start - a.start);
-      remaining.forEach((s) => {
-        text = text.substring(0, s.start) + s.correction + text.substring(s.end);
-      });
-      if (remaining.length > 0) {
-        setEditorHTML(escapeHtml(text));
-      }
-    }
+    setEditorHTML(escapeHtml(text));
 
     // Place cursor at end of editor content
     const editor = getEditorElement();
@@ -733,7 +719,9 @@ function applyAllSuggestions() {
     updateSuggestionsList([]);
     if (typeof showToast === 'function') showToast('✓ تم تطبيق ' + suggestions.length + ' تصحيح');
   } finally {
-    _isApplyingSuggestion = false;
+    // FIX-32: Delay guard reset until AFTER re-analysis fires,
+    // preventing input events from triggering double analysis.
+    setTimeout(() => { _isApplyingSuggestion = false; }, 400);
   }
   // P2/User Request: Auto re-analyze after applying all suggestions
   setTimeout(() => { analyzeText(); }, 300);
