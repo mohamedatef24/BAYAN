@@ -1877,6 +1877,21 @@ def analyze_text():
                                                 f"'{_sw}'→'{_rw}'"
                                             )
                                             continue
+                                        # ── FIX-43: Validate bidirectional fix through spelling guard ──
+                                        # The bidirectional path bypassed ALL spelling guards (FIX-42b first-letter,
+                                        # FIX-42a length ratio, FIX-39 edit distance). Now we validate the
+                                        # OOV→IV replacement through _is_small_spelling_change to catch corruptions
+                                        # like واحتاج→وتحتاج, افهمه→تفهمة, والممرضات→والرضا.
+                                        _bidi_spell_conf = _is_small_spelling_change(
+                                            _safe_words[_bi], _raw_words[_bi],
+                                            spell_checker.vocab_manager
+                                        )
+                                        if not _bidi_spell_conf:
+                                            logger.info(
+                                                f"[SPELLING] Bidirectional blocked (spelling guard): "
+                                                f"'{_safe_words[_bi]}'→'{_raw_words[_bi]}'"
+                                            )
+                                            continue
                                         logger.info(
                                             f"[SPELLING] Bidirectional fix: "
                                             f"'{_safe_words[_bi]}'(OOV)→'{_raw_words[_bi]}'(IV)"
