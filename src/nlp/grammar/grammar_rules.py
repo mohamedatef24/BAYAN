@@ -620,6 +620,8 @@ class ArabicGrammarGuard:
             ('fix_prepositions_advanced', self.fix_prepositions_advanced),
             ('fix_subject_verb_agreement', self.fix_subject_verb_agreement),
             ('fix_conditional_sentences', self.fix_conditional_sentences),
+            ('fix_tanween_fathah', self.fix_tanween_fathah),
+            ('fix_initial_hamza', self.fix_initial_hamza),
             ('regex_rules_fallback', self.regex_rules_fallback),
         ]:
             try:
@@ -630,3 +632,80 @@ class ArabicGrammarGuard:
         text = re.sub(r'\s+', ' ', text).strip()
         return text
 
+    def fix_tanween_fathah(self, text):
+        """
+        Add tanween fathah (ً) to indefinite accusative nouns ending in ا.
+        
+        Arabic rule: Words like جدا, كثيرا, قرارا should be جداً, كثيراً, قراراً.
+        The trailing ا without tanween is a common orthographic error.
+        
+        From legacy AraSpell._normalize_tanween_patterns():
+        Only apply to words >= 3 chars ending in ا where the ا is NOT part of
+        the root (e.g. NOT ما، إلى، على، أنا، هذا).
+        """
+        # Common words ending in ا that should NOT get tanween
+        _NO_TANWEEN = {
+            'ما', 'إذا', 'هذا', 'أنا', 'إلى', 'على', 'حتى', 'متى', 'لما',
+            'إلا', 'أما', 'كما', 'ربما', 'مهما', 'أيضا',  # أيضا is debatable
+            'عندما', 'بينما', 'حينما', 'كلما', 'عموما',
+            'دائما', 'سابقا', 'لاحقا', 'حاليا', 'تقريبا',
+            'وفقا', 'نظرا', 'استنادا', 'خصوصا', 'عموما',
+            'مباشرا',
+        }
+        # Words that ALWAYS get tanween
+        _ALWAYS_TANWEEN = {
+            'جدا': 'جداً',
+            'كثيرا': 'كثيراً',
+            'شكرا': 'شكراً',
+            'نظرا': 'نظراً',
+            'قليلا': 'قليلاً',
+            'أيضا': 'أيضاً',
+            'فورا': 'فوراً',
+            'سابقا': 'سابقاً',
+            'لاحقا': 'لاحقاً',
+            'حاليا': 'حالياً',
+            'تقريبا': 'تقريباً',
+            'خصوصا': 'خصوصاً',
+            'عموما': 'عموماً',
+            'دائما': 'دائماً',
+            'مباشرا': 'مباشراً',
+            'أبدا': 'أبداً',
+            'غالبا': 'غالباً',
+            'أحيانا': 'أحياناً',
+            'مثلا': 'مثلاً',
+        }
+        words = text.split()
+        for i, w in enumerate(words):
+            if w in _ALWAYS_TANWEEN:
+                words[i] = _ALWAYS_TANWEEN[w]
+        return ' '.join(words)
+
+    def fix_initial_hamza(self, text):
+        """
+        Fix missing hamza on initial alef for common verb/noun patterns.
+        
+        Arabic rule: أفعل-pattern verbs and certain nouns require hamza:
+        - اعلن → أعلن (أَفْعَل form IV verb)
+        - اصدر → أصدر
+        - اسلم → أسلم
+        """
+        # Common words where initial ا should be أ
+        _HAMZA_FIXES = {
+            'اعلن': 'أعلن', 'اعلنت': 'أعلنت', 'اعلنوا': 'أعلنوا',
+            'اصدر': 'أصدر', 'اصدرت': 'أصدرت', 'اصدروا': 'أصدروا',
+            'اسلم': 'أسلم', 'اسلمت': 'أسلمت', 'اسلموا': 'أسلموا',
+            'اكد': 'أكد', 'اكدت': 'أكدت', 'اكدوا': 'أكدوا',
+            'اعطى': 'أعطى', 'اعطت': 'أعطت', 'اعطوا': 'أعطوا',
+            'انجز': 'أنجز', 'انجزت': 'أنجزت', 'انجزوا': 'أنجزوا',
+            'ارسل': 'أرسل', 'ارسلت': 'أرسلت', 'ارسلوا': 'أرسلوا',
+            'اخرج': 'أخرج', 'اخرجت': 'أخرجت', 'اخرجوا': 'أخرجوا',
+            'انشأ': 'أنشأ', 'انشأت': 'أنشأت', 'انشأوا': 'أنشأوا',
+            'اضاف': 'أضاف', 'اضافت': 'أضافت', 'اضافوا': 'أضافوا',
+            'الامهات': 'الأمهات', 'الاطفال': 'الأطفال',
+            'الامة': 'الأمة', 'الاستاذ': 'الأستاذ',
+        }
+        words = text.split()
+        for i, w in enumerate(words):
+            if w in _HAMZA_FIXES:
+                words[i] = _HAMZA_FIXES[w]
+        return ' '.join(words)

@@ -821,6 +821,18 @@ def _is_small_spelling_change(orig_word, corr_word, vocab_manager=None):
     if orig_word == corr_word:
         return 0.0
 
+    # ── FIX-39: Edit distance hallucination guard (from legacy AraSpell OutputValidator) ──
+    # Block corrections where the edit distance is too high relative to word length.
+    # This catches model hallucinations like والممرضات→والرضا, شجعتهم→يجعلهم, طبخ→طبي.
+    _ed_dist = _levenshtein(orig_word, corr_word)
+    _max_len = max(len(orig_word), len(corr_word))
+    if _max_len >= 3 and _ed_dist > max(2, _max_len * 0.4):
+        logger.info(
+            f"[SPELLING] Blocked hallucination: '{orig_word}'→'{corr_word}' "
+            f"(edit_dist={_ed_dist}, max_allowed={max(2, int(_max_len * 0.4))})"
+        )
+        return 0.0
+
     # ── GUARD 1: Numeral protection (Phase 1, BUG-011/012/E1) ──
     # Reject corrections that remove/change/introduce digits.
     # Numeral hallucination is a complete-replacement failure mode.
@@ -901,13 +913,18 @@ def _is_small_spelling_change(orig_word, corr_word, vocab_manager=None):
             #    E.g., فتأملته (fataamaltahu) → فتأملتة is WRONG.
             if (orig_word.endswith('ه') and corr_word.endswith('ة')
                     and orig_word[:-1] == corr_word[:-1]):
-                # Guard: if word ends in ته, the ه is likely a pronoun suffix
-                # Pattern: verb+ته = "verb + him/it", NOT ta marbuta.
-                # E.g., فتأملته → فتأملتة is WRONG.
-                if len(orig_word) >= 3 and orig_word[-2] == 'ت':
+                # FIX-38: Expanded pronoun suffix guard.
+                # ه at end can be: (a) ta marbuta (should be ة) OR (b) pronoun "him/it".
+                # The old guard only blocked ته. But كله (كل+ه), احبه (احب+ه),
+                # عنده (عند+ه) are ALL pronoun suffixes — the ه is NOT ta marbuta.
+                # Strategy (from legacy AraSpell WordAligner): if the STEM (word without ه)
+                # is itself IV, then ه is likely a pronoun suffix → block the change.
+                # If the stem is NOT IV, ه is likely a misspelled ة → allow.
+                stem = orig_word[:-1]
+                if len(stem) >= 2 and vocab_manager.is_iv(stem):
                     logger.info(
-                        f"[SPELLING] Blocked ه→ة at pronoun suffix: "
-                        f"'{orig_word}'→'{corr_word}' (ته pattern = pronoun 'him/it')"
+                        f"[SPELLING] Blocked ه→ة (pronoun suffix): "
+                        f"'{orig_word}'→'{corr_word}' (stem '{stem}' is IV → ه is pronoun)"
                     )
                     return 0.0
                 return 0.9
