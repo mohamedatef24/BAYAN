@@ -2490,6 +2490,44 @@ def analyze_text():
             logger.error(traceback.format_exc())
             timing_ms['grammar_error'] = f"{type(e).__name__}: {str(e)[:200]}"
 
+        # ── FIX-48v2: ه→ة pass AFTER grammar (not before!) ──
+        # Must run AFTER grammar so grammar model can use ه for gender decisions.
+        # Only fixes remaining ه words that grammar didn't change.
+        if not _is_religious_text:
+          try:
+            from nlp.spelling.araspell_service import get_spelling_model
+            _hata_checker = get_spelling_model()
+            _hata_text = ctx.current_text
+            _hata_words = _hata_text.split()
+            _hata_changed = False
+            _hata_result = []
+            _PROTECTED_HA = {
+                'الله', 'لله', 'فيه', 'عليه', 'منه', 'به', 'له', 'إليه',
+                'وجه', 'نزه', 'سفه', 'فقه', 'نبه', 'شبه', 'مكره', 'تنبه',
+                'اتجه', 'توجه', 'تشابه', 'وفيه', 'وعليه', 'ومنه', 'وله',
+                'دراسته', 'دراستها', 'حياته', 'حياتها',
+            }
+            _CONSONANTS = set('بتثجحخدذرزسشصضطظعغفقكلمنهوي')
+            for _hw in _hata_words:
+                _hw_clean = _hw.rstrip('.،؛؟!?!')
+                if (len(_hw_clean) >= 4 and _hw_clean.endswith('ه')
+                        and _hw_clean not in _PROTECTED_HA
+                        and _hw_clean[-2] in _CONSONANTS):
+                    _ta_cand = _hw_clean[:-1] + 'ة'
+                    if _hata_checker.vocab_manager.is_iv(_ta_cand):
+                        _punct_suffix = _hw[len(_hw_clean):]
+                        logger.info(f"[HA-TA] Post-grammar ه→ة: '{_hw}'→'{_ta_cand}{_punct_suffix}'")
+                        _hata_result.append(_ta_cand + _punct_suffix)
+                        _hata_changed = True
+                        continue
+                _hata_result.append(_hw)
+            if _hata_changed:
+                _hata_new = ' '.join(_hata_result)
+                ctx.mutate_text(_hata_new, OffsetMapper)
+                current_text = ctx.current_text
+          except Exception as e:
+            logger.warning(f"[HA-TA] Failed: {type(e).__name__}: {e}")
+
         # 3. Punctuation (runs on grammar-corrected text — PuncAra-v1 local model)
         # FIX-07: Skip punctuation for religious text
         if not _is_religious_text:
