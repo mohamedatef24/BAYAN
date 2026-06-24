@@ -2131,19 +2131,8 @@ def analyze_text():
                             )
                             continue
 
-                    # ── FIX-42c: Grammar ة stripping guard ──
-                    # Block grammar changes that remove feminine ending ة/ه.
-                    # Catches: المديره→المدير, للطالبه→للطالب
-                    if orig_text and corr_text:
-                        _o_g = orig_text.rstrip('.،؛؟!?!')
-                        _c_g = corr_text.rstrip('.،؛؟!?!')
-                        if (_o_g.endswith(('ه', 'ة')) and not _c_g.endswith(('ه', 'ة'))
-                                and (_c_g == _o_g[:-1] or len(_c_g) < len(_o_g))):
-                            logger.info(
-                                f"[GRAMMAR] Blocked feminine ending strip: "
-                                f"'{orig_text}'→'{corr_text}'"
-                            )
-                            continue
+
+
 
 
 
