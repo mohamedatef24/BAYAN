@@ -1,12 +1,6 @@
 # PuncAra — Arabic Punctuation Restoration Rules
 # Extracted from PuncAra.py — preprocessing + postprocessing + chunking logic.
 # All classes are imported by punctuation_service.py.
-#
-# MERGED: Best of V1 + V2
-# - V2: Threshold >= 1 (not 5) — allows terminal punct on any real text
-# - V2: Fallback to `original` word count when `full_text` is empty
-# - V1: Softened exclamation guard — blocks ؟/! on SHORT texts (< 3 words)
-#        without cue words, but allows on longer sentences
 
 import re
 import logging
@@ -70,17 +64,13 @@ def arabic_postprocessing(text: str) -> str:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# PUNCTUATION SAFETY LAYER — Pipeline Hardening v3.4 (Merged V1+V2)
+# PUNCTUATION SAFETY LAYER — Pipeline Hardening v3.3
 # ══════════════════════════════════════════════════════════════════════════════
 
 ARABIC_PUNCT_CHARS = set('.,،؛؟!:;?!')
 MAX_PUNCT_DELTA = 3
 MAX_PUNCT_DELTA_SHORT = 1   # Stricter cap for short texts (≤2 words)
 MAX_PUNCT_RATIO = 0.5       # max punctuation delta per word (multi-word diffs)
-
-# Exclamation/question cue words (from V1 FIX-29, used in softened guard)
-_EXCL_CUES = {'يا', 'ما', 'كم', 'لا', 'هل', 'أين', 'متى',
-              'كيف', 'لماذا', 'ماذا', 'أي', 'لعل', 'ليت'}
 
 
 def _normalize_for_comparison(text: str) -> str:
@@ -106,8 +96,7 @@ def validate_punctuation_diff(diff: dict, full_text: str = '') -> bool:
     ALLOWED:
         - Inserting 1 punctuation mark (short text) or 1–3 (long text)
         - Replacing one punctuation mark with another
-        - Adding terminal punctuation to any text (1+ words) that lacks it
-        - Adding ؟/! to short texts (< 3 words) ONLY with cue words
+        - Adding terminal punctuation to any sentence (1+ words) that lacks it
 
     REJECTED:
         - Adding/deleting/duplicating Arabic words
@@ -117,26 +106,19 @@ def validate_punctuation_diff(diff: dict, full_text: str = '') -> bool:
         - Short text (≤2 words): delta > 1
         - Any diff: delta > MAX_PUNCT_DELTA
         - Adding terminal punctuation when text already ends with punct
-        - Adding ؟/! to short texts without interrogative/exclamatory cues
     """
     original = diff.get('original', '')
     correction = diff.get('correction', '')
 
-    # ── Rule 0 (FIX-01 + FIX-30 + Merged Guard): Terminal punctuation ──
+    # ── Rule 0 (FIX-01, updated FIX-30): Reject terminal punctuation injection ──
     # PuncAra-v1 unconditionally adds . or ؟ to every sentence.
     # This rule catches the pattern: "word" → "word." / "word؟" / "word،"
     # where the ONLY change is appending 1-2 terminal punctuation marks.
     #
-    # From V2 (FIX-30): Threshold lowered from 5 → 1. Even single-word
-    # fragments deserve terminal punctuation (e.g. "اليوم" → "اليوم.").
-    #
-    # From V2 (FIX-30): When full_text isn't provided, fall back to
-    # counting words in `original` instead of returning 0.
-    #
-    # From V1 (FIX-29, softened): For SHORT texts (< 3 words), block ؟/!
-    # unless text contains interrogative/exclamatory cue words. For longer
-    # texts (3+ words), allow any terminal punct freely. This prevents
-    # "محمد" → "محمد؟" while still allowing "اليوم" → "اليوم.".
+    # FIX-30: Allow terminal punct for any text with at least 1 word that
+    # doesn't already end with punctuation. Only block for:
+    #   - Text that already has terminal punctuation
+    #   - Text ending in an ellipsis (...)
     TERMINAL_PUNCT = set('.,،؛؟!:;?!')
     orig_stripped = original.rstrip()
     corr_stripped = correction.rstrip()
@@ -156,7 +138,11 @@ def validate_punctuation_diff(diff: dict, full_text: str = '') -> bool:
                 if _normalize_for_comparison(orig_no_punct.replace(' ', '')) == \
                    _normalize_for_comparison(corr_no_punct.replace(' ', '')):
                     # This is a pure terminal-punctuation addition.
-                    # V2 FIX-30: Fall back to original when full_text is empty
+                    # Decide whether to allow based on full text context.
+                    # FIX-30: When full_text isn't provided (e.g. word-level diff
+                    # calls), fall back to counting words in `original` instead of
+                    # treating the count as 0 — that previously rejected every
+                    # single-word diff regardless of the threshold below.
                     _word_count_source = full_text if full_text else original
                     _full_word_count = len(re.findall(
                         r'[\u0600-\u06FFa-zA-Z]+', _word_count_source
@@ -164,26 +150,24 @@ def validate_punctuation_diff(diff: dict, full_text: str = '') -> bool:
                     _full_already_has_terminal = bool(
                         re.search(r'[.،؛؟!?!][\s]*$', full_text)
                     ) if full_text else False
+                    # Also check for ellipsis (... at end)
                     _full_has_ellipsis = full_text.rstrip().endswith('...') if full_text else False
 
-                    # V2 FIX-30: Allow for 1+ words (not 5)
+                    # FIX-30: Threshold lowered from 5 → 1. The docstring and the
+                    # Phase 13 comment above both documented "3+ words" as the
+                    # intended rule, while the code enforced 5 — and even single-
+                    # word fragments ("اليوم" → "اليوم؟") are a legitimate terminal
+                    # punctuation addition once we have at least one real word.
+                    #
+                    # FIX-31: Removed the FIX-29 exclamation/question-cue guard.
+                    # It required an explicit interrogative word (هل/ماذا/متى/...)
+                    # before allowing "؟" or "!" to be added, which rejected valid
+                    # single-word terminal punctuation additions with no such cue
+                    # (e.g. "اليوم" → "اليوم؟"). Terminal punctuation is now
+                    # allowed regardless of cue words, as long as the remaining
+                    # safety rules below (word count, duplicate terminal marks,
+                    # ellipsis) still hold.
                     if _full_word_count >= 1 and not _full_already_has_terminal and not _full_has_ellipsis:
-                        # ── Softened FIX-29 (Merged): Short-text ؟/! guard ──
-                        # For short texts (< 3 words), block ؟ and ! unless
-                        # cue words are present. Prevents "محمد" → "محمد؟"
-                        # but allows "اليوم" → "اليوم." (period is safe).
-                        # For 3+ words, allow freely (V2 behavior).
-                        _added_punct = correction[len(orig_stripped):]
-                        if _full_word_count < 3 and ('!' in _added_punct or '؟' in _added_punct):
-                            _text_to_scan = full_text if full_text else original
-                            _has_cue = any(w in _EXCL_CUES for w in _text_to_scan.split())
-                            if not _has_cue:
-                                logger.info(
-                                    f"[PUNC-SAFETY] Blocked !/؟ on short text without cue: "
-                                    f"'{original}' → '{correction}'"
-                                )
-                                return False
-
                         logger.info(
                             f"[PUNC-SAFETY] Allowed terminal punct for sentence "
                             f"({_full_word_count} words): "
@@ -270,3 +254,4 @@ def validate_punctuation_diff(diff: dict, full_text: str = '') -> bool:
         return False
 
     return True
+
