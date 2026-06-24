@@ -2010,20 +2010,37 @@ def analyze_text():
                     _oov_result.append(_ow)
                     continue
 
-                # ── Trailing و removal (from legacy AraSpell L263-267) ──
-                # الماضيةو → الماضية, المصنعو → المصنع, الدروسو → الدروس
-                if (len(_ow_clean) > 4 and _ow_clean.endswith('و')
-                        and _ow_clean[-2] in 'ةهاأإآءين'):
+                _punct_suffix = _ow[len(_ow_clean):]  # preserve punctuation
+
+                # ── FIX-46a: ه→ة fix (vocab-validated) ──
+                # الحكومه→الحكومة, الشركه→الشركة, المدرسه→المدرسة
+                if len(_ow_clean) >= 4 and _ow_clean.endswith('ه'):
+                    _ta_cand = _ow_clean[:-1] + 'ة'
+                    if _oov_checker.vocab_manager.is_iv(_ta_cand):
+                        logger.info(
+                            f"[OOV-CLEANUP] ه→ة fix: '{_ow}'→'{_ta_cand}{_punct_suffix}'"
+                        )
+                        _oov_result.append(_ta_cand + _punct_suffix)
+                        _oov_changed = True
+                        _ow_pos = sum(len(w) + 1 for w in _oov_words[:_ow_idx])
+                        if _ow_pos + len(_ow) <= len(_oov_text):
+                            ctx.add_patch(
+                                'spelling', _ow_pos, _ow_pos + len(_ow),
+                                _ta_cand + _punct_suffix, confidence=0.8,
+                            )
+                        continue
+
+                # ── FIX-46b: Trailing و removal (expanded) ──
+                # المصنعو→المصنع, الماضيةو→الماضية
+                # Expanded char set: ANY Arabic letter before و (if result is IV)
+                if len(_ow_clean) > 4 and _ow_clean.endswith('و'):
                     _wo_cand = _ow_clean[:-1]
                     if _oov_checker.vocab_manager.is_iv(_wo_cand):
-                        _punct_suffix = _ow[len(_ow_clean):]  # preserve punctuation
                         logger.info(
                             f"[OOV-CLEANUP] Trailing و fix: '{_ow}'→'{_wo_cand}{_punct_suffix}'"
                         )
                         _oov_result.append(_wo_cand + _punct_suffix)
                         _oov_changed = True
-
-                        # Create a patch for the UI
                         _ow_pos = sum(len(w) + 1 for w in _oov_words[:_ow_idx])
                         if _ow_pos + len(_ow) <= len(_oov_text):
                             ctx.add_patch(
@@ -2032,20 +2049,41 @@ def analyze_text():
                             )
                         continue
 
-                # ── Edit-distance-1 OOV→IV correction ──
-                # DISABLED: Caused 3 regressions (PC037, PC047, PC049) with 0 gains.
-                # Problem: Arabic has many valid OOV conjugated verbs (ادرسي)
-                # whose edit-1 IV neighbor (ادريس) is a completely different word.
-                # The frequency-based selection picks the wrong candidate.
-                # TODO: Re-enable with better candidate filtering (e.g. morphological
-                # compatibility check, same-POS requirement).
-                # try:
-                #     _ed1_candidates = _oov_checker.edit_corrector.known(
-                #         _oov_checker.edit_corrector.edits1(_ow_clean)
-                #     )
-                #     ...
-                # except Exception:
-                #     pass
+                    # ── FIX-46c: Trailing و→وا for verbs ──
+                    # حضرو→حضروا, صممو→صمموا (missing alif)
+                    _woa_cand = _ow_clean + 'ا'
+                    if _oov_checker.vocab_manager.is_iv(_woa_cand):
+                        logger.info(
+                            f"[OOV-CLEANUP] و→وا fix: '{_ow}'→'{_woa_cand}{_punct_suffix}'"
+                        )
+                        _oov_result.append(_woa_cand + _punct_suffix)
+                        _oov_changed = True
+                        _ow_pos = sum(len(w) + 1 for w in _oov_words[:_ow_idx])
+                        if _ow_pos + len(_ow) <= len(_oov_text):
+                            ctx.add_patch(
+                                'spelling', _ow_pos, _ow_pos + len(_ow),
+                                _woa_cand + _punct_suffix, confidence=0.7,
+                            )
+                        continue
+
+                # ── FIX-46d: Handle .و pattern ──
+                # الدروس.و→الدروس (period + و artifact)
+                if _ow.endswith('.و') or _ow.endswith('،و'):
+                    _dotwo_cand = _ow[:-2]  # remove both . and و
+                    _dotwo_clean = _dotwo_cand.rstrip('.،؛؟!?!')
+                    if len(_dotwo_clean) >= 3 and _oov_checker.vocab_manager.is_iv(_dotwo_clean):
+                        logger.info(
+                            f"[OOV-CLEANUP] .و artifact fix: '{_ow}'→'{_dotwo_clean}.'"
+                        )
+                        _oov_result.append(_dotwo_clean + '.')
+                        _oov_changed = True
+                        _ow_pos = sum(len(w) + 1 for w in _oov_words[:_ow_idx])
+                        if _ow_pos + len(_ow) <= len(_oov_text):
+                            ctx.add_patch(
+                                'spelling', _ow_pos, _ow_pos + len(_ow),
+                                _dotwo_clean + '.', confidence=0.75,
+                            )
+                        continue
 
                 _oov_result.append(_ow)
 
