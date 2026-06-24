@@ -2033,37 +2033,19 @@ def analyze_text():
                         continue
 
                 # ── Edit-distance-1 OOV→IV correction ──
-                # Generate all edit-1 candidates and filter to IV words
-                try:
-                    _ed1_candidates = _oov_checker.edit_corrector.known(
-                        _oov_checker.edit_corrector.edits1(_ow_clean)
-                    )
-                    if _ed1_candidates:
-                        # Pick best: lowest vocab rank (most frequent)
-                        _best_cand = min(
-                            _ed1_candidates,
-                            key=lambda w: _oov_checker.vocab_manager.get_frequency_rank(w)
-                        )
-                        # Safety: don't change first letter (same guard as FIX-42b)
-                        if _best_cand[0] == _ow_clean[0] or (
-                            _best_cand[0] in 'أإآاء' and _ow_clean[0] in 'أإآاء'
-                        ):
-                            _punct_suffix = _ow[len(_ow_clean):]
-                            logger.info(
-                                f"[OOV-CLEANUP] Edit-1 fix: '{_ow}'→'{_best_cand}{_punct_suffix}'"
-                            )
-                            _oov_result.append(_best_cand + _punct_suffix)
-                            _oov_changed = True
-
-                            _ow_pos = sum(len(w) + 1 for w in _oov_words[:_ow_idx])
-                            if _ow_pos + len(_ow) <= len(_oov_text):
-                                ctx.add_patch(
-                                    'spelling', _ow_pos, _ow_pos + len(_ow),
-                                    _best_cand + _punct_suffix, confidence=0.65,
-                                )
-                            continue
-                except Exception:
-                    pass  # Edit-distance fallback is best-effort
+                # DISABLED: Caused 3 regressions (PC037, PC047, PC049) with 0 gains.
+                # Problem: Arabic has many valid OOV conjugated verbs (ادرسي)
+                # whose edit-1 IV neighbor (ادريس) is a completely different word.
+                # The frequency-based selection picks the wrong candidate.
+                # TODO: Re-enable with better candidate filtering (e.g. morphological
+                # compatibility check, same-POS requirement).
+                # try:
+                #     _ed1_candidates = _oov_checker.edit_corrector.known(
+                #         _oov_checker.edit_corrector.edits1(_ow_clean)
+                #     )
+                #     ...
+                # except Exception:
+                #     pass
 
                 _oov_result.append(_ow)
 
