@@ -97,24 +97,35 @@ class PatchSet:
         Single owner per range. Deterministic resolution.
         Uses ORIGINAL coordinates for overlap detection.
 
-        Phase 14: Relaxed overlap — patches that touch at a boundary or
-        have minimal overlap (<= 50% of the smaller patch) are allowed
-        to coexist. This prevents punctuation patches from killing spelling
-        patches on adjacent words (e.g., 'المشروع.' punct vs 'في' spelling).
+        Phase 14: Relaxed overlap rules:
+        1. Patches with < 50% overlap of the smaller patch coexist freely
+        2. Spelling + Punctuation patches from different stages always coexist
+           (they're compatible: one fixes the word, the other adds punct)
+        3. Same-stage overlaps are always resolved (higher confidence wins)
         """
         sorted_patches = sorted(
             self.patches,
             key=lambda p: (-p.priority, -p.confidence, p.start_original, p.id)
         )
 
-        claimed_ranges = []
+        claimed_ranges = []  # list of (start, end, stage)
         resolved = []
 
         for patch in sorted_patches:
             has_substantial_overlap = False
-            for cs, ce in claimed_ranges:
+            for cs, ce, claimed_stage in claimed_ranges:
                 # Check if there's any overlap at all
                 if patch.start_original < ce and patch.end_original > cs:
+                    # ── Phase 14: Cross-stage compatibility ──
+                    # Spelling + Punctuation are COMPATIBLE stages:
+                    # spelling fixes the word, punctuation adds marks.
+                    # They should never conflict.
+                    _compatible_pair = {
+                        frozenset({'spelling', 'punctuation'}),
+                    }
+                    if frozenset({patch.stage, claimed_stage}) in _compatible_pair:
+                        continue  # Compatible stages — allow coexistence
+
                     # Calculate overlap amount
                     overlap_start = max(patch.start_original, cs)
                     overlap_end = min(patch.end_original, ce)
@@ -130,7 +141,7 @@ class PatchSet:
 
             if not has_substantial_overlap:
                 resolved.append(patch)
-                claimed_ranges.append((patch.start_original, patch.end_original))
+                claimed_ranges.append((patch.start_original, patch.end_original, patch.stage))
             else:
                 logger.info(
                     f"[OVERLAP] Dropped {patch.stage} [{patch.start_original}:{patch.end_original}] "
