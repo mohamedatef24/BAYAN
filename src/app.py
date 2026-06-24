@@ -899,6 +899,18 @@ def _is_small_spelling_change(orig_word, corr_word, vocab_manager=None):
         if corr_word == orig_word[:-1] or len(corr_word) < len(orig_word):
             return 0.0
 
+    # ── FIX-41: Block corrections that ADD trailing ا/ي to IV words ──
+    # Model sometimes adds accusative markers: واجب→واجبا, معطف→معطفا.
+    # If the original word is IV and the correction just appends a letter, reject.
+    if vocab_manager and len(corr_word) == len(orig_word) + 1 and corr_word.startswith(orig_word):
+        _appended_char = corr_word[-1]
+        if _appended_char in ('ا', 'ي', 'و') and vocab_manager.is_iv(orig_word):
+            logger.info(
+                f"[SPELLING] Blocked trailing '{_appended_char}' addition: "
+                f"'{orig_word}'→'{corr_word}' (original is IV)"
+            )
+            return 0.0
+
     # CRITICAL: If both words are valid Arabic words, only accept known fixes.
     # This prevents the spelling model from changing one correct word to another
     # (e.g. وكان→وكأن, which changes "and was" to "as if" — a meaning change).
