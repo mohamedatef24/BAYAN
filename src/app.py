@@ -1528,6 +1528,27 @@ def analyze_text():
                 timing_ms['spelling_ms'] = int((time.time() - t0) * 1000)
                 logger.info(f"[ANALYZE] Step 1: Spelling done in {timing_ms['spelling_ms']}ms")
 
+                # ── Phase 14 (FIX-31): Strip hallucinated trailing punctuation ──
+                # The AraSpell model sometimes hallucinates trailing '...' or '.'
+                # that weren't in the input. Strip them to prevent dot accumulation.
+                import re as _re_strip
+                _input_trailing = _re_strip.search(r'[\.،؛؟!]+$', current_text)
+                _output_trailing = _re_strip.search(r'[\.،؛؟!]+$', raw_corrected)
+                if _output_trailing and not _input_trailing:
+                    raw_corrected = raw_corrected[:_output_trailing.start()]
+                    logger.info(
+                        f"[SPELLING] Stripped hallucinated trailing punct: "
+                        f"'{_output_trailing.group()}'"
+                    )
+                elif _output_trailing and _input_trailing:
+                    # If input had some trailing punct, preserve only what was there
+                    if len(_output_trailing.group()) > len(_input_trailing.group()):
+                        raw_corrected = raw_corrected[:_output_trailing.start()] + _input_trailing.group()
+                        logger.info(
+                            f"[SPELLING] Trimmed extra trailing punct: "
+                            f"'{_output_trailing.group()}' → '{_input_trailing.group()}'"
+                        )
+
                 # ── Phase 12 (A4): Output Stability Test ──
                 # If re-preprocessing the correction changes it significantly,
                 # the correction is unstable → fall back to re-preprocessed version.
