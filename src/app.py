@@ -2309,6 +2309,38 @@ def analyze_text():
                                  _safe_punc[_pd['end']:])
                 ctx.mutate_text(_safe_punc, OffsetMapper)
                 current_text = ctx.current_text
+
+            # ── FIX-37: Rule-based terminal period fallback ──
+            # The punctuation model often fails to add a period at the end
+            # of longer sentences. If no terminal punctuation exists after
+            # model processing, inject a period suggestion for the last word.
+            import re as _re_punc
+            _TERMINAL_PUNCT = set('.،؛؟!?!')
+            _current_stripped = ctx.current_text.rstrip()
+            _has_terminal = _current_stripped and _current_stripped[-1] in _TERMINAL_PUNCT
+            _word_count_fb = len(_re_punc.findall(r'[\u0600-\u06FFa-zA-Z]+', ctx.current_text))
+            if not _has_terminal and _word_count_fb >= 2:
+                # Find the last word's position in current_text
+                _last_word_match = _re_punc.search(r'([\u0600-\u06FF]+)\s*$', _current_stripped)
+                if _last_word_match:
+                    _lw_start = _last_word_match.start(1)
+                    _lw_end = _last_word_match.end(1)
+                    _lw_text = _last_word_match.group(1)
+                    # Check this range isn't already a patch
+                    _already_patched = any(
+                        p.stage == 'punctuation'
+                        and p.start_current == _lw_start
+                        for p in ctx.patches.patches
+                    )
+                    if not _already_patched:
+                        ctx.add_patch(
+                            'punctuation', _lw_start, _lw_end,
+                            _lw_text + '.', confidence=0.7
+                        )
+                        logger.info(
+                            f"[PUNC-FALLBACK] Injected terminal period: "
+                            f"'{_lw_text}' → '{_lw_text}.' at [{_lw_start}:{_lw_end}]"
+                        )
           except Exception as e:
             logger.error(f"[ANALYZE] Punctuation failed: {type(e).__name__}: {e}")
             logger.error(traceback.format_exc())
