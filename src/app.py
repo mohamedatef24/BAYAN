@@ -2525,6 +2525,7 @@ def analyze_text():
             _hata_words = _hata_text.split()
             _hata_changed = False
             _hata_result = []
+            _hata_pos = 0  # track position in text for patch offsets
             for _hw in _hata_words:
                 _hw_clean = _hw.rstrip('.،؛؟!?!')
                 if _hw_clean in _HATA_WHITELIST:
@@ -2533,9 +2534,14 @@ def analyze_text():
                     logger.info(f"[HA-TA] Post-grammar ه→ة: '{_hw}'→'{_fixed}{_punct_suffix}'")
                     _hata_result.append(_fixed + _punct_suffix)
                     _hata_changed = True
+                    # Create a patch so the final output includes this fix
+                    ctx.add_patch(
+                        'spelling', _hata_pos, _hata_pos + len(_hw),
+                        _fixed + _punct_suffix, confidence=0.85,
+                    )
                 else:
                     _hata_result.append(_hw)
-            logger.info(f"[HA-TA] Scan: {len(_hata_words)} words, {sum(1 for w in _hata_words if w.rstrip('.') in _HATA_WHITELIST)} matches, changed={_hata_changed}")
+                _hata_pos += len(_hw) + 1  # +1 for space
             if _hata_changed:
                 _hata_new = ' '.join(_hata_result)
                 ctx.mutate_text(_hata_new, OffsetMapper)
