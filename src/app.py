@@ -2535,6 +2535,7 @@ def analyze_text():
                     _hata_changed = True
                 else:
                     _hata_result.append(_hw)
+            logger.info(f"[HA-TA] Scan: {len(_hata_words)} words, {sum(1 for w in _hata_words if w.rstrip('.') in _HATA_WHITELIST)} matches, changed={_hata_changed}")
             if _hata_changed:
                 _hata_new = ' '.join(_hata_result)
                 ctx.mutate_text(_hata_new, OffsetMapper)
