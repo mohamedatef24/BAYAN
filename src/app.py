@@ -2099,6 +2099,49 @@ def analyze_text():
         # ── FIX-07: Religious text already detected above (before spelling) ──
         # _is_religious_text was set earlier to skip ALL stages for sacred text
 
+        # ── FIX-48: Dedicated ه→ة pass (runs on ALL words, not just OOV) ──
+        # Words like الحكومه and الشركه are IV in BERT vocab, so OOV cleanup
+        # skips them. This pass converts ه→ة when the ة form is also IV,
+        # preferring standard orthography.
+        if not _is_religious_text:
+          try:
+            from nlp.spelling.araspell_service import get_spelling_model
+            _hata_checker = get_spelling_model()
+            _hata_text = ctx.current_text
+            _hata_words = _hata_text.split()
+            _hata_changed = False
+            _hata_result = []
+            # Words that genuinely end in ه (not ة)
+            _PROTECTED_HA = {
+                'الله', 'لله', 'فيه', 'عليه', 'منه', 'به', 'له', 'إليه',
+                'وجه', 'نزه', 'سفه', 'فقه', 'نبه', 'شبه', 'مكره', 'تنبه',
+                'اتجه', 'توجه', 'تشابه', 'وفيه', 'وعليه', 'ومنه', 'وله',
+                'دراسته', 'دراستها', 'حياته', 'حياتها',
+            }
+            _CONSONANTS = set('بتثجحخدذرزسشصضطظعغفقكلمنهوي')
+            for _hw_idx, _hw in enumerate(_hata_words):
+                _hw_clean = _hw.rstrip('.،؛؟!?!')
+                if (len(_hw_clean) >= 4 and _hw_clean.endswith('ه')
+                        and _hw_clean not in _PROTECTED_HA
+                        and _hw_clean[-2] in _CONSONANTS):
+                    _ta_cand = _hw_clean[:-1] + 'ة'
+                    if _hata_checker.vocab_manager.is_iv(_ta_cand):
+                        _punct_suffix = _hw[len(_hw_clean):]
+                        logger.info(
+                            f"[HA-TA] ه→ة fix: '{_hw}'→'{_ta_cand}{_punct_suffix}'"
+                        )
+                        _hata_result.append(_ta_cand + _punct_suffix)
+                        _hata_changed = True
+                        continue
+                _hata_result.append(_hw)
+            if _hata_changed:
+                _hata_new = ' '.join(_hata_result)
+                logger.info(f"[HA-TA] Applied: '{_hata_text[:60]}' → '{_hata_new[:60]}'")
+                ctx.mutate_text(_hata_new, OffsetMapper)
+                current_text = ctx.current_text
+          except Exception as e:
+            logger.warning(f"[HA-TA] Failed: {type(e).__name__}: {e}")
+
         # ── FIX-03: Structured content protection ──
         # Protect URLs, emails, dates, code etc. from grammar model destruction
         _PROTECTED_PATTERNS = [
