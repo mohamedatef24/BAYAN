@@ -86,7 +86,7 @@ for input_text, expected in plurals:
 # ══════════════════════════════════════════════════════════════
 print("\n═══ FIX-35: Spelling — conjugation suffix protection ═══")
 
-_CONJUGATION_SUFFIXES = {'ن', 'ت', 'ا', 'ي', 'ة', 'و', 'ه'}
+_CONJUGATION_SUFFIXES = {'ن', 'ت'}
 
 def simulate_insertion_fix_check(orig_word, corr_word):
     """Simulate the FIX-35 suffix strip check logic from app.py."""
@@ -105,7 +105,7 @@ def simulate_insertion_fix_check(orig_word, corr_word):
             return "allowed"
     return "not_applicable"
 
-# BLOCKED cases (suffix stripping)
+# BLOCKED cases (verb conjugation suffix stripping)
 test("'ذهبن'→'ذهب' blocked (ن suffix)", 
      simulate_insertion_fix_check("ذهبن", "ذهب") == "blocked",
      f"got {simulate_insertion_fix_check('ذهبن', 'ذهب')}")
@@ -114,15 +114,16 @@ test("'كتبت'→'كتب' blocked (ت suffix)",
      simulate_insertion_fix_check("كتبت", "كتب") == "blocked",
      f"got {simulate_insertion_fix_check('كتبت', 'كتب')}")
 
-test("'درسة'→'درس' blocked (ة suffix)",
-     simulate_insertion_fix_check("درسة", "درس") == "blocked",
+# NOW ALLOWED cases (narrowed set — ة, و no longer blocked)
+test("'درسة'→'درس' allowed (ة not in narrowed set)",
+     simulate_insertion_fix_check("درسة", "درس") == "allowed",
      f"got {simulate_insertion_fix_check('درسة', 'درس')}")
 
-test("'جلسوا'→'جلسو' not applicable (len diff ok but وا→و)",
-     simulate_insertion_fix_check("جلسوا", "جلسو") == "blocked",
+test("'جلسوا'→'جلسو' allowed (ا not in narrowed set)",
+     simulate_insertion_fix_check("جلسوا", "جلسو") == "allowed",
      f"got {simulate_insertion_fix_check('جلسوا', 'جلسو')}")
 
-# ALLOWED cases (mid-word insertion fix)
+# ALLOWED cases (mid-word insertion fix — always allowed)
 test("'الكتتاب'→'الكتاب' allowed (mid-word extra ت)",
      simulate_insertion_fix_check("الكتتاب", "الكتاب") == "allowed",
      f"got {simulate_insertion_fix_check('الكتتاب', 'الكتاب')}")
