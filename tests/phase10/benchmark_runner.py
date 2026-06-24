@@ -9,6 +9,7 @@ Usage:
     python tests/phase10/benchmark_runner.py [--url URL] [--dataset NAMES] [--out DIR]
 """
 import argparse, json, time, re, os, sys
+sys.stdout.reconfigure(encoding='utf-8')
 from pathlib import Path
 from dataclasses import dataclass, field, asdict
 from typing import List, Dict, Optional, Any

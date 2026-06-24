@@ -118,7 +118,8 @@ class ArabicGrammarGuard:
                 if prev_word in jazm_particles or word.startswith('ل') or word.startswith('ول'):
                     is_jazm_context = True
 
-            if pos_tag == 'verb' and (is_nasb_context or is_jazm_context):
+            is_present_tense = word.startswith('ي') or word.startswith('ت') or word.startswith('ن') or word.startswith('أ')
+            if (pos_tag == 'verb' or is_present_tense) and (is_nasb_context or is_jazm_context):
                 if word.endswith('ون'):
                     word = word[:-2] + 'وا'
                 elif word.endswith('ان'):
@@ -126,12 +127,30 @@ class ArabicGrammarGuard:
                 elif word.endswith('ين'):
                     word = word[:-2] + 'ي'
                 elif is_jazm_context:
-                    if word.endswith('و') and len(word) > 3:
+                    if word.endswith('و') and len(word) >= 3:
                         word = word[:-1] + 'ُ'
-                    elif (word.endswith('i') or word.endswith('ي')) and len(word) > 3:
-                        if word.endswith('ي'): word = word[:-1] + 'ِ'
-                    elif (word.endswith('ى') or word.endswith('ا')) and len(word) > 3:
-                        word = word[:-1] + 'َ'
+                    elif word.endswith('ي') or word.endswith('i'):
+                        stem = word[:-1]
+                        fatha_stems = {'يسع', 'تسع', 'أسع', 'نسع', 
+                                       'يخش', 'تخش', 'أخش', 'نخش',
+                                       'يرض', 'ترض', 'أرض', 'نرض',
+                                       'ينس', 'تنس', 'أنس', 'ننس',
+                                       'يبق', 'تبق', 'أبق', 'نبق',
+                                       'ير', 'تر', 'أر', 'نر',
+                                       'يلق', 'تلق', 'ألق', 'نلق',
+                                       'ينه', 'تنه', 'أنه', 'ننه'}
+                        if stem in fatha_stems:
+                            word = stem + 'َ'
+                        elif len(word) > 3:
+                            word = stem + 'ِ'
+                    elif (word.endswith('ى') or word.endswith('ا')) and len(word) >= 3:
+                        if not word.endswith('وا'):
+                            word = word[:-1] + 'َ'
+                elif is_nasb_context:
+                    if word.endswith('و') and len(word) > 3:
+                        word = word + 'َ'
+                    elif word.endswith('ي') and len(word) > 3:
+                        word = word + 'َ'
 
             corrected_tokens.append(word)
         return " ".join(corrected_tokens)
@@ -325,15 +344,23 @@ class ArabicGrammarGuard:
                 elif is_plural_masc:
                     if (not verb_word.endswith('ون') and not verb_word.endswith('وا')
                             and not verb_word.endswith('ين')):
+                        if verb_word.endswith('وَ'):
+                            verb_word = verb_word[:-1]
                         corrected_tokens[i+1] = verb_word + 'ون'
             else:
                 # Past tense: ذهب→ذهبوا (masc) / ذهبن (fem)
                 if is_plural_fem:
                     if not verb_word.endswith('ن') and not verb_word.endswith('نَ'):
+                        if verb_word.endswith('ى') or verb_word.endswith('ا'):
+                            verb_word = verb_word[:-1]
                         corrected_tokens[i+1] = verb_word + 'ن'
                 elif is_plural_masc:
                     if (not verb_word.endswith('وا') and not verb_word.endswith('ون')
                             and not verb_word.endswith('ين')):
+                        if verb_word.endswith('وَ'):
+                            verb_word = verb_word[:-1]
+                        elif verb_word.endswith('ى') or verb_word.endswith('ا'):
+                            verb_word = verb_word[:-1]
                         corrected_tokens[i+1] = verb_word + 'وا'
 
         return " ".join(corrected_tokens)
@@ -341,6 +368,10 @@ class ArabicGrammarGuard:
     def regex_rules_fallback(self, text):
         # إن وأخواتها
         text = re.sub(r'\b(إن|أن|كأن|لكن|لعل|ليت)\s+(أبوك|أخوك|ذو|فوك)\b',
+                      lambda m: f"{m.group(1)} {m.group(2).replace('و', 'ا')}", text)
+
+        # الأفعال المتعدية (Object position)
+        text = re.sub(r'\b(رأيت|شاهدت|قابلت|زرت|سمعت|عرفت|وجدت|أحب|أكرمت|صادفت)\s+(أبوك|أخوك|ذو|فوك)\b',
                       lambda m: f"{m.group(1)} {m.group(2).replace('و', 'ا')}", text)
 
         # حروف الجر المنفصلة بمسافة (في أخوك -> في أخيك)
@@ -509,6 +540,19 @@ class ArabicGrammarGuard:
         """Apply all grammar rules to model output."""
         text = self.preserve_numbers(original_text, generated_text)
         
+        # ── Fix Hallucinated Subject Gender ──
+        # If model incorrectly changes female subject to male, restore it.
+        orig_words = original_text.split()
+        corr_words = text.split()
+        if len(orig_words) == len(corr_words):
+            for i, (o, c) in enumerate(zip(orig_words, corr_words)):
+                o_clean = o.rstrip('.,،؛;:!؟?()[]{}«»"\'…')
+                c_clean = c.rstrip('.,،؛;:!؟?()[]{}«»"\'…')
+                # If model dropped 'ة' from a word of length >= 4
+                if o_clean.endswith('ة') and not c_clean.endswith('ة') and o_clean[:-1] == c_clean:
+                    corr_words[i] = o
+            text = " ".join(corr_words)
+
         # Each rule is wrapped in try/except so that if camel-tools
         # functions fail, the regex-based rules still execute.
         for rule_name, rule_fn in [
@@ -527,8 +571,7 @@ class ArabicGrammarGuard:
                 text = rule_fn(text)
             except Exception as e:
                 logger.warning(f"[GRAMMAR-RULES] {rule_name} failed: {e}")
-                # Continue with remaining rules
-        
+
         text = re.sub(r'\s+', ' ', text).strip()
         return text
 
