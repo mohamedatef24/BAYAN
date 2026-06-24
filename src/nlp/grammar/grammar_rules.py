@@ -238,10 +238,35 @@ class ArabicGrammarGuard:
         text = re.sub(r'\b([وف]?(?:في|من|إلى|على|عن|حتى))\s+([أ-ي]{4,})(ون|ان)\b', _prep_replace, text)
 
         # (وبالمبرمجون) -> (وبالمبرمجين)
-        text = re.sub(r'\b([وف]?[بلكف])ال([أ-ي]{4,})(ون|ان)\b', r'\1ال\2ين', text)
+        # FIX-33b: Same blocklist protection as first regex
+        def _attached_prep_replace(m):
+            prefix = m.group(1)  # وب، ب، فب، ول، ل، etc.
+            stem = m.group(2)
+            suffix = m.group(3)
+            full_word = 'ال' + stem + suffix  # reconstruct with ال for blocklist check
+            if full_word in self._PREP_BLOCKLIST:
+                return m.group(0)
+            # Words ending in ان with 4+ char stems are almost always root nouns
+            if suffix == 'ان':
+                return m.group(0)
+            return f'{prefix}ال{stem}ين'
+
+        text = re.sub(r'\b([وف]?[بلكف])ال([أ-ي]{4,})(ون|ان)\b', _attached_prep_replace, text)
 
         # (ولمهندسون) -> (ولمهندسين)
-        text = re.sub(r'\b([وف]?ل)([أ-ي]{4,})(ون|ان)\b', r'\1\2ين', text)
+        # FIX-33b: Same protection — reconstruct full word for blocklist
+        def _lam_prep_replace(m):
+            prefix = m.group(1)  # ول، ل، فل
+            stem = m.group(2)
+            suffix = m.group(3)
+            # Check blocklist with common prefixed forms
+            if (stem + suffix) in self._PREP_BLOCKLIST:
+                return m.group(0)
+            if suffix == 'ان':
+                return m.group(0)
+            return f'{prefix}{stem}ين'
+
+        text = re.sub(r'\b([وف]?ل)([أ-ي]{4,})(ون|ان)\b', _lam_prep_replace, text)
         return text
 
     def fix_subject_verb_agreement(self, text):

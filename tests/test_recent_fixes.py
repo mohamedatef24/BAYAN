@@ -80,6 +80,72 @@ for input_text, expected in plurals:
     result = fix_prepositions(input_text)
     test(f"'{input_text}' → '{expected}'", result == expected, f"got '{result}'")
 
+# ── FIX-33b: Second regex (بال...ون/ان) ──
+print("\n═══ FIX-33b: Attached preposition regex protection ═══")
+
+def _attached_prep_replace(m):
+    prefix = m.group(1)
+    stem = m.group(2)
+    suffix = m.group(3)
+    full_word = 'ال' + stem + suffix
+    if full_word in _PREP_BLOCKLIST:
+        return m.group(0)
+    if suffix == 'ان':
+        return m.group(0)
+    return f'{prefix}ال{stem}ين'
+
+def fix_attached_prep(text):
+    return re.sub(r'\b([وف]?[بلكف])ال([أ-ي]{4,})(ون|ان)\b', _attached_prep_replace, text)
+
+# Root nouns with بال — should NOT be corrupted
+attached_root = [
+    ("بالامتحان", "بالامتحان"),       # NOT بالامتحين
+    ("بالإنسان", "بالإنسان"),         # NOT بالإنسين
+    ("بالميدان", "بالميدان"),         # NOT بالميدين
+    ("كالسلطان", "كالسلطان"),         # NOT كالسلطين
+    ("فبالبرلمان", "فبالبرلمان"),     # NOT فبالبرلمين
+]
+for input_text, expected in attached_root:
+    result = fix_attached_prep(input_text)
+    test(f"'{input_text}' → unchanged", result == expected, f"got '{result}'")
+
+# Actual plurals with بال — SHOULD be corrected
+attached_plurals = [
+    ("بالمهندسون", "بالمهندسين"),
+    ("كالمعلمون", "كالمعلمين"),
+]
+for input_text, expected in attached_plurals:
+    result = fix_attached_prep(input_text)
+    test(f"'{input_text}' → '{expected}'", result == expected, f"got '{result}'")
+
+# ── FIX-33b: Third regex (ل...ون/ان) ──
+def _lam_prep_replace(m):
+    prefix = m.group(1)
+    stem = m.group(2)
+    suffix = m.group(3)
+    if (stem + suffix) in _PREP_BLOCKLIST:
+        return m.group(0)
+    if suffix == 'ان':
+        return m.group(0)
+    return f'{prefix}{stem}ين'
+
+def fix_lam_prep(text):
+    return re.sub(r'\b([وف]?ل)([أ-ي]{4,})(ون|ان)\b', _lam_prep_replace, text)
+
+# ل-prefixed root nouns
+lam_root = [
+    ("لامتحان", "لامتحان"),
+    ("لإنسان", "لإنسان"),
+]
+for input_text, expected in lam_root:
+    result = fix_lam_prep(input_text)
+    test(f"'{input_text}' → unchanged", result == expected, f"got '{result}'")
+
+# ل-prefixed plurals — SHOULD be corrected
+test("'لمهندسون'→'لمهندسين'",
+     fix_lam_prep("لمهندسون") == "لمهندسين",
+     f"got '{fix_lam_prep('لمهندسون')}'")
+
 
 # ══════════════════════════════════════════════════════════════
 # TEST 2: FIX-35 — Spelling doesn't strip conjugation suffixes
