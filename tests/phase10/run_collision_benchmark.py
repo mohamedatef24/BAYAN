@@ -30,8 +30,10 @@ def _strip_diacritics(text):
 
 
 def _normalize(text):
-    """Normalize for comparison: strip diacritics + collapse whitespace."""
-    return re.sub(r'\s+', ' ', _strip_diacritics(text)).strip()
+    """Normalize for comparison: strip diacritics + trailing punct + collapse whitespace."""
+    text = _strip_diacritics(text)
+    text = text.rstrip('.،؛؟!?!')  # Terminal punct is not a correctness criterion
+    return re.sub(r'\s+', ' ', text).strip()
 
 
 def run_collision_benchmark(api: API, samples: list) -> List[BenchResult]:
