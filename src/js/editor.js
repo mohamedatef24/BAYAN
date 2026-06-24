@@ -689,6 +689,10 @@ function applyAllSuggestions() {
     // Reverse-order text replacement is safe — each patch's offsets are
     // valid because we haven't modified anything before them yet.
     let text = getEditorText();
+    // FIX-32b: MUST sort by descending offset — replacing from end-to-start
+    // ensures earlier offsets remain valid. Without this, applying a fix at
+    // offset 5 shifts everything after it, corrupting offset 20's fix.
+    suggestions.sort((a, b) => b.start - a.start);
     suggestions.forEach((s) => {
       if (s.start >= 0 && s.end <= text.length && s.start <= s.end) {
         text = text.substring(0, s.start) + s.correction + text.substring(s.end);
