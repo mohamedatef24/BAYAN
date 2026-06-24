@@ -1967,6 +1967,103 @@ def analyze_text():
                 logger.error(traceback.format_exc())
                 timing_ms['spelling_error'] = f"{type(e).__name__}: {str(e)[:200]}"
 
+        # ── FIX-44: OOV Cleanup Pass (between spelling and grammar) ──
+        # After spelling corrections, some OOV words remain because:
+        # 1. The model didn't correct them (missed)
+        # 2. Our guards blocked a bad correction (but word is still OOV)
+        # 3. Trailing و artifacts from model output
+        #
+        # For each remaining OOV word, try to find the closest IV word
+        # using edit-distance-1 candidates from BERT vocabulary.
+        if not _is_religious_text:
+          try:
+            from nlp.spelling.araspell_service import get_spelling_model
+            _oov_checker = get_spelling_model()
+            _oov_text = ctx.current_text
+            _oov_words = _oov_text.split()
+            _oov_changed = False
+            _oov_result = []
+
+            for _ow_idx, _ow in enumerate(_oov_words):
+                # Skip short words (prepositions etc.)
+                if len(_ow) <= 2:
+                    _oov_result.append(_ow)
+                    continue
+
+                # Strip trailing punctuation for IV check
+                _ow_clean = _ow.rstrip('.،؛؟!?!')
+
+                # Skip if already IV
+                if _oov_checker.vocab_manager.is_iv(_ow_clean):
+                    _oov_result.append(_ow)
+                    continue
+
+                # ── Trailing و removal (from legacy AraSpell L263-267) ──
+                # الماضيةو → الماضية, المصنعو → المصنع, الدروسو → الدروس
+                if (len(_ow_clean) > 4 and _ow_clean.endswith('و')
+                        and _ow_clean[-2] in 'ةهاأإآءين'):
+                    _wo_cand = _ow_clean[:-1]
+                    if _oov_checker.vocab_manager.is_iv(_wo_cand):
+                        _punct_suffix = _ow[len(_ow_clean):]  # preserve punctuation
+                        logger.info(
+                            f"[OOV-CLEANUP] Trailing و fix: '{_ow}'→'{_wo_cand}{_punct_suffix}'"
+                        )
+                        _oov_result.append(_wo_cand + _punct_suffix)
+                        _oov_changed = True
+
+                        # Create a patch for the UI
+                        _ow_pos = sum(len(w) + 1 for w in _oov_words[:_ow_idx])
+                        if _ow_pos + len(_ow) <= len(_oov_text):
+                            ctx.add_patch(
+                                'spelling', _ow_pos, _ow_pos + len(_ow),
+                                _wo_cand + _punct_suffix, confidence=0.75,
+                            )
+                        continue
+
+                # ── Edit-distance-1 OOV→IV correction ──
+                # Generate all edit-1 candidates and filter to IV words
+                try:
+                    _ed1_candidates = _oov_checker.edit_corrector.known(
+                        _oov_checker.edit_corrector.edits1(_ow_clean)
+                    )
+                    if _ed1_candidates:
+                        # Pick best: lowest vocab rank (most frequent)
+                        _best_cand = min(
+                            _ed1_candidates,
+                            key=lambda w: _oov_checker.vocab_manager.get_frequency_rank(w)
+                        )
+                        # Safety: don't change first letter (same guard as FIX-42b)
+                        if _best_cand[0] == _ow_clean[0] or (
+                            _best_cand[0] in 'أإآاء' and _ow_clean[0] in 'أإآاء'
+                        ):
+                            _punct_suffix = _ow[len(_ow_clean):]
+                            logger.info(
+                                f"[OOV-CLEANUP] Edit-1 fix: '{_ow}'→'{_best_cand}{_punct_suffix}'"
+                            )
+                            _oov_result.append(_best_cand + _punct_suffix)
+                            _oov_changed = True
+
+                            _ow_pos = sum(len(w) + 1 for w in _oov_words[:_ow_idx])
+                            if _ow_pos + len(_ow) <= len(_oov_text):
+                                ctx.add_patch(
+                                    'spelling', _ow_pos, _ow_pos + len(_ow),
+                                    _best_cand + _punct_suffix, confidence=0.65,
+                                )
+                            continue
+                except Exception:
+                    pass  # Edit-distance fallback is best-effort
+
+                _oov_result.append(_ow)
+
+            if _oov_changed:
+                _oov_new_text = ' '.join(_oov_result)
+                logger.info(f"[OOV-CLEANUP] Applied OOV fixes: '{_oov_text[:80]}' → '{_oov_new_text[:80]}'")
+                ctx.mutate_text(_oov_new_text, OffsetMapper)
+                current_text = ctx.current_text
+
+          except Exception as e:
+            logger.warning(f"[OOV-CLEANUP] Failed: {type(e).__name__}: {e}")
+
         # ── FIX-07: Religious text already detected above (before spelling) ──
         # _is_religious_text was set earlier to skip ALL stages for sacred text
 
