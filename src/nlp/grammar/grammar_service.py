@@ -98,7 +98,9 @@ class GrammarChecker:
                 text=text,
                 api_name="/correct_grammar"
             )
-            logger.info(f"Grammar model output: '{model_output[:80]}...' (input: '{text[:80]}...')")
+            _mo_display = model_output[:80] + ('...' if len(model_output) > 80 else '')
+            _ti_display = text[:80] + ('...' if len(text) > 80 else '')
+            logger.info(f"Grammar model output: '{_mo_display}' (input: '{_ti_display}')")
 
             if not model_output or not model_output.strip():
                 logger.warning("Grammar model returned empty output, returning original")
