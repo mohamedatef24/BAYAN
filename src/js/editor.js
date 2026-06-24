@@ -719,12 +719,12 @@ function applyAllSuggestions() {
     updateSuggestionsList([]);
     if (typeof showToast === 'function') showToast('✓ تم تطبيق ' + suggestions.length + ' تصحيح');
   } finally {
-    // FIX-32: Delay guard reset until AFTER re-analysis fires,
-    // preventing input events from triggering double analysis.
+    // FIX-32: Delay guard reset
     setTimeout(() => { _isApplyingSuggestion = false; }, 400);
   }
-  // P2/User Request: Auto re-analyze after applying all suggestions
-  setTimeout(() => { analyzeText(); }, 300);
+  // FIX-34: Do NOT auto-re-analyze after Apply All.
+  // This caused an infinite loop when spelling/grammar disagree.
+  // User can click "Analyze" manually if they want to re-check.
 }
 
 function clearEditor() {

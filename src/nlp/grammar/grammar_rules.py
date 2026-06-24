@@ -201,11 +201,41 @@ class ArabicGrammarGuard:
 
         return text
 
+    # FIX-33: Words ending in ان that are root-form nouns, NOT duals/plurals.
+    # These must never have ان→ين replacement.
+    _PREP_BLOCKLIST = {
+        'الامتحان', 'امتحان', 'الإنسان', 'إنسان', 'انسان', 'الانسان',
+        'الميدان', 'ميدان', 'البرلمان', 'برلمان', 'السلطان', 'سلطان',
+        'العنوان', 'عنوان', 'الديوان', 'ديوان', 'البستان', 'بستان',
+        'البنيان', 'بنيان', 'الإيمان', 'إيمان', 'ايمان', 'الايمان',
+        'الأمان', 'أمان', 'امان', 'الامان', 'العدوان', 'عدوان',
+        'البيان', 'بيان', 'البرهان', 'برهان', 'الشيطان', 'شيطان',
+        'الأذان', 'أذان', 'السودان', 'لبنان', 'عمان', 'الأردن',
+        'الحيوان', 'حيوان', 'القرآن', 'قرآن', 'الدخان', 'دخان',
+        'المكان', 'مكان', 'الزمان', 'زمان', 'الجدران', 'جدران',
+        'النيران', 'نيران', 'الألوان', 'ألوان', 'البلدان', 'بلدان',
+        'الأوطان', 'أوطان', 'الأبدان', 'أبدان', 'الأركان', 'أركان',
+        'الفرسان', 'فرسان', 'الغزلان', 'غزلان', 'القضبان', 'قضبان',
+    }
+
     def fix_prepositions_advanced(self, text):
         # Allow conjunctions (و، ف) before prepositions
         # (في المهندسون) -> (في المهندسين)
-        # Require stem >= 4 chars to avoid matching root-level ان endings (الامتحان, الإنسان, etc.)
-        text = re.sub(r'\b([وف]?(?:في|من|إلى|على|عن|حتى))\s+([أ-ي]{4,})(ون|ان)\b', r'\1 \2ين', text)
+        # FIX-33: Use callback to skip root-form nouns ending in ان
+        def _prep_replace(m):
+            prep = m.group(1)
+            stem = m.group(2)
+            suffix = m.group(3)
+            full_word = stem + suffix
+            # Skip words in blocklist (root nouns, not duals)
+            if full_word in self._PREP_BLOCKLIST:
+                return m.group(0)  # return unchanged
+            # Skip ال-prefixed words ending in ان — almost always root nouns
+            if stem.startswith('ال') and suffix == 'ان':
+                return m.group(0)  # return unchanged
+            return f'{prep} {stem}ين'
+
+        text = re.sub(r'\b([وف]?(?:في|من|إلى|على|عن|حتى))\s+([أ-ي]{4,})(ون|ان)\b', _prep_replace, text)
 
         # (وبالمبرمجون) -> (وبالمبرمجين)
         text = re.sub(r'\b([وف]?[بلكف])ال([أ-ي]{4,})(ون|ان)\b', r'\1ال\2ين', text)
