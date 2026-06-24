@@ -81,6 +81,13 @@ class StageLocker:
           is_locked_for(0, 5, 'grammar')     on spelling lock → False (grammar > spelling)
           is_locked_for(0, 5, 'punctuation') on spelling lock → True  (spelling > punctuation)
           is_locked_for(0, 5, 'grammar')     on protection lock → True (protection > grammar)
+
+        Phase 14 (StageLocker relaxation):
+          Grammar requesting on a spelling lock uses RELAXED overlap:
+          only blocked if >50% of the grammar diff falls inside the spelling lock.
+          This allows grammar to fix words ADJACENT to spelling-fixed words
+          (the "Collision Dataset" bug — spelling locks were bleeding into
+          neighboring words and blocking valid grammar corrections).
         """
         req_priority = STAGE_PRIORITY.get(requesting_stage, 0)
         for ls, le, owner in self.locked_spans:
@@ -94,6 +101,35 @@ class StageLocker:
                             f"owner={owner}({owner_priority})"
                         )
                     return True  # Blocked: owner is same or higher priority
+
+                # ── Phase 14: Relaxed overlap for grammar on spelling locks ──
+                # Grammar (3) outranks spelling (2) in priority, BUT we still
+                # want to protect the EXACT word spelling fixed. The relaxation:
+                # allow grammar if the overlap is < 50% of the grammar diff's
+                # width (i.e., the grammar diff is mostly OUTSIDE the lock).
+                # This catches boundary touches and small overlaps that happen
+                # when spelling locks bleed past word boundaries.
+                if requesting_stage == 'grammar' and owner == 'spelling':
+                    overlap_start = max(start, ls)
+                    overlap_end = min(end, le)
+                    overlap_width = max(0, overlap_end - overlap_start)
+                    diff_width = max(1, end - start)
+                    overlap_ratio = overlap_width / diff_width
+                    if overlap_ratio > 0.5:
+                        # Grammar diff is mostly inside spelling lock — block
+                        logger.info(
+                            f"[StageLocker] Grammar blocked (overlap={overlap_ratio:.0%}): "
+                            f"grammar[{start}:{end}] vs spelling[{ls}:{le}]"
+                        )
+                        return True
+                    else:
+                        # Grammar diff is mostly outside — allow
+                        if PIPELINE_DEBUG or overlap_width > 0:
+                            logger.info(
+                                f"[StageLocker] Grammar ALLOWED (overlap={overlap_ratio:.0%}): "
+                                f"grammar[{start}:{end}] vs spelling[{ls}:{le}]"
+                            )
+                        continue
                 else:
                     if PIPELINE_DEBUG:
                         logger.debug(
