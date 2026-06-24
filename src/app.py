@@ -1531,11 +1531,15 @@ def analyze_text():
                 # ── Phase 14 (FIX-31): Strip hallucinated trailing punctuation ──
                 # The AraSpell model sometimes hallucinates trailing '...' or '.'
                 # that weren't in the input. Strip them to prevent dot accumulation.
+                # NOTE: Must .rstrip() first — model may add trailing whitespace
+                # after dots, breaking the $ anchor.
                 import re as _re_strip
-                _input_trailing = _re_strip.search(r'[\.،؛؟!]+$', current_text)
-                _output_trailing = _re_strip.search(r'[\.،؛؟!]+$', raw_corrected)
+                _rc_stripped = raw_corrected.rstrip()
+                _ct_stripped = current_text.rstrip()
+                _input_trailing = _re_strip.search(r'[\.،؛؟!]+$', _ct_stripped)
+                _output_trailing = _re_strip.search(r'[\.،؛؟!]+$', _rc_stripped)
                 if _output_trailing and not _input_trailing:
-                    raw_corrected = raw_corrected[:_output_trailing.start()]
+                    raw_corrected = _rc_stripped[:_output_trailing.start()]
                     logger.info(
                         f"[SPELLING] Stripped hallucinated trailing punct: "
                         f"'{_output_trailing.group()}'"
@@ -1543,7 +1547,7 @@ def analyze_text():
                 elif _output_trailing and _input_trailing:
                     # If input had some trailing punct, preserve only what was there
                     if len(_output_trailing.group()) > len(_input_trailing.group()):
-                        raw_corrected = raw_corrected[:_output_trailing.start()] + _input_trailing.group()
+                        raw_corrected = _rc_stripped[:_output_trailing.start()] + _input_trailing.group()
                         logger.info(
                             f"[SPELLING] Trimmed extra trailing punct: "
                             f"'{_output_trailing.group()}' → '{_input_trailing.group()}'"

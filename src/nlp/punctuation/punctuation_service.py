@@ -214,7 +214,9 @@ class PunctuationChecker:
                 processed_paragraphs.append(cleaned)
 
             result = "\n\n".join(processed_paragraphs)
-            logger.info(f"Punctuation output: '{result[:80]}...' (input: '{text[:80]}...')")
+            _r_display = result[:80] + ('...' if len(result) > 80 else '')
+            _t_display = text[:80] + ('...' if len(text) > 80 else '')
+            logger.info(f"Punctuation output: '{_r_display}' (input: '{_t_display}')")
             return result
 
         except Exception as e:
