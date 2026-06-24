@@ -1062,11 +1062,13 @@ def _is_small_spelling_change(orig_word, corr_word, vocab_manager=None):
                 _orig_oov = not vocab_manager.is_iv(orig_word)
                 _corr_iv = vocab_manager.is_iv(corr_word)
                 if _orig_oov and _corr_iv:
-                    # FIX-35: Don't strip valid conjugation suffixes.
-                    # If the "extra char" is at the END and is a common
-                    # Arabic verb/noun suffix, this is likely a grammar
-                    # conjugation, not a typo. Skip it.
-                    _CONJUGATION_SUFFIXES = {'ن', 'ت', 'ا', 'ي', 'ة', 'و', 'ه'}
+                    # FIX-35: Don't strip verb conjugation suffixes.
+                    # Only block ن (feminine plural: ذهبن→ذهب) and
+                    # ت (feminine past: كتبت→كتب) — these are the
+                    # suffixes grammar commonly adds that spelling
+                    # would try to strip. Other endings (ة,ا,ي,و,ه)
+                    # are more likely genuine typos than grammar fixes.
+                    _CONJUGATION_SUFFIXES = {'ن', 'ت'}
                     _removed_char = None
                     for _di2 in range(len(orig_word)):
                         if orig_word[:_di2] + orig_word[_di2 + 1:] == corr_word:
@@ -2314,12 +2316,14 @@ def analyze_text():
             # The punctuation model often fails to add a period at the end
             # of longer sentences. If no terminal punctuation exists after
             # model processing, inject a period suggestion for the last word.
+            # Threshold=4 words to avoid noisy suggestions while user is
+            # still typing short phrases.
             import re as _re_punc
             _TERMINAL_PUNCT = set('.،؛؟!?!')
             _current_stripped = ctx.current_text.rstrip()
             _has_terminal = _current_stripped and _current_stripped[-1] in _TERMINAL_PUNCT
             _word_count_fb = len(_re_punc.findall(r'[\u0600-\u06FFa-zA-Z]+', ctx.current_text))
-            if not _has_terminal and _word_count_fb >= 2:
+            if not _has_terminal and _word_count_fb >= 4:
                 # Find the last word's position in current_text
                 _last_word_match = _re_punc.search(r'([\u0600-\u06FF]+)\s*$', _current_stripped)
                 if _last_word_match:
