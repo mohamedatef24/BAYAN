@@ -833,6 +833,46 @@ def _is_small_spelling_change(orig_word, corr_word, vocab_manager=None):
         )
         return 0.0
 
+    # ── FIX-42a: Length ratio guard ──
+    # Block corrections that shrink the word significantly (>30% shorter).
+    # Catches: والممرضات(9)→والرضا(6), للطالبه(7)→للطالب(6), شجعتهم(6)→يجعلهم(6)
+    # These often indicate the model hallucinated a different word.
+    _orig_len = len(orig_word)
+    _corr_len = len(corr_word)
+    if _orig_len >= 5 and _corr_len < _orig_len * 0.7:
+        logger.info(
+            f"[SPELLING] Blocked length shrink: '{orig_word}'→'{corr_word}' "
+            f"(len {_orig_len}→{_corr_len}, ratio={_corr_len/_orig_len:.2f})"
+        )
+        return 0.0
+
+    # ── FIX-42b: First-letter change guard ──
+    # Block corrections that change the first character (after stripping common prefixes).
+    # Catches: افهمه→تفهمة (أ→ت), واحتاج→وتحتاج (ا→ت).
+    # The first root letter almost never changes in a typo — it's a hallucination.
+    if _orig_len >= 3 and _corr_len >= 3:
+        # Strip common prefixes (ال, و, ف, ب, ل, ك) to compare root starts
+        _PREFIXES = ('وال', 'فال', 'بال', 'كال', 'لل', 'ال', 'و', 'ف', 'ب', 'ل', 'ك')
+        _o_root = orig_word
+        _c_root = corr_word
+        for _pfx in _PREFIXES:
+            if _o_root.startswith(_pfx) and len(_o_root) > len(_pfx) + 1:
+                _o_root = _o_root[len(_pfx):]
+                break
+        for _pfx in _PREFIXES:
+            if _c_root.startswith(_pfx) and len(_c_root) > len(_pfx) + 1:
+                _c_root = _c_root[len(_pfx):]
+                break
+        # If roots start with different letters AND this isn't an orthographic pair
+        _HAMZA_CHARS = set('أإآاء')
+        if (_o_root and _c_root and _o_root[0] != _c_root[0]
+                and not (_o_root[0] in _HAMZA_CHARS and _c_root[0] in _HAMZA_CHARS)):
+            logger.info(
+                f"[SPELLING] Blocked first-letter change: '{orig_word}'→'{corr_word}' "
+                f"(root '{_o_root[0]}'→'{_c_root[0]}')"
+            )
+            return 0.0
+
     # ── GUARD 1: Numeral protection (Phase 1, BUG-011/012/E1) ──
     # Reject corrections that remove/change/introduce digits.
     # Numeral hallucination is a complete-replacement failure mode.
@@ -2091,6 +2131,22 @@ def analyze_text():
                             )
                             continue
 
+                    # ── FIX-42c: Grammar ة stripping guard ──
+                    # Block grammar changes that remove feminine ending ة/ه.
+                    # Catches: المديره→المدير, للطالبه→للطالب
+                    if orig_text and corr_text:
+                        _o_g = orig_text.rstrip('.،؛؟!?!')
+                        _c_g = corr_text.rstrip('.،؛؟!?!')
+                        if (_o_g.endswith(('ه', 'ة')) and not _c_g.endswith(('ه', 'ة'))
+                                and (_c_g == _o_g[:-1] or len(_c_g) < len(_o_g))):
+                            logger.info(
+                                f"[GRAMMAR] Blocked feminine ending strip: "
+                                f"'{orig_text}'→'{corr_text}'"
+                            )
+                            continue
+
+
+
                     # Evaluate grammar patterns early to bypass heuristic blocks.
                     _is_grammar_pattern = False
                     if orig_text and corr_text:
@@ -2151,6 +2207,21 @@ def analyze_text():
                         elif (_c_cl.endswith('ية') and _c_cl[:-1] == _o_cl[:-1] + 'ي' and _o_cl.endswith('ي') and len(_o_cl) >= 3):
                             _is_grammar_pattern = True
 
+
+                    # ── FIX-42d: Grammar trailing letter addition guard ──
+                    # Block grammar changes that add ا/ي to end of IV words.
+                    # Catches: واجب→واجبا, معطف→معطفا
+                    # Must come AFTER _is_grammar_pattern so we don't block valid grammar.
+                    if not _is_grammar_pattern and orig_text and corr_text:
+                        _o_g2 = orig_text.rstrip('.،؛؟!?!')
+                        _c_g2 = corr_text.rstrip('.،؛؟!?!')
+                        if (len(_c_g2) == len(_o_g2) + 1 and _c_g2.startswith(_o_g2)
+                                and _c_g2[-1] in ('ا', 'ي')):
+                            logger.info(
+                                f"[GRAMMAR] Blocked trailing letter addition: "
+                                f"'{orig_text}'→'{corr_text}'"
+                            )
+                            continue
 
                     # ── FIX-27a: Grammar structured data protection ──
                     # Block grammar diffs where the original contains digits.
