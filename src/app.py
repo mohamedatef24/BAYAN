@@ -1101,6 +1101,15 @@ def _is_small_spelling_change(orig_word, corr_word, vocab_manager=None):
         # Exception: if diff is just adding/removing ا at start (hamza)
         if abs(len(orig_word) - len(corr_word)) > 1:
             return 0.0
+
+    # ── FIX: Block Grammar Changes masked as Spelling Typos (Dual → Plural) ──
+    if orig_word.endswith('ان') and corr_word.endswith('ات') and orig_word[:-2] == corr_word[:-2]:
+        logger.info(
+            f"[SPELLING] Blocked grammatical change (Dual→Plural): "
+            f"'{orig_word}'→'{corr_word}'"
+        )
+        return 0.0
+
     # ── Phase 12 (A1): Keyboard-neighbor and phonetic acceptance ──
     # Check each differing character: ortho → full accept, keyboard/phonetic → dampened
     _has_keyboard_or_phonetic = False

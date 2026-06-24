@@ -149,7 +149,7 @@ def validate_punctuation_diff(diff: dict, full_text: str = '') -> bool:
                     # Also check for ellipsis (... at end)
                     _full_has_ellipsis = full_text.rstrip().endswith('...') if full_text else False
 
-                    if _full_word_count >= 3 and not _full_already_has_terminal and not _full_has_ellipsis:
+                    if _full_word_count >= 5 and not _full_already_has_terminal and not _full_has_ellipsis:
                         # ── FIX-29: Exclamation mark guard ──
                         # PuncAra sometimes adds ! to declarative sentences.
                         # Only allow ! if text contains exclamatory cues.
@@ -161,7 +161,7 @@ def validate_punctuation_diff(diff: dict, full_text: str = '') -> bool:
                             _has_cue = any(w in _EXCL_CUES for w in full_text.split())
                             if not _has_cue:
                                 logger.info(
-                                    f"[PUNC-SAFETY] Blocked !/?  on declarative sentence: "
+                                    f"[PUNC-SAFETY] Blocked !/? on declarative sentence: "
                                     f"'{original}' → '{correction}'"
                                 )
                                 return False
@@ -175,7 +175,7 @@ def validate_punctuation_diff(diff: dict, full_text: str = '') -> bool:
                     else:
                         # Short fragment OR already has terminal punct → REJECT
                         logger.info(
-                            f"[PUNC-SAFETY] Rejected terminal punct injection: "
+                            f"[PUNC-SAFETY] TerminalPunctuationGuard triggered: removing trailing punctuation "
                             f"'{original}' → '{correction}'"
                         )
                         return False

@@ -76,8 +76,8 @@ def get_spelling_model():
 
         epoch = checkpoint.get('epoch', 'N/A')
         logger.info(f"Spelling model loaded on {device}, epoch: {epoch}")
-
         # 6. Initialize the spell checker pipeline (contextual=True for MLM-based refinement)
+
         from nlp.spelling.araspell_rules import ArabicSpellChecker
         _spell_checker = ArabicSpellChecker(
             model, tokenizer, device, use_contextual=True
