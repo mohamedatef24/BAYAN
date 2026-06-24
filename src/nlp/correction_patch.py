@@ -96,6 +96,11 @@ class PatchSet:
         """
         Single owner per range. Deterministic resolution.
         Uses ORIGINAL coordinates for overlap detection.
+
+        Phase 14: Relaxed overlap — patches that touch at a boundary or
+        have minimal overlap (<= 50% of the smaller patch) are allowed
+        to coexist. This prevents punctuation patches from killing spelling
+        patches on adjacent words (e.g., 'المشروع.' punct vs 'في' spelling).
         """
         sorted_patches = sorted(
             self.patches,
@@ -106,11 +111,24 @@ class PatchSet:
         resolved = []
 
         for patch in sorted_patches:
-            overlaps = any(
-                patch.start_original < ce and patch.end_original > cs
-                for cs, ce in claimed_ranges
-            )
-            if not overlaps:
+            has_substantial_overlap = False
+            for cs, ce in claimed_ranges:
+                # Check if there's any overlap at all
+                if patch.start_original < ce and patch.end_original > cs:
+                    # Calculate overlap amount
+                    overlap_start = max(patch.start_original, cs)
+                    overlap_end = min(patch.end_original, ce)
+                    overlap_width = overlap_end - overlap_start
+                    # Compare to the smaller patch's width
+                    patch_width = max(1, patch.end_original - patch.start_original)
+                    claimed_width = max(1, ce - cs)
+                    smaller_width = min(patch_width, claimed_width)
+                    overlap_ratio = overlap_width / smaller_width
+                    if overlap_ratio > 0.5:
+                        has_substantial_overlap = True
+                        break
+
+            if not has_substantial_overlap:
                 resolved.append(patch)
                 claimed_ranges.append((patch.start_original, patch.end_original))
             else:
