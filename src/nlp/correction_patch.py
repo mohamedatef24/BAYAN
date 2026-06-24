@@ -102,18 +102,23 @@ class PatchSet:
         2. Spelling + Punctuation patches from different stages always coexist
            (they're compatible: one fixes the word, the other adds punct)
         3. Same-stage overlaps are always resolved (higher confidence wins)
+        4. FIX-36: Grammar + Punctuation — merge trailing punct into grammar
         """
         sorted_patches = sorted(
             self.patches,
             key=lambda p: (-p.priority, -p.confidence, p.start_original, p.id)
         )
 
-        claimed_ranges = []  # list of (start, end, stage)
+        claimed_ranges = []  # list of (start, end, stage, patch_index)
         resolved = []
+
+        # FIX-36: Punctuation chars that can be merged into grammar corrections
+        _PUNCT_CHARS = set('.,،؛;:!؟?')
 
         for patch in sorted_patches:
             has_substantial_overlap = False
-            for cs, ce, claimed_stage in claimed_ranges:
+            overlapping_resolved_idx = None
+            for ci, (cs, ce, claimed_stage, res_idx) in enumerate(claimed_ranges):
                 # Check if there's any overlap at all
                 if patch.start_original < ce and patch.end_original > cs:
                     # ── Phase 14: Cross-stage compatibility ──
@@ -126,6 +131,28 @@ class PatchSet:
                     if frozenset({patch.stage, claimed_stage}) in _compatible_pair:
                         continue  # Compatible stages — allow coexistence
 
+                    # ── FIX-36: Grammar + Punctuation merge ──
+                    # When punctuation adds a trailing character to a grammar
+                    # correction at the same span, merge instead of dropping.
+                    if (patch.stage == 'punctuation' and claimed_stage == 'grammar'
+                            and patch.start_original == cs and patch.end_original == ce):
+                        # Check if punctuation correction = grammar correction + punct char
+                        grammar_patch = resolved[res_idx]
+                        punc_correction = patch.replacement
+                        gram_correction = grammar_patch.replacement
+                        if (len(punc_correction) == len(gram_correction) + 1
+                                and punc_correction.startswith(gram_correction)
+                                and punc_correction[-1] in _PUNCT_CHARS):
+                            # Merge: append the trailing punct to grammar correction
+                            grammar_patch.replacement = punc_correction
+                            logger.info(
+                                f"[OVERLAP] Merged punctuation into grammar "
+                                f"[{cs}:{ce}]: '{grammar_patch.original}' → "
+                                f"'{grammar_patch.replacement}'"
+                            )
+                            has_substantial_overlap = True  # Don't add separately
+                            break
+
                     # Calculate overlap amount
                     overlap_start = max(patch.start_original, cs)
                     overlap_end = min(patch.end_original, ce)
@@ -137,16 +164,20 @@ class PatchSet:
                     overlap_ratio = overlap_width / smaller_width
                     if overlap_ratio > 0.5:
                         has_substantial_overlap = True
+                        overlapping_resolved_idx = res_idx
                         break
 
             if not has_substantial_overlap:
+                res_idx = len(resolved)
                 resolved.append(patch)
-                claimed_ranges.append((patch.start_original, patch.end_original, patch.stage))
+                claimed_ranges.append((patch.start_original, patch.end_original, patch.stage, res_idx))
             else:
-                logger.info(
-                    f"[OVERLAP] Dropped {patch.stage} [{patch.start_original}:{patch.end_original}] "
-                    f"'{patch.original}' — conflicts with higher-priority span"
-                )
+                # Only log "Dropped" if we didn't merge
+                if overlapping_resolved_idx is not None or patch.stage != 'punctuation':
+                    logger.info(
+                        f"[OVERLAP] Dropped {patch.stage} [{patch.start_original}:{patch.end_original}] "
+                        f"'{patch.original}' — conflicts with higher-priority span"
+                    )
 
         dropped = len(self.patches) - len(resolved)
         if dropped > 0:
