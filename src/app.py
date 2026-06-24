@@ -2490,37 +2490,51 @@ def analyze_text():
             logger.error(traceback.format_exc())
             timing_ms['grammar_error'] = f"{type(e).__name__}: {str(e)[:200]}"
 
-        # ── FIX-48v2: ه→ة pass AFTER grammar (not before!) ──
+        # ── FIX-48v3: ه→ة pass AFTER grammar (whitelist-based) ──
         # Must run AFTER grammar so grammar model can use ه for gender decisions.
-        # Only fixes remaining ه words that grammar didn't change.
+        # Uses a whitelist of common words that are frequently written with ه instead of ة.
         if not _is_religious_text:
           try:
-            from nlp.spelling.araspell_service import get_spelling_model
-            _hata_checker = get_spelling_model()
+            _HATA_WHITELIST = {
+                # Common nouns — definite form (with ال)
+                'الحكومه': 'الحكومة', 'المدرسه': 'المدرسة', 'الشركه': 'الشركة',
+                'الجامعه': 'الجامعة', 'المدينه': 'المدينة', 'القصه': 'القصة',
+                'المكتبه': 'المكتبة', 'الطائره': 'الطائرة', 'الوزاره': 'الوزارة',
+                'المديره': 'المديرة', 'المعلمه': 'المعلمة', 'الطالبه': 'الطالبة',
+                'القريه': 'القرية', 'الحديقه': 'الحديقة', 'المحكمه': 'المحكمة',
+                'الكنيسه': 'الكنيسة', 'المنطقه': 'المنطقة', 'الدوله': 'الدولة',
+                'السياره': 'السيارة', 'الطاوله': 'الطاولة', 'الغرفه': 'الغرفة',
+                'المحطه': 'المحطة', 'السفاره': 'السفارة', 'الوظيفه': 'الوظيفة',
+                'الصحيفه': 'الصحيفة', 'العائله': 'العائلة', 'الحياه': 'الحياة',
+                'الصلاه': 'الصلاة', 'الزكاه': 'الزكاة',
+                # Common nouns — indefinite form
+                'حكومه': 'حكومة', 'مدرسه': 'مدرسة', 'شركه': 'شركة',
+                'جامعه': 'جامعة', 'مدينه': 'مدينة', 'قصه': 'قصة',
+                'مكتبه': 'مكتبة', 'طائره': 'طائرة', 'وزاره': 'وزارة',
+                'مديره': 'مديرة', 'معلمه': 'معلمة', 'طالبه': 'طالبة',
+                'قريه': 'قرية', 'حديقه': 'حديقة', 'محكمه': 'محكمة',
+                'منطقه': 'منطقة', 'دوله': 'دولة', 'سياره': 'سيارة',
+                'غرفه': 'غرفة', 'محطه': 'محطة', 'وظيفه': 'وظيفة',
+                'عائله': 'عائلة', 'حياه': 'حياة', 'صلاه': 'صلاة',
+                # Common adjectives — feminine
+                'كبيره': 'كبيرة', 'صغيره': 'صغيرة', 'جميله': 'جميلة',
+                'طويله': 'طويلة', 'قصيره': 'قصيرة', 'جديده': 'جديدة',
+                'قديمه': 'قديمة', 'سريعه': 'سريعة', 'بطيئه': 'بطيئة',
+            }
             _hata_text = ctx.current_text
             _hata_words = _hata_text.split()
             _hata_changed = False
             _hata_result = []
-            _PROTECTED_HA = {
-                'الله', 'لله', 'فيه', 'عليه', 'منه', 'به', 'له', 'إليه',
-                'وجه', 'نزه', 'سفه', 'فقه', 'نبه', 'شبه', 'مكره', 'تنبه',
-                'اتجه', 'توجه', 'تشابه', 'وفيه', 'وعليه', 'ومنه', 'وله',
-                'دراسته', 'دراستها', 'حياته', 'حياتها',
-            }
-            _CONSONANTS = set('بتثجحخدذرزسشصضطظعغفقكلمنهوي')
             for _hw in _hata_words:
                 _hw_clean = _hw.rstrip('.،؛؟!?!')
-                if (len(_hw_clean) >= 4 and _hw_clean.endswith('ه')
-                        and _hw_clean not in _PROTECTED_HA
-                        and _hw_clean[-2] in _CONSONANTS):
-                    _ta_cand = _hw_clean[:-1] + 'ة'
-                    if _hata_checker.vocab_manager.is_iv(_ta_cand):
-                        _punct_suffix = _hw[len(_hw_clean):]
-                        logger.info(f"[HA-TA] Post-grammar ه→ة: '{_hw}'→'{_ta_cand}{_punct_suffix}'")
-                        _hata_result.append(_ta_cand + _punct_suffix)
-                        _hata_changed = True
-                        continue
-                _hata_result.append(_hw)
+                if _hw_clean in _HATA_WHITELIST:
+                    _punct_suffix = _hw[len(_hw_clean):]
+                    _fixed = _HATA_WHITELIST[_hw_clean]
+                    logger.info(f"[HA-TA] Post-grammar ه→ة: '{_hw}'→'{_fixed}{_punct_suffix}'")
+                    _hata_result.append(_fixed + _punct_suffix)
+                    _hata_changed = True
+                else:
+                    _hata_result.append(_hw)
             if _hata_changed:
                 _hata_new = ' '.join(_hata_result)
                 ctx.mutate_text(_hata_new, OffsetMapper)
