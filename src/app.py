@@ -864,8 +864,11 @@ def _is_small_spelling_change(orig_word, corr_word, vocab_manager=None):
                 _c_root = _c_root[len(_pfx):]
                 break
         # If roots start with different letters AND this isn't an orthographic pair
+        # AND roots have same length (true consonant swap, not a character addition)
+        # Exception: الولاد→الأولاد has roots ولاد(4)→أولاد(5) — different length = allow
         _HAMZA_CHARS = set('أإآاء')
         if (_o_root and _c_root and _o_root[0] != _c_root[0]
+                and len(_o_root) == len(_c_root)  # same-length roots only
                 and not (_o_root[0] in _HAMZA_CHARS and _c_root[0] in _HAMZA_CHARS)):
             logger.info(
                 f"[SPELLING] Blocked first-letter change: '{orig_word}'→'{corr_word}' "
