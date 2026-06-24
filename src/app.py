@@ -1057,6 +1057,16 @@ def _is_small_spelling_change(orig_word, corr_word, vocab_manager=None):
                                     )
                                     return 0.5
                                 break
+            # 6. FIX-49: Trailing و removal (المصنعو→المصنع)
+            # Common model artifact — original has trailing و that should be removed
+            if (orig_word.endswith('و') and corr_word == orig_word[:-1]
+                    and len(corr_word) >= 3):
+                return 0.8
+            # 7. FIX-49b: Trailing و→وا (حضرو→حضروا)
+            # Missing alif after waw al-jama'a
+            if (orig_word.endswith('و') and corr_word == orig_word + 'ا'
+                    and len(orig_word) >= 3):
+                return 0.8
             # Both are valid words and change is NOT a known fix — REJECT
             # This prevents وكان→وكأن, etc.
             return 0.0
