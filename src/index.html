@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="ar" dir="rtl" class="h-full">
  <head>
   <meta charset="UTF-8">
@@ -673,110 +673,114 @@
              <span id="auto-save-status" class="text-xs text-secondary" style="opacity:0;transition:opacity 0.3s;"></span>
             </div>
             <div class="editor-tabs-center">
-             <button id="write-tab" onclick="switchTab('write')" class="editor-tab active" type="button">كتابة</button>
-             <button id="summarize-tab" onclick="switchTab('summarize')" class="editor-tab" type="button">تلخيص</button>
-             <button id="dialect-tab" onclick="switchTab('dialect')" class="editor-tab" type="button">تحويل للفصحى</button>
-             <button id="quran-tab" onclick="switchTab('quran')" class="editor-tab" type="button">تدقيق النص القرآني</button>
+             <button id="write-tab" onclick="switchTab('write')" class="editor-tab active" type="button"><svg class="tab-icon" width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>كتابة</button>
+             <button id="summarize-tab" onclick="switchTab('summarize')" class="editor-tab" type="button"><svg class="tab-icon" width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>تلخيص</button>
+             <button id="dialect-tab" onclick="switchTab('dialect')" class="editor-tab" type="button"><svg class="tab-icon" width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>تحويل للفصحى</button>
+             <button id="quran-tab" onclick="switchTab('quran')" class="editor-tab" type="button"><svg class="tab-icon" width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>تدقيق النص القرآني</button>
             </div>
             <div class="flex items-center gap-2">
              <span id="doc-current-title" class="doc-current-title" style="display:none;"></span>
             </div>
            </div>
          <div class="format-toolbar" id="format-toolbar">
-          <!-- Font group -->
-          <div class="fmt-group fmt-group--font">
-           <div class="fmt-dropdown" id="fmt-font-wrap">
-            <button class="fmt-dropdown__trigger" type="button" id="fmt-font-trigger" aria-haspopup="true" aria-expanded="false">
-             <svg class="fmt-dropdown__icon" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>
-             <span id="fmt-font-label">Cairo</span>
-             <svg class="fmt-dropdown__chevron" width="10" height="10" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
-            </button>
-            <div class="fmt-dropdown__menu" id="fmt-font-menu" role="menu">
-             <button class="fmt-dropdown__item" data-font="Cairo" role="menuitem" style="font-family:Cairo">Cairo</button>
-             <button class="fmt-dropdown__item" data-font="Arial" role="menuitem" style="font-family:Arial">Arial</button>
-             <button class="fmt-dropdown__item" data-font="Times New Roman" role="menuitem" style="font-family:'Times New Roman'">Times New Roman</button>
-             <button class="fmt-dropdown__item" data-font="Tahoma" role="menuitem" style="font-family:Tahoma">Tahoma</button>
-             <button class="fmt-dropdown__item" data-font="Simplified Arabic" role="menuitem" style="font-family:'Simplified Arabic'">Simplified Arabic</button>
-             <button class="fmt-dropdown__item" data-font="Traditional Arabic" role="menuitem" style="font-family:'Traditional Arabic'">Traditional Arabic</button>
-             <button class="fmt-dropdown__item" data-font="Courier New" role="menuitem" style="font-family:'Courier New'">Courier New</button>
+           <div class="fmt-section"><span class="fmt-label">الخط</span>
+            <div class="fmt-group fmt-group--font">
+            <div class="fmt-dropdown" id="fmt-font-wrap">
+             <button class="fmt-dropdown__trigger" type="button" id="fmt-font-trigger" aria-haspopup="true" aria-expanded="false" data-tooltip="نوع الخط">
+              <svg class="fmt-dropdown__icon" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>
+              <span id="fmt-font-label">Cairo</span>
+              <svg class="fmt-dropdown__chevron" width="10" height="10" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
+             </button>
+             <div class="fmt-dropdown__menu" id="fmt-font-menu" role="menu">
+              <button class="fmt-dropdown__item" data-font="Cairo" role="menuitem" style="font-family:Cairo">Cairo</button>
+              <button class="fmt-dropdown__item" data-font="Arial" role="menuitem" style="font-family:Arial">Arial</button>
+              <button class="fmt-dropdown__item" data-font="Times New Roman" role="menuitem" style="font-family:'Times New Roman'">Times New Roman</button>
+              <button class="fmt-dropdown__item" data-font="Tahoma" role="menuitem" style="font-family:Tahoma">Tahoma</button>
+              <button class="fmt-dropdown__item" data-font="Simplified Arabic" role="menuitem" style="font-family:'Simplified Arabic'">Simplified Arabic</button>
+              <button class="fmt-dropdown__item" data-font="Traditional Arabic" role="menuitem" style="font-family:'Traditional Arabic'">Traditional Arabic</button>
+              <button class="fmt-dropdown__item" data-font="Courier New" role="menuitem" style="font-family:'Courier New'">Courier New</button>
+             </div>
+            </div>
+            <div class="fmt-dropdown" id="fmt-size-wrap">
+             <button class="fmt-dropdown__trigger fmt-dropdown__trigger--size" type="button" id="fmt-size-trigger" aria-haspopup="true" aria-expanded="false" data-tooltip="حجم الخط">
+              <span id="fmt-size-label">16</span>
+              <svg class="fmt-dropdown__chevron" width="10" height="10" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
+             </button>
+             <div class="fmt-dropdown__menu fmt-dropdown__menu--size" id="fmt-size-menu" role="menu">
+              <button class="fmt-dropdown__item" data-size="12px" role="menuitem"><span class="fmt-size-preview" style="font-size:10px">بيان</span> 12</button>
+              <button class="fmt-dropdown__item fmt-dropdown__item--active" data-size="16px" role="menuitem"><span class="fmt-size-preview" style="font-size:12px">بيان</span> 16</button>
+              <button class="fmt-dropdown__item" data-size="20px" role="menuitem"><span class="fmt-size-preview" style="font-size:14px">بيان</span> 20</button>
+              <button class="fmt-dropdown__item" data-size="24px" role="menuitem"><span class="fmt-size-preview" style="font-size:16px">بيان</span> 24</button>
+              <button class="fmt-dropdown__item" data-size="32px" role="menuitem"><span class="fmt-size-preview" style="font-size:18px">بيان</span> 32</button>
+              <button class="fmt-dropdown__item" data-size="48px" role="menuitem"><span class="fmt-size-preview" style="font-size:22px">بيان</span> 48</button>
+             </div>
+            </div>
             </div>
            </div>
-           <div class="fmt-dropdown" id="fmt-size-wrap">
-            <button class="fmt-dropdown__trigger fmt-dropdown__trigger--size" type="button" id="fmt-size-trigger" aria-haspopup="true" aria-expanded="false">
-             <span id="fmt-size-label">16</span>
-             <svg class="fmt-dropdown__chevron" width="10" height="10" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
-            </button>
-            <div class="fmt-dropdown__menu fmt-dropdown__menu--size" id="fmt-size-menu" role="menu">
-             <button class="fmt-dropdown__item" data-size="12px" role="menuitem"><span class="fmt-size-preview" style="font-size:10px">بيان</span> 12</button>
-             <button class="fmt-dropdown__item fmt-dropdown__item--active" data-size="16px" role="menuitem"><span class="fmt-size-preview" style="font-size:12px">بيان</span> 16</button>
-             <button class="fmt-dropdown__item" data-size="20px" role="menuitem"><span class="fmt-size-preview" style="font-size:14px">بيان</span> 20</button>
-             <button class="fmt-dropdown__item" data-size="24px" role="menuitem"><span class="fmt-size-preview" style="font-size:16px">بيان</span> 24</button>
-             <button class="fmt-dropdown__item" data-size="32px" role="menuitem"><span class="fmt-size-preview" style="font-size:18px">بيان</span> 32</button>
-             <button class="fmt-dropdown__item" data-size="48px" role="menuitem"><span class="fmt-size-preview" style="font-size:22px">بيان</span> 48</button>
+           <div class="fmt-divider"></div>
+           <div class="fmt-section"><span class="fmt-label">التنسيق</span>
+            <div class="fmt-group">
+             <button id="fmt-bold" class="fmt-btn" onclick="formatBold()" type="button" data-tooltip="غامق (Ctrl+B)"><b>B</b></button>
+             <button id="fmt-italic" class="fmt-btn" onclick="formatItalic()" type="button" data-tooltip="مائل (Ctrl+I)"><i>I</i></button>
+             <button id="fmt-underline" class="fmt-btn" onclick="formatUnderline()" type="button" data-tooltip="تحته خط (Ctrl+U)"><u>U</u></button>
+             <button id="fmt-strikethrough" class="fmt-btn" onclick="formatStrikethrough()" type="button" data-tooltip="يتوسطه خط"><s>S</s></button>
             </div>
            </div>
-          </div>
-          <div class="fmt-divider"></div>
-          <!-- Text style group -->
-          <div class="fmt-group">
-           <button id="fmt-bold" class="fmt-btn" onclick="formatBold()" type="button" title="غامق (Ctrl+B)"><b>B</b></button>
-           <button id="fmt-italic" class="fmt-btn" onclick="formatItalic()" type="button" title="مائل (Ctrl+I)"><i>I</i></button>
-           <button id="fmt-underline" class="fmt-btn" onclick="formatUnderline()" type="button" title="تحته خط (Ctrl+U)"><u>U</u></button>
-           <button id="fmt-strikethrough" class="fmt-btn" onclick="formatStrikethrough()" type="button" title="يتوسطه خط"><s>S</s></button>
-          </div>
-          <div class="fmt-divider"></div>
-          <!-- Alignment group -->
-          <div class="fmt-group">
-           <button id="fmt-align-right" class="fmt-btn fmt-active" onclick="formatAlignRight()" type="button" title="محاذاة لليمين">
-            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M3 5h18v2H3V5zm4 4h14v2H7V9zm-4 4h18v2H3v-2zm4 4h14v2H7v-2z"/></svg>
-           </button>
-           <button id="fmt-align-center" class="fmt-btn" onclick="formatAlignCenter()" type="button" title="توسيط">
-            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M3 5h18v2H3V5zm3 4h12v2H6V9zm-3 4h18v2H3v-2zm3 4h12v2H6v-2z"/></svg>
-           </button>
-           <button id="fmt-align-left" class="fmt-btn" onclick="formatAlignLeft()" type="button" title="محاذاة لليسار">
-            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M3 5h18v2H3V5zm0 4h14v2H3V9zm0 4h18v2H3v-2zm0 4h14v2H3v-2z"/></svg>
-           </button>
-          </div>
-          <div class="fmt-divider"></div>
-          <!-- Undo/Redo group -->
-          <div class="fmt-group">
-           <button class="fmt-btn" onclick="formatUndo()" type="button" title="تراجع (Ctrl+Z)">
-            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a5 5 0 015 5v2M3 10l4-4M3 10l4 4"/></svg>
-           </button>
-           <button class="fmt-btn" onclick="formatRedo()" type="button" title="إعادة (Ctrl+Y)">
-            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 10H11a5 5 0 00-5 5v2M21 10l-4-4M21 10l-4 4"/></svg>
-           </button>
-          </div>
-          <div class="fmt-divider"></div>
-          <!-- Item 8: Color pickers -->
-          <div class="fmt-group fmt-group--font">
-           <div class="fmt-dropdown" id="fmt-textcolor-wrap">
-            <button class="fmt-color-btn" type="button" id="fmt-textcolor-trigger" title="لون النص">
-             <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M11 2L5.5 16h2.25l1.12-3h6.25l1.12 3h2.25L13 2h-2zm-1.38 9L12 4.67 14.38 11H9.62z"/></svg>
-             <span class="fmt-color-indicator" id="fmt-textcolor-bar" style="background:#ECEEF2"></span>
-            </button>
-            <div class="fmt-dropdown__menu" id="fmt-textcolor-menu" role="menu">
-             <div class="fmt-color-grid" id="fmt-textcolor-grid"></div>
+           <div class="fmt-divider"></div>
+           <div class="fmt-section"><span class="fmt-label">المحاذاة</span>
+            <div class="fmt-group">
+             <button id="fmt-align-right" class="fmt-btn fmt-active" onclick="formatAlignRight()" type="button" data-tooltip="محاذاة لليمين"><svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d="M3 5h18v2H3V5zm4 4h14v2H7V9zm-4 4h18v2H3v-2zm4 4h14v2H7v-2z"/></svg></button>
+             <button id="fmt-align-center" class="fmt-btn" onclick="formatAlignCenter()" type="button" data-tooltip="توسيط"><svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d="M3 5h18v2H3V5zm3 4h12v2H6V9zm-3 4h18v2H3v-2zm3 4h12v2H6v-2z"/></svg></button>
+             <button id="fmt-align-left" class="fmt-btn" onclick="formatAlignLeft()" type="button" data-tooltip="محاذاة لليسار"><svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d="M3 5h18v2H3V5zm0 4h14v2H3V9zm0 4h18v2H3v-2zm0 4h14v2H3v-2z"/></svg></button>
             </div>
            </div>
-           <div class="fmt-dropdown" id="fmt-highlight-wrap">
-            <button class="fmt-color-btn" type="button" id="fmt-highlight-trigger" title="لون التظليل">
-             <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M16.56 8.94L7.62 0 6.21 1.41l2.38 2.38-5.15 5.15a1.49 1.49 0 000 2.12l5.5 5.5c.29.29.68.44 1.06.44s.77-.15 1.06-.44l5.5-5.5c.59-.58.59-1.53 0-2.12zM5.21 10L10 5.21 14.79 10H5.21zM19 11.5s-2 2.17-2 3.5c0 1.1.9 2 2 2s2-.9 2-2c0-1.33-2-3.5-2-3.5zM2 20h20v4H2v-4z"/></svg>
-             <span class="fmt-color-indicator" id="fmt-highlight-bar" style="background:transparent"></span>
-            </button>
-            <div class="fmt-dropdown__menu" id="fmt-highlight-menu" role="menu">
-             <div class="fmt-color-grid" id="fmt-highlight-grid"></div>
+           <div class="fmt-divider"></div>
+           <div class="fmt-section"><span class="fmt-label">القوائم</span>
+            <div class="fmt-group">
+             <button id="fmt-ul" class="fmt-btn" onclick="execFormat('insertUnorderedList')" type="button" data-tooltip="قائمة نقطية"><svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d="M4 6.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm0 7a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm0 7a1.5 1.5 0 110-3 1.5 1.5 0 010 3zM8 5h13v2H8V5zm0 7h13v2H8v-2zm0 7h13v2H8v-2z"/></svg></button>
+             <button id="fmt-ol" class="fmt-btn" onclick="execFormat('insertOrderedList')" type="button" data-tooltip="قائمة مرقمة"><svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d="M2 5h1V3h-.5v-.5h1V5h.5v.5H2V5zm0 5.5h1.5v.5H2v.5h2v-2H2.5V9H4V8H2v2.5zm0 5v.5h1v.5H2v.5h2V17H2.5v.5H4V14H2v1.5zM8 5h13v2H8V5zm0 7h13v2H8v-2zm0 7h13v2H8v-2z"/></svg></button>
             </div>
            </div>
+           <div class="fmt-divider"></div>
+           <div class="fmt-section"><span class="fmt-label">إضافي</span>
+            <div class="fmt-group">
+             <button id="fmt-rtl" class="fmt-btn" onclick="setDirection('rtl')" type="button" data-tooltip="يمين لليسار"><svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5h6M11 5v14m4-14v14M3 8l4-3v6"/></svg></button>
+             <button id="fmt-ltr" class="fmt-btn" onclick="setDirection('ltr')" type="button" data-tooltip="يسار لليمين"><svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5H7a4 4 0 000 8h2m4-8v14m4-14v14M21 8l-4-3v6"/></svg></button>
+             <button id="fmt-link" class="fmt-btn" onclick="insertLink()" type="button" data-tooltip="إدراج رابط"><svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg></button>
+             <button id="fmt-line-height" class="fmt-btn" onclick="cycleLineHeight()" type="button" data-tooltip="ارتفاع السطر"><svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 4v4m0-4l-1.5 1.5M20 4l1.5 1.5M20 20v-4m0 4l-1.5-1.5M20 20l1.5-1.5"/></svg></button>
+            </div>
+           </div>
+           <div class="fmt-divider"></div>
+           <div class="fmt-section"><span class="fmt-label">التراجع</span>
+            <div class="fmt-group">
+             <button class="fmt-btn" onclick="formatUndo()" type="button" data-tooltip="تراجع (Ctrl+Z)"><svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a5 5 0 015 5v2M3 10l4-4M3 10l4 4"/></svg></button>
+             <button class="fmt-btn" onclick="formatRedo()" type="button" data-tooltip="إعادة (Ctrl+Y)"><svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 10H11a5 5 0 00-5 5v2M21 10l-4-4M21 10l-4 4"/></svg></button>
+            </div>
+           </div>
+           <div class="fmt-divider"></div>
+           <div class="fmt-section"><span class="fmt-label">الألوان</span>
+            <div class="fmt-group fmt-group--font">
+             <div class="fmt-dropdown" id="fmt-textcolor-wrap">
+              <button class="fmt-color-btn" type="button" id="fmt-textcolor-trigger" data-tooltip="لون النص">
+               <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d="M11 2L5.5 16h2.25l1.12-3h6.25l1.12 3h2.25L13 2h-2zm-1.38 9L12 4.67 14.38 11H9.62z"/></svg>
+               <span class="fmt-color-indicator" id="fmt-textcolor-bar" style="background:#ECEEF2"></span>
+              </button>
+              <div class="fmt-dropdown__menu" id="fmt-textcolor-menu" role="menu"><div class="fmt-color-grid" id="fmt-textcolor-grid"></div></div>
+             </div>
+             <div class="fmt-dropdown" id="fmt-highlight-wrap">
+              <button class="fmt-color-btn" type="button" id="fmt-highlight-trigger" data-tooltip="لون التظليل">
+               <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d="M16.56 8.94L7.62 0 6.21 1.41l2.38 2.38-5.15 5.15a1.49 1.49 0 000 2.12l5.5 5.5c.29.29.68.44 1.06.44s.77-.15 1.06-.44l5.5-5.5c.59-.58.59-1.53 0-2.12zM5.21 10L10 5.21 14.79 10H5.21zM19 11.5s-2 2.17-2 3.5c0 1.1.9 2 2 2s2-.9 2-2c0-1.33-2-3.5-2-3.5zM2 20h20v4H2v-4z"/></svg>
+               <span class="fmt-color-indicator" id="fmt-highlight-bar" style="background:transparent"></span>
+              </button>
+              <div class="fmt-dropdown__menu" id="fmt-highlight-menu" role="menu"><div class="fmt-color-grid" id="fmt-highlight-grid"></div></div>
+             </div>
+            </div>
+           </div>
+           <div class="fmt-divider"></div>
+           <div class="fmt-group">
+            <button class="fmt-btn" onclick="execFormat('removeFormat')" type="button" data-tooltip="مسح التنسيق"><svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 4h12v3M12 4v16"/><path stroke-linecap="round" stroke-width="2.5" d="M5 19L19 5" opacity="0.6"/></svg></button>
+           </div>
           </div>
-          <div class="fmt-divider"></div>
-          <!-- Clear formatting -->
-          <div class="fmt-group">
-           <button class="fmt-btn" onclick="execFormat('removeFormat')" type="button" title="مسح التنسيق">
-            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 4h12v3M12 4v16"/><path stroke-linecap="round" stroke-width="2.5" stroke="currentColor" d="M5 19L19 5" opacity="0.6"/></svg>
-           </button>
-          </div>
-         </div>
          <input type="file" id="doc-import-input" class="sr-only" accept=".txt,.docx,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document" aria-hidden="true">
          <div id="write-area">
           <div id="analysis-limit-banner" class="analysis-limit-banner is-hidden" role="status" aria-live="polite"></div>
