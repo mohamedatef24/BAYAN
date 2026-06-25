@@ -1389,6 +1389,15 @@ input[type="range"]::-webkit-slider-thumb {
   }
 }
 
+/* Tools mode: single column, no sidebars — for summarize/dialect/quran tabs */
+.editor-layout.tools-mode {
+  grid-template-columns: 1fr !important;
+}
+.editor-layout.tools-mode > .docs-panel-desktop,
+.editor-layout.tools-mode > .sidebar-panel {
+  display: none !important;
+}
+
 /* ── Documents Panel (inline, always visible on desktop) ── */
 .docs-panel {
   display: none;

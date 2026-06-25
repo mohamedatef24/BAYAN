@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="ar" dir="rtl" class="h-full">
  <head>
   <meta charset="UTF-8">
@@ -1291,6 +1291,18 @@
       // Hide/show mobile suggestions trigger
       var mobileTrigger = document.getElementById('mobile-sheet-trigger');
       if (mobileTrigger) mobileTrigger.style.display = (tab === 'write') ? '' : 'none';
+      // Hide/show docs panel — only for write tab
+      var docsPanel = document.querySelector('.docs-panel-desktop');
+      if (docsPanel) docsPanel.style.display = (tab === 'write') ? '' : 'none';
+      // Expand layout when not in write tab (no sidebars)
+      var editorLayout = document.querySelector('.editor-layout');
+      if (editorLayout) {
+        if (tab === 'write') {
+          editorLayout.classList.remove('tools-mode');
+        } else {
+          editorLayout.classList.add('tools-mode');
+        }
+      }
     }
 
     /* ═══════════════════════════════════════════
