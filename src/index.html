@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="ar" dir="rtl" class="h-full">
  <head>
   <meta charset="UTF-8">
@@ -660,33 +660,28 @@
        <div>
         <div class="editor-shell">
 <div class="editor-toolbar">
-           <div class="flex items-center gap-2 flex-wrap">
-            <div class="doc-title-bar">
-             <span id="doc-current-title" class="doc-current-title">مستند جديد</span>
+            <div class="flex items-center gap-4">
+             <div class="window-dots" aria-hidden="true">
+              <span class="dot dot--red"></span>
+              <span class="dot dot--yellow"></span>
+              <span class="dot dot--green"></span>
+             </div>
+             <div id="analyzing-indicator" class="analyzing-indicator" aria-live="polite">
+              <span class="analyzing-spinner" aria-hidden="true"></span>
+              <span>جاري التحليل...</span>
+             </div>
+             <span id="auto-save-status" class="text-xs text-secondary" style="opacity:0;transition:opacity 0.3s;"></span>
             </div>
-            <div class="toolbar-separator"></div>
-            <button id="write-tab" onclick="switchTab('write')" class="editor-tab active" type="button">كتابة</button>
-            <button id="summarize-tab" onclick="switchTab('summarize')" class="editor-tab" type="button">تلخيص</button>
+            <div class="editor-tabs-center">
+             <button id="write-tab" onclick="switchTab('write')" class="editor-tab active" type="button">كتابة</button>
+             <button id="summarize-tab" onclick="switchTab('summarize')" class="editor-tab" type="button">تلخيص</button>
              <button id="dialect-tab" onclick="switchTab('dialect')" class="editor-tab" type="button">تحويل للفصحى</button>
-            <button id="quran-tab" onclick="switchTab('quran')" class="editor-tab" type="button">تدقيق النص القرآني</button>
-            <button id="docs-sidebar-toggle" class="docs-sidebar-toggle-mobile btn-ghost lg:hidden" type="button" aria-label="مستنداتي" aria-expanded="false" aria-controls="docs-sidebar">
-             <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
-            </button>
-           </div>
-           <div class="flex items-center gap-4 flex-wrap">
-            <div id="analyzing-indicator" class="analyzing-indicator" aria-live="polite">
-             <span class="analyzing-spinner" aria-hidden="true"></span>
-             <span>جاري التحليل...</span>
+             <button id="quran-tab" onclick="switchTab('quran')" class="editor-tab" type="button">تدقيق النص القرآني</button>
             </div>
-            <span id="auto-save-status" class="text-xs text-secondary" style="opacity:0;transition:opacity 0.3s;"></span>
-            <div class="window-dots" aria-hidden="true">
-             <span class="dot dot--red"></span>
-             <span class="dot dot--yellow"></span>
-             <span class="dot dot--green"></span>
+            <div class="flex items-center gap-2">
+             <span id="doc-current-title" class="doc-current-title" style="display:none;"></span>
             </div>
            </div>
-          </div>
-         <!-- Formatting Toolbar -->
          <div class="format-toolbar" id="format-toolbar">
           <!-- Font group -->
           <div class="fmt-group fmt-group--font">
