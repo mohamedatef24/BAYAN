@@ -885,6 +885,7 @@
              <h3 class="text-lg font-bold summary-card__title">الملخص</h3>
              <div class="flex items-center gap-2">
                <button onclick="copySummary()" class="btn-ghost" type="button">نسخ</button>
+                <button id="summary-apply-btn" onclick="applySummaryToEditor()" class="quran-apply-btn" type="button" style="display:none;">تطبيق في المحرر ✓</button>
                <div class="doc-dropdown" style="display:inline-block;">
                 <button id="summary-export-trigger" class="btn-ghost" type="button" aria-haspopup="true" aria-expanded="false">تصدير ▾</button>
                 <div id="summary-export-menu" class="doc-dropdown__menu" role="menu">
@@ -1909,6 +1910,9 @@
       // Slider moves but label stays fixed as متوسط
     }
 
+    let _summaryInput = '';
+    let _summaryResult = '';
+
     async function generateSummary(event) {
       var customInput = document.getElementById('summary-custom-input');
       let text = customInput ? customInput.value.trim() : '';
@@ -1919,6 +1923,7 @@
         document.getElementById('summary-preview').classList.add('show');
         return;
       }
+      _summaryInput = text;
       
       const lengthValue = document.getElementById('summary-length').value;
       const isFullText = false;
@@ -1982,6 +1987,9 @@
           if (typeof updateSummaryStats === 'function') {
             updateSummaryStats(summaryContent);
           }
+          _summaryResult = summaryContent;
+          var applyBtn = document.getElementById('summary-apply-btn');
+          if (applyBtn) applyBtn.style.display = '';
         } else {
           throw new Error(data.error || 'لم يتم توليد ملخص');
         }
@@ -2024,6 +2032,35 @@
         document.execCommand('copy');
         document.body.removeChild(ta);
       });
+    }
+
+    function applySummaryToEditor() {
+      if (!_summaryResult) return;
+      var editor = document.getElementById('editor-container');
+      if (!editor) return;
+      if (typeof pushUndoState === 'function') pushUndoState();
+      var esc = function(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+      // Try to replace original text in editor
+      if (_summaryInput) {
+        var plain = editor.textContent || '';
+        var idx = plain.indexOf(_summaryInput);
+        if (idx !== -1) {
+          var before = plain.substring(0, idx);
+          var after = plain.substring(idx + _summaryInput.length);
+          editor.innerHTML = esc(before) + esc(_summaryResult) + esc(after);
+          editor.focus();
+          editor.dispatchEvent(new Event('input', { bubbles: true }));
+          switchTab('write');
+          if (typeof showToast === 'function') showToast('✓ تم استبدال النص بالملخص');
+          return;
+        }
+      }
+      // Fallback: append summary
+      var existing = editor.innerHTML;
+      editor.innerHTML = existing + (existing ? '<br>' : '') + esc(_summaryResult);
+      editor.dispatchEvent(new Event('input', { bubbles: true }));
+      switchTab('write');
+      if (typeof showToast === 'function') showToast('✓ تم إضافة الملخص في المحرر');
     }
 
     function exportSummaryAsTxt() {
