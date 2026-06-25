@@ -309,13 +309,20 @@
 
 .editor-toolbar {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--spacing-sm);
   padding: 10px var(--spacing-md);
   border-bottom: 1px solid var(--color-border);
   background: var(--color-surface);
+}
+
+.editor-tabs-center {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  justify-content: center;
 }
 
 .editor-tab {
@@ -350,6 +357,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: 4px;
   padding: 8px 14px;
   border-bottom: 1px solid var(--color-border);
@@ -2923,10 +2931,24 @@ input[type="range"]::-moz-range-thumb {
   flex: 1;
 }
 
-/* ── Dots: purely decorative, no interactions ── */
+/* ── Dots: decorative with hover animation ── */
 .window-dots .dot {
   cursor: default;
-  pointer-events: none;
+  transition: transform 0.3s ease, filter 0.3s ease, box-shadow 0.3s ease;
+}
+.window-dots:hover .dot--red {
+  transform: scale(1.25);
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+}
+.window-dots:hover .dot--yellow {
+  transform: scale(1.25);
+  box-shadow: 0 0 8px rgba(234, 179, 8, 0.5);
+  transition-delay: 0.05s;
+}
+.window-dots:hover .dot--green {
+  transform: scale(1.25);
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+  transition-delay: 0.1s;
 }
 
 /* ── Fix #17: Traffic light actions ── */
