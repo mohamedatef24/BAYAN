@@ -1289,6 +1289,12 @@
       if (activeTab) activeTab.classList.add('active');
       if (activeArea) activeArea.classList.remove('is-hidden');
       if (formatToolbar) formatToolbar.style.display = (tab === 'write') ? '' : 'none';
+      // Hide/show sidebar (suggestions + writing score) — only for write tab
+      var sidebar = document.querySelector('.sidebar-panel.sidebar-desktop');
+      if (sidebar) sidebar.style.display = (tab === 'write') ? '' : 'none';
+      // Hide/show mobile suggestions trigger
+      var mobileTrigger = document.getElementById('mobile-sheet-trigger');
+      if (mobileTrigger) mobileTrigger.style.display = (tab === 'write') ? '' : 'none';
     }
 
     /* ═══════════════════════════════════════════
