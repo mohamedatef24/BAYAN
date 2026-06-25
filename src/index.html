@@ -673,10 +673,10 @@
              <span id="auto-save-status" class="text-xs text-secondary" style="opacity:0;transition:opacity 0.3s;"></span>
             </div>
             <div class="editor-tabs-center">
-             <button id="write-tab" onclick="switchTab('write')" class="editor-tab active" type="button"><svg class="tab-icon" width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>كتابة</button>
-             <button id="summarize-tab" onclick="switchTab('summarize')" class="editor-tab" type="button"><svg class="tab-icon" width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>تلخيص</button>
-             <button id="dialect-tab" onclick="switchTab('dialect')" class="editor-tab" type="button"><svg class="tab-icon" width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>تحويل للفصحى</button>
-             <button id="quran-tab" onclick="switchTab('quran')" class="editor-tab" type="button"><svg class="tab-icon" width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>تدقيق النص القرآني</button>
+             <button id="write-tab" onclick="switchTab('write')" class="editor-tab active" data-tooltip="كتابة — الاختصار: Alt+1" type="button"><svg class="tab-icon" width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>كتابة<span id="error-badge" class="tab-badge" style="display:none"></span></button>
+             <button id="summarize-tab" onclick="switchTab('summarize')" class="editor-tab" data-tooltip="تلخيص — الاختصار: Alt+2" type="button"><svg class="tab-icon" width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>تلخيص</button>
+             <button id="dialect-tab" onclick="switchTab('dialect')" class="editor-tab" data-tooltip="تحويل للفصحى — الاختصار: Alt+3" type="button"><svg class="tab-icon" width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>تحويل للفصحى</button>
+             <button id="quran-tab" onclick="switchTab('quran')" class="editor-tab" data-tooltip="تدقيق القرآن — الاختصار: Ctrl+Q" type="button"><svg class="tab-icon" width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>تدقيق النص القرآني</button>
             </div>
             <div class="flex items-center gap-2">
              <span id="doc-current-title" class="doc-current-title" style="display:none;"></span>
@@ -748,6 +748,12 @@
              <button id="fmt-ltr" class="fmt-btn" onclick="setDirection('ltr')" type="button" data-tooltip="يسار لليمين"><svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5H7a4 4 0 000 8h2m4-8v14m4-14v14M21 8l-4-3v6"/></svg></button>
              <button id="fmt-link" class="fmt-btn" onclick="insertLink()" type="button" data-tooltip="إدراج رابط"><svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg></button>
              <button id="fmt-line-height" class="fmt-btn" onclick="cycleLineHeight()" type="button" data-tooltip="ارتفاع السطر"><svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 4v4m0-4l-1.5 1.5M20 4l1.5 1.5M20 20v-4m0 4l-1.5-1.5M20 20l1.5-1.5"/></svg></button>
+             <button id="fmt-indent" class="fmt-btn" onclick="execFormat('indent')" type="button" data-tooltip="مسافة بادئة"><svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d="M3 5h18v2H3V5zm6 4h12v2H9V9zm0 4h12v2H9v-2zm-6 4h18v2H3v-2zM3 9l4 3-4 3V9z"/></svg></button>
+             <button id="fmt-outdent" class="fmt-btn" onclick="execFormat('outdent')" type="button" data-tooltip="إزالة المسافة البادئة"><svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d="M3 5h18v2H3V5zm6 4h12v2H9V9zm0 4h12v2H9v-2zm-6 4h18v2H3v-2zM7 9l-4 3 4 3V9z"/></svg></button>
+             <button id="fmt-superscript" class="fmt-btn" onclick="execFormat('superscript')" type="button" data-tooltip="نص مرتفع"><svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d="M16 7h2v1h-2v1h3V6h-2V5h2V4h-3v3zM5.47 13h2.06L10 7.22 12.47 13h2.06L10 3.3 5.47 13zM4 21l5-7h-3l5-7"/></svg></button>
+             <button id="fmt-subscript" class="fmt-btn" onclick="execFormat('subscript')" type="button" data-tooltip="نص منخفض"><svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d="M16 18h2v1h-2v1h3v-4h-2v1h2v1h-3v1zM5.47 13h2.06L10 7.22 12.47 13h2.06L10 3.3 5.47 13z"/></svg></button>
+             <button id="fmt-blockquote" class="fmt-btn" onclick="formatBlockquote()" type="button" data-tooltip="اقتباس"><svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d="M6 17h3l2-4V7H5v6h3l-2 4zm8 0h3l2-4V7h-6v6h3l-2 4z"/></svg></button>
+             <button id="fmt-hr" class="fmt-btn" onclick="execFormat('insertHorizontalRule')" type="button" data-tooltip="فاصل أفقي"><svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M3 12h18"/></svg></button>
             </div>
            </div>
            <div class="fmt-divider"></div>
@@ -781,6 +787,21 @@
             <button class="fmt-btn" onclick="execFormat('removeFormat')" type="button" data-tooltip="مسح التنسيق"><svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 4h12v3M12 4v16"/><path stroke-linecap="round" stroke-width="2.5" d="M5 19L19 5" opacity="0.6"/></svg></button>
            </div>
           </div>
+         <div id="find-replace-bar" class="find-replace-bar" style="display:none;">
+          <div class="find-replace-row">
+           <input type="text" id="find-input" class="find-input" placeholder="بحث..." autocomplete="off">
+           <span id="find-count" class="find-count">0/0</span>
+           <button type="button" class="find-btn" onclick="findPrev()" data-tooltip="السابق">▲</button>
+           <button type="button" class="find-btn" onclick="findNext()" data-tooltip="التالي">▼</button>
+           <button type="button" class="find-btn" onclick="toggleReplace()" data-tooltip="استبدال">⇄</button>
+           <button type="button" class="find-btn" onclick="closeFindReplace()" data-tooltip="إغلاق">✕</button>
+          </div>
+          <div id="replace-row" class="find-replace-row" style="display:none;">
+           <input type="text" id="replace-input" class="find-input" placeholder="استبدال بـ..." autocomplete="off">
+           <button type="button" class="find-btn" onclick="replaceCurrent()">استبدال</button>
+           <button type="button" class="find-btn" onclick="replaceAll()">استبدال الكل</button>
+          </div>
+         </div>
          <input type="file" id="doc-import-input" class="sr-only" accept=".txt,.docx,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document" aria-hidden="true">
          <div id="write-area">
           <div id="analysis-limit-banner" class="analysis-limit-banner is-hidden" role="status" aria-live="polite"></div>
@@ -803,14 +824,16 @@
            <div class="flex items-center gap-2"><span class="stat-dot stat-dot--punctuation" aria-hidden="true"></span><span class="text-sm text-secondary"><span id="punctuation-count">٠</span> ترقيم</span></div>
            <span class="stat-item--sep"></span>
            <span class="stat-item"><span id="char-count">٠</span> حرف</span>
-           <span class="stat-item"><span id="sentence-count">٠</span> جملة</span>
+           <span class="stat-item"><span id="paragraph-count">٠</span> فقرة</span>
+            <span class="stat-item"><span id="sentence-count">٠</span> جملة</span>
             <span class="stat-item" style="cursor:pointer;" onclick="setWordGoalUI()" title="اضغط لتحديد هدف عدد الكلمات"><span id="word-count" class="font-bold">٠</span> كلمة</span>
             <span id="word-goal-indicator" class="word-goal-badge" style="display:none;cursor:pointer;" onclick="setWordGoalUI()" title="اضغط لتغيير الهدف"></span>
            <span class="stat-item--sep"></span>
            <span class="stat-item">⏱ <span id="reading-time">٠</span> د قراءة</span>
-          </div>
+          <span class="collab-hint" id="last-edit-hint"></span></div>
           <div class="editor-actions">
-            <button id="doc-save-btn" class="doc-save-btn-icon btn-ghost" type="button" aria-label="حفظ المستند" title="حفظ">
+            <button id="focus-mode-btn" class="btn-ghost" type="button" data-tooltip="وضع التركيز (Ctrl+Shift+F)" onclick="toggleFocusMode()"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></button>
+             <button id="doc-save-btn" class="doc-save-btn-icon btn-ghost" type="button" aria-label="حفظ المستند" title="حفظ">
              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
             </button>
            <button onclick="clearEditor()" class="btn-ghost" type="button" title="مسح الكل">
@@ -986,9 +1009,17 @@
        <!-- LEFT: Sidebar (score + suggestions + import/export) -->
        <div class="sidebar-panel sidebar-desktop">
         <div class="surface-card sidebar-card">
-         <h3 class="text-xl font-bold mb-4 text-right">الاقتراحات</h3>
+         <h3 class="text-xl font-bold mb-3 text-right">الاقتراحات</h3>
+          <div class="error-tabs">
+           <button class="error-tab active" data-filter="all" onclick="filterErrors('all')">الكل</button>
+           <button class="error-tab" data-filter="spelling" onclick="filterErrors('spelling')">إملائي</button>
+           <button class="error-tab" data-filter="grammar" onclick="filterErrors('grammar')">نحوي</button>
+           <button class="error-tab" data-filter="punctuation" onclick="filterErrors('punctuation')">ترقيم</button>
+          </div>
+          <div id="error-chart" class="error-chart-wrap"></div>
          <div id="suggestions-list" class="suggestions-scroll" role="list" aria-live="polite" aria-label="اقتراحات التصحيح"></div>
          <button id="apply-all-btn" class="btn-primary apply-all-btn is-hidden" type="button">تطبيق الكل</button>
+          <button id="dismiss-filtered-btn" class="btn-ghost dismiss-all-btn is-hidden" type="button" onclick="dismissAllFiltered()">تجاهل الكل</button>
         </div>
         <div class="surface-card sidebar-card">
          <h3 class="text-xl font-bold mb-4 text-right">تقييم الكتابة</h3>
