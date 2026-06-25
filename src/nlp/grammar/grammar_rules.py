@@ -357,8 +357,11 @@ class ArabicGrammarGuard:
             if noun_word in EXCLUDED_WORDS:
                 continue
 
+            # Known verbs that are frequently mistagged as nouns by the tagger without diacritics
+            KNOWN_VERBS = {'بنى', 'طبخ', 'صمم', 'لعب', 'كتب', 'شرح', 'حضر', 'تدرب', 'وافق', 'أصدر', 'اصدر', 'بني', 'عمل'}
+
             # Only process noun → verb patterns (SVO order)
-            if noun_pos != 'noun' or verb_pos != 'verb':
+            if noun_pos != 'noun' or (verb_pos != 'verb' and verb_word not in KNOWN_VERBS):
                 continue
 
             noun_num = noun_info.analysis.get('num', 's')
@@ -438,9 +441,13 @@ class ArabicGrammarGuard:
             if _is_present:
                 # Present tense: يذهب→يذهبون (masc) / يذهبن (fem)
                 if is_plural_fem:
+                    if verb_word.endswith('ون') or verb_word.endswith('ين'):
+                        verb_word = verb_word[:-2]
                     if not verb_word.endswith('ن') and not verb_word.endswith('نَ'):
                         corrected_tokens[i+1] = verb_word + 'ن'
                 elif is_plural_masc:
+                    if verb_word.endswith('ن') and not verb_word.endswith('ون') and not verb_word.endswith('ين'):
+                        verb_word = verb_word[:-1]
                     if (not verb_word.endswith('ون') and not verb_word.endswith('وا')
                             and not verb_word.endswith('ين')):
                         if verb_word.endswith('وَ'):
@@ -449,11 +456,19 @@ class ArabicGrammarGuard:
             else:
                 # Past tense: ذهب→ذهبوا (masc) / ذهبن (fem)
                 if is_plural_fem:
+                    if verb_word.endswith('وا') or verb_word.endswith('ون'):
+                        verb_word = verb_word[:-2]
+                    elif verb_word.endswith('ت') or verb_word.endswith('تْ') or verb_word.endswith('تَ'):
+                        verb_word = verb_word[:-1]
                     if not verb_word.endswith('ن') and not verb_word.endswith('نَ'):
                         if verb_word.endswith('ى') or verb_word.endswith('ا'):
                             verb_word = verb_word[:-1]
                         corrected_tokens[i+1] = verb_word + 'ن'
                 elif is_plural_masc:
+                    if verb_word.endswith('ت') or verb_word.endswith('تْ') or verb_word.endswith('تَ'):
+                        verb_word = verb_word[:-1]
+                    if verb_word.endswith('ن') and not verb_word.endswith('ون') and not verb_word.endswith('ين'):
+                        verb_word = verb_word[:-1]
                     if (not verb_word.endswith('وا') and not verb_word.endswith('ون')
                             and not verb_word.endswith('ين')):
                         if verb_word.endswith('وَ'):
@@ -466,19 +481,19 @@ class ArabicGrammarGuard:
 
     def regex_rules_fallback(self, text):
         # إن وأخواتها
-        text = re.sub(r'\b(إن|أن|كأن|لكن|لعل|ليت)\s+(أبوك|أخوك|ذو|فوك)\b',
+        text = re.sub(r'\b(إن|أن|كأن|لكن|لعل|ليت|ان|كان)\s+(أبوك|ابوك|أخوك|اخوك|ذو|فوك)\b',
                       lambda m: f"{m.group(1)} {m.group(2).replace('و', 'ا')}", text)
 
         # الأفعال المتعدية (Object position)
-        text = re.sub(r'\b(رأيت|شاهدت|قابلت|زرت|سمعت|عرفت|وجدت|أحب|أكرمت|صادفت)\s+(أبوك|أخوك|ذو|فوك)\b',
+        text = re.sub(r'\b(رأيت|شاهدت|قابلت|زرت|سمعت|عرفت|وجدت|أحب|أكرمت|صادفت)\s+(أبوك|ابوك|أخوك|اخوك|ذو|فوك)\b',
                       lambda m: f"{m.group(1)} {m.group(2).replace('و', 'ا')}", text)
 
         # حروف الجر المنفصلة بمسافة (في أخوك -> في أخيك)
-        text = re.sub(r'\b([وف]?(?:في|من|إلى|على|عن))\s+(أبوك|أباك|أخوك|أخاك|ذو|ذا)\b',
+        text = re.sub(r'\b([وف]?(?:في|من|إلى|الي|على|علي|عن))\s+(أبوك|ابوك|أباك|اباك|أخوك|اخوك|أخاك|اخاك|ذو|ذا)\b',
                       lambda m: f"{m.group(1)} {m.group(2).replace('و', 'ي').replace('ا', 'ي')}", text)
 
         # حروف الجر المتصلة بدون مسافة (بأخوك، لأبوك -> بأخيك، لأبيك)
-        text = re.sub(r'\b([وف]?[بل])(أبوك|أباك|أخوك|أخاك|ذو|ذا)\b',
+        text = re.sub(r'\b([وف]?[بل])(أبوك|ابوك|أباك|اباك|أخوك|اخوك|أخاك|اخاك|ذو|ذا)\b',
                       lambda m: f"{m.group(1)}{m.group(2).replace('و', 'ي').replace('ا', 'ي')}", text)
 
         # NOTE: Broad preposition case (ون→ين) and nasb (ون→وا) regex rules
