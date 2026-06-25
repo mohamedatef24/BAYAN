@@ -360,10 +360,15 @@
 }
 
 /* ── Tab Icons ── */
+.editor-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
 .tab-icon {
-  margin-inline-end: 6px;
   flex-shrink: 0;
-  opacity: 0.85;
+  opacity: 0.8;
+  vertical-align: middle;
 }
 .editor-tab.active .tab-icon {
   opacity: 1;
@@ -428,20 +433,11 @@
 
 .fmt-section {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 2px;
 }
 
 .fmt-label {
-  font-size: 9px;
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  opacity: 0.6;
-  letter-spacing: 0.5px;
-  line-height: 1;
-  user-select: none;
-  white-space: nowrap;
+  display: none;
 }
 
 /* Active state for format buttons */
