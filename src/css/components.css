@@ -357,7 +357,6 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
   gap: 4px;
   padding: 8px 14px;
   border-bottom: 1px solid var(--color-border);
