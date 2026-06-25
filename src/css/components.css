@@ -3433,3 +3433,94 @@ select:focus-visible,
   outline-offset: 2px;
 }
 
+/* ── Floating Selection Toolbar ── */
+.selection-toolbar {
+  position: absolute;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 6px;
+  border-radius: 12px;
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border-strong);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18), 0 0 0 1px rgba(255,255,255,0.05);
+  backdrop-filter: blur(16px);
+  transform: translateX(-50%);
+  animation: selbar-in 0.2s ease;
+  pointer-events: auto;
+}
+.selection-toolbar.is-hidden {
+  display: none;
+}
+@keyframes selbar-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(6px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+.sel-tool-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.sel-tool-btn:hover {
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+}
+.sel-tool-sep {
+  width: 1px;
+  height: 20px;
+  background: var(--color-border);
+  flex-shrink: 0;
+}
+
+/* ── Summary Source Toggle ── */
+.summary-source-toggle {
+  display: flex;
+  gap: 0;
+  border-radius: 10px;
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border);
+  padding: 3px;
+  overflow: hidden;
+}
+.summary-source-btn {
+  flex: 1;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.summary-source-btn:hover {
+  color: var(--color-text-primary);
+}
+.summary-source-btn.active {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  color: var(--color-text-inverse);
+  box-shadow: 0 2px 8px rgba(107, 163, 224, 0.25);
+}
+
+/* ── Editor Tab Icons ── */
+.editor-tab svg {
+  margin-left: 4px;
+  opacity: 0.7;
+}
+.editor-tab.active svg {
+  opacity: 1;
+}

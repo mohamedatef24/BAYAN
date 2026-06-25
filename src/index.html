@@ -668,6 +668,7 @@
             <button id="write-tab" onclick="switchTab('write')" class="editor-tab active" type="button">كتابة</button>
             <button id="summarize-tab" onclick="switchTab('summarize')" class="editor-tab" type="button">تلخيص</button>
              <button id="dialect-tab" onclick="switchTab('dialect')" class="editor-tab" type="button">تحويل للفصحى</button>
+            <button id="quran-tab" onclick="switchTab('quran')" class="editor-tab" type="button">القرآن</button>
             <button id="docs-sidebar-toggle" class="docs-sidebar-toggle-mobile btn-ghost lg:hidden" type="button" aria-label="مستنداتي" aria-expanded="false" aria-controls="docs-sidebar">
              <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
             </button>
@@ -679,7 +680,7 @@
             </div>
             <span id="auto-save-status" class="text-xs text-secondary" style="opacity:0;transition:opacity 0.3s;"></span>
             <div class="window-dots" aria-hidden="true">
-             <span class="dot dot--red" title="مسح المحرر" onclick="showConfirmDialog('مسح المحرر','هل تريد مسح جميع محتويات المحرر؟ لا يمكن التراجع عن هذا.',function(){document.getElementById('editor-surface').innerHTML='';if(typeof updatePlaceholder==='function')updatePlaceholder();if(typeof updateEditorStats==='function')updateEditorStats()})" style="cursor:pointer;"></span>
+             <span class="dot dot--red" title="مسح المحرر" onclick="if(typeof clearEditor==='function'){clearEditor();}" style="cursor:pointer;"></span>
              <span class="dot dot--yellow" title="طي لوحة الاقتراحات" onclick="document.querySelector('.sidebar-desktop')?.classList.toggle('collapsed')" style="cursor:pointer;"></span>
              <span class="dot dot--green" title="توسيع المحرر للعرض الكامل" onclick="document.querySelector('.editor-layout')?.classList.toggle('editor-fullscreen')" style="cursor:pointer;"></span>
             </div>
@@ -804,8 +805,25 @@
            <p class="popover-hint">اختر التصحيح المناسب · Escape للإغلاق</p>
           </div>
          </div>
-         <div id="summarize-area" class="summarize-panel is-hidden">
-          <!-- Item 11: Mode Toggle -->
+          <div id="summarize-area" class="summarize-panel is-hidden">
+           <!-- Source Toggle: Editor text vs Custom input -->
+           <div class="mb-4">
+            <div class="flex items-center gap-2 mb-3">
+             <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--color-primary);"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+             <span class="text-base font-bold">تلخيص النصوص</span>
+            </div>
+            <div class="summary-source-toggle mb-3">
+             <button type="button" class="summary-source-btn active" id="summary-src-editor" onclick="setSummarySource('editor')">نص المحرر</button>
+             <button type="button" class="summary-source-btn" id="summary-src-custom" onclick="setSummarySource('custom')">نص مخصص</button>
+            </div>
+            <div id="summary-custom-input-wrap" class="is-hidden">
+             <textarea id="summary-custom-input" class="w-full p-4 rounded-xl text-right text-lg editor-content" dir="rtl" rows="6" placeholder="الصق أو اكتب النص الذي تريد تلخيصه هنا..." style="background: var(--color-surface); border: 1px solid var(--color-border); color: var(--color-text-primary); resize: vertical; font-family: inherit;"></textarea>
+             <div class="flex items-center justify-between mt-1 mb-2" dir="rtl">
+              <span id="summary-char-count" class="text-xs" style="color: var(--text-secondary);">٠ حرف</span>
+             </div>
+            </div>
+           </div>
+           <!-- Item 11: Mode Toggle -->
           <div class="summary-mode-toggle">
            <button type="button" class="summary-mode-btn active" id="summary-mode-paragraph" onclick="setSummaryMode('paragraph')">
             <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M3 5h18v2H3V5zm0 8h18v2H3v-2zm0 4h12v2H3v-2z"/></svg>
@@ -875,7 +893,55 @@
            </div>
            <div id="dialect-result" class="text-right text-lg editor-content" dir="rtl" style="line-height: 2;"></div>
           </div>
-         </div>
+          </div>
+          <!-- Quran Standalone Panel -->
+          <div id="quran-area" class="summarize-panel is-hidden">
+           <div class="mb-4">
+            <div class="flex items-center gap-2 mb-3">
+             <svg width="18" height="18" fill="none" stroke="#06b6d4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+             <span class="text-base font-bold">تدقيق النص القرآني</span>
+            </div>
+            <p class="text-sm mb-4" style="color: var(--text-secondary);">اكتب أو الصق نصًا قرآنيًا وسنعرض لك النص الصحيح بالتشكيل مع اسم السورة ورقم الآية، مع إمكانية ترجمته إلى ١٤ لغة.</p>
+           </div>
+           <textarea id="quran-input" class="w-full p-4 rounded-xl text-right text-lg" dir="rtl" rows="4" placeholder="اكتب الآية أو جزءًا منها هنا..." style="background: var(--color-surface); border: 1px solid var(--color-border); color: var(--color-text-primary); resize: vertical; font-family: 'Amiri Quran', 'Cairo', serif; font-size: 20px; line-height: 2;"></textarea>
+           <button id="quran-search-btn" onclick="searchQuranStandalone()" class="btn-primary w-full py-4 text-lg mt-4 mb-4" type="button">بحث وتدقيق</button>
+           <div id="quran-inline-result" class="is-hidden" style="background: var(--color-surface); border: 1px solid rgba(6,182,212,0.2); border-radius: 1rem; padding: 1.5rem;">
+            <div class="flex items-center justify-between mb-3">
+             <div class="text-sm font-bold" style="color:#06b6d4;">✓ النص القرآني المدقق</div>
+             <div class="flex items-center gap-2">
+              <button onclick="copyQuranInlineResult()" class="quran-copy-btn" type="button" title="نسخ">📋</button>
+              <button id="quran-inline-apply-btn" onclick="applyQuranInlineResult()" class="quran-apply-btn" type="button">تطبيق في المحرر ✓</button>
+             </div>
+            </div>
+            <p id="quran-inline-uthmani" class="quran-uthmani" style="font-size: 24px; line-height: 2.2; text-align: center;"></p>
+            <p id="quran-inline-reference" class="quran-reference text-center mt-2"></p>
+            <div class="mt-4 pt-4" style="border-top:1px solid var(--color-border);">
+             <div class="flex items-center gap-3 mb-3 flex-wrap">
+              <svg width="16" height="16" fill="none" stroke="#06b6d4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/></svg>
+              <span class="text-sm font-bold">ترجمة الآية</span>
+              <select id="quran-inline-lang" onchange="translateQuranInline()" class="quran-lang-select">
+               <option value="">— اختر لغة —</option>
+               <option value="english">🇬🇧 English</option>
+               <option value="french">🇫🇷 Français</option>
+               <option value="turkish">🇹🇷 Türkçe</option>
+               <option value="persian">🇮🇷 فارسی</option>
+               <option value="russian">🇷🇺 Русский</option>
+               <option value="spanish">🇪🇸 Español</option>
+               <option value="german">🇩🇪 Deutsch</option>
+               <option value="indonesian">🇮🇩 Indonesia</option>
+               <option value="malay">🇲🇾 Melayu</option>
+               <option value="bengali">🇧🇩 বাংলা</option>
+               <option value="bosnian">🇧🇦 Bosanski</option>
+               <option value="portuguese">🇵🇹 Português</option>
+               <option value="uzbek">🇺🇿 O'zbek</option>
+              </select>
+             </div>
+             <div id="quran-inline-translation" class="is-hidden p-4 rounded-xl" style="background:rgba(6,182,212,0.06); border:1px solid rgba(6,182,212,0.15);">
+              <p id="quran-inline-trans-text" style="font-size:18px; line-height:2; color:var(--color-text-primary); text-align:center;"></p>
+             </div>
+            </div>
+           </div>
+          </div>
          <div class="editor-footer">
           <div class="editor-stats" role="status" aria-label="إحصائيات">
            <div class="flex items-center gap-2"><span class="stat-dot stat-dot--spelling" aria-hidden="true"></span><span class="text-sm text-secondary"><span id="spelling-count">٠</span> إملائي</span></div>
@@ -1213,18 +1279,201 @@
 
 
     function switchTab(tab) {
-      const writeTab = document.getElementById('write-tab');
-      const summarizeTab = document.getElementById('summarize-tab');
-      const dialectTab = document.getElementById('dialect-tab');
-      const writeArea = document.getElementById('write-area');
-      const summarizeArea = document.getElementById('summarize-area');
-      const dialectArea = document.getElementById('dialect-area');
+      const tabs = ['write', 'summarize', 'dialect', 'quran'];
       const formatToolbar = document.getElementById('format-toolbar');
-      [writeTab, summarizeTab, dialectTab].forEach(function(t){if(t)t.classList.remove('active');});
-      [writeArea, summarizeArea, dialectArea].forEach(function(a){if(a)a.classList.add('is-hidden');});
-      if (tab === 'write') { writeTab.classList.add('active'); writeArea.classList.remove('is-hidden'); if(formatToolbar)formatToolbar.style.display=''; }
-      else if (tab === 'summarize') { summarizeTab.classList.add('active'); summarizeArea.classList.remove('is-hidden'); if(formatToolbar)formatToolbar.style.display='none'; }
-      else if (tab === 'dialect') { dialectTab.classList.add('active'); dialectArea.classList.remove('is-hidden'); if(formatToolbar)formatToolbar.style.display='none'; }
+      tabs.forEach(function(t) {
+        var tabEl = document.getElementById(t + '-tab');
+        var areaEl = document.getElementById(t + '-area') || document.getElementById(t === 'write' ? 'write-area' : t + '-area');
+        if (tabEl) tabEl.classList.remove('active');
+        if (areaEl) areaEl.classList.add('is-hidden');
+      });
+      var activeTab = document.getElementById(tab + '-tab');
+      var activeArea = document.getElementById(tab === 'write' ? 'write-area' : tab + '-area');
+      if (activeTab) activeTab.classList.add('active');
+      if (activeArea) activeArea.classList.remove('is-hidden');
+      if (formatToolbar) formatToolbar.style.display = (tab === 'write') ? '' : 'none';
+    }
+
+    /* ═══════════════════════════════════════════
+       Summarize — Source Toggle (editor vs custom)
+       ═══════════════════════════════════════════ */
+    window._summarySource = 'editor';
+    function setSummarySource(src) {
+      window._summarySource = src;
+      var editorBtn = document.getElementById('summary-src-editor');
+      var customBtn = document.getElementById('summary-src-custom');
+      var customWrap = document.getElementById('summary-custom-input-wrap');
+      if (editorBtn) editorBtn.classList.toggle('active', src === 'editor');
+      if (customBtn) customBtn.classList.toggle('active', src === 'custom');
+      if (customWrap) customWrap.classList.toggle('is-hidden', src !== 'custom');
+    }
+
+    /* ═══════════════════════════════════════════
+       Floating Selection Toolbar
+       ═══════════════════════════════════════════ */
+    (function() {
+      var selBar = null;
+      var hideTimer = null;
+      function showSelectionBar() {
+        var sel = window.getSelection();
+        if (!sel || sel.isCollapsed || !sel.toString().trim()) { hideSelectionBar(); return; }
+        var editor = document.getElementById('editor-container');
+        if (!editor || !editor.contains(sel.anchorNode)) { hideSelectionBar(); return; }
+        if (!selBar) selBar = document.getElementById('selection-toolbar');
+        if (!selBar) return;
+        var range = sel.getRangeAt(0);
+        var rect = range.getBoundingClientRect();
+        selBar.style.top = (rect.top + window.scrollY - 48) + 'px';
+        selBar.style.left = (rect.left + rect.width / 2) + 'px';
+        selBar.classList.remove('is-hidden');
+      }
+      function hideSelectionBar() {
+        if (!selBar) selBar = document.getElementById('selection-toolbar');
+        if (selBar) selBar.classList.add('is-hidden');
+      }
+      document.addEventListener('selectionchange', function() {
+        clearTimeout(hideTimer);
+        hideTimer = setTimeout(function() {
+          var sel = window.getSelection();
+          if (sel && !sel.isCollapsed && sel.toString().trim().length > 2) {
+            var editor = document.getElementById('editor-container');
+            if (editor && editor.contains(sel.anchorNode)) { showSelectionBar(); return; }
+          }
+          hideSelectionBar();
+        }, 300);
+      });
+      document.addEventListener('mousedown', function(e) {
+        if (!selBar) selBar = document.getElementById('selection-toolbar');
+        if (selBar && !selBar.contains(e.target)) hideSelectionBar();
+      });
+    })();
+
+    function selectionToolAction(tool) {
+      var sel = window.getSelection();
+      var text = sel ? sel.toString().trim() : '';
+      if (!text) { if (typeof showToast === 'function') showToast('حدد نصًا أولاً', 'warning'); return; }
+      var selBar = document.getElementById('selection-toolbar');
+      if (selBar) selBar.classList.add('is-hidden');
+      if (tool === 'summarize') {
+        switchTab('summarize');
+        setSummarySource('custom');
+        var ta = document.getElementById('summary-custom-input');
+        if (ta) { ta.value = text; }
+      } else if (tool === 'dialect') {
+        switchTab('dialect');
+        var ta = document.getElementById('dialect-input');
+        if (ta) { ta.value = text; if (typeof updateDialectCharCount === 'function') updateDialectCharCount(); }
+      } else if (tool === 'quran') {
+        switchTab('quran');
+        var ta = document.getElementById('quran-input');
+        if (ta) ta.value = text;
+      }
+    }
+
+    /* ═══════════════════════════════════════════
+       Quran Standalone Panel Functions
+       ═══════════════════════════════════════════ */
+    let _quranInlineVerse = '';
+    let _quranInlineRef = '';
+    let _quranInlineQuery = '';
+
+    async function searchQuranStandalone() {
+      var input = document.getElementById('quran-input').value.trim();
+      if (!input) { if (typeof showToast === 'function') showToast('الرجاء كتابة نص قرآني أولاً', 'warning'); return; }
+      _quranInlineQuery = input;
+      var resultDiv = document.getElementById('quran-inline-result');
+      var uthmaniEl = document.getElementById('quran-inline-uthmani');
+      var refEl = document.getElementById('quran-inline-reference');
+      var searchBtn = document.getElementById('quran-search-btn');
+      uthmaniEl.innerHTML = '<span class="text-secondary">⏳ جاري البحث...</span>';
+      refEl.textContent = '';
+      resultDiv.classList.remove('is-hidden');
+      document.getElementById('quran-inline-translation').classList.add('is-hidden');
+      document.getElementById('quran-inline-lang').value = '';
+      if (searchBtn) { searchBtn.disabled = true; searchBtn.textContent = '⏳ جاري البحث...'; }
+      var _abortCtrl = new AbortController();
+      var _timeout = setTimeout(function(){ _abortCtrl.abort(); }, 30000);
+      try {
+        var res = await fetch('/api/quran', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: input, language: 'تدقيق الايات' }),
+          signal: _abortCtrl.signal
+        });
+        var data = await res.json();
+        if (data.error) {
+          uthmaniEl.innerHTML = '<span class="text-secondary">' + data.error.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</span>';
+          return;
+        }
+        var seg = data.matched_segment || '';
+        var refMatch = seg.match(/【([^】]+)】/);
+        var verseText = seg.replace(/\s*【[^】]+】\s*$/, '').replace(/^\(/, '').replace(/\)$/, '');
+        var reference = refMatch ? refMatch[1] : '';
+        _quranInlineVerse = verseText;
+        _quranInlineRef = reference;
+        uthmaniEl.textContent = verseText;
+        refEl.textContent = reference ? '[' + reference + ']' : '';
+      } catch (err) {
+        var msg = err.name === 'AbortError' ? 'انتهى وقت الانتظار — حاول مرة أخرى' : 'حدث خطأ أثناء البحث — تأكد من الاتصال';
+        uthmaniEl.innerHTML = '<span class="text-secondary">' + msg + '</span>';
+      } finally {
+        clearTimeout(_timeout);
+        if (searchBtn) { searchBtn.disabled = false; searchBtn.textContent = 'بحث وتدقيق'; }
+      }
+    }
+
+    async function translateQuranInline() {
+      var lang = document.getElementById('quran-inline-lang').value;
+      if (!lang || !_quranInlineQuery) return;
+      var resultDiv = document.getElementById('quran-inline-translation');
+      var textEl = document.getElementById('quran-inline-trans-text');
+      textEl.innerHTML = '<span class="text-secondary">⏳ جاري الترجمة...</span>';
+      resultDiv.classList.remove('is-hidden');
+      var _abortCtrl = new AbortController();
+      var _timeout = setTimeout(function(){ _abortCtrl.abort(); }, 30000);
+      try {
+        var res = await fetch('/api/quran', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: _quranInlineQuery, language: lang }),
+          signal: _abortCtrl.signal
+        });
+        var data = await res.json();
+        if (data.error) {
+          textEl.innerHTML = '<span class="text-secondary">' + data.error.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</span>';
+          return;
+        }
+        var seg = data.matched_segment || '';
+        var transText = seg.replace(/\s*【[^】]+】\s*$/, '').replace(/^\(/, '').replace(/\)$/, '');
+        textEl.textContent = transText;
+      } catch (err) {
+        var msg = err.name === 'AbortError' ? 'انتهى وقت الانتظار' : 'حدث خطأ في الترجمة';
+        textEl.innerHTML = '<span class="text-secondary">' + msg + '</span>';
+      } finally { clearTimeout(_timeout); }
+    }
+
+    function copyQuranInlineResult() {
+      var text = (_quranInlineVerse || '') + (_quranInlineRef ? ' [' + _quranInlineRef + ']' : '');
+      if (!text.trim()) return;
+      navigator.clipboard.writeText(text).then(function() {
+        if (typeof showToast === 'function') showToast('✓ تم نسخ النص المدقق');
+      });
+    }
+
+    function applyQuranInlineResult() {
+      if (!_quranInlineVerse) return;
+      var editor = document.getElementById('editor-container');
+      if (!editor) return;
+      if (typeof pushUndoState === 'function') pushUndoState();
+      var esc = function(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+      var refHTML = _quranInlineRef ? ' <span class="quran-ref-inline">[' + esc(_quranInlineRef) + ']</span>' : '';
+      var existing = editor.innerHTML;
+      editor.innerHTML = existing + (existing ? '<br>' : '') +
+        '<span class="quran-applied" contenteditable="false" data-quran="true">' +
+        esc(_quranInlineVerse) + refHTML + '</span>';
+      editor.dispatchEvent(new Event('input', { bubbles: true }));
+      switchTab('write');
+      if (typeof showToast === 'function') showToast('✓ تم إضافة النص القرآني في المحرر');
     }
     let _dialectResult = '';
     async function convertDialect() {
@@ -1533,11 +1782,17 @@
     }
 
     async function generateSummary(event) {
-      const text = (typeof getEditorText === 'function' ? getEditorText() : '').trim();
+      let text = '';
+      if (window._summarySource === 'custom') {
+        var customInput = document.getElementById('summary-custom-input');
+        text = customInput ? customInput.value.trim() : '';
+      } else {
+        text = (typeof getEditorText === 'function' ? getEditorText() : '').trim();
+      }
       
       if (!text) {
         const summaryText = document.getElementById('summary-text');
-        summaryText.innerHTML = '<p class="text-secondary text-center">الرجاء كتابة نص في المحرر أولاً</p>';
+        summaryText.innerHTML = '<p class="text-secondary text-center">' + (window._summarySource === 'custom' ? 'الرجاء كتابة نص في مربع الإدخال أولاً' : 'الرجاء كتابة نص في المحرر أولاً') + '</p>';
         document.getElementById('summary-preview').classList.add('show');
         return;
       }
@@ -1946,5 +2201,22 @@
     </div>
    </div>
   </div>
+   <!-- Floating Selection Toolbar -->
+   <div id="selection-toolbar" class="selection-toolbar is-hidden" role="toolbar" aria-label="أدوات النص المحدد">
+    <button type="button" class="sel-tool-btn" onclick="selectionToolAction('summarize')" title="تلخيص النص المحدد">
+     <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+     تلخيص
+    </button>
+    <span class="sel-tool-sep"></span>
+    <button type="button" class="sel-tool-btn" onclick="selectionToolAction('dialect')" title="تحويل النص المحدد للفصحى">
+     <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/></svg>
+     فصحى
+    </button>
+    <span class="sel-tool-sep"></span>
+    <button type="button" class="sel-tool-btn" onclick="selectionToolAction('quran')" title="تدقيق النص القرآني المحدد">
+     <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+     قرآن
+    </button>
+   </div>
  </body>
 </html>
