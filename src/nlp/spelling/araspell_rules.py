@@ -674,49 +674,21 @@ class OutputValidator:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class VocabularyManager:
-    """Centralized vocabulary management for OOV/IV detection."""
-    
-    HAMZA_VARIANTS = {'أ', 'إ', 'آ', 'ء', 'ؤ', 'ئ', 'ا'}
-    ALEF_NORMALIZED = 'ا'
-    TA_MARBUTA = 'ة'
-    HA = 'ه'
-    YA_VARIANTS = {'ي', 'ى'}
-    YA_NORMALIZED = 'ي'
+    """Centralized vocabulary management for OOV/IV detection using CamelTools."""
     
     def __init__(self, tokenizer):
         self.tokenizer = tokenizer
-        self.vocab = {
-            w for w in tokenizer.get_vocab().keys()
-            if w.isalpha() and not w.startswith('##') and len(w) > 1
-        }
-        self.vocab_rank = {w: i for w, i in tokenizer.get_vocab().items()}
-        self.normalized_vocab = {self.normalize_for_comparison(w): w for w in self.vocab}
-        logger.info(f"VocabularyManager initialized: {len(self.vocab)} words")
-    
-    @classmethod
-    def normalize_for_comparison(cls, word: str) -> str:
-        result = []
-        for i, char in enumerate(word):
-            if char in cls.HAMZA_VARIANTS:
-                result.append(cls.ALEF_NORMALIZED)
-            elif char == cls.TA_MARBUTA and i == len(word) - 1:
-                result.append(cls.HA)
-            elif char in cls.YA_VARIANTS:
-                result.append(cls.YA_NORMALIZED)
-            else:
-                result.append(char)
-        return ''.join(result)
+        from camel_tools.morphology.database import MorphologyDB
+        from camel_tools.morphology.analyzer import Analyzer
+        self._db = MorphologyDB.builtin_db()
+        self.analyzer = Analyzer(self._db)
+        logger.info("VocabularyManager initialized with CamelTools Analyzer")
     
     def is_iv(self, word: str) -> bool:
         clean = re.sub(r'[^\w]', '', word)
         if not clean:
             return True
-        if clean in self.vocab:
-            return True
-        normalized = self.normalize_for_comparison(clean)
-        if normalized in self.normalized_vocab:
-            return True
-        return False
+        return len(self.analyzer.analyze(clean)) > 0
     
     def is_oov(self, word: str) -> bool:
         return not self.is_iv(word)

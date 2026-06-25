@@ -81,6 +81,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+DEBUG_TRACE = True  # Toggleable trace logging
+
 # Initialize Flask app
 app = Flask(__name__, static_folder='.', static_url_path='')
 CORS(app, resources={r"/api/*": {"origins": "*"}})  # CORS for API routes only
@@ -1975,31 +1977,6 @@ def analyze_text():
                     except Exception:
                         pass  # Bidirectional check is optional
 
-                    # ── Phase 12 (A6): Safety Net — Raw Model Fallback ──
-                    # If raw model output has fewer OOV words, prefer it.
-                    try:
-                        _raw_oov = spell_checker.vocab_manager.count_oov_words(raw_corrected)
-                        _our_oov = spell_checker.vocab_manager.count_oov_words(safe_text)
-                        if _raw_oov == 0 and _our_oov > 0:
-                            logger.info(
-                                f"[SPELLING] Safety net: raw=0 OOV, ours={_our_oov} OOV "
-                                f"— using raw model output"
-                            )
-                            safe_text = raw_corrected
-                        elif _raw_oov == 0 and _our_oov == 0:
-                            # Both all-IV but raw is closer to input → prefer raw
-                            _raw_dist = _levenshtein(current_text, raw_corrected)
-                            _our_dist = _levenshtein(current_text, safe_text)
-                            _rvr_dist = _levenshtein(safe_text, raw_corrected)
-                            if _raw_dist < _our_dist and _rvr_dist <= 3:
-                                logger.info(
-                                    f"[SPELLING] Safety net: raw closer to input "
-                                    f"(raw_dist={_raw_dist}, our_dist={_our_dist})"
-                                )
-                                safe_text = raw_corrected
-                    except Exception:
-                        pass  # Safety net is optional
-
                     ctx.mutate_text(safe_text, OffsetMapper)
                     current_text = ctx.current_text
             except Exception as e:
@@ -2323,6 +2300,12 @@ def analyze_text():
                         _o_cl = orig_text.rstrip('.,،؛;:!؟?()[]{}«»"\'…')
                         _c_cl = corr_text.rstrip('.,،؛;:!؟?()[]{}«»"\'…')
                         
+                        # Priority 4: Diacritic-Normalized Grammar Validation
+                        import re as _re_diac
+                        _o_cl = _re_diac.sub(r'[\u064B-\u065F\u0670]', '', _o_cl)
+                        _c_cl = _re_diac.sub(r'[\u064B-\u065F\u0670]', '', _c_cl)
+                        
+
                         # Case: ون/ان → ين (sound masculine plural / dual case change)
                         if (_o_cl.endswith('ون') and _c_cl.endswith('ين') and _o_cl[:-2] == _c_cl[:-2]):
                             _is_grammar_pattern = True
@@ -2412,9 +2395,13 @@ def analyze_text():
                     # Catches: القانون→القانين, يعزف→يعزفون, للإنسان→للإنسين
                     if not _is_grammar_pattern and orig_text and corr_text and len(orig_text) > 2:
                         import re as _re_jac
-                        # Strip punctuation/spaces for comparison
-                        _o_chars = set(_re_jac.sub(r'[\s.,،؛؟!:;?]', '', orig_text))
-                        _c_chars = set(_re_jac.sub(r'[\s.,،؛؟!:;?]', '', corr_text))
+                        # Strip punctuation/spaces and normalize Alif/Hamza for comparison
+                        _o_norm = _re_jac.sub(r'[\s.,،؛؟!:;?]', '', orig_text)
+                        _c_norm = _re_jac.sub(r'[\s.,،؛؟!:;?]', '', corr_text)
+                        _o_norm = _re_jac.sub(r'[أإآ]', 'ا', _o_norm)
+                        _c_norm = _re_jac.sub(r'[أإآ]', 'ا', _c_norm)
+                        _o_chars = set(_o_norm)
+                        _c_chars = set(_c_norm)
                         if _o_chars and _c_chars:
                             _jac = len(_o_chars & _c_chars) / len(_o_chars | _c_chars)
                             if _jac < 0.5:
@@ -2451,8 +2438,11 @@ def analyze_text():
                                 _gram_dir_blocked = True
                                 break
                     if _gram_dir_blocked:
-                        continue
-
+                          logger.error(traceback.format_exc())
+                          continue
+                    # DEBUG_TRACE
+                    if _is_grammar_pattern:
+                        logger.debug(f"[DEBUG_TRACE] Pattern match found for: '{orig_text}'→'{corr_text}'")
 
                     # FIX-22: Protect tanween (preserve ً ٌ ٍ from original)
                     _TANWEEN_CHARS = set('ًٌٍ')
@@ -2508,64 +2498,6 @@ def analyze_text():
             logger.error(traceback.format_exc())
             timing_ms['grammar_error'] = f"{type(e).__name__}: {str(e)[:200]}"
 
-        # ── FIX-48v3: ه→ة pass AFTER grammar (whitelist-based) ──
-        # Must run AFTER grammar so grammar model can use ه for gender decisions.
-        # Uses a whitelist of common words that are frequently written with ه instead of ة.
-        if not _is_religious_text:
-          try:
-            _HATA_WHITELIST = {
-                # Common nouns — definite form (with ال)
-                'الحكومه': 'الحكومة', 'المدرسه': 'المدرسة', 'الشركه': 'الشركة',
-                'الجامعه': 'الجامعة', 'المدينه': 'المدينة', 'القصه': 'القصة',
-                'المكتبه': 'المكتبة', 'الطائره': 'الطائرة', 'الوزاره': 'الوزارة',
-                'المديره': 'المديرة', 'المعلمه': 'المعلمة', 'الطالبه': 'الطالبة',
-                'القريه': 'القرية', 'الحديقه': 'الحديقة', 'المحكمه': 'المحكمة',
-                'الكنيسه': 'الكنيسة', 'المنطقه': 'المنطقة', 'الدوله': 'الدولة',
-                'السياره': 'السيارة', 'الطاوله': 'الطاولة', 'الغرفه': 'الغرفة',
-                'المحطه': 'المحطة', 'السفاره': 'السفارة', 'الوظيفه': 'الوظيفة',
-                'الصحيفه': 'الصحيفة', 'العائله': 'العائلة', 'الحياه': 'الحياة',
-                'الصلاه': 'الصلاة', 'الزكاه': 'الزكاة',
-                # Common nouns — indefinite form
-                'حكومه': 'حكومة', 'مدرسه': 'مدرسة', 'شركه': 'شركة',
-                'جامعه': 'جامعة', 'مدينه': 'مدينة', 'قصه': 'قصة',
-                'مكتبه': 'مكتبة', 'طائره': 'طائرة', 'وزاره': 'وزارة',
-                'مديره': 'مديرة', 'معلمه': 'معلمة', 'طالبه': 'طالبة',
-                'قريه': 'قرية', 'حديقه': 'حديقة', 'محكمه': 'محكمة',
-                'منطقه': 'منطقة', 'دوله': 'دولة', 'سياره': 'سيارة',
-                'غرفه': 'غرفة', 'محطه': 'محطة', 'وظيفه': 'وظيفة',
-                'عائله': 'عائلة', 'حياه': 'حياة', 'صلاه': 'صلاة',
-                # Common adjectives — feminine
-                'كبيره': 'كبيرة', 'صغيره': 'صغيرة', 'جميله': 'جميلة',
-                'طويله': 'طويلة', 'قصيره': 'قصيرة', 'جديده': 'جديدة',
-                'قديمه': 'قديمة', 'سريعه': 'سريعة', 'بطيئه': 'بطيئة',
-            }
-            _hata_text = ctx.current_text
-            _hata_words = _hata_text.split()
-            _hata_changed = False
-            _hata_result = []
-            _hata_pos = 0  # track position in text for patch offsets
-            for _hw in _hata_words:
-                _hw_clean = _hw.rstrip('.،؛؟!?!')
-                if _hw_clean in _HATA_WHITELIST:
-                    _punct_suffix = _hw[len(_hw_clean):]
-                    _fixed = _HATA_WHITELIST[_hw_clean]
-                    logger.info(f"[HA-TA] Post-grammar ه→ة: '{_hw}'→'{_fixed}{_punct_suffix}'")
-                    _hata_result.append(_fixed + _punct_suffix)
-                    _hata_changed = True
-                    # Create a patch so the final output includes this fix
-                    ctx.add_patch(
-                        'spelling', _hata_pos, _hata_pos + len(_hw),
-                        _fixed + _punct_suffix, confidence=0.85,
-                    )
-                else:
-                    _hata_result.append(_hw)
-                _hata_pos += len(_hw) + 1  # +1 for space
-            if _hata_changed:
-                _hata_new = ' '.join(_hata_result)
-                ctx.mutate_text(_hata_new, OffsetMapper)
-                current_text = ctx.current_text
-          except Exception as e:
-            logger.warning(f"[HA-TA] Failed: {type(e).__name__}: {e}")
 
         # 3. Punctuation (runs on grammar-corrected text — PuncAra-v1 local model)
         # FIX-07: Skip punctuation for religious text

@@ -203,9 +203,6 @@ class ArabicGrammarGuard:
         return " ".join(corrected_tokens)
 
     def fix_gender_agreement(self, text):
-        text = re.sub(r'\bهذان\s+(ال[أ-ي]+تان)\b', r'هاتان \1', text)
-        text = re.sub(r'\bهاتان\s+(ال[أ-ي]+[^ت]ان)\b', r'هذان \1', text)
-        text = re.sub(r'\bهذهن\b', 'هاتان', text)
 
         text = re.sub(r'\bأحد عشر\s+([أ-ي]+ة)\b', r'إحدى عشرة \1', text)
         text = re.sub(r'\bأحد عشرة\s+([أ-ي]+ة)\b', r'إحدى عشرة \1', text)
