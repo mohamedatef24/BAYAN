@@ -308,20 +308,27 @@
 }
 
 .editor-toolbar {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   gap: var(--spacing-sm);
   padding: 10px var(--spacing-md);
   border-bottom: 1px solid var(--color-border);
   background: var(--color-surface);
 }
 
+.editor-toolbar > *:first-child {
+  justify-self: start;
+}
+
+.editor-toolbar > *:last-child {
+  justify-self: end;
+}
+
 .editor-tabs-center {
   display: flex;
   align-items: center;
   gap: 4px;
-  flex: 1;
   justify-content: center;
 }
 
