@@ -409,8 +409,7 @@ function showTooltip(element) {
       const btnClass = isMain ? 'popover-alt-btn popover-alt-main' : 'popover-alt-btn';
       html += `<button class="${btnClass}" data-alt-correction="${escapeHtml(alt)}" type="button">${isMain ? '✓ ' : ''}${escapeHtml(alt)}</button>`;
     });
-    // Render keep button at end
-    html += `<button class="popover-alt-btn popover-alt-keep" data-alt-correction="${escapeHtml(suggestion.original)}" type="button">إبقاء كما هي</button>`;
+    // No separate "keep" button — the "تجاهل" popover button handles dismissal
     alternativesEl.innerHTML = html;
 
     // Bind click events for alternatives
