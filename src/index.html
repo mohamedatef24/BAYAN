@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="ar" dir="rtl" class="h-full">
  <head>
   <meta charset="UTF-8">
@@ -781,13 +781,6 @@
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 4h12v3M12 4v16"/><path stroke-linecap="round" stroke-width="2.5" stroke="currentColor" d="M5 19L19 5" opacity="0.6"/></svg>
            </button>
           </div>
-           <div class="fmt-divider"></div>
-           <!-- Quran verification -->
-           <div class="fmt-group">
-            <button id="fmt-quran" class="fmt-btn" onclick="verifyQuranText()" type="button" title="تدقيق النص القرآني" style="color: #06b6d4;">
-             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
-            </button>
-           </div>
          </div>
          <input type="file" id="doc-import-input" class="sr-only" accept=".txt,.docx,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document" aria-hidden="true">
          <div id="write-area">
@@ -804,6 +797,44 @@
            <button type="button" class="popover-dismiss" onclick="if(window.currentApplySuggestion){dismissSuggestion(window.currentApplySuggestion);hideTooltip();}" title="تجاهل هذا الاقتراح">تجاهل</button>
            <p class="popover-hint">اختر التصحيح المناسب · Escape للإغلاق</p>
           </div>
+         <div class="editor-footer">
+          <div class="editor-stats" role="status" aria-label="إحصائيات">
+           <div class="flex items-center gap-2"><span class="stat-dot stat-dot--spelling" aria-hidden="true"></span><span class="text-sm text-secondary"><span id="spelling-count">٠</span> إملائي</span></div>
+           <div class="flex items-center gap-2"><span class="stat-dot stat-dot--grammar" aria-hidden="true"></span><span class="text-sm text-secondary"><span id="grammar-count">٠</span> نحوي</span></div>
+           <div class="flex items-center gap-2"><span class="stat-dot stat-dot--punctuation" aria-hidden="true"></span><span class="text-sm text-secondary"><span id="punctuation-count">٠</span> ترقيم</span></div>
+           <span class="stat-item--sep"></span>
+           <span class="stat-item"><span id="char-count">٠</span> حرف</span>
+           <span class="stat-item"><span id="sentence-count">٠</span> جملة</span>
+            <span class="stat-item" style="cursor:pointer;" onclick="setWordGoalUI()" title="اضغط لتحديد هدف عدد الكلمات"><span id="word-count" class="font-bold">٠</span> كلمة</span>
+            <span id="word-goal-indicator" class="word-goal-badge" style="display:none;cursor:pointer;" onclick="setWordGoalUI()" title="اضغط لتغيير الهدف"></span>
+           <span class="stat-item--sep"></span>
+           <span class="stat-item">⏱ <span id="reading-time">٠</span> د قراءة</span>
+          </div>
+          <div class="editor-actions">
+            <button id="doc-save-btn" class="doc-save-btn-icon btn-ghost" type="button" aria-label="حفظ المستند" title="حفظ">
+             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+            </button>
+           <button onclick="clearEditor()" class="btn-ghost" type="button" title="مسح الكل">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+           </button>
+           <button onclick="copyText()" class="btn-ghost" type="button" title="نسخ النص">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+           </button>
+<button id="doc-import-btn" class="btn-ghost" type="button" aria-label="استيراد ملف" title="استيراد">
+             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+            </button>
+            <div class="doc-dropdown" style="display:inline-block;">
+             <button id="doc-export-trigger" class="btn-ghost" type="button" aria-label="تصدير" title="تصدير" aria-haspopup="true" aria-expanded="false">
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+             </button>
+             <div id="doc-export-menu" class="doc-dropdown__menu" role="menu" aria-label="خيارات التصدير">
+              <button type="button" class="doc-dropdown__item" role="menuitem" data-export-format="txt">نصي (.txt)</button>
+              <button type="button" class="doc-dropdown__item" role="menuitem" data-export-format="docx">Word (.docx)</button>
+              <button type="button" class="doc-dropdown__item" role="menuitem" data-export-format="pdf">PDF (.pdf)</button>
+             </div>
+            </div>
+          </div>
+         </div>
          </div>
           <div id="summarize-area" class="summarize-panel is-hidden">
            <!-- Source Toggle: Editor text vs Custom input -->
@@ -812,14 +843,14 @@
              <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--color-primary);"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
              <span class="text-base font-bold">تلخيص النصوص</span>
             </div>
-            <div class="summary-source-toggle mb-3">
-             <button type="button" class="summary-source-btn active" id="summary-src-editor" onclick="setSummarySource('editor')">نص المحرر</button>
-             <button type="button" class="summary-source-btn" id="summary-src-custom" onclick="setSummarySource('custom')">نص مخصص</button>
-            </div>
-            <div id="summary-custom-input-wrap" class="is-hidden">
              <textarea id="summary-custom-input" class="w-full p-4 rounded-xl text-right text-lg editor-content" dir="rtl" rows="6" placeholder="الصق أو اكتب النص الذي تريد تلخيصه هنا..." style="background: var(--color-surface); border: 1px solid var(--color-border); color: var(--color-text-primary); resize: vertical; font-family: inherit;"></textarea>
-             <div class="flex items-center justify-between mt-1 mb-2" dir="rtl">
-              <span id="summary-char-count" class="text-xs" style="color: var(--text-secondary);">٠ حرف</span>
+             <div class="flex items-center justify-between mt-2 mb-2" dir="rtl">
+              <span id="summary-char-count" class="text-xs" style="color: var(--text-secondary);">0 حرف</span>
+              <label class="btn-ghost" style="cursor:pointer; display:inline-flex; align-items:center; gap:5px; padding:4px 12px; min-height:32px; font-size:12px;">
+               <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+               استيراد ملف
+               <input type="file" id="summary-import-input" class="sr-only" accept=".txt,.docx" onchange="importSummaryFile(this)">
+              </label>
              </div>
             </div>
            </div>
@@ -942,44 +973,6 @@
             </div>
            </div>
           </div>
-         <div class="editor-footer">
-          <div class="editor-stats" role="status" aria-label="إحصائيات">
-           <div class="flex items-center gap-2"><span class="stat-dot stat-dot--spelling" aria-hidden="true"></span><span class="text-sm text-secondary"><span id="spelling-count">٠</span> إملائي</span></div>
-           <div class="flex items-center gap-2"><span class="stat-dot stat-dot--grammar" aria-hidden="true"></span><span class="text-sm text-secondary"><span id="grammar-count">٠</span> نحوي</span></div>
-           <div class="flex items-center gap-2"><span class="stat-dot stat-dot--punctuation" aria-hidden="true"></span><span class="text-sm text-secondary"><span id="punctuation-count">٠</span> ترقيم</span></div>
-           <span class="stat-item--sep"></span>
-           <span class="stat-item"><span id="char-count">٠</span> حرف</span>
-           <span class="stat-item"><span id="sentence-count">٠</span> جملة</span>
-            <span class="stat-item" style="cursor:pointer;" onclick="setWordGoalUI()" title="اضغط لتحديد هدف عدد الكلمات"><span id="word-count" class="font-bold">٠</span> كلمة</span>
-            <span id="word-goal-indicator" class="word-goal-badge" style="display:none;cursor:pointer;" onclick="setWordGoalUI()" title="اضغط لتغيير الهدف"></span>
-           <span class="stat-item--sep"></span>
-           <span class="stat-item">⏱ <span id="reading-time">٠</span> د قراءة</span>
-          </div>
-          <div class="editor-actions">
-            <button id="doc-save-btn" class="doc-save-btn-icon btn-ghost" type="button" aria-label="حفظ المستند" title="حفظ">
-             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
-            </button>
-           <button onclick="clearEditor()" class="btn-ghost" type="button" title="مسح الكل">
-            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-           </button>
-           <button onclick="copyText()" class="btn-ghost" type="button" title="نسخ النص">
-            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-           </button>
-<button id="doc-import-btn" class="btn-ghost" type="button" aria-label="استيراد ملف" title="استيراد">
-             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-            </button>
-            <div class="doc-dropdown" style="display:inline-block;">
-             <button id="doc-export-trigger" class="btn-ghost" type="button" aria-label="تصدير" title="تصدير" aria-haspopup="true" aria-expanded="false">
-              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-             </button>
-             <div id="doc-export-menu" class="doc-dropdown__menu" role="menu" aria-label="خيارات التصدير">
-              <button type="button" class="doc-dropdown__item" role="menuitem" data-export-format="txt">نصي (.txt)</button>
-              <button type="button" class="doc-dropdown__item" role="menuitem" data-export-format="docx">Word (.docx)</button>
-              <button type="button" class="doc-dropdown__item" role="menuitem" data-export-format="pdf">PDF (.pdf)</button>
-             </div>
-            </div>
-          </div>
-         </div>
         </div>
         <button id="mobile-sheet-trigger" class="mobile-sheet-trigger" type="button" aria-expanded="false" aria-controls="bottom-sheet">
          <span>الاقتراحات (<span id="mobile-suggestion-count">٠</span>)</span>
@@ -1295,17 +1288,39 @@
     }
 
     /* ═══════════════════════════════════════════
-       Summarize — Source Toggle (editor vs custom)
+       Summarize — File Import
        ═══════════════════════════════════════════ */
-    window._summarySource = 'editor';
-    function setSummarySource(src) {
-      window._summarySource = src;
-      var editorBtn = document.getElementById('summary-src-editor');
-      var customBtn = document.getElementById('summary-src-custom');
-      var customWrap = document.getElementById('summary-custom-input-wrap');
-      if (editorBtn) editorBtn.classList.toggle('active', src === 'editor');
-      if (customBtn) customBtn.classList.toggle('active', src === 'custom');
-      if (customWrap) customWrap.classList.toggle('is-hidden', src !== 'custom');
+    window._summarySource = 'custom'; // always custom now
+    function setSummarySource() {} // no-op for backward compat
+
+    function importSummaryFile(inputEl) {
+      if (!inputEl || !inputEl.files || !inputEl.files[0]) return;
+      var file = inputEl.files[0];
+      var ta = document.getElementById('summary-custom-input');
+      if (!ta) return;
+
+      if (file.name.endsWith('.txt')) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+          ta.value = e.target.result;
+          if (typeof showToast === 'function') showToast('✓ تم استيراد الملف');
+        };
+        reader.readAsText(file, 'UTF-8');
+      } else if (file.name.endsWith('.docx')) {
+        // Use mammoth if available, otherwise fallback
+        if (typeof mammoth !== 'undefined') {
+          var reader = new FileReader();
+          reader.onload = function(e) {
+            mammoth.extractRawText({ arrayBuffer: e.target.result })
+              .then(function(result) { ta.value = result.value; if (typeof showToast === 'function') showToast('✓ تم استيراد الملف'); })
+              .catch(function() { if (typeof showToast === 'function') showToast('خطأ في قراءة الملف', 'error'); });
+          };
+          reader.readAsArrayBuffer(file);
+        } else {
+          if (typeof showToast === 'function') showToast('صيغة .docx غير مدعومة حاليًا — استخدم .txt', 'warning');
+        }
+      }
+      inputEl.value = ''; // reset for re-import
     }
 
     /* ═══════════════════════════════════════════
@@ -1356,7 +1371,6 @@
       if (selBar) selBar.classList.add('is-hidden');
       if (tool === 'summarize') {
         switchTab('summarize');
-        setSummarySource('custom');
         var ta = document.getElementById('summary-custom-input');
         if (ta) { ta.value = text; }
       } else if (tool === 'dialect') {
@@ -1782,17 +1796,12 @@
     }
 
     async function generateSummary(event) {
-      let text = '';
-      if (window._summarySource === 'custom') {
-        var customInput = document.getElementById('summary-custom-input');
-        text = customInput ? customInput.value.trim() : '';
-      } else {
-        text = (typeof getEditorText === 'function' ? getEditorText() : '').trim();
-      }
+      var customInput = document.getElementById('summary-custom-input');
+      let text = customInput ? customInput.value.trim() : '';
       
       if (!text) {
         const summaryText = document.getElementById('summary-text');
-        summaryText.innerHTML = '<p class="text-secondary text-center">' + (window._summarySource === 'custom' ? 'الرجاء كتابة نص في مربع الإدخال أولاً' : 'الرجاء كتابة نص في المحرر أولاً') + '</p>';
+        summaryText.innerHTML = '<p class="text-secondary text-center">الرجاء كتابة أو لصق نص في مربع الإدخال أولاً</p>';
         document.getElementById('summary-preview').classList.add('show');
         return;
       }
