@@ -1815,12 +1815,19 @@
       });
     }
 
-    // Ctrl+Q → Quran verification shortcut (e.code works with any keyboard language)
+    // Ctrl+Q → Quran panel shortcut (e.code works with any keyboard language)
     // Escape → Close Quran modal
     document.addEventListener('keydown', (e) => {
       if ((e.ctrlKey || e.metaKey) && e.code === 'KeyQ') {
         e.preventDefault();
-        verifyQuranText();
+        // Switch to Quran tab and copy selection if any
+        var sel = window.getSelection();
+        var text = sel ? sel.toString().trim() : '';
+        switchTab('quran');
+        if (text) {
+          var ta = document.getElementById('quran-input');
+          if (ta) ta.value = text;
+        }
       }
       if (e.key === 'Escape') {
         var modal = document.getElementById('quran-modal');
