@@ -39,6 +39,69 @@ function formatAlignRight() { execFormat('justifyRight'); }
 function formatAlignCenter() { execFormat('justifyCenter'); }
 function formatAlignLeft() { execFormat('justifyLeft'); }
 
+/* ── Text Direction (RTL/LTR) ── */
+function setDirection(dir) {
+  const editor = getEditorElement();
+  if (!editor) return;
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount > 0) {
+    const range = sel.getRangeAt(0);
+    let block = range.startContainer;
+    if (block.nodeType === 3) block = block.parentNode;
+    while (block && block !== editor && !['DIV','P','H1','H2','H3','H4','H5','H6','LI','BLOCKQUOTE'].includes(block.tagName)) {
+      block = block.parentNode;
+    }
+    if (block && block !== editor) {
+      block.setAttribute('dir', dir);
+      block.style.direction = dir;
+      block.style.textAlign = dir === 'rtl' ? 'right' : 'left';
+    } else {
+      editor.setAttribute('dir', dir);
+      editor.style.direction = dir;
+    }
+  }
+  updateFormatState();
+}
+
+/* ── Insert Link ── */
+function insertLink() {
+  const sel = window.getSelection();
+  if (!sel || !sel.rangeCount) return;
+  const selectedText = sel.toString();
+  const url = prompt('أدخل الرابط (URL):', 'https://');
+  if (!url || url === 'https://') return;
+  if (selectedText) {
+    execFormat('createLink', url);
+  } else {
+    const link = document.createElement('a');
+    link.href = url;
+    link.textContent = url;
+    link.target = '_blank';
+    const range = sel.getRangeAt(0);
+    range.insertNode(link);
+    range.setStartAfter(link);
+    range.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+}
+
+/* ── Line Height Cycling ── */
+var _currentLineHeight = 1.8;
+function cycleLineHeight() {
+  const editor = getEditorElement();
+  if (!editor) return;
+  const heights = [1.5, 2.0, 2.5, 1.8];
+  const idx = heights.indexOf(_currentLineHeight);
+  _currentLineHeight = heights[(idx + 1) % heights.length];
+  editor.style.lineHeight = _currentLineHeight;
+  // Show brief notification
+  const btn = document.getElementById('fmt-line-height');
+  if (btn) {
+    btn.setAttribute('data-tooltip', 'ارتفاع السطر: ' + _currentLineHeight);
+  }
+}
+
 
 /* ── Font family ── */
 function formatFont(fontName) {
@@ -129,6 +192,18 @@ function updateFormatState() {
     'fmt-align-left': 'justifyLeft',
   };
   Object.entries(alignMap).forEach(([id, command]) => {
+    const btn = document.getElementById(id);
+    if (btn) {
+      btn.classList.toggle('fmt-active', document.queryCommandState(command));
+    }
+  });
+
+  // Lists
+  const listMap = {
+    'fmt-ul': 'insertUnorderedList',
+    'fmt-ol': 'insertOrderedList',
+  };
+  Object.entries(listMap).forEach(([id, command]) => {
     const btn = document.getElementById(id);
     if (btn) {
       btn.classList.toggle('fmt-active', document.queryCommandState(command));
