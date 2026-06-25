@@ -94,11 +94,85 @@ class ArabicGrammarGuard:
 
         return " ".join(corrected_tokens)
 
+    def _apply_jazm_to_verb(self, word, token_info):
+        # 1. Handle Af'al Khamsa using camel_tools analysis
+        if token_info and token_info.analyses:
+            analysis = token_info.analyses[0].analysis
+            num = analysis.get('num', 's')
+            per = analysis.get('per', '3')
+            gen = analysis.get('gen', 'm')
+            
+            if num == 'p' and gen == 'm':
+                if word.endswith('ون'):
+                    return word[:-2] + 'وا'
+            elif num == 'd':
+                if word.endswith('ان'):
+                    return word[:-2] + 'ا'
+            elif num == 's' and per == '2' and gen == 'f':
+                if word.endswith('ين'):
+                    return word[:-2] + 'ي'
+
+        # 2. Handle defective verbs in jazm context
+        match = re.search(r'^(.*?)([يوىاَُِْ]?)$', word)
+        if match:
+            stem = match.group(1)
+            ending = match.group(2)
+
+            fatha_bases = ['سع', 'خش', 'رض', 'نس', 'بق', 'ر', 'نه', 'حظ', 'رع', 'أب', 'تمن', 'لق', 'هو', 'سل']
+            damma_bases = ['دع', 'رج', 'شك', 'نم', 'غز', 'عف', 'سم', 'دن', 'بد', 'خل', 'عل']
+            kasra_bases = ['مش', 'جر', 'قض', 'بك', 'هد', 'رم', 'أت', 'بن', 'ق', 'وف', 'شف', 'غن', 'عط', 'تق', 'شتر', 'عتن', 'ستدع', 'نته', 'رو']
+
+            fatha_stems = {p + b for p in ['ي', 'ت', 'أ', 'ن'] for b in fatha_bases}
+            damma_stems = {p + b for p in ['ي', 'ت', 'أ', 'ن'] for b in damma_bases}
+            kasra_stems = {p + b for p in ['ي', 'ت', 'أ', 'ن'] for b in kasra_bases}
+
+            if stem in fatha_stems:
+                return stem + 'َ'
+            elif stem in damma_stems:
+                return stem + 'ُ'
+            elif stem in kasra_stems:
+                return stem + 'ِ'
+            elif ending == 'و' and len(stem) >= 2:
+                return stem + 'ُ'
+            elif ending == 'ي' and len(stem) >= 2:
+                return stem + 'ِ'
+            elif (ending == 'ى' or ending == 'ا') and len(stem) >= 2:
+                if not word.endswith('وا'):
+                    return stem + 'َ'
+
+        return word
+
+    def _apply_nasb_to_verb(self, word, token_info):
+        # 1. Handle Af'al Khamsa using camel_tools analysis
+        if token_info and token_info.analyses:
+            analysis = token_info.analyses[0].analysis
+            num = analysis.get('num', 's')
+            per = analysis.get('per', '3')
+            gen = analysis.get('gen', 'm')
+            
+            if num == 'p' and gen == 'm':
+                if word.endswith('ون'):
+                    return word[:-2] + 'وا'
+            elif num == 'd':
+                if word.endswith('ان'):
+                    return word[:-2] + 'ا'
+            elif num == 's' and per == '2' and gen == 'f':
+                if word.endswith('ين'):
+                    return word[:-2] + 'ي'
+
+        # 2. Handle defective verbs in nasb
+        if word.endswith('و') and len(word) > 3:
+            return word + 'َ'
+        elif word.endswith('ي') and len(word) > 3:
+            return word + 'َ'
+            
+        return word
+
     def fix_verbs_nasb_and_jazm(self, text):
         tokens = simple_word_tokenize(text)
         disambig_tokens = self.mle.disambiguate(tokens)
 
-        nasb_particles = ['أن', 'لن', 'كي', 'لكي', 'حتى', 'إذن']
+        nasb_particles = ['أن', 'ان', 'لن', 'كي', 'لكي', 'حتى', 'حتي', 'إذن', 'اذا']
         jazm_particles = ['لم', 'لما', 'لا']
 
         corrected_tokens = []
@@ -120,37 +194,10 @@ class ArabicGrammarGuard:
 
             is_present_tense = word.startswith('ي') or word.startswith('ت') or word.startswith('ن') or word.startswith('أ')
             if (pos_tag == 'verb' or is_present_tense) and (is_nasb_context or is_jazm_context):
-                if word.endswith('ون'):
-                    word = word[:-2] + 'وا'
-                elif word.endswith('ان'):
-                    word = word[:-2] + 'ا'
-                elif word.endswith('ين'):
-                    word = word[:-2] + 'ي'
-                elif is_jazm_context:
-                    if word.endswith('و') and len(word) >= 3:
-                        word = word[:-1] + 'ُ'
-                    elif word.endswith('ي') or word.endswith('i'):
-                        stem = word[:-1]
-                        fatha_stems = {'يسع', 'تسع', 'أسع', 'نسع', 
-                                       'يخش', 'تخش', 'أخش', 'نخش',
-                                       'يرض', 'ترض', 'أرض', 'نرض',
-                                       'ينس', 'تنس', 'أنس', 'ننس',
-                                       'يبق', 'تبق', 'أبق', 'نبق',
-                                       'ير', 'تر', 'أر', 'نر',
-                                       'يلق', 'تلق', 'ألق', 'نلق',
-                                       'ينه', 'تنه', 'أنه', 'ننه'}
-                        if stem in fatha_stems:
-                            word = stem + 'َ'
-                        elif len(word) > 3:
-                            word = stem + 'ِ'
-                    elif (word.endswith('ى') or word.endswith('ا')) and len(word) >= 3:
-                        if not word.endswith('وا'):
-                            word = word[:-1] + 'َ'
+                if is_jazm_context:
+                    word = self._apply_jazm_to_verb(word, token_info)
                 elif is_nasb_context:
-                    if word.endswith('و') and len(word) > 3:
-                        word = word + 'َ'
-                    elif word.endswith('ي') and len(word) > 3:
-                        word = word + 'َ'
+                    word = self._apply_nasb_to_verb(word, token_info)
 
             corrected_tokens.append(word)
         return " ".join(corrected_tokens)
@@ -445,7 +492,7 @@ class ArabicGrammarGuard:
         return text
 
     def fix_conditional_sentences(self, text):
-        conditional_particles = {'إن', 'من', 'ما', 'متى', 'مهما', 'أينما', 'حيثما', 'أيان', 'كيفما', 'أنى'}
+        conditional_particles = {'إن', 'ان', 'من', 'ما', 'متى', 'متي', 'مهما', 'أينما', 'حيثما', 'أيان', 'ايان', 'كيفما', 'أنى', 'اني'}
         tokens = simple_word_tokenize(text)
         disambig_tokens = self.mle.disambiguate(tokens)
         corrected_tokens = list(tokens)
@@ -474,19 +521,15 @@ class ArabicGrammarGuard:
                 continue
                 
             if in_cond and pos_tag == 'verb':
-                # Apply jazm to present tense verbs ending in ون, ان, ين
-                if word.endswith('ون'):
-                    word = word[:-2] + 'وا'
-                elif word.endswith('ان'):
-                    word = word[:-2] + 'ا'
-                elif word.endswith('ين'):
-                    word = word[:-2] + 'ي'
+                # Apply jazm using the comprehensive camel_tools helper
+                word = self._apply_jazm_to_verb(word, token_info)
                     
                 # Fix pronoun mismatch if 2nd person context exists
                 if has_2nd_person_context and word.startswith('ي') and (word.endswith('وا') or word.endswith('ا') or word.endswith('ي')):
                     word = 'ت' + word[1:]
                     
                 corrected_tokens[i] = word
+                # Increment jazmed verbs counter (handles both فعل الشرط and جواب الشرط)
                 verbs_jazmed += 1
                 if verbs_jazmed >= 2:
                     in_cond = False
