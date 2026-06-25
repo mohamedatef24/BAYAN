@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="ar" dir="rtl" class="h-full">
  <head>
   <meta charset="UTF-8">
@@ -668,7 +668,7 @@
             <button id="write-tab" onclick="switchTab('write')" class="editor-tab active" type="button">كتابة</button>
             <button id="summarize-tab" onclick="switchTab('summarize')" class="editor-tab" type="button">تلخيص</button>
              <button id="dialect-tab" onclick="switchTab('dialect')" class="editor-tab" type="button">تحويل للفصحى</button>
-            <button id="quran-tab" onclick="switchTab('quran')" class="editor-tab" type="button">القرآن</button>
+            <button id="quran-tab" onclick="switchTab('quran')" class="editor-tab" type="button">تدقيق النص القرآني</button>
             <button id="docs-sidebar-toggle" class="docs-sidebar-toggle-mobile btn-ghost lg:hidden" type="button" aria-label="مستنداتي" aria-expanded="false" aria-controls="docs-sidebar">
              <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
             </button>
@@ -680,9 +680,9 @@
             </div>
             <span id="auto-save-status" class="text-xs text-secondary" style="opacity:0;transition:opacity 0.3s;"></span>
             <div class="window-dots" aria-hidden="true">
-             <span class="dot dot--red" title="مسح المحرر" onclick="if(typeof clearEditor==='function'){clearEditor();}" style="cursor:pointer;"></span>
-             <span class="dot dot--yellow" title="طي لوحة الاقتراحات" onclick="document.querySelector('.sidebar-desktop')?.classList.toggle('collapsed')" style="cursor:pointer;"></span>
-             <span class="dot dot--green" title="توسيع المحرر للعرض الكامل" onclick="document.querySelector('.editor-layout')?.classList.toggle('editor-fullscreen')" style="cursor:pointer;"></span>
+             <span class="dot dot--red"></span>
+             <span class="dot dot--yellow"></span>
+             <span class="dot dot--green"></span>
             </div>
            </div>
           </div>
@@ -2215,7 +2215,7 @@
     <span class="sel-tool-sep"></span>
     <button type="button" class="sel-tool-btn" onclick="selectionToolAction('quran')" title="تدقيق النص القرآني المحدد">
      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
-     قرآن
+     تدقيق قرآني
     </button>
    </div>
  </body>
