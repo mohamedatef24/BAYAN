@@ -3901,17 +3901,22 @@ select:focus-visible,
   border-radius: 2px;
 }
 
-/* ── Focus Mode ── */
 body.focus-mode .main-nav,
-body.focus-mode .suggestions-panel,
+body.focus-mode .sidebar-panel,
 body.focus-mode .docs-panel,
-body.focus-mode .editor-footer,
-body.focus-mode .editor-stats,
-body.focus-mode .editor-actions {
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.4s ease;
+body.focus-mode .docs-panel-desktop {
+  display: none !important;
 }
+
+body.focus-mode .editor-footer {
+  opacity: 0.2;
+  transition: opacity 0.3s ease;
+}
+
+body.focus-mode .editor-footer:hover {
+  opacity: 1;
+}
+
 body.focus-mode .editor-layout {
   grid-template-columns: 1fr !important;
 }
