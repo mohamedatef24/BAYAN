@@ -941,7 +941,11 @@ function trackScore(score) {
 }
 function renderSparkline() {
   const container = document.getElementById('score-sparkline');
-  if (!container || _scoreHistory.length < 2) return;
+  if (!container) return;
+  if (_scoreHistory.length < 3) {
+    container.innerHTML = '';
+    return;
+  }
   const w = 120, h = 30;
   const max = Math.max(..._scoreHistory, 100);
   const min = Math.min(..._scoreHistory, 0);
@@ -951,5 +955,9 @@ function renderSparkline() {
     const y = h - ((v - min) / range) * h;
     return `${x},${y}`;
   }).join(' ');
-  container.innerHTML = `<svg width="${w}" height="${h}" class="sparkline"><polyline points="${points}" fill="none" stroke="var(--color-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  const polygonPoints = `0,${h} ${points} ${w},${h}`;
+  container.innerHTML = `<svg width="${w}" height="${h}" class="sparkline">
+    <polygon points="${polygonPoints}" fill="var(--color-primary)" opacity="0.15"/>
+    <polyline points="${points}" fill="none" stroke="var(--color-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
 }
