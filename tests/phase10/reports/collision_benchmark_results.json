@@ -1,23 +1,23 @@
 {
-  "timestamp": "2026-06-25T23:19:59Z",
-  "target": "https://bayan10-bayan-api.hf.space",
+  "timestamp": "2026-06-26T02:42:41Z",
+  "target": "http://127.0.0.1:5000",
   "metrics": {
     "total": 50,
-    "TP": 30,
+    "TP": 35,
     "FP": 0,
     "TN": 0,
-    "FN": 20,
+    "FN": 15,
     "ERROR": 0,
     "precision": 1.0,
-    "recall": 0.6,
-    "f1": 0.75,
+    "recall": 0.7,
+    "f1": 0.8235,
     "fpr": 0,
-    "fnr": 0.4,
-    "pass_rate": 0.6,
+    "fnr": 0.3,
+    "pass_rate": 0.7,
     "overcorrection_rate": 0.0,
-    "undercorrection_rate": 0.4,
-    "latency_p50": 3290,
-    "latency_p95": 5261
+    "undercorrection_rate": 0.3,
+    "latency_p50": 8990,
+    "latency_p95": 11672
   },
   "by_category": {
     "spelling_grammar_overlap": {
@@ -27,28 +27,28 @@
     },
     "grammar_drops_spelling": {
       "total": 5,
-      "pass": 2,
-      "fail": 3
+      "pass": 4,
+      "fail": 1
     },
     "spelling_blocks_grammar": {
       "total": 10,
-      "pass": 8,
-      "fail": 2
+      "pass": 9,
+      "fail": 1
     },
     "multi_stage_collision": {
       "total": 9,
-      "pass": 3,
-      "fail": 6
+      "pass": 5,
+      "fail": 4
     },
     "punctuation_near_spelling": {
       "total": 5,
-      "pass": 2,
-      "fail": 3
+      "pass": 3,
+      "fail": 2
     },
     "three_stage_collision": {
       "total": 7,
-      "pass": 5,
-      "fail": 2
+      "pass": 4,
+      "fail": 3
     },
     "adjacent_corrections": {
       "total": 7,
@@ -64,14 +64,14 @@
       "input": "المهندسون صممتو المشرووع",
       "expected": "المهندسون صمموا المشروع",
       "severity": "critical",
-      "pipeline_output": "المهندسون صممت المشروع",
+      "pipeline_output": "المهندسون صممت و المشروع",
       "pipeline_suggestions": [
         {
           "alternatives": [],
           "confidence": 0.8,
           "correction": "المشروع.",
           "end": 24,
-          "id": "746a5254-10be-43bb-acfd-e3b5f154b7bf",
+          "id": "beea3046-b987-4e90-a00e-ff34a17f0226",
           "locked": true,
           "original": "المشرووع",
           "priority": 2,
@@ -79,46 +79,50 @@
           "type": "punctuation"
         },
         {
-          "alternatives": [],
-          "confidence": 0.75,
-          "correction": "صممت",
-          "end": 15,
-          "id": "bbdb3265-0419-4a82-bd59-c29c76536800",
-          "locked": true,
-          "original": "صممتو",
-          "priority": 1,
-          "start": 10,
-          "type": "spelling"
-        },
-        {
           "alternatives": [
-            "المشروع",
+            "و المشروع",
             "المشرووع"
           ],
-          "confidence": 0.7,
-          "correction": "المشروع",
+          "confidence": 0.85,
+          "correction": "و المشروع",
           "end": 24,
-          "id": "e61a9e79-23c1-4581-ba99-6af90d945fa3",
+          "id": "3d4d2b89-c2a4-4525-bf8a-3bd7c48be877",
           "locked": true,
           "original": "المشرووع",
           "priority": 1,
           "start": 16,
           "type": "spelling"
+        },
+        {
+          "alternatives": [
+            "صممت",
+            "صممتو"
+          ],
+          "confidence": 0.7,
+          "correction": "صممت",
+          "end": 15,
+          "id": "482d5720-8daf-4635-8200-06c3994e8941",
+          "locked": true,
+          "original": "صممتو",
+          "priority": 1,
+          "start": 10,
+          "type": "spelling"
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 837,
-        "punctuation_ms": 2791,
-        "spelling_ms": 2649,
-        "total_ms": 6289
+        "grammar_ms": 5571,
+        "punctuation_error": "AttributeError: 'CorrectionPatch' object has no attribute 'correction'",
+        "punctuation_ms": 1965,
+        "spelling_ms": 3303,
+        "total_ms": 10850
       },
-      "pipeline_ms": 11116,
+      "pipeline_ms": 10859,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
       "punctuation_raw_ms": 0,
       "pipeline_verdict": "FN",
-      "pipeline_detail": "Missing: ['صمموا'], Extra: ['صممت']",
+      "pipeline_detail": "Missing: ['صمموا'], Extra: ['و', 'صممت']",
       "root_cause_component": "PIPELINE",
       "root_cause_stage": "integration",
       "root_cause_detail": "Spelling and grammar corrections overlapped",
@@ -139,14 +143,12 @@
         {
           "alternatives": [
             "الأولاد",
-            "البلاد",
-            "الولادة",
             "الولاد"
           ],
           "confidence": 0.7,
           "correction": "الأولاد",
           "end": 6,
-          "id": "92a51674-3b44-4426-8096-0ea49422326a",
+          "id": "e517dbde-9591-4a11-b8e6-70eb0e198f64",
           "locked": true,
           "original": "الولاد",
           "priority": 1,
@@ -161,7 +163,7 @@
           "confidence": 0.7,
           "correction": "بالشارع",
           "end": 22,
-          "id": "315eace9-8993-4921-972e-2bdba2547342",
+          "id": "693e0951-9a20-4a1a-9f69-05f2130a9077",
           "locked": true,
           "original": "بالشاروع",
           "priority": 1,
@@ -170,12 +172,12 @@
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 434,
-        "punctuation_ms": 559,
-        "spelling_ms": 705,
-        "total_ms": 1703
+        "grammar_ms": 6412,
+        "punctuation_ms": 429,
+        "spelling_ms": 1622,
+        "total_ms": 8467
       },
-      "pipeline_ms": 2474,
+      "pipeline_ms": 8495,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
@@ -197,14 +199,26 @@
       "input": "البنات يذهبون الي المدرسه",
       "expected": "البنات يذهبن إلى المدرسة",
       "severity": "critical",
-      "pipeline_output": "البنات يذهبون إلى المدرسة.",
+      "pipeline_output": "البنات يذهبن إلى المدرسة.",
       "pipeline_suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "يذهبن",
+          "end": 13,
+          "id": "8acf2ec2-f500-40f1-82fc-3b8df8b49a90",
+          "locked": true,
+          "original": "يذهبون",
+          "priority": 3,
+          "start": 7,
+          "type": "grammar"
+        },
         {
           "alternatives": [],
           "confidence": 0.8,
           "correction": "المدرسة.",
           "end": 25,
-          "id": "b15694ad-9973-4918-b76b-740f042cf4f0",
+          "id": "f4c0f86a-7c5b-4afe-8d6e-041dae873353",
           "locked": true,
           "original": "المدرسه",
           "priority": 2,
@@ -214,14 +228,12 @@
         {
           "alternatives": [
             "إلى",
-            "ال",
-            "الم",
             "الي"
           ],
           "confidence": 0.9,
           "correction": "إلى",
           "end": 17,
-          "id": "8bbf41dd-ebe7-4464-99f1-f5cbe4275906",
+          "id": "9d698a42-b213-4bd9-9611-308f7a09452b",
           "locked": true,
           "original": "الي",
           "priority": 1,
@@ -231,14 +243,12 @@
         {
           "alternatives": [
             "المدرسة",
-            "المدرسي",
-            "المدرس",
             "المدرسه"
           ],
           "confidence": 0.9,
           "correction": "المدرسة",
           "end": 25,
-          "id": "3348122a-c3f3-49cc-b6ea-1635c468870f",
+          "id": "fb449051-bcc8-44cc-af1f-181dc4d01433",
           "locked": true,
           "original": "المدرسه",
           "priority": 1,
@@ -247,21 +257,22 @@
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 651,
-        "punctuation_ms": 637,
-        "spelling_ms": 674,
-        "total_ms": 1967
+        "grammar_ms": 1685,
+        "punctuation_error": "AttributeError: 'CorrectionPatch' object has no attribute 'correction'",
+        "punctuation_ms": 492,
+        "spelling_ms": 2202,
+        "total_ms": 4387
       },
-      "pipeline_ms": 2600,
+      "pipeline_ms": 4392,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
       "punctuation_raw_ms": 0,
-      "pipeline_verdict": "FN",
-      "pipeline_detail": "Missing: ['يذهبن'], Extra: ['يذهبون']",
-      "root_cause_component": "PIPELINE",
-      "root_cause_stage": "integration",
-      "root_cause_detail": "Spelling and grammar corrections overlapped",
+      "pipeline_verdict": "TP",
+      "pipeline_detail": "All corrections applied correctly",
+      "root_cause_component": "",
+      "root_cause_stage": "",
+      "root_cause_detail": "",
       "regression_type": "",
       "regression_detail": "",
       "span_valid": true,
@@ -281,7 +292,7 @@
           "confidence": 0.8,
           "correction": "المصنع.",
           "end": 23,
-          "id": "1b92dcea-e1fd-418e-acd9-46a5a93f56b5",
+          "id": "14afa170-d557-4b30-8626-c09eb415e3da",
           "locked": true,
           "original": "المصنع",
           "priority": 2,
@@ -289,16 +300,11 @@
           "type": "punctuation"
         },
         {
-          "alternatives": [
-            "المصنع",
-            "المصنعة",
-            "المصنوع",
-            "المصنعو"
-          ],
-          "confidence": 0.7,
+          "alternatives": [],
+          "confidence": 0.75,
           "correction": "المصنع",
           "end": 24,
-          "id": "6c6fd3c3-f796-4297-af85-9a5f4242b309",
+          "id": "a214e05f-ac80-4f71-9bc1-8becff310d93",
           "locked": true,
           "original": "المصنعو",
           "priority": 1,
@@ -307,12 +313,13 @@
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 795,
-        "punctuation_ms": 538,
-        "spelling_ms": 682,
-        "total_ms": 2019
+        "grammar_ms": 6355,
+        "punctuation_error": "AttributeError: 'CorrectionPatch' object has no attribute 'correction'",
+        "punctuation_ms": 467,
+        "spelling_ms": 2637,
+        "total_ms": 9465
       },
-      "pipeline_ms": 2952,
+      "pipeline_ms": 9469,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
@@ -341,7 +348,7 @@
           "confidence": 1.0,
           "correction": "ذهبن",
           "end": 10,
-          "id": "971f7a28-b8d8-4cd6-9c15-795091bbc8a1",
+          "id": "8fc78705-9739-4dc2-8fd3-283653f9d8fc",
           "locked": true,
           "original": "ذهب",
           "priority": 3,
@@ -353,7 +360,7 @@
           "confidence": 0.7,
           "correction": "السوق.",
           "end": 20,
-          "id": "8676f814-8655-4164-a04f-1d4afeda4103",
+          "id": "30b3d745-16fe-485f-b4b6-63a37a10ec2f",
           "locked": true,
           "original": "السوق",
           "priority": 2,
@@ -363,14 +370,12 @@
         {
           "alternatives": [
             "إلى",
-            "ال",
-            "الم",
             "الي"
           ],
           "confidence": 0.9,
           "correction": "إلى",
           "end": 14,
-          "id": "76e7695d-a020-4ec2-b0b5-2b12cce929c7",
+          "id": "02047a31-90f8-4147-a358-f4c9e11e82b7",
           "locked": true,
           "original": "الي",
           "priority": 1,
@@ -379,12 +384,12 @@
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 609,
-        "punctuation_ms": 593,
-        "spelling_ms": 573,
-        "total_ms": 1780
+        "grammar_ms": 6771,
+        "punctuation_ms": 656,
+        "spelling_ms": 1548,
+        "total_ms": 8985
       },
-      "pipeline_ms": 2960,
+      "pipeline_ms": 8990,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
@@ -413,7 +418,7 @@
           "confidence": 1.0,
           "correction": "أخاك",
           "end": 9,
-          "id": "eeae59dd-fc8a-4094-a497-8b59ca173c55",
+          "id": "f651f74f-0f7e-467a-a06d-6587ea808f57",
           "locked": true,
           "original": "اخوك",
           "priority": 3,
@@ -421,15 +426,26 @@
           "type": "grammar"
         },
         {
+          "alternatives": [],
+          "confidence": 0.7,
+          "correction": "المسجد.",
+          "end": 20,
+          "id": "0a27d390-fc1c-498e-9f57-64b286ec6a8c",
+          "locked": true,
+          "original": "المسجيد",
+          "priority": 2,
+          "start": 13,
+          "type": "punctuation"
+        },
+        {
           "alternatives": [
             "المسجد",
-            "المجيد",
             "المسجيد"
           ],
           "confidence": 0.7,
           "correction": "المسجد",
           "end": 20,
-          "id": "a614aef5-856a-4036-b020-712092951edd",
+          "id": "eb1dfe16-d592-479a-aafb-354d8f81d715",
           "locked": true,
           "original": "المسجيد",
           "priority": 1,
@@ -438,12 +454,12 @@
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 492,
-        "punctuation_ms": 549,
-        "spelling_ms": 895,
-        "total_ms": 1939
+        "grammar_ms": 7185,
+        "punctuation_ms": 428,
+        "spelling_ms": 1752,
+        "total_ms": 9370
       },
-      "pipeline_ms": 3036,
+      "pipeline_ms": 9395,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
@@ -465,14 +481,26 @@
       "input": "ان ابوك رجل طييب",
       "expected": "إن أباك رجل طيب",
       "severity": "critical",
-      "pipeline_output": "أن ابوك رجل طيب",
+      "pipeline_output": "إن أباك رجل طيب",
       "pipeline_suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "إن أباك",
+          "end": 7,
+          "id": "9bf4c6e2-34b7-4b8d-9aec-285c2875f51f",
+          "locked": true,
+          "original": "ان ابوك",
+          "priority": 3,
+          "start": 0,
+          "type": "grammar"
+        },
         {
           "alternatives": [],
           "confidence": 0.8,
           "correction": "طيب.",
           "end": 16,
-          "id": "e5de9741-b0e4-41fc-a558-0d4129816b5c",
+          "id": "e8447db5-652c-45a5-b37e-39cb859dd4b7",
           "locked": true,
           "original": "طييب",
           "priority": 2,
@@ -481,32 +509,13 @@
         },
         {
           "alternatives": [
-            "أن",
-            "ال",
-            "من",
-            "ان"
-          ],
-          "confidence": 0.9,
-          "correction": "أن",
-          "end": 2,
-          "id": "7830617f-2de5-4ec3-96d5-98ce593e8a58",
-          "locked": true,
-          "original": "ان",
-          "priority": 1,
-          "start": 0,
-          "type": "spelling"
-        },
-        {
-          "alternatives": [
             "طيب",
-            "طبيب",
-            "يطيب",
             "طييب"
           ],
           "confidence": 0.7,
           "correction": "طيب",
           "end": 16,
-          "id": "57cb0f47-11d6-4cc8-b1d6-1ee3d742c755",
+          "id": "a443da1a-6b2a-4f32-af9b-24477f22e40a",
           "locked": true,
           "original": "طييب",
           "priority": 1,
@@ -515,21 +524,22 @@
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 553,
-        "punctuation_ms": 423,
-        "spelling_ms": 636,
-        "total_ms": 1616
+        "grammar_ms": 7814,
+        "punctuation_error": "AttributeError: 'CorrectionPatch' object has no attribute 'correction'",
+        "punctuation_ms": 294,
+        "spelling_ms": 2292,
+        "total_ms": 10411
       },
-      "pipeline_ms": 3318,
+      "pipeline_ms": 10416,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
       "punctuation_raw_ms": 0,
-      "pipeline_verdict": "FN",
-      "pipeline_detail": "Missing: ['أباك', 'إن'], Extra: ['أن', 'ابوك']",
-      "root_cause_component": "PIPELINE",
-      "root_cause_stage": "integration",
-      "root_cause_detail": "Grammar stage dropped spelling fix",
+      "pipeline_verdict": "TP",
+      "pipeline_detail": "All corrections applied correctly",
+      "root_cause_component": "",
+      "root_cause_stage": "",
+      "root_cause_detail": "",
       "regression_type": "",
       "regression_detail": "",
       "span_valid": true,
@@ -542,49 +552,38 @@
       "input": "في المهندسون الماهروون",
       "expected": "في المهندسين الماهرين",
       "severity": "critical",
-      "pipeline_output": "في المهندسين الماهرينوومن.",
+      "pipeline_output": "في المهندسين الماهرين",
       "pipeline_suggestions": [
         {
           "alternatives": [],
           "confidence": 1.0,
           "correction": "المهندسين الماهرين",
-          "end": 19,
-          "id": "fddd4583-22f2-48a2-b9ff-2645c71257f1",
+          "end": 22,
+          "id": "cb69773b-3b84-436e-a804-32649c051358",
           "locked": true,
-          "original": "المهندسون الماهر",
+          "original": "المهندسون الماهروون",
           "priority": 3,
           "start": 3,
           "type": "grammar"
-        },
-        {
-          "alternatives": [],
-          "confidence": 0.8,
-          "correction": "من.",
-          "end": 22,
-          "id": "86cdfb93-0187-4689-bdff-143db1b02e1b",
-          "locked": true,
-          "original": "ن",
-          "priority": 2,
-          "start": 21,
-          "type": "punctuation"
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 699,
-        "punctuation_ms": 678,
-        "spelling_ms": 770,
-        "total_ms": 2150
+        "grammar_ms": 7086,
+        "punctuation_error": "AttributeError: 'CorrectionPatch' object has no attribute 'correction'",
+        "punctuation_ms": 393,
+        "spelling_ms": 2091,
+        "total_ms": 9575
       },
-      "pipeline_ms": 3290,
+      "pipeline_ms": 9579,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
       "punctuation_raw_ms": 0,
-      "pipeline_verdict": "FN",
-      "pipeline_detail": "Missing: ['الماهرين'], Extra: ['الماهرينوومن']",
-      "root_cause_component": "PIPELINE",
-      "root_cause_stage": "integration",
-      "root_cause_detail": "Grammar stage dropped spelling fix",
+      "pipeline_verdict": "TP",
+      "pipeline_detail": "All corrections applied correctly",
+      "root_cause_component": "",
+      "root_cause_stage": "",
+      "root_cause_detail": "",
       "regression_type": "",
       "regression_detail": "",
       "span_valid": true,
@@ -604,7 +603,7 @@
           "confidence": 1.0,
           "correction": "هاتان",
           "end": 4,
-          "id": "4f915649-6166-43e3-9304-8c14eacbc68e",
+          "id": "20b34d5c-302c-4f62-bf71-c72ff7ede918",
           "locked": true,
           "original": "هذان",
           "priority": 3,
@@ -616,7 +615,7 @@
           "confidence": 1.0,
           "correction": "مجتهدتان.",
           "end": 24,
-          "id": "e7580180-4eea-4563-8444-5dd6a2dd9817",
+          "id": "342fdbf0-756e-425f-ab0d-17c88a1dceac",
           "locked": true,
           "original": "مجتهدتاان",
           "priority": 3,
@@ -625,12 +624,13 @@
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 680,
-        "punctuation_ms": 504,
-        "spelling_ms": 1130,
-        "total_ms": 2316
+        "grammar_ms": 1674,
+        "punctuation_error": "AttributeError: 'CorrectionPatch' object has no attribute 'correction'",
+        "punctuation_ms": 353,
+        "spelling_ms": 2638,
+        "total_ms": 4670
       },
-      "pipeline_ms": 3339,
+      "pipeline_ms": 4675,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
@@ -652,14 +652,14 @@
       "input": "كي يتعلمون الدرسو",
       "expected": "كي يتعلموا الدرس",
       "severity": "critical",
-      "pipeline_output": "كي يتعلموا الدروس.و",
+      "pipeline_output": "كي يتعلم الدرسو",
       "pipeline_suggestions": [
         {
           "alternatives": [],
           "confidence": 1.0,
-          "correction": "يتعلموا",
+          "correction": "يتعلم",
           "end": 10,
-          "id": "99bb65af-e96f-4f0e-a00b-8bc56d410342",
+          "id": "80b5e953-9d91-48d6-8ab5-de9ba635b49e",
           "locked": true,
           "original": "يتعلمون",
           "priority": 3,
@@ -669,29 +669,42 @@
         {
           "alternatives": [],
           "confidence": 0.8,
-          "correction": "الدروس.",
+          "correction": "الدرس.",
           "end": 16,
-          "id": "c416bb48-4b5a-43d2-a8da-4c7ec59ef29c",
+          "id": "805fb5d1-b02d-4da6-8340-4717c049502b",
           "locked": true,
           "original": "الدرس",
           "priority": 2,
           "start": 11,
           "type": "punctuation"
+        },
+        {
+          "alternatives": [],
+          "confidence": 0.75,
+          "correction": "الدرس",
+          "end": 17,
+          "id": "2c0714d2-7fd3-4641-b4d8-f09395d43316",
+          "locked": true,
+          "original": "الدرسو",
+          "priority": 1,
+          "start": 11,
+          "type": "spelling"
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 441,
-        "punctuation_ms": 482,
-        "spelling_ms": 629,
-        "total_ms": 1556
+        "grammar_ms": 7507,
+        "punctuation_error": "AttributeError: 'CorrectionPatch' object has no attribute 'correction'",
+        "punctuation_ms": 313,
+        "spelling_ms": 1405,
+        "total_ms": 9231
       },
-      "pipeline_ms": 2390,
+      "pipeline_ms": 9236,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
       "punctuation_raw_ms": 0,
       "pipeline_verdict": "FN",
-      "pipeline_detail": "Missing: ['الدرس'], Extra: ['الدروس.و']",
+      "pipeline_detail": "Missing: ['الدرس', 'يتعلموا'], Extra: ['يتعلم', 'الدرسو']",
       "root_cause_component": "PIPELINE",
       "root_cause_stage": "integration",
       "root_cause_detail": "Grammar stage dropped spelling fix",
@@ -714,7 +727,7 @@
           "confidence": 1.0,
           "correction": "جميلة جداً",
           "end": 16,
-          "id": "7d0ecf2c-cdec-48a2-8ebf-aad881b1b622",
+          "id": "360499ed-6671-4fdc-a2e9-e531a03863b3",
           "locked": true,
           "original": "جميل جدا",
           "priority": 3,
@@ -729,7 +742,7 @@
           "confidence": 0.9,
           "correction": "السيارة",
           "end": 7,
-          "id": "037ecbed-bcf8-4f6c-be97-d163f0b78540",
+          "id": "da9562ba-5a99-492a-8ba0-83f5c8ce401e",
           "locked": true,
           "original": "السياره",
           "priority": 1,
@@ -738,12 +751,13 @@
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 497,
-        "punctuation_ms": 471,
-        "spelling_ms": 722,
-        "total_ms": 1694
+        "grammar_ms": 8157,
+        "punctuation_error": "AttributeError: 'CorrectionPatch' object has no attribute 'correction'",
+        "punctuation_ms": 306,
+        "spelling_ms": 1650,
+        "total_ms": 10120
       },
-      "pipeline_ms": 2534,
+      "pipeline_ms": 10127,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
@@ -772,7 +786,7 @@
           "confidence": 1.0,
           "correction": "كبيرة وواسعة",
           "end": 18,
-          "id": "6d784594-edc9-47ad-be64-8be9b8f61777",
+          "id": "a7bd5676-d82e-45d8-a26b-717787ae8ff2",
           "locked": true,
           "original": "كبير وواسع",
           "priority": 3,
@@ -782,13 +796,12 @@
         {
           "alternatives": [
             "المدينة",
-            "المدين",
             "المدينه"
           ],
           "confidence": 0.9,
           "correction": "المدينة",
           "end": 7,
-          "id": "514dbcdb-dee9-4d0c-9031-4235856676a7",
+          "id": "3477dffb-21b3-4963-9183-93213055d6b1",
           "locked": true,
           "original": "المدينه",
           "priority": 1,
@@ -797,12 +810,13 @@
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 676,
-        "punctuation_ms": 632,
-        "spelling_ms": 650,
-        "total_ms": 1962
+        "grammar_ms": 4378,
+        "punctuation_error": "AttributeError: 'CorrectionPatch' object has no attribute 'correction'",
+        "punctuation_ms": 431,
+        "spelling_ms": 1771,
+        "total_ms": 6588
       },
-      "pipeline_ms": 3634,
+      "pipeline_ms": 6594,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
@@ -824,14 +838,14 @@
       "input": "الطالبه متفوق في دراسته",
       "expected": "الطالبة متفوقة في دراستها",
       "severity": "critical",
-      "pipeline_output": "الطالبة متفوقة في دراستة.",
+      "pipeline_output": "الطالبة متفوقة في دراستها.",
       "pipeline_suggestions": [
         {
           "alternatives": [],
           "confidence": 1.0,
           "correction": "متفوقة",
           "end": 13,
-          "id": "1f002d4e-ba0d-45a1-9bbe-1688567e21c1",
+          "id": "050288c7-3c20-4bdf-911c-c0595689786e",
           "locked": true,
           "original": "متفوق",
           "priority": 3,
@@ -840,66 +854,49 @@
         },
         {
           "alternatives": [],
-          "confidence": 0.8,
-          "correction": "دراستة.",
+          "confidence": 1.0,
+          "correction": "دراستها.",
           "end": 23,
-          "id": "5276dc00-72f9-45dc-abfe-b061b519e5fb",
+          "id": "283f884e-df11-4a6a-8ec9-973769b22bfc",
           "locked": true,
           "original": "دراسته",
-          "priority": 2,
+          "priority": 3,
           "start": 17,
-          "type": "punctuation"
+          "type": "grammar"
         },
         {
           "alternatives": [
             "الطالبة",
-            "الطالب",
             "الطالبه"
           ],
           "confidence": 0.9,
           "correction": "الطالبة",
           "end": 7,
-          "id": "3cceff47-0149-4f8c-af76-731716ac40ee",
+          "id": "9a121f24-bc8d-46ce-abe9-5e4e267fd6ee",
           "locked": true,
           "original": "الطالبه",
           "priority": 1,
           "start": 0,
           "type": "spelling"
-        },
-        {
-          "alternatives": [
-            "دراستة",
-            "دراستها",
-            "دراستهم",
-            "دراسته"
-          ],
-          "confidence": 0.9,
-          "correction": "دراستة",
-          "end": 23,
-          "id": "1f554d21-2f27-4d89-a90c-6f0045580828",
-          "locked": true,
-          "original": "دراسته",
-          "priority": 1,
-          "start": 17,
-          "type": "spelling"
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 795,
-        "punctuation_ms": 559,
-        "spelling_ms": 663,
-        "total_ms": 2023
+        "grammar_ms": 7233,
+        "punctuation_error": "AttributeError: 'CorrectionPatch' object has no attribute 'correction'",
+        "punctuation_ms": 530,
+        "spelling_ms": 2411,
+        "total_ms": 10186
       },
-      "pipeline_ms": 3283,
+      "pipeline_ms": 10190,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
       "punctuation_raw_ms": 0,
-      "pipeline_verdict": "FN",
-      "pipeline_detail": "Missing: ['دراستها'], Extra: ['دراستة']",
-      "root_cause_component": "MODEL",
-      "root_cause_stage": "grammar",
-      "root_cause_detail": "Grammar model missed gender agreement correction",
+      "pipeline_verdict": "TP",
+      "pipeline_detail": "All corrections applied correctly",
+      "root_cause_component": "",
+      "root_cause_stage": "",
+      "root_cause_detail": "",
       "regression_type": "",
       "regression_detail": "",
       "span_valid": true,
@@ -919,7 +916,7 @@
           "confidence": 1.0,
           "correction": "مشرقة",
           "end": 10,
-          "id": "667c7aa5-a18b-4f43-8cdc-42e5cb35fb28",
+          "id": "bba4a91a-438f-49ea-821a-6776e9ccb9b4",
           "locked": true,
           "original": "مشرق",
           "priority": 3,
@@ -934,7 +931,7 @@
           "confidence": 0.7,
           "correction": "اليوم",
           "end": 17,
-          "id": "e50ed90d-4ca5-4e43-b6db-76281433378a",
+          "id": "db465396-673a-493d-9b6b-b2157832a687",
           "locked": true,
           "original": "اليووم",
           "priority": 1,
@@ -943,12 +940,12 @@
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 539,
-        "punctuation_ms": 562,
-        "spelling_ms": 583,
-        "total_ms": 1687
+        "grammar_ms": 8319,
+        "punctuation_ms": 457,
+        "spelling_ms": 2683,
+        "total_ms": 11466
       },
-      "pipeline_ms": 2433,
+      "pipeline_ms": 11472,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
@@ -977,7 +974,7 @@
           "confidence": 1.0,
           "correction": "ذكية",
           "end": 9,
-          "id": "31be0d0c-c297-45e7-9da6-e13c1b16e995",
+          "id": "2a03de89-c97e-45be-96f4-055a0f443cbf",
           "locked": true,
           "original": "ذكي",
           "priority": 3,
@@ -989,7 +986,7 @@
           "confidence": 0.8,
           "correction": "المدرسة.",
           "end": 20,
-          "id": "df41d824-6db1-41c2-8cea-d3f418ab1426",
+          "id": "07308578-3ee1-412d-bb28-79e9c2539504",
           "locked": true,
           "original": "المدرسه",
           "priority": 2,
@@ -999,14 +996,12 @@
         {
           "alternatives": [
             "المدرسة",
-            "المدرسي",
-            "المدرس",
             "المدرسه"
           ],
           "confidence": 0.9,
           "correction": "المدرسة",
           "end": 20,
-          "id": "208bed91-178b-47a2-b8dc-84f6ef1f9747",
+          "id": "5bc98cbe-38a6-481a-82a3-8f21a8e424dc",
           "locked": true,
           "original": "المدرسه",
           "priority": 1,
@@ -1015,12 +1010,13 @@
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 609,
-        "punctuation_ms": 696,
-        "spelling_ms": 605,
-        "total_ms": 1915
+        "grammar_ms": 5082,
+        "punctuation_error": "AttributeError: 'CorrectionPatch' object has no attribute 'correction'",
+        "punctuation_ms": 487,
+        "spelling_ms": 2359,
+        "total_ms": 7935
       },
-      "pipeline_ms": 2980,
+      "pipeline_ms": 7940,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
@@ -1049,7 +1045,7 @@
           "confidence": 1.0,
           "correction": "والمهندسين حضروا",
           "end": 35,
-          "id": "3aa39d27-7a4d-4308-9ef7-a687e9211e3c",
+          "id": "648a487e-bd53-4065-bb77-358f20432c23",
           "locked": true,
           "original": "والمهندسون حضر",
           "priority": 3,
@@ -1061,7 +1057,7 @@
           "confidence": 0.8,
           "correction": "الاجتماع.",
           "end": 44,
-          "id": "2a5c35ab-b3e3-4f23-a96c-2578fd4bf695",
+          "id": "18b69044-a3e1-4bbf-ab58-4896dfe1d4df",
           "locked": true,
           "original": "الاجتماع",
           "priority": 2,
@@ -1071,14 +1067,12 @@
         {
           "alternatives": [
             "أنا",
-            "الا",
-            "ان",
             "انا"
           ],
           "confidence": 0.9,
           "correction": "أنا",
           "end": 3,
-          "id": "3b56bde8-77d1-4f0e-ad01-e91264ef599b",
+          "id": "5c85df0f-8515-427c-972c-19ff9a4c99b5",
           "locked": true,
           "original": "انا",
           "priority": 1,
@@ -1088,14 +1082,12 @@
         {
           "alternatives": [
             "إلى",
-            "ال",
-            "الم",
             "الي"
           ],
           "confidence": 0.9,
           "correction": "إلى",
           "end": 12,
-          "id": "e3e106f5-6529-4db6-bfcd-f6952f5247cd",
+          "id": "3d1e5d72-920c-4cc5-9314-8475f628ebb1",
           "locked": true,
           "original": "الي",
           "priority": 1,
@@ -1105,14 +1097,12 @@
         {
           "alternatives": [
             "المدرسة",
-            "المدرسي",
-            "المدرس",
             "المدرسه"
           ],
           "confidence": 0.9,
           "correction": "المدرسة",
           "end": 20,
-          "id": "5a5cfe34-a83d-4f30-a2dc-b4bf718a9055",
+          "id": "8c1b5fc1-fb75-4052-b990-d7cda8e2c6e3",
           "locked": true,
           "original": "المدرسه",
           "priority": 1,
@@ -1121,12 +1111,13 @@
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 1423,
-        "punctuation_ms": 977,
-        "spelling_ms": 1236,
-        "total_ms": 3641
+        "grammar_ms": 7246,
+        "punctuation_error": "AttributeError: 'CorrectionPatch' object has no attribute 'correction'",
+        "punctuation_ms": 809,
+        "spelling_ms": 3599,
+        "total_ms": 11667
       },
-      "pipeline_ms": 4614,
+      "pipeline_ms": 11672,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
@@ -1148,14 +1139,14 @@
       "input": "الاطفال يلعب في الحديقه",
       "expected": "الأطفال يلعبون في الحديقة",
       "severity": "critical",
-      "pipeline_output": "الأطفال يلعبون في الحديقة",
+      "pipeline_output": "الأطفال يلعبون في الحديقة.",
       "pipeline_suggestions": [
         {
           "alternatives": [],
           "confidence": 1.0,
           "correction": "يلعبون",
           "end": 12,
-          "id": "da9d7d9a-499c-4029-aedc-8ba9b80f4b26",
+          "id": "da17af51-f783-485f-9cb4-330e88f720cf",
           "locked": true,
           "original": "يلعب",
           "priority": 3,
@@ -1163,16 +1154,26 @@
           "type": "grammar"
         },
         {
+          "alternatives": [],
+          "confidence": 0.7,
+          "correction": "الحديقة.",
+          "end": 23,
+          "id": "96ffc238-5929-45b6-9250-fec6b9c78865",
+          "locked": true,
+          "original": "الحديقه",
+          "priority": 2,
+          "start": 16,
+          "type": "punctuation"
+        },
+        {
           "alternatives": [
             "الأطفال",
-            "للاطفال",
-            "الاطفاء",
             "الاطفال"
           ],
           "confidence": 0.9,
           "correction": "الأطفال",
           "end": 7,
-          "id": "6ad91aba-0e2b-417b-9fd3-5bbd5b74af8c",
+          "id": "2ce1c912-0e8c-4eca-941a-ca3de659649f",
           "locked": true,
           "original": "الاطفال",
           "priority": 1,
@@ -1187,7 +1188,7 @@
           "confidence": 0.9,
           "correction": "الحديقة",
           "end": 23,
-          "id": "628ea2ff-aa86-4003-bc2f-90f6f27f2c6a",
+          "id": "0c052fc6-1b6c-4d42-9651-8005928125e1",
           "locked": true,
           "original": "الحديقه",
           "priority": 1,
@@ -1196,12 +1197,12 @@
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 580,
-        "punctuation_ms": 604,
-        "spelling_ms": 578,
-        "total_ms": 1767
+        "grammar_ms": 5199,
+        "punctuation_ms": 462,
+        "spelling_ms": 1707,
+        "total_ms": 7374
       },
-      "pipeline_ms": 2727,
+      "pipeline_ms": 7377,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
@@ -1230,7 +1231,7 @@
           "confidence": 1.0,
           "correction": "كتبن",
           "end": 12,
-          "id": "ba496212-5909-434d-ab85-a2893fb6f71d",
+          "id": "e66526d7-cbcf-4211-85e7-df8d7df80f09",
           "locked": true,
           "original": "كتب",
           "priority": 3,
@@ -1242,7 +1243,7 @@
           "confidence": 0.8,
           "correction": "الغرفة.",
           "end": 29,
-          "id": "47d814f0-3333-4649-a958-b014640e54b7",
+          "id": "87ce745b-0380-432b-a81b-f53b66be0fb8",
           "locked": true,
           "original": "الغرفه",
           "priority": 2,
@@ -1252,13 +1253,12 @@
         {
           "alternatives": [
             "الغرفة",
-            "الغرف",
             "الغرفه"
           ],
           "confidence": 0.9,
           "correction": "الغرفة",
           "end": 29,
-          "id": "62b324bc-98a0-416b-a8f7-72bd72edc68d",
+          "id": "27af72f5-014c-4e3a-bbf5-5dff5ac4ed6f",
           "locked": true,
           "original": "الغرفه",
           "priority": 1,
@@ -1267,12 +1267,13 @@
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 599,
-        "punctuation_ms": 790,
-        "spelling_ms": 871,
-        "total_ms": 2265
+        "grammar_ms": 8527,
+        "punctuation_error": "AttributeError: 'CorrectionPatch' object has no attribute 'correction'",
+        "punctuation_ms": 556,
+        "spelling_ms": 4495,
+        "total_ms": 13589
       },
-      "pipeline_ms": 3321,
+      "pipeline_ms": 13616,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
@@ -1301,7 +1302,7 @@
           "confidence": 1.0,
           "correction": "حضرن",
           "end": 12,
-          "id": "bae6fd46-d853-43b3-b7d3-6069967f7efa",
+          "id": "1a606788-2cf6-4515-9a16-13a0ab568f43",
           "locked": true,
           "original": "حضر",
           "priority": 3,
@@ -1313,7 +1314,7 @@
           "confidence": 0.8,
           "correction": "الجامعة.",
           "end": 33,
-          "id": "8357cfd2-33e6-4c5a-a048-d4f82b0fb782",
+          "id": "546c7321-59e5-4b23-b1a4-5b2d9d653fbd",
           "locked": true,
           "original": "الجامعه",
           "priority": 2,
@@ -1323,14 +1324,12 @@
         {
           "alternatives": [
             "الجامعة",
-            "الجامعي",
-            "الجامع",
             "الجامعه"
           ],
           "confidence": 0.9,
           "correction": "الجامعة",
           "end": 33,
-          "id": "f34c1a32-f15c-40a4-b431-27b501be8505",
+          "id": "01c55163-a60b-475a-8997-02cadcb2389f",
           "locked": true,
           "original": "الجامعه",
           "priority": 1,
@@ -1340,14 +1339,12 @@
         {
           "alternatives": [
             "الاجتماع",
-            "الاجتماعي",
-            "الاجتماعى",
             "الاجتماعو"
           ],
           "confidence": 0.7,
           "correction": "الاجتماع",
           "end": 22,
-          "id": "2fbc6e80-1af6-4763-84ed-e7f4d67c4a35",
+          "id": "9eaefa94-c739-4ed9-96b6-a74b3b13cbea",
           "locked": true,
           "original": "الاجتماعو",
           "priority": 1,
@@ -1356,12 +1353,13 @@
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 650,
-        "punctuation_ms": 814,
-        "spelling_ms": 732,
-        "total_ms": 2203
+        "grammar_ms": 6800,
+        "punctuation_error": "AttributeError: 'CorrectionPatch' object has no attribute 'correction'",
+        "punctuation_ms": 575,
+        "spelling_ms": 2949,
+        "total_ms": 10336
       },
-      "pipeline_ms": 2779,
+      "pipeline_ms": 10350,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
@@ -1383,49 +1381,50 @@
       "input": "العمال بنى المبني الجديد",
       "expected": "العمال بنوا المبنى الجديد",
       "severity": "critical",
-      "pipeline_output": "العمال بنى المبنى الجديد.",
+      "pipeline_output": "العمال بنوا المبنى الجديد.",
       "pipeline_suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "بنوا المبنى",
+          "end": 17,
+          "id": "bad0ce4b-f05c-4ef3-91dc-f01af53b31ac",
+          "locked": true,
+          "original": "بنى المبني",
+          "priority": 3,
+          "start": 7,
+          "type": "grammar"
+        },
         {
           "alternatives": [],
           "confidence": 0.8,
           "correction": "الجديد.",
           "end": 24,
-          "id": "de8109e6-50e1-445e-913c-13a761e7075c",
+          "id": "9164c862-ac02-448d-a3d3-7122400ab070",
           "locked": true,
           "original": "الجديد",
           "priority": 2,
           "start": 18,
           "type": "punctuation"
-        },
-        {
-          "alternatives": [],
-          "confidence": 1.0,
-          "correction": "المبنى",
-          "end": 17,
-          "id": "cef0cade-fe03-4579-b8cb-ef9beb5a5f3e",
-          "locked": true,
-          "original": "المبني",
-          "priority": 1,
-          "start": 11,
-          "type": "spelling"
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 515,
-        "punctuation_ms": 521,
-        "spelling_ms": 561,
-        "total_ms": 1599
+        "grammar_ms": 5183,
+        "punctuation_error": "AttributeError: 'CorrectionPatch' object has no attribute 'correction'",
+        "punctuation_ms": 576,
+        "spelling_ms": 1375,
+        "total_ms": 7139
       },
-      "pipeline_ms": 2497,
+      "pipeline_ms": 7143,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
       "punctuation_raw_ms": 0,
-      "pipeline_verdict": "FN",
-      "pipeline_detail": "Missing: ['بنوا'], Extra: ['بنى']",
-      "root_cause_component": "MODEL",
-      "root_cause_stage": "grammar",
-      "root_cause_detail": "Grammar model missed SV/gender agreement",
+      "pipeline_verdict": "TP",
+      "pipeline_detail": "All corrections applied correctly",
+      "root_cause_component": "",
+      "root_cause_stage": "",
+      "root_cause_detail": "",
       "regression_type": "",
       "regression_detail": "",
       "span_valid": true,
@@ -1445,7 +1444,7 @@
           "confidence": 1.0,
           "correction": "قريبة",
           "end": 12,
-          "id": "45af3500-cbc9-4731-a8bd-8b00a2d98dfe",
+          "id": "83de1afe-b84e-47e4-8ed4-5193fb527de1",
           "locked": true,
           "original": "قريب",
           "priority": 3,
@@ -1457,7 +1456,7 @@
           "confidence": 0.8,
           "correction": "البيت.",
           "end": 21,
-          "id": "7bdee78e-3cc4-4617-a67d-2b2441fbe1c4",
+          "id": "5651b01d-296e-4f2e-9ef1-48fec9113af9",
           "locked": true,
           "original": "البيت",
           "priority": 2,
@@ -1467,14 +1466,12 @@
         {
           "alternatives": [
             "الجامعة",
-            "الجامعي",
-            "الجامع",
             "الجامعه"
           ],
           "confidence": 0.9,
           "correction": "الجامعة",
           "end": 7,
-          "id": "d856ba0d-16a4-454b-8b48-f1836fab4a5f",
+          "id": "cb14f086-7686-45d3-86d9-c561787e0fc5",
           "locked": true,
           "original": "الجامعه",
           "priority": 1,
@@ -1483,12 +1480,13 @@
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 606,
-        "punctuation_ms": 536,
-        "spelling_ms": 673,
-        "total_ms": 1820
+        "grammar_ms": 2363,
+        "punctuation_error": "AttributeError: 'CorrectionPatch' object has no attribute 'correction'",
+        "punctuation_ms": 386,
+        "spelling_ms": 2602,
+        "total_ms": 5359
       },
-      "pipeline_ms": 2708,
+      "pipeline_ms": 5363,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
@@ -1517,7 +1515,7 @@
           "confidence": 1.0,
           "correction": "سريعة جداً",
           "end": 16,
-          "id": "84a4692a-172a-4ea8-9fe0-2446be44b88e",
+          "id": "4a7cf051-2aa1-49cf-8a3c-4185f487d899",
           "locked": true,
           "original": "سريع جدا",
           "priority": 3,
@@ -1527,13 +1525,12 @@
         {
           "alternatives": [
             "الطائرة",
-            "الطائر",
             "الطائره"
           ],
           "confidence": 0.9,
           "correction": "الطائرة",
           "end": 7,
-          "id": "4c8b49c0-06a0-40ba-ad8f-96d574a88813",
+          "id": "57774791-d53d-4959-a023-b5ae1f5a7477",
           "locked": true,
           "original": "الطائره",
           "priority": 1,
@@ -1542,12 +1539,13 @@
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 588,
-        "punctuation_ms": 441,
-        "spelling_ms": 625,
-        "total_ms": 1659
+        "grammar_ms": 5118,
+        "punctuation_error": "AttributeError: 'CorrectionPatch' object has no attribute 'correction'",
+        "punctuation_ms": 411,
+        "spelling_ms": 1830,
+        "total_ms": 7367
       },
-      "pipeline_ms": 2648,
+      "pipeline_ms": 7371,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
@@ -1576,7 +1574,7 @@
           "confidence": 1.0,
           "correction": "طويلة ومملة",
           "end": 15,
-          "id": "3c340dcc-f244-412c-8f6b-d8ab9c508e55",
+          "id": "77a403a2-93f0-4ce9-87a5-0b3b6425f9d7",
           "locked": true,
           "original": "طويل وممل",
           "priority": 3,
@@ -1586,14 +1584,12 @@
         {
           "alternatives": [
             "القصة",
-            "القص",
-            "القصر",
             "القصه"
           ],
           "confidence": 0.9,
           "correction": "القصة",
           "end": 5,
-          "id": "f63e3ad1-c825-4a67-bbec-29478adbdd6e",
+          "id": "f9e99acb-4056-4955-812f-4a8fbedf258c",
           "locked": true,
           "original": "القصه",
           "priority": 1,
@@ -1602,12 +1598,13 @@
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 826,
-        "punctuation_ms": 516,
-        "spelling_ms": 741,
-        "total_ms": 2088
+        "grammar_ms": 7428,
+        "punctuation_error": "AttributeError: 'CorrectionPatch' object has no attribute 'correction'",
+        "punctuation_ms": 468,
+        "spelling_ms": 3266,
+        "total_ms": 11175
       },
-      "pipeline_ms": 2871,
+      "pipeline_ms": 11182,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
@@ -1636,7 +1633,7 @@
           "confidence": 1.0,
           "correction": "واسعة وجميلة",
           "end": 18,
-          "id": "e1f0e9db-477a-4b4b-a174-13029113de04",
+          "id": "e20c2102-8c17-407d-a827-aea2c9b3aac6",
           "locked": true,
           "original": "واسع وجميل",
           "priority": 3,
@@ -1651,7 +1648,7 @@
           "confidence": 0.9,
           "correction": "الحديقة",
           "end": 7,
-          "id": "19635deb-09b8-46fe-a9cb-f4fe3d41bf5d",
+          "id": "223db4b0-0d76-44d6-b6ed-8607481f334c",
           "locked": true,
           "original": "الحديقه",
           "priority": 1,
@@ -1660,12 +1657,13 @@
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 551,
-        "punctuation_ms": 616,
-        "spelling_ms": 702,
-        "total_ms": 1872
+        "grammar_ms": 5292,
+        "punctuation_error": "AttributeError: 'CorrectionPatch' object has no attribute 'correction'",
+        "punctuation_ms": 527,
+        "spelling_ms": 2999,
+        "total_ms": 8825
       },
-      "pipeline_ms": 2853,
+      "pipeline_ms": 8841,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
@@ -1694,7 +1692,7 @@
           "confidence": 1.0,
           "correction": "المكتبة كبيرة ومنظمة",
           "end": 18,
-          "id": "f911de2e-365a-4622-b89e-587aa63d9a65",
+          "id": "ee3f04cc-13ce-4747-b326-9afef2fce611",
           "locked": true,
           "original": "المكتبه كبير ومنظم",
           "priority": 3,
@@ -1703,12 +1701,13 @@
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 553,
-        "punctuation_ms": 601,
-        "spelling_ms": 664,
-        "total_ms": 1821
+        "grammar_ms": 2881,
+        "punctuation_error": "AttributeError: 'CorrectionPatch' object has no attribute 'correction'",
+        "punctuation_ms": 479,
+        "spelling_ms": 2854,
+        "total_ms": 6221
       },
-      "pipeline_ms": 2574,
+      "pipeline_ms": 6236,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
@@ -1737,7 +1736,7 @@
           "confidence": 0.8,
           "correction": "صديقتي.",
           "end": 30,
-          "id": "7c6eccd6-629b-4c89-b8aa-b2bcee85c380",
+          "id": "86d1d461-22f6-4130-8765-8c9d7e25ef8a",
           "locked": true,
           "original": "صديقتي",
           "priority": 2,
@@ -1747,14 +1746,12 @@
         {
           "alternatives": [
             "إلى",
-            "ال",
-            "الم",
             "الي"
           ],
           "confidence": 0.9,
           "correction": "إلى",
           "end": 8,
-          "id": "47926908-fa13-408b-b8c0-d2283fabcc30",
+          "id": "eed05367-570e-4797-8e13-3810f80247ab",
           "locked": true,
           "original": "الي",
           "priority": 1,
@@ -1764,14 +1761,12 @@
         {
           "alternatives": [
             "المدرسة",
-            "المدرسي",
-            "المدرس",
             "المدرسه"
           ],
           "confidence": 0.9,
           "correction": "المدرسة",
           "end": 16,
-          "id": "88d7bc72-bae9-49c0-9fef-78950cc1df39",
+          "id": "98d7c5f0-692d-49c2-9bf3-9f5d8a6fc04e",
           "locked": true,
           "original": "المدرسه",
           "priority": 1,
@@ -1780,12 +1775,13 @@
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 699,
-        "punctuation_ms": 857,
-        "spelling_ms": 908,
-        "total_ms": 2468
+        "grammar_ms": 3368,
+        "punctuation_error": "AttributeError: 'CorrectionPatch' object has no attribute 'correction'",
+        "punctuation_ms": 612,
+        "spelling_ms": 2342,
+        "total_ms": 6333
       },
-      "pipeline_ms": 3697,
+      "pipeline_ms": 6337,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
@@ -1814,7 +1810,7 @@
           "confidence": 0.7,
           "correction": "احبه.",
           "end": 25,
-          "id": "11f1884d-6a01-43bc-9cd4-5ec290e6240f",
+          "id": "9487c04a-326f-4bf7-bee8-168ccd94a938",
           "locked": true,
           "original": "احبه",
           "priority": 2,
@@ -1824,14 +1820,12 @@
         {
           "alternatives": [
             "وأنا",
-            "وان",
-            "والا",
             "وانا"
           ],
           "confidence": 0.9,
           "correction": "وأنا",
           "end": 20,
-          "id": "0464cf33-c2f9-41e4-a561-e705bef682b4",
+          "id": "2c765955-e0ab-48b1-95e6-a1cb53413100",
           "locked": true,
           "original": "وانا",
           "priority": 1,
@@ -1840,12 +1834,12 @@
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 717,
-        "punctuation_ms": 688,
-        "spelling_ms": 891,
-        "total_ms": 2301
+        "grammar_ms": 5129,
+        "punctuation_ms": 503,
+        "spelling_ms": 3250,
+        "total_ms": 8894
       },
-      "pipeline_ms": 3250,
+      "pipeline_ms": 8898,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
@@ -1874,7 +1868,7 @@
           "confidence": 0.8,
           "correction": "واجب.",
           "end": 29,
-          "id": "48dead32-f82b-4b35-ba47-1ea0b9fab8da",
+          "id": "65c7283b-bc74-460d-810c-a5d0a5c9a4fa",
           "locked": true,
           "original": "واجب",
           "priority": 2,
@@ -1884,13 +1878,12 @@
         {
           "alternatives": [
             "المعلمة",
-            "المعلم",
             "المعلمه"
           ],
           "confidence": 0.9,
           "correction": "المعلمة",
           "end": 7,
-          "id": "71f0a858-8d85-497e-aaac-2a350a27820e",
+          "id": "89a41b99-fcf6-4522-9684-2632eba1545d",
           "locked": true,
           "original": "المعلمه",
           "priority": 1,
@@ -1900,14 +1893,12 @@
         {
           "alternatives": [
             "وأعطت",
-            "واعت",
-            "اعطت",
             "واعطت"
           ],
           "confidence": 0.9,
           "correction": "وأعطت",
           "end": 24,
-          "id": "a3bc94e6-c61a-4dd8-8c23-3c66bfcfd720",
+          "id": "b2f6199e-3de6-46e9-b222-b5d67bdda97e",
           "locked": true,
           "original": "واعطت",
           "priority": 1,
@@ -1916,12 +1907,13 @@
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 896,
-        "punctuation_ms": 848,
-        "spelling_ms": 876,
-        "total_ms": 2625
+        "grammar_ms": 6984,
+        "punctuation_error": "AttributeError: 'CorrectionPatch' object has no attribute 'correction'",
+        "punctuation_ms": 564,
+        "spelling_ms": 2267,
+        "total_ms": 9825
       },
-      "pipeline_ms": 3468,
+      "pipeline_ms": 9851,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
@@ -1943,58 +1935,34 @@
       "input": "قرأت الكتاب كله ولكن لم افهمه",
       "expected": "قرأت الكتاب كله ولكن لم أفهمه",
       "severity": "major",
-      "pipeline_output": "قرأت الكتاب كله ولكن لم تفهمه.",
+      "pipeline_output": "قرأت الكتاب كله ولكن لم افهمه.",
       "pipeline_suggestions": [
         {
           "alternatives": [],
-          "confidence": 0.8,
-          "correction": "تفهمه.",
+          "confidence": 0.7,
+          "correction": "افهمه.",
           "end": 29,
-          "id": "f655eb13-8b37-431d-a1f5-605fe13e98a7",
+          "id": "0ad75c39-9692-421b-b91b-9e2091ae97f2",
           "locked": true,
           "original": "افهمه",
           "priority": 2,
           "start": 24,
           "type": "punctuation"
-        },
-        {
-          "alternatives": [],
-          "confidence": 1.0,
-          "correction": "كله",
-          "end": 15,
-          "id": "2dcdece6-cce8-4445-83c9-6b764413b673",
-          "locked": true,
-          "original": "كله",
-          "priority": 1,
-          "start": 12,
-          "type": "spelling"
-        },
-        {
-          "alternatives": [],
-          "confidence": 1.0,
-          "correction": "تفهمه",
-          "end": 29,
-          "id": "903038d4-1fb0-4f4d-b888-5dca3956b205",
-          "locked": true,
-          "original": "افهمه",
-          "priority": 1,
-          "start": 24,
-          "type": "spelling"
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 867,
-        "punctuation_ms": 728,
-        "spelling_ms": 958,
-        "total_ms": 2558
+        "grammar_ms": 7773,
+        "punctuation_ms": 589,
+        "spelling_ms": 3147,
+        "total_ms": 11523
       },
-      "pipeline_ms": 3392,
+      "pipeline_ms": 11550,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
       "punctuation_raw_ms": 0,
       "pipeline_verdict": "FN",
-      "pipeline_detail": "Missing: ['أفهمه'], Extra: ['تفهمه']",
+      "pipeline_detail": "Missing: ['أفهمه'], Extra: ['افهمه']",
       "root_cause_component": "MODEL",
       "root_cause_stage": "spelling",
       "root_cause_detail": "Spelling correction near punctuation boundary",
@@ -2010,37 +1978,53 @@
       "input": "الطقس بارد جدا واحتاج معطف",
       "expected": "الطقس بارد جداً وأحتاج معطف",
       "severity": "major",
-      "pipeline_output": "الطقس بارد جدا واحتاج معطف.",
+      "pipeline_output": "الطقس بارد جدا وأحتاج معطف.",
       "pipeline_suggestions": [
         {
           "alternatives": [],
           "confidence": 0.8,
           "correction": "معطف.",
           "end": 26,
-          "id": "5180e038-ce32-450c-9e2d-d9e6044bd77a",
+          "id": "f757f8ec-6be8-4be1-a1c5-cfa18560e176",
           "locked": true,
           "original": "معطف",
           "priority": 2,
           "start": 22,
           "type": "punctuation"
+        },
+        {
+          "alternatives": [
+            "وأحتاج",
+            "واحتاج"
+          ],
+          "confidence": 0.9,
+          "correction": "وأحتاج",
+          "end": 21,
+          "id": "a89ca5bb-63e5-43e8-8864-12001fc9b841",
+          "locked": true,
+          "original": "واحتاج",
+          "priority": 1,
+          "start": 15,
+          "type": "spelling"
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 749,
-        "punctuation_ms": 519,
-        "spelling_ms": 853,
-        "total_ms": 2124
+        "grammar_ms": 5026,
+        "punctuation_error": "AttributeError: 'CorrectionPatch' object has no attribute 'correction'",
+        "punctuation_ms": 423,
+        "spelling_ms": 1901,
+        "total_ms": 7358
       },
-      "pipeline_ms": 3937,
+      "pipeline_ms": 7385,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
       "punctuation_raw_ms": 0,
-      "pipeline_verdict": "FN",
-      "pipeline_detail": "Missing: ['وأحتاج'], Extra: ['واحتاج']",
-      "root_cause_component": "MODEL",
-      "root_cause_stage": "spelling",
-      "root_cause_detail": "Spelling correction near punctuation boundary",
+      "pipeline_verdict": "TP",
+      "pipeline_detail": "All corrections applied correctly",
+      "root_cause_component": "",
+      "root_cause_stage": "",
+      "root_cause_detail": "",
       "regression_type": "",
       "regression_detail": "",
       "span_valid": true,
@@ -2060,7 +2044,7 @@
           "confidence": 1.0,
           "correction": "سريعة",
           "end": 12,
-          "id": "ed0d8a74-ab70-4f1b-ba4b-eeca12c72ac6",
+          "id": "2f4228ee-9917-4eb3-9ec1-54d5c8403586",
           "locked": true,
           "original": "سريع",
           "priority": 3,
@@ -2072,7 +2056,7 @@
           "confidence": 1.0,
           "correction": "يعملون",
           "end": 25,
-          "id": "37f3647f-57eb-4dd1-bfcc-f95dbf34bb8d",
+          "id": "3da75ece-46da-4337-bf14-ddacfda53e3a",
           "locked": true,
           "original": "يعمل",
           "priority": 3,
@@ -2084,7 +2068,7 @@
           "confidence": 0.8,
           "correction": "المصنع.",
           "end": 35,
-          "id": "563112c4-e1f3-44b0-a763-c967ada0261e",
+          "id": "6153cce7-6eff-4029-9cd9-f4ae4d2e19a2",
           "locked": true,
           "original": "المصنع",
           "priority": 2,
@@ -2099,7 +2083,7 @@
           "confidence": 0.9,
           "correction": "السيارة",
           "end": 7,
-          "id": "6552664b-bff8-4e1a-93e7-1801b1940b15",
+          "id": "0972eea7-7492-4623-b976-63d1ba35edb8",
           "locked": true,
           "original": "السياره",
           "priority": 1,
@@ -2108,12 +2092,13 @@
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 760,
-        "punctuation_ms": 940,
-        "spelling_ms": 803,
-        "total_ms": 2511
+        "grammar_ms": 7046,
+        "punctuation_error": "AttributeError: 'CorrectionPatch' object has no attribute 'correction'",
+        "punctuation_ms": 871,
+        "spelling_ms": 2240,
+        "total_ms": 10168
       },
-      "pipeline_ms": 3330,
+      "pipeline_ms": 10173,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
@@ -2142,7 +2127,7 @@
           "confidence": 1.0,
           "correction": "ذكية",
           "end": 11,
-          "id": "0de557e4-386f-4907-b9be-f82d45f95759",
+          "id": "2974b730-7712-4501-b70e-f8892a6dbd2e",
           "locked": true,
           "original": "ذكي",
           "priority": 3,
@@ -2154,7 +2139,7 @@
           "confidence": 0.8,
           "correction": "المدرسة.",
           "end": 29,
-          "id": "401e6865-0d75-4120-a1e3-540c2dd7dca4",
+          "id": "bf5555b3-21c9-4657-9882-98059d841e87",
           "locked": true,
           "original": "المدرسه",
           "priority": 2,
@@ -2164,13 +2149,12 @@
         {
           "alternatives": [
             "الطالبة",
-            "الطالب",
             "الطالبه"
           ],
           "confidence": 0.9,
           "correction": "الطالبة",
           "end": 7,
-          "id": "6d908ea3-77d3-4eb4-81cf-ee18864aa34e",
+          "id": "1774e493-a325-48bb-ac3c-eae4e9aa8700",
           "locked": true,
           "original": "الطالبه",
           "priority": 1,
@@ -2180,14 +2164,12 @@
         {
           "alternatives": [
             "إلى",
-            "ال",
-            "الم",
             "الي"
           ],
           "confidence": 0.9,
           "correction": "إلى",
           "end": 21,
-          "id": "91721c3e-0af1-4303-8977-ead6da606cc6",
+          "id": "2222d65d-8221-4c52-90bc-5d84b947187c",
           "locked": true,
           "original": "الي",
           "priority": 1,
@@ -2197,14 +2179,12 @@
         {
           "alternatives": [
             "المدرسة",
-            "المدرسي",
-            "المدرس",
             "المدرسه"
           ],
           "confidence": 0.9,
           "correction": "المدرسة",
           "end": 29,
-          "id": "92e47161-0507-48d4-a061-07954ab6a385",
+          "id": "12c8f583-0803-48b5-b6c9-dd01aac3720d",
           "locked": true,
           "original": "المدرسه",
           "priority": 1,
@@ -2213,12 +2193,13 @@
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 800,
-        "punctuation_ms": 878,
-        "spelling_ms": 862,
-        "total_ms": 2546
+        "grammar_ms": 6434,
+        "punctuation_error": "AttributeError: 'CorrectionPatch' object has no attribute 'correction'",
+        "punctuation_ms": 763,
+        "spelling_ms": 2808,
+        "total_ms": 10020
       },
-      "pipeline_ms": 3585,
+      "pipeline_ms": 10024,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
@@ -2247,7 +2228,7 @@
           "confidence": 1.0,
           "correction": "كبيرة",
           "end": 12,
-          "id": "bbfc7cbf-7ef5-424f-b635-73b3e1f232e0",
+          "id": "9f71f1eb-3e7f-45bc-afba-b421822e5233",
           "locked": true,
           "original": "كبير",
           "priority": 3,
@@ -2259,7 +2240,7 @@
           "confidence": 1.0,
           "correction": "يدرسون",
           "end": 25,
-          "id": "790537e7-b84e-4afc-b63f-09a6246c4749",
+          "id": "f0f7ed77-1692-4fac-b329-ac7dca9a4f80",
           "locked": true,
           "original": "يدرس",
           "priority": 3,
@@ -2271,7 +2252,7 @@
           "confidence": 0.8,
           "correction": "بجد.",
           "end": 29,
-          "id": "50a47f5e-702b-4b1e-b6b4-210f8e2ddee0",
+          "id": "62dfa9e4-e605-45a0-9df3-a6e1e90576e1",
           "locked": true,
           "original": "بجد",
           "priority": 2,
@@ -2281,14 +2262,12 @@
         {
           "alternatives": [
             "المدرسة",
-            "المدرسي",
-            "المدرس",
             "المدرسه"
           ],
           "confidence": 0.9,
           "correction": "المدرسة",
           "end": 7,
-          "id": "e733659f-2a69-43fa-8cf7-ef1dfc71e623",
+          "id": "70609cda-bbbf-4cba-ac6c-0c198a0d66a7",
           "locked": true,
           "original": "المدرسه",
           "priority": 1,
@@ -2297,12 +2276,13 @@
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 958,
-        "punctuation_ms": 765,
-        "spelling_ms": 785,
-        "total_ms": 2513
+        "grammar_ms": 4510,
+        "punctuation_error": "AttributeError: 'CorrectionPatch' object has no attribute 'correction'",
+        "punctuation_ms": 1207,
+        "spelling_ms": 2751,
+        "total_ms": 8478
       },
-      "pipeline_ms": 2901,
+      "pipeline_ms": 8493,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
@@ -2324,43 +2304,41 @@
       "input": "الحكومه اعلن قرار جديد والمواطنون يتابع",
       "expected": "الحكومة أعلنت قراراً جديداً والمواطنون يتابعون",
       "severity": "critical",
-      "pipeline_output": "الحكومة أعلنت قرارا جديدا والمواطنون يتابعون.",
+      "pipeline_output": "الحكومة أعلنت قرارا جديدا والمواطن يتابع.",
       "pipeline_suggestions": [
         {
           "alternatives": [],
           "confidence": 1.0,
-          "correction": "أعلنت قرارا جديدا",
-          "end": 22,
-          "id": "b434ddac-acb7-4e58-a69d-b0e12ed216b5",
+          "correction": "أعلنت قرارا جديدا والمواطن",
+          "end": 33,
+          "id": "c452c1e2-19c2-4ed5-8aa7-b5906b3020d2",
           "locked": true,
-          "original": "اعلن قرار جديد",
+          "original": "اعلن قرار جديد والمواطنون",
           "priority": 3,
           "start": 8,
           "type": "grammar"
         },
         {
           "alternatives": [],
-          "confidence": 1.0,
-          "correction": "يتابعون.",
+          "confidence": 0.8,
+          "correction": "يتابع.",
           "end": 39,
-          "id": "b808f62d-8b67-4e49-b35e-b7308aec5f1e",
+          "id": "fd9214c2-778f-4681-a3e5-a62749fc7ef0",
           "locked": true,
           "original": "يتابع",
-          "priority": 3,
+          "priority": 2,
           "start": 34,
-          "type": "grammar"
+          "type": "punctuation"
         },
         {
           "alternatives": [
             "الحكومة",
-            "الحكوم",
-            "الحكومي",
             "الحكومه"
           ],
           "confidence": 0.9,
           "correction": "الحكومة",
           "end": 7,
-          "id": "c063587d-c3fe-42a4-80bd-ebecaa750d3a",
+          "id": "fa826110-ad54-48cf-9ab8-fa333ae20b04",
           "locked": true,
           "original": "الحكومه",
           "priority": 1,
@@ -2369,21 +2347,22 @@
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 1053,
-        "punctuation_ms": 976,
-        "spelling_ms": 864,
-        "total_ms": 2898
+        "grammar_ms": 5701,
+        "punctuation_error": "AttributeError: 'CorrectionPatch' object has no attribute 'correction'",
+        "punctuation_ms": 719,
+        "spelling_ms": 3994,
+        "total_ms": 10421
       },
-      "pipeline_ms": 3474,
+      "pipeline_ms": 10429,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
       "punctuation_raw_ms": 0,
-      "pipeline_verdict": "TP",
-      "pipeline_detail": "All corrections applied correctly",
-      "root_cause_component": "",
-      "root_cause_stage": "",
-      "root_cause_detail": "",
+      "pipeline_verdict": "FN",
+      "pipeline_detail": "Missing: ['والمواطنون', 'يتابعون'], Extra: ['والمواطن', 'يتابع']",
+      "root_cause_component": "PIPELINE",
+      "root_cause_stage": "integration",
+      "root_cause_detail": "Three-stage collision: spelling+grammar+punctuation",
       "regression_type": "",
       "regression_detail": "",
       "span_valid": true,
@@ -2403,7 +2382,7 @@
           "confidence": 1.0,
           "correction": "نجحت",
           "end": 10,
-          "id": "05906e4b-0641-4fe3-b275-4c0a6b38b1f0",
+          "id": "7a9a5320-dab8-4457-86f2-c9fefd865d7b",
           "locked": true,
           "original": "نجح",
           "priority": 3,
@@ -2415,7 +2394,7 @@
           "confidence": 1.0,
           "correction": "يحتفلون.",
           "end": 38,
-          "id": "3e3343be-0ad2-427b-82e1-3e64fbdd0d92",
+          "id": "04e47128-b2a9-4712-815d-f28f1c47af3e",
           "locked": true,
           "original": "يحتفل",
           "priority": 3,
@@ -2425,13 +2404,12 @@
         {
           "alternatives": [
             "الشركة",
-            "الشرك",
             "الشركه"
           ],
           "confidence": 0.9,
           "correction": "الشركة",
           "end": 6,
-          "id": "b7c5b048-345c-44e7-a486-e92cdea0d1ce",
+          "id": "15b86987-f26c-445f-8a29-62b4abef5bf3",
           "locked": true,
           "original": "الشركه",
           "priority": 1,
@@ -2446,7 +2424,7 @@
           "confidence": 0.7,
           "correction": "المشروع",
           "end": 22,
-          "id": "eaee87e3-8793-4b18-a2af-a5dfe13bf24a",
+          "id": "10da1cf5-56ac-48b9-b90b-491ff39aadc8",
           "locked": true,
           "original": "المشرووع",
           "priority": 1,
@@ -2455,12 +2433,13 @@
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 757,
-        "punctuation_ms": 938,
-        "spelling_ms": 856,
-        "total_ms": 2556
+        "grammar_ms": 1760,
+        "punctuation_error": "AttributeError: 'CorrectionPatch' object has no attribute 'correction'",
+        "punctuation_ms": 624,
+        "spelling_ms": 3823,
+        "total_ms": 6217
       },
-      "pipeline_ms": 4467,
+      "pipeline_ms": 6237,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
@@ -2489,7 +2468,7 @@
           "confidence": 1.0,
           "correction": "الصغير",
           "end": 13,
-          "id": "f7466452-7c41-408e-b5c8-dc48a482596d",
+          "id": "69308655-33f9-44a1-9104-2c03a667ac7b",
           "locked": true,
           "original": "الصغيره",
           "priority": 3,
@@ -2501,7 +2480,7 @@
           "confidence": 0.8,
           "correction": "المدرسة.",
           "end": 29,
-          "id": "a2086ef8-3091-4495-9ac7-0694e8f1951b",
+          "id": "3258a757-104e-4f55-af26-b7c74bce4d80",
           "locked": true,
           "original": "المدرسه",
           "priority": 2,
@@ -2511,14 +2490,12 @@
         {
           "alternatives": [
             "إلى",
-            "ال",
-            "الم",
             "الي"
           ],
           "confidence": 0.9,
           "correction": "إلى",
           "end": 21,
-          "id": "8ec70c39-aae8-4fba-af3b-c52d3d06a33c",
+          "id": "0edfa420-b042-4510-8cd7-6fa9db8581a0",
           "locked": true,
           "original": "الي",
           "priority": 1,
@@ -2528,14 +2505,12 @@
         {
           "alternatives": [
             "المدرسة",
-            "المدرسي",
-            "المدرس",
             "المدرسه"
           ],
           "confidence": 0.9,
           "correction": "المدرسة",
           "end": 29,
-          "id": "099cd187-ad18-4315-813c-25921742feea",
+          "id": "192e2fe2-7af6-46e4-906e-e3fa18f49bba",
           "locked": true,
           "original": "المدرسه",
           "priority": 1,
@@ -2544,12 +2519,13 @@
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 613,
-        "punctuation_ms": 647,
-        "spelling_ms": 798,
-        "total_ms": 2064
+        "grammar_ms": 7388,
+        "punctuation_error": "AttributeError: 'CorrectionPatch' object has no attribute 'correction'",
+        "punctuation_ms": 606,
+        "spelling_ms": 2235,
+        "total_ms": 10241
       },
-      "pipeline_ms": 3005,
+      "pipeline_ms": 10246,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
@@ -2578,7 +2554,7 @@
           "confidence": 0.7,
           "correction": "بجد.",
           "end": 30,
-          "id": "8007a6b0-b1a9-45e5-ae8d-ab96d8e25d8b",
+          "id": "760e838f-a1e4-45d3-9d58-c7782605837d",
           "locked": true,
           "original": "بجد",
           "priority": 2,
@@ -2590,7 +2566,7 @@
           "confidence": 1.0,
           "correction": "للطالبة",
           "end": 20,
-          "id": "44c14c30-9777-46fc-81e8-68425004f9b4",
+          "id": "719eb05b-9ffa-4bfc-9066-2e9ab80d3abf",
           "locked": true,
           "original": "للطالبه",
           "priority": 1,
@@ -2599,12 +2575,12 @@
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 844,
-        "punctuation_ms": 788,
-        "spelling_ms": 1057,
-        "total_ms": 2692
+        "grammar_ms": 6576,
+        "punctuation_ms": 798,
+        "spelling_ms": 2795,
+        "total_ms": 10173
       },
-      "pipeline_ms": 3739,
+      "pipeline_ms": 10179,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
@@ -2633,7 +2609,7 @@
           "confidence": 0.8,
           "correction": "الكبيرة.",
           "end": 32,
-          "id": "995b9349-886b-4e1c-9894-069c4fdf5a29",
+          "id": "32c8a1e3-2be4-4e1c-9e4a-1def2070c839",
           "locked": true,
           "original": "الكبيره",
           "priority": 2,
@@ -2645,7 +2621,7 @@
           "confidence": 1.0,
           "correction": "القديمة",
           "end": 13,
-          "id": "4732943a-09dc-4a5d-b37d-944ce29835a2",
+          "id": "49e70beb-2849-4b3f-a654-e5c380e7b954",
           "locked": true,
           "original": "القديمه",
           "priority": 1,
@@ -2657,7 +2633,7 @@
           "confidence": 1.0,
           "correction": "الكبيرة",
           "end": 32,
-          "id": "273362f3-fe5b-4eb4-b4aa-6e2971c8ebc7",
+          "id": "d87ce012-3c56-44a6-ab59-9ecb61f7561f",
           "locked": true,
           "original": "الكبيره",
           "priority": 1,
@@ -2667,14 +2643,12 @@
         {
           "alternatives": [
             "المكتبة",
-            "المكتب",
-            "المشتبه",
             "المكتبه"
           ],
           "confidence": 0.9,
           "correction": "المكتبة",
           "end": 24,
-          "id": "ddb341f5-7831-4bef-b707-bcd94a62b10e",
+          "id": "db799ee6-cd8c-4ee6-93c5-47b55409ac16",
           "locked": true,
           "original": "المكتبه",
           "priority": 1,
@@ -2683,12 +2657,13 @@
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 603,
-        "punctuation_ms": 962,
-        "spelling_ms": 1058,
-        "total_ms": 2630
+        "grammar_ms": 3462,
+        "punctuation_error": "AttributeError: 'CorrectionPatch' object has no attribute 'correction'",
+        "punctuation_ms": 660,
+        "spelling_ms": 2671,
+        "total_ms": 6806
       },
-      "pipeline_ms": 3526,
+      "pipeline_ms": 6813,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
@@ -2717,7 +2692,7 @@
           "confidence": 0.8,
           "correction": "الحديقة.",
           "end": 29,
-          "id": "cf319488-b22f-4164-a3af-b0b69f6fed1d",
+          "id": "5993bd01-7e4a-44e5-8af8-2b6239e6d79f",
           "locked": true,
           "original": "الحديقه",
           "priority": 2,
@@ -2729,7 +2704,7 @@
           "confidence": 1.0,
           "correction": "الجميلة",
           "end": 18,
-          "id": "9db09882-11f1-416d-b407-865f36c15c0a",
+          "id": "6029038f-4f7d-4f4e-ae1c-6f2f6a43486d",
           "locked": true,
           "original": "الجميله",
           "priority": 1,
@@ -2744,7 +2719,7 @@
           "confidence": 0.9,
           "correction": "الحديقة",
           "end": 29,
-          "id": "95a55997-e4cd-460c-8b85-086f3e4ea387",
+          "id": "08482a5d-0f3c-4c57-a030-7a523ee448a4",
           "locked": true,
           "original": "الحديقه",
           "priority": 1,
@@ -2753,12 +2728,13 @@
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 596,
-        "punctuation_ms": 705,
-        "spelling_ms": 797,
-        "total_ms": 2103
+        "grammar_ms": 5985,
+        "punctuation_error": "AttributeError: 'CorrectionPatch' object has no attribute 'correction'",
+        "punctuation_ms": 563,
+        "spelling_ms": 2530,
+        "total_ms": 9088
       },
-      "pipeline_ms": 3049,
+      "pipeline_ms": 9111,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
@@ -2787,7 +2763,7 @@
           "confidence": 0.8,
           "correction": "الدرس.",
           "end": 26,
-          "id": "e245b989-c7e3-4ebf-a497-c8012c937244",
+          "id": "76794760-676f-4852-844b-ce72323b5f09",
           "locked": true,
           "original": "الدرس",
           "priority": 2,
@@ -2799,7 +2775,7 @@
           "confidence": 1.0,
           "correction": "الجديدة",
           "end": 15,
-          "id": "ddec6b02-3606-4d5c-9eaa-931f3177827a",
+          "id": "9c630dcb-cd74-48b4-8952-20b33b80c222",
           "locked": true,
           "original": "الجديده",
           "priority": 1,
@@ -2809,13 +2785,12 @@
         {
           "alternatives": [
             "المعلمة",
-            "المعلم",
             "المعلمه"
           ],
           "confidence": 0.9,
           "correction": "المعلمة",
           "end": 7,
-          "id": "b7e929c0-155f-4c54-9a4e-93608b479025",
+          "id": "3f1b4449-d723-48f7-845b-bcb99aebc1d8",
           "locked": true,
           "original": "المعلمه",
           "priority": 1,
@@ -2824,12 +2799,13 @@
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 597,
-        "punctuation_ms": 626,
-        "spelling_ms": 924,
-        "total_ms": 2153
+        "grammar_ms": 5976,
+        "punctuation_error": "AttributeError: 'CorrectionPatch' object has no attribute 'correction'",
+        "punctuation_ms": 539,
+        "spelling_ms": 1799,
+        "total_ms": 8321
       },
-      "pipeline_ms": 3309,
+      "pipeline_ms": 8326,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
@@ -2858,7 +2834,7 @@
           "confidence": 0.8,
           "correction": "المرضى.",
           "end": 42,
-          "id": "9a307584-b07e-4b8d-812c-2ec43a5bc0b7",
+          "id": "4328bee8-0095-4d95-8ad9-dc2dc403c1ae",
           "locked": true,
           "original": "المرضى",
           "priority": 2,
@@ -2873,7 +2849,7 @@
           "confidence": 0.7,
           "correction": "التقرير",
           "end": 20,
-          "id": "265e65e3-80ab-47f3-b257-084841de7cf6",
+          "id": "15514678-24e8-46cb-8d96-7e8c145b9c17",
           "locked": true,
           "original": "التقريير",
           "priority": 1,
@@ -2882,12 +2858,13 @@
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 714,
-        "punctuation_ms": 777,
-        "spelling_ms": 814,
-        "total_ms": 2309
+        "grammar_ms": 6485,
+        "punctuation_error": "AttributeError: 'CorrectionPatch' object has no attribute 'correction'",
+        "punctuation_ms": 584,
+        "spelling_ms": 3334,
+        "total_ms": 10413
       },
-      "pipeline_ms": 3385,
+      "pipeline_ms": 10435,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
@@ -2916,7 +2893,7 @@
           "confidence": 1.0,
           "correction": "حضرو المحاضرة والأستاذ",
           "end": 28,
-          "id": "90433361-1d4d-40e2-b8c6-79d9945f4daa",
+          "id": "69c6dbe6-5f77-49de-97e7-fef603be93ad",
           "locked": true,
           "original": "حضر المحاضره والاستاذ",
           "priority": 3,
@@ -2928,7 +2905,7 @@
           "confidence": 0.8,
           "correction": "الدرس.",
           "end": 38,
-          "id": "f3e70f78-a0ee-4b89-ae73-a4d61ca2eebf",
+          "id": "30b00440-20c0-454e-82ee-fb1fa337356f",
           "locked": true,
           "original": "الدرس",
           "priority": 2,
@@ -2937,12 +2914,13 @@
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 747,
-        "punctuation_ms": 881,
-        "spelling_ms": 885,
-        "total_ms": 2519
+        "grammar_ms": 1718,
+        "punctuation_error": "AttributeError: 'CorrectionPatch' object has no attribute 'correction'",
+        "punctuation_ms": 794,
+        "spelling_ms": 3205,
+        "total_ms": 5727
       },
-      "pipeline_ms": 3709,
+      "pipeline_ms": 5732,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
@@ -2964,14 +2942,26 @@
       "input": "الامهات طبخ الطعام والاطفال لعب في الحديقه",
       "expected": "الأمهات طبخن الطعام والأطفال لعبوا في الحديقة",
       "severity": "critical",
-      "pipeline_output": "الأمهات طبخ الطعام والأطفال لعبوا في الحديقة.",
+      "pipeline_output": "الأمهات طبخن الطعام والأطفال لعبوا في الحديقة.",
       "pipeline_suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "الأمهات طبخن",
+          "end": 11,
+          "id": "3aa7da5c-121d-4980-bf89-0f69b4299fcc",
+          "locked": true,
+          "original": "الامهات طبخ",
+          "priority": 3,
+          "start": 0,
+          "type": "grammar"
+        },
         {
           "alternatives": [],
           "confidence": 1.0,
           "correction": "لعبوا",
           "end": 31,
-          "id": "80291a70-168b-44ec-a603-a7ab50aaa09d",
+          "id": "389f8133-5521-4052-a28c-e5309dffca08",
           "locked": true,
           "original": "لعب",
           "priority": 3,
@@ -2983,7 +2973,7 @@
           "confidence": 0.8,
           "correction": "الحديقة.",
           "end": 42,
-          "id": "1fb1f902-40c3-42c6-b4a4-cb8aa6437ca8",
+          "id": "b06c62e4-3529-4f54-ae2c-ba25e1cf1608",
           "locked": true,
           "original": "الحديقه",
           "priority": 2,
@@ -2991,27 +2981,14 @@
           "type": "punctuation"
         },
         {
-          "alternatives": [],
-          "confidence": 1.0,
-          "correction": "الأمهات",
-          "end": 7,
-          "id": "6a7613e7-2f20-4426-bfb3-1020f7477c50",
-          "locked": true,
-          "original": "الامهات",
-          "priority": 1,
-          "start": 0,
-          "type": "spelling"
-        },
-        {
           "alternatives": [
             "والأطفال",
-            "الاطفال",
             "والاطفال"
           ],
           "confidence": 0.9,
           "correction": "والأطفال",
           "end": 27,
-          "id": "1c2295c0-cfa4-46c5-b133-706b87fcbb71",
+          "id": "18a09e3b-1bcc-4ece-bd38-28582676e410",
           "locked": true,
           "original": "والاطفال",
           "priority": 1,
@@ -3026,7 +3003,7 @@
           "confidence": 0.9,
           "correction": "الحديقة",
           "end": 42,
-          "id": "ce1baac5-7cf2-4772-b4a9-d074c9b1a5d8",
+          "id": "85f59976-b7e7-4ebd-adca-5c95fb801269",
           "locked": true,
           "original": "الحديقه",
           "priority": 1,
@@ -3035,21 +3012,22 @@
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 851,
-        "punctuation_ms": 911,
-        "spelling_ms": 1174,
-        "total_ms": 2941
+        "grammar_ms": 8581,
+        "punctuation_error": "AttributeError: 'CorrectionPatch' object has no attribute 'correction'",
+        "punctuation_ms": 778,
+        "spelling_ms": 5951,
+        "total_ms": 15322
       },
-      "pipeline_ms": 3939,
+      "pipeline_ms": 15327,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
       "punctuation_raw_ms": 0,
-      "pipeline_verdict": "FN",
-      "pipeline_detail": "Missing: ['طبخن'], Extra: ['طبخ']",
-      "root_cause_component": "PIPELINE",
-      "root_cause_stage": "integration",
-      "root_cause_detail": "Multi-stage interaction failure",
+      "pipeline_verdict": "TP",
+      "pipeline_detail": "All corrections applied correctly",
+      "root_cause_component": "",
+      "root_cause_stage": "",
+      "root_cause_detail": "",
       "regression_type": "",
       "regression_detail": "",
       "span_valid": true,
@@ -3062,31 +3040,34 @@
       "input": "المهندسات صممو المشرووع الكبير",
       "expected": "المهندسات صممن المشروع الكبير",
       "severity": "critical",
-      "pipeline_output": "المهندسات صممن المشروع الكبير.",
+      "pipeline_output": "المهندسات مصممو المشروع الكبير.",
       "pipeline_suggestions": [
-        {
-          "alternatives": [],
-          "confidence": 1.0,
-          "correction": "صممن",
-          "end": 14,
-          "id": "d5cf3d7c-c374-4916-b7a8-b6ba1ba75530",
-          "locked": true,
-          "original": "صممو",
-          "priority": 3,
-          "start": 10,
-          "type": "grammar"
-        },
         {
           "alternatives": [],
           "confidence": 0.8,
           "correction": "الكبير.",
           "end": 30,
-          "id": "bc6c1de2-3ef1-4056-af04-3233f7ef92eb",
+          "id": "f2672f6e-d621-4f88-a64c-e081fcc913fe",
           "locked": true,
           "original": "الكبير",
           "priority": 2,
           "start": 24,
           "type": "punctuation"
+        },
+        {
+          "alternatives": [
+            "مصممو",
+            "صممو"
+          ],
+          "confidence": 0.7,
+          "correction": "مصممو",
+          "end": 14,
+          "id": "b2613545-82a5-4ce7-92f6-d976905eeb0d",
+          "locked": true,
+          "original": "صممو",
+          "priority": 1,
+          "start": 10,
+          "type": "spelling"
         },
         {
           "alternatives": [
@@ -3096,7 +3077,7 @@
           "confidence": 0.7,
           "correction": "المشروع",
           "end": 23,
-          "id": "01d843c8-9993-4c92-bcc5-91e55ef18f66",
+          "id": "45ba2bb0-43a4-4ed8-8f6c-5d8ad73e9fc1",
           "locked": true,
           "original": "المشرووع",
           "priority": 1,
@@ -3105,21 +3086,22 @@
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 701,
-        "punctuation_ms": 659,
-        "spelling_ms": 839,
-        "total_ms": 2204
+        "grammar_ms": 7090,
+        "punctuation_error": "AttributeError: 'CorrectionPatch' object has no attribute 'correction'",
+        "punctuation_ms": 423,
+        "spelling_ms": 2126,
+        "total_ms": 9647
       },
-      "pipeline_ms": 3238,
+      "pipeline_ms": 9663,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
       "punctuation_raw_ms": 0,
-      "pipeline_verdict": "TP",
-      "pipeline_detail": "All corrections applied correctly",
-      "root_cause_component": "",
-      "root_cause_stage": "",
-      "root_cause_detail": "",
+      "pipeline_verdict": "FN",
+      "pipeline_detail": "Missing: ['صممن'], Extra: ['مصممو']",
+      "root_cause_component": "PIPELINE",
+      "root_cause_stage": "integration",
+      "root_cause_detail": "Spelling and grammar corrections overlapped",
       "regression_type": "",
       "regression_detail": "",
       "span_valid": true,
@@ -3139,7 +3121,7 @@
           "confidence": 1.0,
           "correction": "عالجن المرضى",
           "end": 20,
-          "id": "552ace7d-2773-4dbd-a77d-aa18f1807131",
+          "id": "cc75e178-0606-4fd8-826a-3e7c99e7d08a",
           "locked": true,
           "original": "عالج المرضي",
           "priority": 3,
@@ -3151,7 +3133,7 @@
           "confidence": 0.8,
           "correction": "المستشفى.",
           "end": 32,
-          "id": "86610c5a-a645-4d3d-929f-f4ae7a8567b2",
+          "id": "942854b2-1f00-46e6-9279-d4b27173c923",
           "locked": true,
           "original": "المستشفي",
           "priority": 2,
@@ -3166,7 +3148,7 @@
           "confidence": 0.9,
           "correction": "المستشفى",
           "end": 32,
-          "id": "45c8ea2d-4f0c-4364-bfdb-78bc01e0ddce",
+          "id": "aa22551a-291c-459e-a63d-02fd623e656f",
           "locked": true,
           "original": "المستشفي",
           "priority": 1,
@@ -3175,12 +3157,13 @@
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 937,
-        "punctuation_ms": 729,
-        "spelling_ms": 829,
-        "total_ms": 2498
+        "grammar_ms": 5056,
+        "punctuation_error": "AttributeError: 'CorrectionPatch' object has no attribute 'correction'",
+        "punctuation_ms": 537,
+        "spelling_ms": 2327,
+        "total_ms": 7927
       },
-      "pipeline_ms": 3250,
+      "pipeline_ms": 7940,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
@@ -3202,14 +3185,26 @@
       "input": "المديره وافق علي المشرووع والموظفين يعمل بجد",
       "expected": "المديرة وافقت على المشروع والموظفون يعملون بجد",
       "severity": "critical",
-      "pipeline_output": "المديرة وافق علي المشروع والموظفين يعملون بجد.",
+      "pipeline_output": "المديرة وافقت على المشروع والموظفين يعملون بجد.",
       "pipeline_suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "وافقت على",
+          "end": 16,
+          "id": "655de92c-2891-4ff1-a0c0-b6fc03c8813d",
+          "locked": true,
+          "original": "وافق علي",
+          "priority": 3,
+          "start": 8,
+          "type": "grammar"
+        },
         {
           "alternatives": [],
           "confidence": 1.0,
           "correction": "يعملون",
           "end": 40,
-          "id": "e0a26727-f144-43f9-8b48-a24b657d99c4",
+          "id": "afc7f477-f868-4225-a479-1bd7d4d6a0bb",
           "locked": true,
           "original": "يعمل",
           "priority": 3,
@@ -3221,7 +3216,7 @@
           "confidence": 0.8,
           "correction": "بجد.",
           "end": 44,
-          "id": "8f0300b0-2013-40f8-ae84-00477bd963a1",
+          "id": "501b9ee1-3206-44e8-aa7b-20f4127b75a8",
           "locked": true,
           "original": "بجد",
           "priority": 2,
@@ -3231,14 +3226,12 @@
         {
           "alternatives": [
             "المديرة",
-            "المدير",
-            "المديرس",
             "المديره"
           ],
           "confidence": 0.9,
           "correction": "المديرة",
           "end": 7,
-          "id": "61fafdf4-af14-4939-8f18-dac4cdb09a20",
+          "id": "fd6ee78f-a58c-465f-ab18-834fa4633561",
           "locked": true,
           "original": "المديره",
           "priority": 1,
@@ -3253,7 +3246,7 @@
           "confidence": 0.7,
           "correction": "المشروع",
           "end": 25,
-          "id": "bd460f24-b47f-44b8-89d3-52080482d193",
+          "id": "89728acb-e0d3-4266-8381-ae95dfb53ef1",
           "locked": true,
           "original": "المشرووع",
           "priority": 1,
@@ -3262,18 +3255,19 @@
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 776,
-        "punctuation_ms": 864,
-        "spelling_ms": 1183,
-        "total_ms": 2834
+        "grammar_ms": 3141,
+        "punctuation_error": "AttributeError: 'CorrectionPatch' object has no attribute 'correction'",
+        "punctuation_ms": 873,
+        "spelling_ms": 3842,
+        "total_ms": 7867
       },
-      "pipeline_ms": 3362,
+      "pipeline_ms": 7871,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
       "punctuation_raw_ms": 0,
       "pipeline_verdict": "FN",
-      "pipeline_detail": "Missing: ['على', 'وافقت', 'والموظفون'], Extra: ['والموظفين', 'وافق', 'علي']",
+      "pipeline_detail": "Missing: ['والموظفون'], Extra: ['والموظفين']",
       "root_cause_component": "PIPELINE",
       "root_cause_stage": "integration",
       "root_cause_detail": "Three-stage collision: spelling+grammar+punctuation",
@@ -3296,7 +3290,7 @@
           "confidence": 1.0,
           "correction": "أصدرت قرارا",
           "end": 17,
-          "id": "54a151fa-3c76-4169-8ffe-797187e19c69",
+          "id": "35c74c86-9704-4cc6-af88-800b3600ad83",
           "locked": true,
           "original": "اصدر قرار",
           "priority": 3,
@@ -3308,7 +3302,7 @@
           "confidence": 1.0,
           "correction": "ينفذون",
           "end": 32,
-          "id": "e4e65bae-9c33-4253-a4a9-26e647dcf4f7",
+          "id": "126db53c-6cd3-40d0-81fb-5414b2a7b019",
           "locked": true,
           "original": "ينفذ",
           "priority": 3,
@@ -3320,7 +3314,7 @@
           "confidence": 0.8,
           "correction": "التعليمات.",
           "end": 42,
-          "id": "058c7f77-79a1-4e83-8e06-19e350df14cc",
+          "id": "391c071f-95b7-4486-8b3c-d9e76e9a8734",
           "locked": true,
           "original": "التعليمات",
           "priority": 2,
@@ -3330,14 +3324,12 @@
         {
           "alternatives": [
             "الوزارة",
-            "الوزاري",
-            "الوزارى",
             "الوزاره"
           ],
           "confidence": 0.9,
           "correction": "الوزارة",
           "end": 7,
-          "id": "83bcbfc1-9b82-4aff-8677-2675173bc68a",
+          "id": "da0cf717-0d08-4aea-a691-b85484be70af",
           "locked": true,
           "original": "الوزاره",
           "priority": 1,
@@ -3346,12 +3338,13 @@
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 803,
-        "punctuation_ms": 1055,
-        "spelling_ms": 755,
-        "total_ms": 2621
+        "grammar_ms": 4631,
+        "punctuation_error": "AttributeError: 'CorrectionPatch' object has no attribute 'correction'",
+        "punctuation_ms": 974,
+        "spelling_ms": 2878,
+        "total_ms": 8496
       },
-      "pipeline_ms": 7407,
+      "pipeline_ms": 8501,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
@@ -3380,7 +3373,7 @@
           "confidence": 1.0,
           "correction": "القديم",
           "end": 14,
-          "id": "456b4224-e5fe-4591-8544-88a0325529ff",
+          "id": "d974dad3-a603-4846-88ba-c9e3e83a09cd",
           "locked": true,
           "original": "القديمه",
           "priority": 3,
@@ -3392,7 +3385,7 @@
           "confidence": 1.0,
           "correction": "الضيق",
           "end": 31,
-          "id": "9fbba716-38e4-4ebf-8902-56c7061f8ebb",
+          "id": "2ca6b29d-83cc-4f43-ae2c-2f90f3933e32",
           "locked": true,
           "original": "الضيقه",
           "priority": 3,
@@ -3401,12 +3394,13 @@
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 604,
-        "punctuation_ms": 680,
-        "spelling_ms": 998,
-        "total_ms": 2288
+        "grammar_ms": 4549,
+        "punctuation_error": "AttributeError: 'CorrectionPatch' object has no attribute 'correction'",
+        "punctuation_ms": 549,
+        "spelling_ms": 2481,
+        "total_ms": 7588
       },
-      "pipeline_ms": 5261,
+      "pipeline_ms": 7593,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
@@ -3435,7 +3429,7 @@
           "confidence": 1.0,
           "correction": "الطويل",
           "end": 13,
-          "id": "cbb877d5-e521-468d-96c7-3c18597b28a0",
+          "id": "f172501e-c67c-4e84-bf69-15f61a766dca",
           "locked": true,
           "original": "الطويله",
           "priority": 3,
@@ -3447,7 +3441,7 @@
           "confidence": 1.0,
           "correction": "البنية.",
           "end": 31,
-          "id": "492f35b1-212d-4614-b256-6634abcbd79f",
+          "id": "c32369e8-7450-4be1-818e-ded5ffaffc58",
           "locked": true,
           "original": "البنايه",
           "priority": 3,
@@ -3456,12 +3450,13 @@
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 723,
-        "punctuation_ms": 624,
-        "spelling_ms": 744,
-        "total_ms": 2096
+        "grammar_ms": 3774,
+        "punctuation_error": "AttributeError: 'CorrectionPatch' object has no attribute 'correction'",
+        "punctuation_ms": 564,
+        "spelling_ms": 2537,
+        "total_ms": 6881
       },
-      "pipeline_ms": 2686,
+      "pipeline_ms": 6885,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
@@ -3483,46 +3478,35 @@
       "input": "اللاعبون تدرب في الملعب والمدربه شجعتهم",
       "expected": "اللاعبون تدربوا في الملعب والمدربة شجعتهم",
       "severity": "critical",
-      "pipeline_output": "اللاعبون تدربون في الملعب والمدربه يجعلهم.",
+      "pipeline_output": "اللاعبون تدرب في الملعب والمدربة شجعتهمت",
       "pipeline_suggestions": [
         {
           "alternatives": [],
           "confidence": 1.0,
-          "correction": "تدربون",
-          "end": 13,
-          "id": "a6b5058e-67db-4098-9567-da407f97ada9",
-          "locked": true,
-          "original": "تدرب",
-          "priority": 3,
-          "start": 9,
-          "type": "grammar"
-        },
-        {
-          "alternatives": [],
-          "confidence": 0.8,
-          "correction": "يجعلهم.",
+          "correction": "والمدربة شجعتهمت",
           "end": 39,
-          "id": "455023e3-b0ac-463f-9e29-a05048778901",
+          "id": "a081664d-28aa-4436-afc5-78958b1258d8",
           "locked": true,
-          "original": "شجعتهم",
-          "priority": 2,
-          "start": 33,
-          "type": "punctuation"
+          "original": "والمدربه شجعتهم",
+          "priority": 3,
+          "start": 24,
+          "type": "grammar"
         }
       ],
       "pipeline_timing": {
-        "grammar_ms": 750,
-        "punctuation_ms": 932,
-        "spelling_ms": 1006,
-        "total_ms": 2691
+        "grammar_ms": 1955,
+        "punctuation_error": "AttributeError: 'CorrectionPatch' object has no attribute 'correction'",
+        "punctuation_ms": 852,
+        "spelling_ms": 3515,
+        "total_ms": 6335
       },
-      "pipeline_ms": 3416,
+      "pipeline_ms": 6338,
       "grammar_raw_output": "",
       "grammar_raw_ms": 0,
       "punctuation_raw_output": "",
       "punctuation_raw_ms": 0,
       "pipeline_verdict": "FN",
-      "pipeline_detail": "Missing: ['والمدربة', 'شجعتهم', 'تدربوا'], Extra: ['والمدربه', 'يجعلهم', 'تدربون']",
+      "pipeline_detail": "Missing: ['تدربوا', 'شجعتهم'], Extra: ['تدرب', 'شجعتهمت']",
       "root_cause_component": "PIPELINE",
       "root_cause_stage": "integration",
       "root_cause_detail": "Multi-stage interaction failure",
