@@ -1,4 +1,4 @@
-// src/js/format.js
+﻿// src/js/format.js
 // Rich text formatting commands for the editor
 
 /**
@@ -357,16 +357,16 @@ function convertToHindiNumerals() {
   if (!editor) return;
   pushUndoState();
   const map = {'0':'٠','1':'١','2':'٢','3':'٣','4':'٤','5':'٥','6':'٦','7':'٧','8':'٨','9':'٩'};
-  walkTextNodes(editor, text => text.replace(/[0-9]/g, d => map[d]));
+  fmtWalkTextNodes(editor, text => text.replace(/[0-9]/g, d => map[d]));
 }
 function convertToArabicNumerals() {
   const editor = getEditorElement();
   if (!editor) return;
   pushUndoState();
   const map = {'٠':'0','١':'1','٢':'2','٣':'3','٤':'4','٥':'5','٦':'6','٧':'7','٨':'8','٩':'9'};
-  walkTextNodes(editor, text => text.replace(/[٠-٩]/g, d => map[d]));
+  fmtWalkTextNodes(editor, text => text.replace(/[٠-٩]/g, d => map[d]));
 }
-function walkTextNodes(root, fn) {
+function fmtWalkTextNodes(root, fn) {
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
   let node;
   while (node = walker.nextNode()) {
@@ -380,7 +380,7 @@ function cleanupText() {
   const editor = getEditorElement();
   if (!editor) return;
   pushUndoState();
-  walkTextNodes(editor, text => {
+  fmtWalkTextNodes(editor, text => {
     return text
       .replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g, '') // Remove diacritics
       .replace(/\u200C/g, '') // Remove ZWNJ
