@@ -1,4 +1,4 @@
-﻿// src/js/format.js
+// src/js/format.js
 // Rich text formatting commands for the editor
 
 /**
@@ -845,7 +845,7 @@ function filterErrors(type) {
     tab.classList.toggle('active', tab.dataset.filter === type);
   });
   // Filter suggestion items
-  document.querySelectorAll('#suggestions-list .suggestion-item, #suggestions-list .sugg-card').forEach(item => {
+  document.querySelectorAll('#suggestions-list .suggestion-item, #suggestions-list .sugg-card, #suggestions-list .suggestion-card').forEach(item => {
     if (type === 'all') {
       item.style.display = '';
     } else {
@@ -861,7 +861,7 @@ function filterErrors(type) {
 function dismissAllFiltered() {
   const type = _currentErrorFilter;
   if (type === 'all') return;
-  document.querySelectorAll('#suggestions-list .suggestion-item, #suggestions-list .sugg-card').forEach(item => {
+  document.querySelectorAll('#suggestions-list .suggestion-item, #suggestions-list .sugg-card, #suggestions-list .suggestion-card').forEach(item => {
     const itemType = item.dataset.type || item.getAttribute('data-error-type') || '';
     if (itemType.includes(type)) {
       item.remove();
