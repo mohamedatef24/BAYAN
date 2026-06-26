@@ -853,20 +853,52 @@ function filterErrors(type) {
       item.style.display = itemType.includes(type) ? '' : 'none';
     }
   });
-  // Show/hide dismiss button
+// Show/hide dismiss button
   const dismissBtn = document.getElementById('dismiss-filtered-btn');
-  if (dismissBtn) dismissBtn.classList.toggle('is-hidden', type === 'all');
+  if (dismissBtn) {
+    dismissBtn.classList.remove('is-hidden');
+    // For 'all', show total count, else show filtered count
+    const count = type === 'all' ? window.currentSuggestions?.length || 0 
+                  : (window.currentSuggestions?.filter(s => s.type === type).length || 0);
+    dismissBtn.style.display = count > 0 ? '' : 'none';
+  }
 }
 
 function dismissAllFiltered() {
-  const type = _currentErrorFilter;
-  if (type === 'all') return;
-  document.querySelectorAll('#suggestions-list .suggestion-item, #suggestions-list .sugg-card, #suggestions-list .suggestion-card').forEach(item => {
-    const itemType = item.dataset.type || item.getAttribute('data-error-type') || '';
-    if (itemType.includes(type)) {
-      item.remove();
+  const type = window._currentErrorFilter || 'all';
+  if (!window.currentSuggestions || window.currentSuggestions.length === 0) return;
+  
+  if (typeof window.pushUndoState === 'function') {
+    window.pushUndoState();
+  }
+
+  // Get suggestions to dismiss
+  const toDismiss = type === 'all' ? window.currentSuggestions : window.currentSuggestions.filter(s => s.type === type);
+  
+  // Add originals to whitelist
+  let dismissed = [];
+  try {
+    dismissed = JSON.parse(localStorage.getItem('bayan_dismissed_words') || '[]');
+  } catch(e) {}
+  
+  toDismiss.forEach(s => {
+    const cleanWord = s.original.trim().replace(/[.,!?،؛؟"]/g, '');
+    if (cleanWord.length > 0 && !dismissed.includes(cleanWord)) {
+      dismissed.push(cleanWord);
     }
   });
+  localStorage.setItem('bayan_dismissed_words', JSON.stringify(dismissed));
+
+  // Update suggestions array
+  if (type === 'all') {
+    window.currentSuggestions = [];
+  } else {
+    window.currentSuggestions = window.currentSuggestions.filter(s => s.type !== type);
+  }
+
+  // Re-render UI
+  if (typeof window.renderEditorHighlights === 'function') window.renderEditorHighlights();
+  if (typeof window.renderSuggestionsSidebar === 'function') window.renderSuggestionsSidebar(window.currentSuggestions);
 }
 
 /* ── Error Breakdown Chart (SVG Donut) ── */
