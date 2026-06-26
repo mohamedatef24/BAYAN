@@ -415,13 +415,13 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   gap: 6px 3px; /* vertical and horizontal gaps */
   padding: 6px 10px;
   border-bottom: 1px solid var(--color-border);
   background: var(--color-surface);
   position: relative;
-  z-index: 50;
+  z-index: 40;
   flex-shrink: 0;
 }
 
