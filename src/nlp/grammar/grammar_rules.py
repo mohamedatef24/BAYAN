@@ -53,18 +53,6 @@ class ArabicGrammarGuard:
                     if w1_word.endswith('ون'): corrected_tokens[i] = w1_word[:-2]
                     elif w1_word.endswith('وا'): corrected_tokens[i] = w1_word[:-2]
 
-            elif w1_pos == 'noun' and w2_pos == 'verb':
-                if w1_word.endswith('ون') and not (w2_word.endswith('ون') or w2_word.endswith('وا') or w2_word.endswith('ين')):
-                    if w2_info.analysis.get('num') == 's':
-                        corrected_tokens[i+1] = w2_word + 'ون'
-
-            # Match adjectives (adj) only; skip words starting with ب or ending with alef tanween
-            elif w1_pos == 'noun' and w2_pos == 'adj':
-                if w1_word.endswith('ون') and not w2_word.endswith('ون'):
-                    if w2_info.analysis.get('num') == 's' and w2_info.analysis.get('gen') == 'm':
-                        if len(w2_word) > 2 and not w2_word.endswith('ا') and not w2_word.startswith('ب'):
-                            corrected_tokens[i+1] = w2_word + 'ون'
-
         return " ".join(corrected_tokens)
 
     def smart_asmaa_khamsa_fix(self, text):
@@ -369,9 +357,8 @@ class ArabicGrammarGuard:
             verb_num = verb_info.analysis.get('num', 's')
 
             # Skip if verb is already plural
-            if verb_num != 's':
-                continue
-
+            # Removed singular verb check to allow fixing gender mismatch on already plural verbs (e.g. البنات يذهبون -> يذهبن)
+            
             # Only trigger on CONFIRMED plurals:
             # 1. Known broken plural nouns (hardcoded list)
             # 2. Sound masculine plural ending in ون/ين
@@ -429,9 +416,13 @@ class ArabicGrammarGuard:
                         is_plural_fem = True
                     else:
                         is_plural_masc = True
-
+            
+            is_singular_fem = False
             if not is_plural_masc and not is_plural_fem:
-                continue
+                if noun_gen == 'f' or noun_word.endswith('ة') or noun_word in KNOWN_FEMININE_NOUNS:
+                    is_singular_fem = True
+                else:
+                    continue
 
             # Fix the verb to agree with the plural subject
             # Detect if verb is present tense (starts with ي/ت/ن/أ)
@@ -453,12 +444,15 @@ class ArabicGrammarGuard:
                         if verb_word.endswith('وَ'):
                             verb_word = verb_word[:-1]
                         corrected_tokens[i+1] = verb_word + 'ون'
+                elif is_singular_fem:
+                    if verb_word.startswith('ي'):
+                        corrected_tokens[i+1] = 'ت' + verb_word[1:]
             else:
                 # Past tense: ذهب→ذهبوا (masc) / ذهبن (fem)
                 if is_plural_fem:
                     if verb_word.endswith('وا') or verb_word.endswith('ون'):
                         verb_word = verb_word[:-2]
-                    elif verb_word.endswith('ت') or verb_word.endswith('تْ') or verb_word.endswith('تَ'):
+                    elif verb_word.endswith('ت') or verb_word.endswith('تْ') or verb_word.endswith('تَ') or verb_word.endswith('و'):
                         verb_word = verb_word[:-1]
                     if not verb_word.endswith('ن') and not verb_word.endswith('نَ'):
                         if verb_word.endswith('ى') or verb_word.endswith('ا'):
@@ -476,21 +470,31 @@ class ArabicGrammarGuard:
                         elif verb_word.endswith('ى') or verb_word.endswith('ا'):
                             verb_word = verb_word[:-1]
                         corrected_tokens[i+1] = verb_word + 'وا'
+                elif is_singular_fem:
+                    if not verb_word.endswith('ت') and not verb_word.endswith('تْ') and not verb_word.endswith('تَ'):
+                        if verb_word.endswith('ى'):
+                            verb_word = verb_word[:-1] + 'ا'
+                        corrected_tokens[i+1] = verb_word + 'ت'
 
         return " ".join(corrected_tokens)
 
     def regex_rules_fallback(self, text):
+        def _add_hamza(word):
+            if word.startswith('ا') and not word.startswith('ال'):
+                return 'أ' + word[1:]
+            return word
+
         # إن وأخواتها
         text = re.sub(r'\b(إن|أن|كأن|لكن|لعل|ليت|ان|كان)\s+(أبوك|ابوك|أخوك|اخوك|ذو|فوك)\b',
-                      lambda m: f"{m.group(1)} {m.group(2).replace('و', 'ا')}", text)
+                      lambda m: f"{m.group(1)} {_add_hamza(m.group(2)).replace('و', 'ا')}", text)
 
         # الأفعال المتعدية (Object position)
         text = re.sub(r'\b(رأيت|شاهدت|قابلت|زرت|سمعت|عرفت|وجدت|أحب|أكرمت|صادفت)\s+(أبوك|ابوك|أخوك|اخوك|ذو|فوك)\b',
-                      lambda m: f"{m.group(1)} {m.group(2).replace('و', 'ا')}", text)
+                      lambda m: f"{m.group(1)} {_add_hamza(m.group(2)).replace('و', 'ا')}", text)
 
         # حروف الجر المنفصلة بمسافة (في أخوك -> في أخيك)
         text = re.sub(r'\b([وف]?(?:في|من|إلى|الي|على|علي|عن))\s+(أبوك|ابوك|أباك|اباك|أخوك|اخوك|أخاك|اخاك|ذو|ذا)\b',
-                      lambda m: f"{m.group(1)} {m.group(2).replace('و', 'ي').replace('ا', 'ي')}", text)
+                      lambda m: f"{m.group(1)} {_add_hamza(m.group(2)).replace('و', 'ي').replace('ا', 'ي')}", text)
 
         # حروف الجر المتصلة بدون مسافة (بأخوك، لأبوك -> بأخيك، لأبيك)
         text = re.sub(r'\b([وف]?[بل])(أبوك|ابوك|أباك|اباك|أخوك|اخوك|أخاك|اخاك|ذو|ذا)\b',
@@ -500,6 +504,11 @@ class ArabicGrammarGuard:
         # were REMOVED because they caused massive overcorrection on correct text.
         # These patterns are handled by CamelTools-based rules (fix_prepositions_advanced,
         # fix_verbs_nasb_and_jazm) which have POS-tag awareness.
+        
+        # FIX-PC010: Add targeted safe regex for Nasb/Jazm particles + verb
+        # Only match clear present tense verbs starting with ي/ت/ن/أ and ending in ون
+        text = re.sub(r'\b(أن|ان|لن|كي|حتى|لم|لما)\s+([يتا][\u0600-\u06FF]{2,})ون\b',
+                      r'\1 \2وا', text)
 
         return text
 
