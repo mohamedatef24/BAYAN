@@ -52,6 +52,18 @@ def arabic_postprocessing(text: str) -> str:
     text = re.sub(r'،؛|؛،', '؛', text)
     text = re.sub(r'([!؟])\.', r'\1', text)
 
+    # 5.5 Syntactic context fixes for model hallucinations
+    # Remove colons/semicolons before relative pronouns
+    text = re.sub(r'[؛:]\s*(التي|الذي|الذين|اللتان|اللذان|اللاتي|اللواتي)', r' \1', text)
+    
+    # Fix misplaced colons for saying verbs (e.g. قال: المعلم -> قال المعلم:)
+    text = re.sub(r'\b(قال|يقول|قالت|تقول|أجاب|أجابت|سأل|سألت|أخبر|أخبرت|صرح|صرحت|أضاف|أضافت|أردف|أردفت):?\s+(ال[أ-ي]+|أحمد|محمد|محمود|علي|عمر|خالد|فاطمة|مريم|عائشة|خديجة)\b:?', r'\1 \2:', text)
+
+    # Remove colons after verbs that do not introduce speech/lists
+    text = re.sub(r'\b(يقدر|يستطيع|يمكن|يجب|ينبغي|يعتبر|يعد|يرى|يعتقد)\s*:', r'\1 ', text)
+    # Replace semicolon with comma if followed by "و" (and) or similar conjunctions, as semicolon is for separate clauses
+    text = re.sub(r'؛\s*(و|ف|ثم|أو|أم|بل)\b', r'، \1', text)
+
     # 6. Remove stray leading punctuation
     text = re.sub(r'^[،؛:!؟. \t]+', '', text)
 
@@ -155,48 +167,59 @@ def validate_punctuation_diff(diff: dict, full_text: str = '') -> bool:
                 corr_no_punct = re.sub(r'[.,،؛؟!:;?!]+$', '', correction)
                 if _normalize_for_comparison(orig_no_punct.replace(' ', '')) == \
                    _normalize_for_comparison(corr_no_punct.replace(' ', '')):
-                    # This is a pure terminal-punctuation addition.
-                    # V2 FIX-30: Fall back to original when full_text is empty
-                    _word_count_source = full_text if full_text else original
-                    _full_word_count = len(re.findall(
-                        r'[\u0600-\u06FFa-zA-Z]+', _word_count_source
-                    ))
-                    _full_already_has_terminal = bool(
-                        re.search(r'[.،؛؟!?!][\s]*$', full_text)
-                    ) if full_text else False
-                    _full_has_ellipsis = full_text.rstrip().endswith('...') if full_text else False
-
-                    # V2 FIX-30: Allow for 1+ words (not 5)
-                    if _full_word_count >= 1 and not _full_already_has_terminal and not _full_has_ellipsis:
-                        # ── Softened FIX-29 (Merged): Short-text ؟/! guard ──
-                        # For short texts (< 3 words), block ؟ and ! unless
-                        # cue words are present. Prevents "محمد" → "محمد؟"
-                        # but allows "اليوم" → "اليوم." (period is safe).
-                        # For 3+ words, allow freely (V2 behavior).
-                        _added_punct = correction[len(orig_stripped):]
-                        if _full_word_count < 3 and ('!' in _added_punct or '؟' in _added_punct):
-                            _text_to_scan = full_text if full_text else original
-                            _has_cue = any(w in _EXCL_CUES for w in _text_to_scan.split())
-                            if not _has_cue:
-                                logger.info(
-                                    f"[PUNC-SAFETY] Blocked !/؟ on short text without cue: "
-                                    f"'{original}' → '{correction}'"
-                                )
-                                return False
-
-                        logger.info(
-                            f"[PUNC-SAFETY] Allowed terminal punct for sentence "
-                            f"({_full_word_count} words): "
-                            f"'{original}' → '{correction}'"
-                        )
-                        # Fall through to remaining rules (don't return yet)
+                    
+                    is_at_end = False
+                    if full_text and 'end' in diff:
+                        is_at_end = diff['end'] >= len(full_text) - 2
+                    elif not full_text:
+                        is_at_end = True  # If no context, assume it's a standalone fragment
+                    
+                    if not is_at_end:
+                        # Mid-sentence punctuation addition. This is safe to fall through to other rules.
+                        pass
                     else:
-                        # Already has terminal punct or ends in ellipsis → REJECT
-                        logger.info(
-                            f"[PUNC-SAFETY] TerminalPunctuationGuard triggered: removing trailing punctuation "
-                            f"'{original}' → '{correction}'"
-                        )
-                        return False
+                        # This is a pure terminal-punctuation addition.
+                        # V2 FIX-30: Fall back to original when full_text is empty
+                        _word_count_source = full_text if full_text else original
+                        _full_word_count = len(re.findall(
+                            r'[\u0600-\u06FFa-zA-Z]+', _word_count_source
+                        ))
+                        _full_already_has_terminal = bool(
+                            re.search(r'[.،؛؟!?!][\s]*$', full_text)
+                        ) if full_text else False
+                        _full_has_ellipsis = full_text.rstrip().endswith('...') if full_text else False
+    
+                        # V2 FIX-30: Allow for 1+ words (not 5)
+                        if _full_word_count >= 1 and not _full_already_has_terminal and not _full_has_ellipsis:
+                            # ── Softened FIX-29 (Merged): Short-text ؟/! guard ──
+                            # For short texts (< 3 words), block ؟ and ! unless
+                            # cue words are present. Prevents "محمد" → "محمد؟"
+                            # but allows "اليوم" → "اليوم." (period is safe).
+                            # For 3+ words, allow freely (V2 behavior).
+                            _added_punct = correction[len(orig_stripped):]
+                            if _full_word_count < 3 and ('!' in _added_punct or '؟' in _added_punct):
+                                _text_to_scan = full_text if full_text else original
+                                _has_cue = any(w in _EXCL_CUES for w in _text_to_scan.split())
+                                if not _has_cue:
+                                    logger.info(
+                                        f"[PUNC-SAFETY] Blocked !/؟ on short text without cue: "
+                                        f"'{original}' → '{correction}'"
+                                    )
+                                    return False
+    
+                            logger.info(
+                                f"[PUNC-SAFETY] Allowed terminal punct for sentence "
+                                f"({_full_word_count} words): "
+                                f"'{original}' → '{correction}'"
+                            )
+                            # Fall through to remaining rules (don't return yet)
+                        else:
+                            # Already has terminal punct or ends in ellipsis → REJECT
+                            logger.info(
+                                f"[PUNC-SAFETY] TerminalPunctuationGuard triggered: removing trailing punctuation "
+                                f"'{original}' → '{correction}'"
+                            )
+                            return False
 
 
 
