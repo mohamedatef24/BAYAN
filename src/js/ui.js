@@ -54,6 +54,13 @@ function updateWritingScore(spelling, grammar, punctuation) {
     const total = spelling + grammar + punctuation;
     sheetCount.textContent = total.toLocaleString('ar-EG');
   }
+
+  // Hook: update error donut chart
+  if (typeof renderErrorChart === 'function') renderErrorChart();
+  // Hook: update error badge on write tab
+  if (typeof updateErrorBadge === 'function') updateErrorBadge();
+  // Hook: track score for sparkline
+  if (typeof trackScore === 'function' && (spelling + grammar + punctuation) > 0) trackScore(score);
 }
 
 /**
