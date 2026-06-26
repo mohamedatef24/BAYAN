@@ -1175,14 +1175,23 @@ class ArabicSpellChecker:
         self.use_contextual = use_contextual
         if use_contextual:
             try:
+                logger.info("=" * 60)
+                logger.info("[MLM/CONTEXTUAL] Loading AraBERT MLM model...")
                 self.contextual = ContextualCorrector()
-                logger.info("Contextual correction enabled")
+                logger.info("[MLM/CONTEXTUAL] ✅ LOADED SUCCESSFULLY")
+                logger.info(f"[MLM/CONTEXTUAL] Device: {self.contextual.device}")
+                logger.info(f"[MLM/CONTEXTUAL] Vocab size: {len(self.contextual.vocab)}")
+                logger.info("=" * 60)
             except Exception as e:
-                logger.warning(f"Contextual correction disabled: {e}")
+                logger.warning("=" * 60)
+                logger.warning(f"[MLM/CONTEXTUAL] ❌ FAILED TO LOAD: {e}")
+                logger.warning("[MLM/CONTEXTUAL] Spelling will work without contextual validation")
+                logger.warning("=" * 60)
                 self.contextual = None
                 self.use_contextual = False
         else:
             self.contextual = None
+            logger.info("[MLM/CONTEXTUAL] Disabled by configuration (use_contextual=False)")
 
     def _fix_repeated_end_chars(self, text: str) -> str:
         text = re.sub(r'([ا-ي])\1+\b', r'\1', text)

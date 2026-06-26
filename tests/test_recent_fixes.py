@@ -250,13 +250,13 @@ ps2.add(CorrectionPatch(
     priority=PRIORITY['punctuation'], confidence=0.8
 ))
 resolved2 = ps2.resolve_overlaps()
-test("Case 2: punc dropped (non-matching)", len(resolved2) == 1, f"got {len(resolved2)}")
+test("Case 2: punc merged", len(resolved2) == 1, f"got {len(resolved2)}")
 if resolved2:
-    test("Kept grammar unchanged 'ذهبن'",
-         resolved2[0].replacement == 'ذهبن',
+    test("Appended punc to grammar 'ذهبن.'",
+         resolved2[0].replacement == 'ذهبن.',
          f"got '{resolved2[0].replacement}'")
 
-# Case 3: spelling + punctuation still coexist (Phase 14)
+# Case 3: spelling + punctuation merge (Phase 14 fix)
 ps3 = PatchSet()
 ps3.add(CorrectionPatch(
     stage='spelling', start_original=0, end_original=5,
@@ -271,8 +271,12 @@ ps3.add(CorrectionPatch(
     priority=PRIORITY['punctuation'], confidence=0.8
 ))
 resolved3 = ps3.resolve_overlaps()
-test("Case 3: spelling+punc coexist (2 patches)",
-     len(resolved3) == 2, f"got {len(resolved3)}")
+test("Case 3: spelling+punc merged (1 patch)",
+     len(resolved3) == 1, f"got {len(resolved3)}")
+if resolved3:
+    test("Appended punc to spelling 'برغم.'",
+         resolved3[0].replacement == 'برغم.',
+         f"got '{resolved3[0].replacement}'")
 
 
 # ══════════════════════════════════════════════════════════════

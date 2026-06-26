@@ -413,11 +413,13 @@
 /* ── Formatting Toolbar ── */
 .format-toolbar {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: center;
   gap: 3px;
   padding: 6px 10px;
+  overflow-x: auto;
+  scrollbar-width: none; /* Hide scrollbar Firefox */
   border-bottom: 1px solid var(--color-border);
   background: var(--color-surface);
   overflow: visible;
@@ -426,9 +428,13 @@
   flex-shrink: 0;
 }
 
+.format-toolbar::-webkit-scrollbar {
+  display: none;
+}
+
 .fmt-group {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 1px;
   background: var(--color-border);
@@ -687,18 +693,23 @@
 
 .editor-footer {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--spacing-md);
   padding: var(--spacing-md);
   border-top: 1px solid var(--color-border);
   background: var(--color-surface);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.editor-footer::-webkit-scrollbar {
+  display: none;
 }
 
 .editor-stats {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: var(--spacing-md);
   align-items: center;
 }
@@ -724,7 +735,7 @@
 
 .editor-actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: var(--spacing-sm);
 }
 
@@ -737,6 +748,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 /* ── Buttons ── */

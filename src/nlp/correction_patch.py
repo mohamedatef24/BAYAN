@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)
 
-PRIORITY = {'autocomplete': 0, 'spelling': 1, 'punctuation': 2, 'grammar': 3}
+PRIORITY = {'autocomplete': 0, 'punctuation': 1, 'spelling': 2, 'grammar': 3}
 
 
 @dataclass
@@ -131,6 +131,7 @@ class PatchSet:
                         prev_correction = claimed_patch.replacement
                         
                         # Check if punctuation is just appending trailing punctuation
+                        # Scenario A: Exact match merge (prev_correction is prefix)
                         if (len(punc_correction) > len(prev_correction)
                                 and punc_correction.startswith(prev_correction)
                                 and all(c in _PUNCT_CHARS for c in punc_correction[len(prev_correction):])):
@@ -140,6 +141,23 @@ class PatchSet:
                                 f"[{cs}:{ce}]: '{claimed_patch.original}' → "
                                 f"'{claimed_patch.replacement}'"
                             )
+                            has_substantial_overlap = True
+                            break
+                            
+                        # Scenario B: Punctuation just adds punct to its own original text
+                        # (e.g. original='المدرسة', replacement='المدرسة.', but prev_correction is a split like 'في المدرسة')
+                        if (len(punc_correction) > len(patch.original)
+                                and punc_correction.startswith(patch.original)
+                                and all(c in _PUNCT_CHARS for c in punc_correction[len(patch.original):])):
+                            added_punct = punc_correction[len(patch.original):]
+                            # Only append if it doesn't already end with that punct
+                            if not claimed_patch.replacement.endswith(added_punct):
+                                claimed_patch.replacement += added_punct
+                                logger.info(
+                                    f"[OVERLAP] Appended trailing punctuation into {claimed_stage} "
+                                    f"[{cs}:{ce}]: '{claimed_patch.original}' → "
+                                    f"'{claimed_patch.replacement}'"
+                                )
                             has_substantial_overlap = True
                             break
                             

@@ -207,13 +207,13 @@ class TestGrammarSanityCheck(unittest.TestCase):
     """
 
     def test_sanity_check_pattern_exists(self):
-        """app.py grammar stage must contain the IV/OOV sanity check."""
-        app_path = os.path.join(os.path.dirname(__file__), '..', 'src', 'app.py')
-        with open(app_path, 'r', encoding='utf-8') as f:
+        """grammar_rules.py must contain the IV/OOV sanity check."""
+        target_path = os.path.join(os.path.dirname(__file__), '..', 'src', 'nlp', 'grammar', 'grammar_rules.py')
+        with open(target_path, 'r', encoding='utf-8') as f:
             content = f.read()
         # Check for the Phase 4 guard comment and logic
         self.assertIn('Phase 4 (BUG-033/E10)', content,
-                      "Phase 4 grammar sanity check not found in app.py")
+                      "Phase 4 grammar sanity check not found in grammar_rules.py")
         self.assertIn('Rejected corruption', content,
                       "Grammar corruption rejection log not found")
 
@@ -433,7 +433,7 @@ class TestLongInputPattern(unittest.TestCase):
         app_path = os.path.join(os.path.dirname(__file__), '..', 'src', 'app.py')
         with open(app_path, 'r', encoding='utf-8') as f:
             content = f.read()
-        self.assertIn('text_len <= 300', content)
+        self.assertIn('text_len <= 1000', content)
         self.assertIn('skipping AraSpell', content)
 
 
