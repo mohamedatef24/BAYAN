@@ -636,6 +636,12 @@ def _import_app_functions():
     module.__dict__['re'] = __import__('re')
     # Extract function bodies
     import re as _re
+    # Add _DIRECTIONAL_BLOCKS
+    match_db = _re.search(r'(_DIRECTIONAL_BLOCKS\s*=\s*\{.*?\n\})', source, _re.DOTALL)
+    if match_db:
+        exec(match_db.group(1), module.__dict__)
+    else:
+        module.__dict__['_DIRECTIONAL_BLOCKS'] = {}
 
     # Execute just the helper functions in an isolated namespace
     func_names = [

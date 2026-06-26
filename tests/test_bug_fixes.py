@@ -30,6 +30,12 @@ def _import_app_functions():
         '_levenshtein', '_is_small_spelling_change',
         '_is_spelling_only_change', '_is_orthographic_variant'
     ]
+    # Add _DIRECTIONAL_BLOCKS
+    match_db = _re.search(r'(_DIRECTIONAL_BLOCKS\s*=\s*\{.*?\n\})', source, _re.DOTALL)
+    if match_db:
+        exec(match_db.group(1), module.__dict__)
+    else:
+        module.__dict__['_DIRECTIONAL_BLOCKS'] = {}
     for func_name in func_names:
         pattern = rf'^(def {func_name}\(.*?\n(?:(?:    .+\n|[ \t]*\n)*))'
         match = _re.search(pattern, source, _re.MULTILINE)
