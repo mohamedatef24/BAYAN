@@ -121,36 +121,39 @@ class PatchSet:
             for ci, (cs, ce, claimed_stage, res_idx) in enumerate(claimed_ranges):
                 # Check if there's any overlap at all
                 if patch.start_original < ce and patch.end_original > cs:
-                    # ── Phase 14: Cross-stage compatibility ──
-                    # Spelling + Punctuation are COMPATIBLE stages:
-                    # spelling fixes the word, punctuation adds marks.
-                    # They should never conflict.
-                    _compatible_pair = {
-                        frozenset({'spelling', 'punctuation'}),
-                    }
-                    if frozenset({patch.stage, claimed_stage}) in _compatible_pair:
-                        continue  # Compatible stages — allow coexistence
-
-                    # ── FIX-36: Grammar + Punctuation merge ──
-                    # When punctuation adds a trailing character to a grammar
-                    # correction at the same span, merge instead of dropping.
-                    if (patch.stage == 'punctuation' and claimed_stage == 'grammar'
-                            and patch.start_original == cs and patch.end_original == ce):
-                        # Check if punctuation correction = grammar correction + punct char
-                        grammar_patch = resolved[res_idx]
+                    # ── FIX-36 & Phase 14: Generalized Punctuation Merge ──
+                    # If punctuation adds characters to a grammar or spelling correction,
+                    # merge them instead of coexisting. Coexisting overlapping patches
+                    # break _apply_patches_to_original.
+                    if patch.stage == 'punctuation' and claimed_stage in ('grammar', 'spelling'):
+                        claimed_patch = resolved[res_idx]
                         punc_correction = patch.replacement
-                        gram_correction = grammar_patch.replacement
-                        if (len(punc_correction) == len(gram_correction) + 1
-                                and punc_correction.startswith(gram_correction)
-                                and punc_correction[-1] in _PUNCT_CHARS):
-                            # Merge: append the trailing punct to grammar correction
-                            grammar_patch.replacement = punc_correction
+                        prev_correction = claimed_patch.replacement
+                        
+                        # Check if punctuation is just appending trailing punctuation
+                        if (len(punc_correction) > len(prev_correction)
+                                and punc_correction.startswith(prev_correction)
+                                and all(c in _PUNCT_CHARS for c in punc_correction[len(prev_correction):])):
+                            claimed_patch.replacement = punc_correction
                             logger.info(
-                                f"[OVERLAP] Merged punctuation into grammar "
-                                f"[{cs}:{ce}]: '{grammar_patch.original}' → "
-                                f"'{grammar_patch.replacement}'"
+                                f"[OVERLAP] Merged trailing punctuation into {claimed_stage} "
+                                f"[{cs}:{ce}]: '{claimed_patch.original}' → "
+                                f"'{claimed_patch.replacement}'"
                             )
-                            has_substantial_overlap = True  # Don't add separately
+                            has_substantial_overlap = True
+                            break
+                            
+                        # Check if punctuation is just prepending leading punctuation
+                        if (len(punc_correction) > len(prev_correction)
+                                and punc_correction.endswith(prev_correction)
+                                and all(c in _PUNCT_CHARS for c in punc_correction[:-len(prev_correction)])):
+                            claimed_patch.replacement = punc_correction
+                            logger.info(
+                                f"[OVERLAP] Merged leading punctuation into {claimed_stage} "
+                                f"[{cs}:{ce}]: '{claimed_patch.original}' → "
+                                f"'{claimed_patch.replacement}'"
+                            )
+                            has_substantial_overlap = True
                             break
 
                     # Calculate overlap amount

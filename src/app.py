@@ -55,6 +55,12 @@ from model_loader import (
     PUNCTUATION_PATH
 )
 
+# Optional Pipeline Stages
+ENABLE_DIALECT_MODEL = False
+ENABLE_PUNCTUATION_MODEL = True
+ENABLE_GRAMMAR_MODEL = True
+ENABLE_AUTOCOMPLETE_MODEL = False
+
 # HuggingFace Inference API — used in production to avoid RAM limits
 from hf_inference import (
     hf_summarize,
@@ -1756,8 +1762,24 @@ def analyze_text():
                                     logger.info(f"[SPELLING] Rejected: '{o_word}'→'{c_word}' (filter blocked)")
                                     new_words.append(current_text[start_idx:end_idx])
                             elif len(o_segment) == 1 and len(c_segment) > 1:
-                                # 1-word → N words: accept word splits (e.g. فيالمدرسة → في المدرسة)
                                 o_word = o_segment[0]
+                                
+                                # FIX-021: AraSpell seq2seq sometimes detaches prefixes (e.g. بالشاروع -> ب الشارع)
+                                # Re-attach known prefixes before processing the split
+                                if len(c_segment) == 2 and c_segment[0] in {'ب', 'ف', 'ك', 'ل'}:
+                                    rejoined_word = "".join(c_segment)
+                                    _spell_conf = _is_small_spelling_change(o_word, rejoined_word, spell_checker.vocab_manager)
+                                    if _spell_conf:
+                                        logger.info(f"[SPELLING] Re-attached prefix: '{o_word}'→'{rejoined_word}'")
+                                        new_words.append(rejoined_word)
+                                        ctx.add_patch(
+                                            'spelling', start_idx, end_idx,
+                                            rejoined_word, confidence=_spell_conf,
+                                            alternatives=[rejoined_word, o_word],
+                                        )
+                                        continue
+                                
+                                # 1-word → N words: accept word splits (e.g. فيالمدرسة → في المدرسة)
                                 if len(o_word) >= 5 and ' ' not in o_word:
                                     corr_str = " ".join(c_segment)
                                     # ── Phase 3 (BUG-021/028/029): validate split parts ──
@@ -1773,7 +1795,7 @@ def analyze_text():
                                         'هم', 'هن', 'ها', 'هما', 'كم', 'كن', 'نا',
                                         'ه', 'ك',  # single-char pronouns
                                     }
-                                    if _parts_ok and len(c_segment) == 2:
+                                    if _parts_ok and len(c_segment) >= 2:
                                         last_part = c_segment[-1]
                                         if last_part in _ATTACHED_PRONOUNS:
                                             # Check if joined form ≈ original (pronoun was attached)
@@ -1784,6 +1806,15 @@ def analyze_text():
                                                     f"[SPELLING] Rejected split: '{o_word}'→'{corr_str}' "
                                                     f"(detached pronoun suffix '{last_part}')"
                                                 )
+                                        elif len(c_segment) >= 2:
+                                            for idx, p in enumerate(c_segment):
+                                                if p in {'و', 'ف', 'ب', 'ل', 'ك'} and idx > 0:
+                                                    _parts_ok = False
+                                                    logger.info(
+                                                        f"[SPELLING] Rejected split: '{o_word}'→'{corr_str}' "
+                                                        f"(invalid standalone conjunction '{p}' inside split)"
+                                                    )
+                                                    break
                                     if _parts_ok:
                                         new_words.append(corr_str)
                                         ctx.add_patch(
@@ -1846,6 +1877,16 @@ def analyze_text():
                                                 'هم', 'هن', 'ها', 'هما', 'كم', 'كن', 'نا',
                                                 'ه', 'ك',
                                             }
+                                            if _parts_ok and len(split_parts) >= 2:
+                                                for idx, p in enumerate(split_parts):
+                                                    if p in {'و', 'ف', 'ب', 'ل', 'ك'} and idx > 0:
+                                                        _parts_ok = False
+                                                        logger.info(
+                                                            f"[SPELLING] Rejected N→M split: '{o_word}'→'{corr_str}' "
+                                                            f"(invalid standalone conjunction '{p}' inside split)"
+                                                        )
+                                                        break
+                                                        
                                             if _parts_ok and len(split_parts) == 2:
                                                 if split_parts[-1] in _ATTACHED_PRON:
                                                     if _levenshtein(o_word, joined_no_space) <= 2:
@@ -2248,6 +2289,12 @@ def analyze_text():
                         # Gender with ي: ذكي→ذكية
                         elif (_c_cl.endswith('ية') and _c_cl[:-1] == _o_cl[:-1] + 'ي' and _o_cl.endswith('ي') and len(_o_cl) >= 3):
                             _is_grammar_pattern = True
+                        # Pronoun gender agreement: ه/ة → ها
+                        elif (_c_cl.endswith('ها') and _o_cl[-1:] in ('ه', 'ة') and _c_cl[:-2] == _o_cl[:-1] and len(_o_cl) >= 3):
+                            _is_grammar_pattern = True
+                        # Pronoun gender agreement: ها → ه
+                        elif (_c_cl.endswith('ه') and _o_cl.endswith('ها') and _c_cl[:-1] == _o_cl[:-2] and len(_o_cl) >= 4):
+                            _is_grammar_pattern = True
 
                     # StageLocker: skip diffs that overlap with locked ranges
                     # Phase 11: Hierarchy-aware — grammar (3) overrides spelling (2)
@@ -2275,6 +2322,14 @@ def analyze_text():
                                 logger.info(f'[FILTER-TEL] {_tel_json.dumps({"event":"filter_reject","filter":"Jaccard_03","original":orig_text[:80],"correction":corr_text[:80],"jaccard":round(jaccard,3)})}')
                                 _tel_events.append({"event":"filter_reject","filter":"Jaccard_03","original":orig_text[:80],"correction":corr_text[:80],"jaccard":round(jaccard,3)})
                                 continue
+                                
+                    # Reject dialect/hallucination verb suffixes like "تون"
+                    if orig_text and corr_text:
+                        _c_clean = corr_text.rstrip('.,،؛;:!؟?()[]{}«»"\'…')
+                        _o_clean = orig_text.rstrip('.,،؛;:!؟?()[]{}«»"\'…')
+                        if _c_clean.endswith('تون') and not _o_clean.endswith('تون'):
+                            logger.info(f"[GRAMMAR] Rejected hallucination: '{orig_text}'→'{corr_text}' (invalid suffix 'تون')")
+                            continue
 
                     # ── FIX-13: Named entity protection ──
                     # Reject grammar changes to words that look like proper nouns:
@@ -2572,13 +2627,13 @@ def analyze_text():
                         f"{len(punc_patches)} → {MAX_PUNC_PATCHES_PER_RESPONSE}"
                     )
 
-                # FIX-05: Rebuild punctuation text from accepted diffs only
+                # FIX-05: Rebuild punctuation text from accepted diffs only (respecting locks and caps)
                 _safe_punc = ctx.current_text
-                _punc_accepted = [d for d in diffs if validate_punctuation_diff(d, full_text=ctx.current_text)]
-                for _pd in sorted(_punc_accepted, key=lambda x: x['start'], reverse=True):
-                    _safe_punc = (_safe_punc[:_pd['start']] +
-                                 _pd['correction'] +
-                                 _safe_punc[_pd['end']:])
+                _final_punc_patches = [p for p in ctx.patches.patches if p.stage == 'punctuation']
+                for _p in sorted(_final_punc_patches, key=lambda x: x.start_current, reverse=True):
+                    _safe_punc = (_safe_punc[:_p.start_current] +
+                                 _p.replacement +
+                                 _safe_punc[_p.end_current:])
                 ctx.mutate_text(_safe_punc, OffsetMapper)
                 current_text = ctx.current_text
 
