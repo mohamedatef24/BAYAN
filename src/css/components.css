@@ -413,7 +413,7 @@
 /* ── Formatting Toolbar ── */
 .format-toolbar {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
   gap: 3px;
@@ -428,6 +428,7 @@
 
 .fmt-group {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 1px;
   background: var(--color-border);
@@ -3922,7 +3923,8 @@ body.focus-mode .format-toolbar:hover {
   opacity: 1;
 }
 body.focus-mode .editor-surface {
-  max-width: 800px;
+  max-width: 900px;
+  width: 100%;
   margin: 0 auto;
 }
 
