@@ -53,8 +53,14 @@ class PunctuationChecker:
         if the model changed the BASE text (not just added/moved punctuation),
         revert to the original word but keep any punctuation the model added.
         """
+        # CRITICAL FIX: The model sometimes predicts standalone punctuation tokens (e.g. "المعلم :").
+        # If we split by space, the arrays will misalign. We MUST attach punctuation to the preceding word
+        # before splitting to ensure 1-to-1 alignment.
+        import re
+        punctuated_normalized = re.sub(r'\s+([،؛:!؟.])', r'\1', punctuated)
+        
         orig_words = original.split()
-        punc_words = punctuated.split()
+        punc_words = punctuated_normalized.split()
 
         if not orig_words or not punc_words:
             return punctuated
@@ -72,11 +78,20 @@ class PunctuationChecker:
             p_base = self._strip_punct(p_word)
 
             if o_base == p_base:
+                # Anti-hallucination for question marks
+                if '؟' in p_word and '؟' not in o_word:
+                    _EXCL_CUES = {'هل', 'أين', 'متى', 'كيف', 'لماذا', 'ماذا', 'أي', 'كم', 'ما'}
+                    if not any(w in _EXCL_CUES for w in orig_words):
+                        p_word = p_word.replace('؟', '.')
                 # Same base word — keep punctuation changes from model
                 result.append(p_word)
                 oi += 1
                 pi += 1
             elif self._is_only_punct_difference(o_word, p_word):
+                if '؟' in p_word and '؟' not in o_word:
+                    _EXCL_CUES = {'هل', 'أين', 'متى', 'كيف', 'لماذا', 'ماذا', 'أي', 'كم', 'ما'}
+                    if not any(w in _EXCL_CUES for w in orig_words):
+                        p_word = p_word.replace('؟', '.')
                 # Words differ only by punctuation — keep model's punctuation
                 result.append(p_word)
                 oi += 1
@@ -99,6 +114,10 @@ class PunctuationChecker:
 
                 # Only add punctuation that wasn't already there
                 if not o_word.endswith(punct_suffix) and punct_suffix:
+                    if '؟' in punct_suffix and '؟' not in o_word:
+                        _EXCL_CUES = {'هل', 'أين', 'متى', 'كيف', 'لماذا', 'ماذا', 'أي', 'كم', 'ما'}
+                        if not any(w in _EXCL_CUES for w in orig_words):
+                            punct_suffix = punct_suffix.replace('؟', '.')
                     result.append(o_word + punct_suffix)
                 elif punct_prefix and not o_word.startswith(punct_prefix):
                     result.append(punct_prefix + o_word)
@@ -116,6 +135,10 @@ class PunctuationChecker:
         while pi < len(punc_words):
             p_word = punc_words[pi]
             if all(ch in self.PUNCTUATION_CHARS or ch.isspace() for ch in p_word):
+                if '؟' in p_word:
+                    _EXCL_CUES = {'هل', 'أين', 'متى', 'كيف', 'لماذا', 'ماذا', 'أي', 'كم', 'ما'}
+                    if not any(w in _EXCL_CUES for w in orig_words):
+                        p_word = p_word.replace('؟', '.')
                 result.append(p_word)
             pi += 1
 
