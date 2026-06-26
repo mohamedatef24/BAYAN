@@ -96,6 +96,7 @@ function buildSuggestionCardHTML(suggestion, index) {
   return `
     <div class="suggestion-card" role="listitem" tabindex="0"
       data-suggestion-id="${suggestionId}"
+      data-type="${suggestion.type}"
       aria-label="${label}: ${suggestion.original} إلى ${suggestion.correction}">
       <span class="suggestion-card-badge ${badgeClass}">${label}</span>
       <div class="suggestion-card-change">
