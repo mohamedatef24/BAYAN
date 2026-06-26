@@ -301,6 +301,93 @@ class ArabicGrammarGuard:
         text = re.sub(r'\b([وف]?ل)([أ-ي]{4,})(ون|ان)\b', _lam_prep_replace, text)
         return text
 
+    def fix_kana_and_inna(self, text):
+        """
+        Fix cases (Nominative/Accusative) of nouns after Inna and Kana sisters.
+        """
+        tokens = simple_word_tokenize(text)
+        disambig_tokens = self.mle.disambiguate(tokens)
+        corrected_tokens = list(tokens)
+        
+        INNA_SISTERS = {'إن', 'أن', 'كأن', 'لكن', 'ليت', 'لعل', 'ان'}
+        KANA_SISTERS = {'كان', 'أصبح', 'اصبح', 'أضحى', 'اضحى', 'ظل', 'أمسى', 'امسى', 'بات', 'صار', 'ليس'}
+        
+        def get_corrected_case(word, target_case, num):
+            if target_case == 'a': # Mansoub
+                if word == 'أبو': return 'أبا'
+                if word == 'أخو': return 'أخا'
+                if word == 'ذو': return 'ذا'
+                if word == 'فو': return 'فا'
+                if word == 'حمو': return 'حما'
+                if word.endswith('ون'): return word[:-2] + 'ين'
+                if word.endswith('ان'): return word[:-2] + 'ين'
+            elif target_case == 'n': # Marfoo'
+                if word in ('أبا', 'أبي'): return 'أبو'
+                if word in ('أخا', 'أخي'): return 'أخو'
+                if word in ('ذا', 'ذي'): return 'ذو'
+                if word in ('فا', 'في'): return 'فو'
+                if word in ('حما', 'حمي'): return 'حمو'
+                if word.endswith('ين'):
+                    if num == 'p': return word[:-2] + 'ون'
+                    elif num == 'd': return word[:-2] + 'ان'
+            return word
+
+        state = None # 'inna' or 'kana'
+        noun_count = 0
+        subject_num = 's'
+        
+        for i, t in enumerate(disambig_tokens):
+            word = corrected_tokens[i]
+            
+            if word in INNA_SISTERS:
+                state = 'inna'
+                noun_count = 0
+                continue
+            elif word in KANA_SISTERS:
+                state = 'kana'
+                noun_count = 0
+                continue
+                
+            if state and t.analyses:
+                analysis = t.analyses[0].analysis
+                pos = analysis.get('pos')
+                
+                # Check for nouns/adjectives
+                if pos in ('noun', 'adj', 'noun_prop'):
+                    num = analysis.get('num', 's')
+                    noun_count += 1
+                    
+                    new_word = word
+                    if state == 'inna':
+                        if noun_count == 1:
+                            subject_num = num
+                            new_word = get_corrected_case(word, 'a', num) # اسم إن منصوب
+                        elif noun_count == 2:
+                            new_word = get_corrected_case(word, 'n', subject_num) # خبر إن مرفوع
+                            state = None
+                    elif state == 'kana':
+                        if noun_count == 1:
+                            subject_num = num
+                            new_word = get_corrected_case(word, 'n', num) # اسم كان مرفوع
+                        elif noun_count == 2:
+                            new_word = get_corrected_case(word, 'a', subject_num) # خبر كان منصوب
+                            state = None
+                            
+                    if new_word != word:
+                        pattern = r'(?<![أ-يa-zA-Z])' + re.escape(word) + r'(?![أ-يa-zA-Z])'
+                        text = re.sub(pattern, new_word, text, count=1)
+                        corrected_tokens[i] = new_word
+                        
+                elif pos == 'verb':
+                    # Verb encountered, predicate might be a verbal sentence, reset to avoid false positives
+                    state = None
+            
+            # Reset state on punctuation
+            if word in {'.', '،', ':', '؟', '!', '؛'}:
+                state = None
+                
+        return text
+
     def fix_subject_verb_agreement(self, text):
         """
         Fix G1: When a CONFIRMED plural noun PRECEDES a singular verb (SVO order),
@@ -683,6 +770,7 @@ class ArabicGrammarGuard:
             ('fix_noun_adjective_agreement_advanced', self.fix_noun_adjective_agreement_advanced),
             ('fix_prepositions_advanced', self.fix_prepositions_advanced),
             ('fix_subject_verb_agreement', self.fix_subject_verb_agreement),
+            ('fix_kana_and_inna', self.fix_kana_and_inna),
             ('fix_conditional_sentences', self.fix_conditional_sentences),
             ('fix_tanween_fathah', self.fix_tanween_fathah),
             ('fix_initial_hamza', self.fix_initial_hamza),
