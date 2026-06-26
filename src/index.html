@@ -754,6 +754,11 @@
              <button id="fmt-subscript" class="fmt-btn" onclick="execFormat('subscript')" type="button" data-tooltip="نص منخفض"><svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d="M16 18h2v1h-2v1h3v-4h-2v1h2v1h-3v1zM5.47 13h2.06L10 7.22 12.47 13h2.06L10 3.3 5.47 13z"/></svg></button>
              <button id="fmt-blockquote" class="fmt-btn" onclick="formatBlockquote()" type="button" data-tooltip="اقتباس"><svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d="M6 17h3l2-4V7H5v6h3l-2 4zm8 0h3l2-4V7h-6v6h3l-2 4z"/></svg></button>
              <button id="fmt-hr" class="fmt-btn" onclick="execFormat('insertHorizontalRule')" type="button" data-tooltip="فاصل أفقي"><svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M3 12h18"/></svg></button>
+             <button id="fmt-paragraph-spacing" class="fmt-btn" onclick="cycleParagraphSpacing()" type="button" data-tooltip="تباعد الفقرات"><svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M3 5h18M3 19h18"/><path stroke-linecap="round" stroke-width="1.5" d="M12 8v8m0-8l-2 2m2-2l2 2m-2 6l-2-2m2 2l2-2"/></svg></button>
+             <button id="fmt-remove-tashkeel" class="fmt-btn" onclick="removeTashkeel()" type="button" data-tooltip="إزالة التشكيل"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17h18v2H3v-2zm0-6h12v2H3v-2zm0-6h18v2H3V5z"/><path d="M17 7l4 4m0-4l-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg></button>
+             <button id="fmt-to-hindi" class="fmt-btn" onclick="convertToHindiNumerals()" type="button" data-tooltip="أرقام هندية ١٢٣"><svg width="15" height="15" viewBox="0 0 24 24"><text x="12" y="17" text-anchor="middle" font-size="14" font-weight="700" fill="currentColor">١٢</text></svg></button>
+             <button id="fmt-to-arabic" class="fmt-btn" onclick="convertToArabicNumerals()" type="button" data-tooltip="أرقام عربية 123"><svg width="15" height="15" viewBox="0 0 24 24"><text x="12" y="17" text-anchor="middle" font-size="14" font-weight="700" fill="currentColor">12</text></svg></button>
+             <button id="fmt-cleanup" class="fmt-btn" onclick="cleanupText()" type="button" data-tooltip="تنظيف النص"><svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg></button>
             </div>
            </div>
            <div class="fmt-divider"></div>
@@ -1033,6 +1038,7 @@
           </svg>
           <div class="score-value"><span id="score-value">--</span></div>
          </div>
+          <div id="score-sparkline"></div>
          <p id="score-hint" class="text-center text-sm text-secondary">ابدأ الكتابة لرؤية تقييمك</p>
         </div>
        </div>
