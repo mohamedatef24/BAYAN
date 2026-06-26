@@ -415,14 +415,13 @@
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 3px;
   padding: 6px 10px;
   overflow-x: auto;
   scrollbar-width: none; /* Hide scrollbar Firefox */
   border-bottom: 1px solid var(--color-border);
   background: var(--color-surface);
-  overflow: visible;
   position: relative;
   z-index: 50;
   flex-shrink: 0;
@@ -693,18 +692,13 @@
 
 .editor-footer {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--spacing-md);
   padding: var(--spacing-md);
   border-top: 1px solid var(--color-border);
   background: var(--color-surface);
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.editor-footer::-webkit-scrollbar {
-  display: none;
 }
 
 .editor-stats {
@@ -3940,9 +3934,7 @@ body.focus-mode .format-toolbar:hover {
   opacity: 1;
 }
 body.focus-mode .editor-surface {
-  max-width: 900px;
   width: 100%;
-  margin: 0 auto;
 }
 
 /* ── Blockquote Styling in Editor ── */
