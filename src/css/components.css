@@ -413,22 +413,16 @@
 /* ── Formatting Toolbar ── */
 .format-toolbar {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: flex-start;
-  gap: 3px;
+  gap: 6px 3px; /* vertical and horizontal gaps */
   padding: 6px 10px;
-  overflow-x: auto;
-  scrollbar-width: none; /* Hide scrollbar Firefox */
   border-bottom: 1px solid var(--color-border);
   background: var(--color-surface);
   position: relative;
   z-index: 50;
   flex-shrink: 0;
-}
-
-.format-toolbar::-webkit-scrollbar {
-  display: none;
 }
 
 .fmt-group {
