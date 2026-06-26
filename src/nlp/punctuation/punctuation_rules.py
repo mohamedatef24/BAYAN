@@ -198,47 +198,7 @@ def validate_punctuation_diff(diff: dict, full_text: str = '') -> bool:
                         )
                         return False
 
-    # ── Rule 0b (Batch 4): Reject punct insertion when original has no punctuation ──
-    # If the original text has zero Arabic punctuation and the correction
-    # only adds commas/semicolons (not at the very end), it's overcorrection.
-    # This catches "already correct" texts that PuncAra sprinkles with commas.
-    orig_punct_count_r0b = sum(1 for c in original if c in ARABIC_PUNCT_CHARS)
-    if orig_punct_count_r0b == 0:
-        corr_punct_count_r0b = sum(1 for c in correction if c in ARABIC_PUNCT_CHARS)
-        if corr_punct_count_r0b > 0:
-            # Only allow if adding a single period/question at the very end
-            stripped_corr = correction.rstrip()
-            if stripped_corr and stripped_corr[-1] in '.؟?!':
-                # This is terminal punct (already handled by Rule 0)
-                pass
-            else:
-                # Mid-sentence punct insertion on a clean sentence → reject
-                logger.info(
-                    f"[PUNC-SAFETY] Rejected mid-sentence punct insertion on clean text: "
-                    f"'{original}' → '{correction}'"
-                )
-                return False
 
-    # ── Rule 0c (Batch 4 + FIX-26): Reject punctuation rearrangement/substitution ──
-    # When original already has punctuation and the correction merely MOVES,
-    # SUBSTITUTES, or STACKS marks (e.g., ، → : or ، → ؛ or ؟ → ؟!), reject.
-    # The PuncAra model should NOT replace or pile onto existing punctuation —
-    # a sentence that already ends with punctuation must never get a second
-    # mark added next to it.
-    orig_punct_count_r0c = sum(1 for c in original if c in ARABIC_PUNCT_CHARS)
-    corr_punct_count_r0c = sum(1 for c in correction if c in ARABIC_PUNCT_CHARS)
-    if orig_punct_count_r0c > 0 and corr_punct_count_r0c > 0:
-        # Both have punctuation — check if alpha content is the same
-        orig_alpha_r0c = re.sub(r'[.,،؛؟!:;?\s]', '', original)
-        corr_alpha_r0c = re.sub(r'[.,،؛؟!:;?\s]', '', correction)
-        if _normalize_for_comparison(orig_alpha_r0c) == _normalize_for_comparison(corr_alpha_r0c):
-            # Same word content, but punct changed — reject any punct modification,
-            # whether it's a substitution or an addition on top of existing punct.
-            logger.info(
-                f"[PUNC-SAFETY] Rejected punct substitution/stacking: "
-                f"'{original}' → '{correction}'"
-            )
-            return False
 
     # ── Rule 1: Alphabetic content must be identical after normalization ──
     orig_alpha = re.sub(r'[.,،؛؟!:;?\s]', '', original)
