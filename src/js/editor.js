@@ -666,38 +666,6 @@ function dismissSuggestion(suggestion) {
   const _ed3 = getEditorElement(); if (_ed3) _ed3.focus();
 }
 
-window.dismissAndReRenderAll = function(type) {
-  if (!window.currentSuggestions || window.currentSuggestions.length === 0) return;
-  pushUndoState();
-  const toDismiss = type === 'all' ? window.currentSuggestions : window.currentSuggestions.filter(s => s.type === type);
-  
-  toDismiss.forEach(s => {
-    if (s.original) _dismissedWords.add(s.original);
-  });
-  _saveDismissedWords();
-  
-  window.currentSuggestions = window.currentSuggestions.filter(s => 
-    type === 'all' ? false : s.type !== type
-  );
-  
-  const editor = getEditorElement();
-  clearOverlays(editor);
-  overlaySuggestions(editor, window.currentSuggestions);
-  
-  const spellingCount = window.currentSuggestions.filter(s => s.type === 'spelling').length;
-  const grammarCount = window.currentSuggestions.filter(s => s.type === 'grammar').length;
-  const punctuationCount = window.currentSuggestions.filter(s => s.type === 'punctuation').length;
-
-  updateSuggestionCounts(spellingCount, grammarCount, punctuationCount);
-  updateWritingScore(spellingCount, grammarCount, punctuationCount);
-  updateSuggestionsList(window.currentSuggestions);
-  
-  // Update sidebar button visibility via global format.js function if it exists
-  if (typeof window.renderSuggestionsSidebar === 'function') {
-    window.renderSuggestionsSidebar(window.currentSuggestions);
-  }
-};
-
 function applySuggestionById(id) {
   // Pipeline Hardening v3.3: UUID-based lookup
   const suggestion = findSuggestionById(id);

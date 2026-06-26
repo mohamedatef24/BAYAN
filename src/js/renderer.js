@@ -288,7 +288,6 @@ function overlaySuggestions(editor, suggestions) {
       const localEnd = Math.min(tn.node.length, end - tn.start);
 
       // Split the text node
-      if (!tn.node || !tn.node.textContent) return;
       const textContent = tn.node.textContent;
       const beforeText = textContent.slice(0, localStart);
       const errorText = textContent.slice(localStart, localEnd);
