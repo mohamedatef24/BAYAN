@@ -4084,3 +4084,42 @@ body.focus-mode .editor-surface {
   display: block;
   margin: 6px auto;
 }
+/* ── Fix Layout: Editor Full Height Fit ── */
+#page-editor > section {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: 0;
+}
+
+#page-editor .max-w-\[1600px\] {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+}
+
+#page-editor .editor-layout {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+
+#page-editor .editor-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+#page-editor #write-area,
+#page-editor #summarize-area,
+#page-editor #dialect-area,
+#page-editor #quran-area {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
