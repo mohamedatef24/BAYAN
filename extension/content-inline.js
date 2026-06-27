@@ -55,6 +55,8 @@
   const IS_PROTECTED = BayanController.isProtectedSite();
 
   let activeField = null;
+  let lastInteractedField = null; // persists after focus moves to side panel (Change 1)
+  let analysisSuppressed = false; // true after a non-correction model write-back (Change 3)
   let lastAnalyzedText = '';
   let suggestions = [];
   let paused = false;
@@ -100,13 +102,29 @@
   // 2. ANALYSIS (delegates to BayanController)
   // ══════════════════════════════════════════════════════════
 
-  function onFieldInput() {
+  function onFieldInput(e) {
     if (paused || !activeField) return;
+
+    // Only a genuine user keystroke (a trusted `input` event) clears
+    // suppression and re-enables analysis. Our own write-back dispatches an
+    // untrusted event (isTrusted === false), and internal re-runs pass no
+    // event at all — neither should count as a manual edit (Change 3).
+    const isUserKeystroke = !!e && e.isTrusted === true;
+    if (isUserKeystroke && analysisSuppressed) analysisSuppressed = false;
 
     const text = getFieldText(activeField);
 
-    // Ghost-text autocomplete (textarea/input only) runs independently of analysis.
+    // Ghost-text autocomplete (textarea/input only) runs independently of
+    // analysis. Kept active even when suppressed (separate, opt-in feature).
     scheduleGhost();
+
+    if (analysisSuppressed) {
+      // Model output (summarize/dialect/quran) was just written — skip the
+      // correction pipeline and show the clean badge, not the spinner.
+      clearHighlights();
+      updateBadge(0);
+      return;
+    }
 
     if (!BayanController.hasArabic(text)) {
       clearHighlights();
@@ -545,6 +563,9 @@
       }
       if (suggestions.length > 0) {
         try {
+          // Tag the source field so write-back can re-find it after focus
+          // moves to the side panel (Change 1).
+          if (lastInteractedField) lastInteractedField.dataset.bayanSource = '1';
           chrome.runtime.sendMessage({ type: 'OPEN_SIDEPANEL', text: lastAnalyzedText });
         } catch {}
       }
@@ -598,6 +619,7 @@
     detachField();
 
     activeField = field;
+    lastInteractedField = field; // persists for write-back even after the panel takes focus
     suggestions = [];
     if (paused) paused = false;
 
@@ -627,6 +649,85 @@
     suggestions = [];
     if (floatingBtn) floatingBtn.classList.remove('bayan-il-fab--visible');
   }
+
+  // ══════════════════════════════════════════════════════════
+  // Write-back from the side panel (Change 1)
+  //
+  // The side panel cannot touch page DOM, so it relays text through
+  // background.js → here. We write into the source field and dispatch
+  // a synthetic `input` event so the host page registers the change.
+  // For non-correction sources (summarize/dialect/quran) we set the
+  // suppression flag first (Change 3) so the corrected/model output is
+  // NOT immediately re-analyzed.
+  // ══════════════════════════════════════════════════════════
+
+  const NON_CORRECTION_SOURCES = ['summarize', 'dialect', 'quran'];
+
+  function writeTextToField(field, text, mode, source) {
+    if (!field || typeof text !== 'string') return;
+
+    const tag = field.tagName.toLowerCase();
+    const suppress = NON_CORRECTION_SOURCES.includes(source);
+
+    if (tag === 'textarea' || tag === 'input') {
+      if (mode === 'replaceSelection'
+        && typeof field.selectionStart === 'number'
+        && field.selectionStart !== field.selectionEnd) {
+        const start = field.selectionStart;
+        const end = field.selectionEnd;
+        field.value = field.value.slice(0, start) + text + field.value.slice(end);
+        const caret = start + text.length;
+        try { field.setSelectionRange(caret, caret); } catch {}
+      } else {
+        field.value = text;
+        const caret = field.value.length;
+        try { field.setSelectionRange(caret, caret); } catch {}
+      }
+      // Set suppression BEFORE dispatching so onFieldInput sees it.
+      if (suppress) analysisSuppressed = true;
+      field.dispatchEvent(new Event('input', { bubbles: true }));
+    } else {
+      // contenteditable — mirror the overlay-safe approach used by applyFix.
+      field.focus();
+      const sel = window.getSelection();
+      const hasLiveSelection = sel && sel.rangeCount > 0 && field.contains(sel.anchorNode);
+      // NOTE: execCommand('insertText') fires a TRUSTED input event, which
+      // onFieldInput would treat as a user keystroke and clear suppression.
+      // So only take that path when NOT suppressing; suppressed writes use the
+      // textContent path, whose dispatched event is untrusted (Change 3-safe).
+      if (mode === 'replaceSelection' && hasLiveSelection && !sel.isCollapsed && !suppress) {
+        document.execCommand('insertText', false, text);
+      } else {
+        field.textContent = text;
+        if (suppress) analysisSuppressed = true;
+        field.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    }
+
+    // Clear the source tag now that the write succeeded.
+    try { delete field.dataset.bayanSource; } catch {}
+  }
+
+  chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+    if (msg && msg.type === 'BAYAN_WRITE_BACK') {
+      const field = lastInteractedField
+        || document.querySelector('[data-bayan-source="1"]')
+        || (isEditableField(document.activeElement) ? document.activeElement : null);
+      // With all_frames:true this listener runs in every frame. A frame that
+      // doesn't own the source field stays SILENT (return false, no response)
+      // so it can't win the response race against the frame that does.
+      if (!field) return false;
+      try {
+        writeTextToField(field, msg.text, msg.mode, msg.source);
+        sendResponse({ ok: true });
+      } catch (err) {
+        console.warn('[Bayan] Write-back error:', err.message);
+        sendResponse({ ok: false, reason: 'write_error' });
+      }
+      return true;
+    }
+    return false;
+  });
 
   // ══════════════════════════════════════════════════════════
   // Global listeners

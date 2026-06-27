@@ -18,7 +18,7 @@
 
 document.addEventListener('DOMContentLoaded', () => {
   // ── Tab constants ──
-  const TAB = { CORRECT: 'correct', SUMMARIZE: 'summarize' };
+  const TAB = { CORRECT: 'correct', SUMMARIZE: 'summarize', DIALECT: 'dialect', QURAN: 'quran' };
 
   // ── Element references ──
   const inputText = document.getElementById('input-text');
@@ -150,6 +150,26 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ══════════════════════════════════════════════════════════
+  // Write-back to the page field (panel → background → content script)
+  // The side panel is a separate document and cannot touch page DOM
+  // directly; it relays through background.js. `source` lets the content
+  // script decide whether to re-analyze (correct) or suppress (Change 3).
+  // ══════════════════════════════════════════════════════════
+  function writeBackToPage(text, mode = 'replaceAll', source = 'correct') {
+    try {
+      chrome.runtime.sendMessage(
+        { type: 'WRITE_BACK_TO_PAGE', text, mode, source },
+        (resp) => {
+          if (resp && resp.ok) showToast('✓ تم تطبيق التغييرات في الصفحة');
+          else showToast('تعذّر الكتابة في الصفحة — انسخ النص يدوياً');
+        }
+      );
+    } catch {
+      showToast('تعذّر الكتابة في الصفحة — انسخ النص يدوياً');
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════
   // Score ring
   // ══════════════════════════════════════════════════════════
   function updateScore(spelling, grammar, punctuation) {
@@ -214,6 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderSuggestions(currentSuggestions);
         resultText.innerHTML = renderHighlightedText(analyzedText, currentSuggestions);
         saveState();
+        writeBackToPage(analyzedText, 'replaceAll', 'correct');
         showToast('✓ تم التصحيح');
       });
     });
@@ -358,6 +379,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateScore(0, 0, 0);
     renderSuggestions([]);
     saveState();
+    writeBackToPage(analyzedText, 'replaceAll', 'correct');
     showToast('✓ تم تطبيق جميع التصحيحات');
   });
 
@@ -582,6 +604,34 @@ document.addEventListener('DOMContentLoaded', () => {
   addDownloadButton(btnCopySummary, () => summaryText.textContent, 'bayan-summary.txt');
 
   // ══════════════════════════════════════════════════════════
+  // "Apply to page" buttons for summarize / dialect / quran results.
+  // These write the model output back into the source page field via
+  // Change 1's relay, tagging the write with its `source` so the content
+  // script suppresses correction re-analysis on it (Change 3).
+  // Injected programmatically to avoid touching sidepanel.html.
+  // ══════════════════════════════════════════════════════════
+  const SP_APPLY_PAGE_ICON = '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
+
+  function addApplyToPageButton(anchorBtn, getText, source) {
+    if (!anchorBtn || !anchorBtn.parentElement) return;
+    const btn = document.createElement('button');
+    btn.className = 'sp-btn-icon';
+    btn.type = 'button';
+    btn.title = 'تطبيق في الصفحة';
+    btn.innerHTML = SP_APPLY_PAGE_ICON;
+    btn.addEventListener('click', () => {
+      const text = (getText() || '').trim();
+      if (!text) { showToast('لا يوجد نص للتطبيق'); return; }
+      writeBackToPage(text, 'replaceAll', source);
+    });
+    anchorBtn.parentElement.appendChild(btn);
+  }
+
+  addApplyToPageButton(btnCopySummary, () => summaryText.textContent, 'summarize');
+  if (btnCopyDialect) addApplyToPageButton(btnCopyDialect, () => dialectText.textContent, 'dialect');
+  if (btnCopyQuran) addApplyToPageButton(btnCopyQuran, () => quranText.textContent, 'quran');
+
+  // ══════════════════════════════════════════════════════════
   // Status check
   // ══════════════════════════════════════════════════════════
   (async function checkStatus() {
@@ -605,6 +655,34 @@ document.addEventListener('DOMContentLoaded', () => {
   // If the panel is ALREADY open, the storage.onChanged listener
   // below catches new actions in real-time.
   // ══════════════════════════════════════════════════════════
+
+  // Dispatch a context action (correct/summarize/dialect/quran) by filling
+  // the matching tab's input, switching to it, and auto-running its model.
+  // Declared after all element refs so dialect/quran handles are in scope.
+  function runContextAction(action, text) {
+    if (action === TAB.CORRECT) {
+      inputText.value = text;
+      updateCounts(inputText, charCount, wordCount);
+      document.querySelector(`[data-tab="${TAB.CORRECT}"]`)?.click();
+      setTimeout(() => runAnalysis(text), 100);
+    } else if (action === TAB.SUMMARIZE) {
+      summaryInputText.value = text;
+      updateCounts(summaryInputText, summaryCharCount, null);
+      document.querySelector(`[data-tab="${TAB.SUMMARIZE}"]`)?.click();
+      setTimeout(() => btnSummarize.click(), 100);
+    } else if (action === TAB.DIALECT && dialectInput && btnDialect) {
+      dialectInput.value = text;
+      updateCounts(dialectInput, dialectCharCount, null);
+      document.querySelector(`[data-tab="${TAB.DIALECT}"]`)?.click();
+      setTimeout(() => btnDialect.click(), 120);
+    } else if (action === TAB.QURAN && quranInput && btnQuran) {
+      quranInput.value = text;
+      updateCounts(quranInput, quranCharCount, null);
+      document.querySelector(`[data-tab="${TAB.QURAN}"]`)?.click();
+      setTimeout(() => btnQuran.click(), 120);
+    }
+  }
+
   async function tryPickupContext(retryCount = 0) {
     if (typeof chrome === 'undefined' || !chrome.storage) return;
     if (contextConsumed) return;
@@ -638,25 +716,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       console.log(`[Bayan SP] Context action: ${data.contextAction}, text: ${data.contextText.length} chars`);
 
-      if (data.contextAction === TAB.CORRECT) {
-        inputText.value = data.contextText;
-        updateCounts(inputText, charCount, wordCount);
-
-        const correctTab = document.querySelector(`[data-tab="${TAB.CORRECT}"]`);
-        if (correctTab) correctTab.click();
-
-        // Auto-analyze immediately
-        setTimeout(() => runAnalysis(data.contextText), 100);
-
-      } else if (data.contextAction === TAB.SUMMARIZE) {
-        summaryInputText.value = data.contextText;
-        updateCounts(summaryInputText, summaryCharCount, null);
-
-        const summarizeTab = document.querySelector(`[data-tab="${TAB.SUMMARIZE}"]`);
-        if (summarizeTab) summarizeTab.click();
-
-        setTimeout(() => btnSummarize.click(), 100);
-      }
+      runContextAction(data.contextAction, data.contextText);
 
       chrome.runtime.sendMessage({ type: 'CLEAR_CONTEXT' });
 
@@ -684,24 +744,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       console.log(`[Bayan SP] Storage changed — new context: ${action}, ${text.length} chars`);
 
-      if (action === TAB.CORRECT) {
-        inputText.value = text;
-        updateCounts(inputText, charCount, wordCount);
-
-        const correctTab = document.querySelector(`[data-tab="${TAB.CORRECT}"]`);
-        if (correctTab) correctTab.click();
-
-        runAnalysis(text);
-
-      } else if (action === TAB.SUMMARIZE) {
-        summaryInputText.value = text;
-        updateCounts(summaryInputText, summaryCharCount, null);
-
-        const summarizeTab = document.querySelector(`[data-tab="${TAB.SUMMARIZE}"]`);
-        if (summarizeTab) summarizeTab.click();
-
-        setTimeout(() => btnSummarize.click(), 100);
-      }
+      runContextAction(action, text);
 
       chrome.runtime.sendMessage({ type: 'CLEAR_CONTEXT' });
     });

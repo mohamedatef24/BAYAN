@@ -14,5 +14,13 @@
   "contextMenuSummarize": {
     "message": "تلخيص مع بيان",
     "description": "Context menu item for summarizing selected text"
+  },
+  "contextMenuDialect": {
+    "message": "تحويل اللهجة إلى الفصحى مع بيان",
+    "description": "Context menu: dialect→MSA"
+  },
+  "contextMenuQuran": {
+    "message": "تدقيق الآية مع بيان",
+    "description": "Context menu: Quran verify"
   }
 }
