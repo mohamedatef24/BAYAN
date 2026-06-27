@@ -1,0 +1,2233 @@
+{
+  "timestamp": "2026-06-27T13:50:09Z",
+  "target": "https://bayan10-bayan-api.hf.space/api/analyze",
+  "total": 50,
+  "passed": 6,
+  "failed": 38,
+  "errors": 6,
+  "pass_rate": 12.0,
+  "root_cause_by_component": {
+    "PIPELINE": 17,
+    "STAGELOCKER": 4,
+    "MODEL": 1,
+    "UNKNOWN": 16
+  },
+  "failures_by_category": {
+    "spelling_grammar_overlap": 5,
+    "grammar_drops_spelling": 4,
+    "spelling_blocks_grammar": 5,
+    "multi_stage_collision": 8,
+    "punctuation_near_spelling": 5,
+    "three_stage_collision": 5,
+    "adjacent_corrections": 6
+  },
+  "results": [
+    {
+      "id": "PC001",
+      "category": "spelling_grammar_overlap",
+      "input": "المهندسون صممتو المشرووع",
+      "expected": "المهندسون صمموا المشروع",
+      "actual": "المهندسون صممت و المشروع",
+      "suggestions": [
+        {
+          "alternatives": [
+            "و المشروع",
+            "المشرووع"
+          ],
+          "confidence": 0.85,
+          "correction": "و المشروع",
+          "end": 24,
+          "id": "91de0837-a564-4451-b9cd-91ac4e5dc682",
+          "locked": true,
+          "original": "المشرووع",
+          "priority": 2,
+          "start": 16,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [
+            "صممت",
+            "صممتو"
+          ],
+          "confidence": 0.7,
+          "correction": "صممت",
+          "end": 15,
+          "id": "74bd6f52-caa8-4ee4-a955-78b9b1ddcf67",
+          "locked": true,
+          "original": "صممتو",
+          "priority": 2,
+          "start": 10,
+          "type": "spelling"
+        }
+      ],
+      "elapsed_ms": 6488,
+      "verdict": "FAIL",
+      "root_cause_component": "PIPELINE",
+      "root_cause_detail": "Spelling and grammar overlap conflict",
+      "missing_words": [
+        "صمموا"
+      ]
+    },
+    {
+      "id": "PC002",
+      "category": "spelling_grammar_overlap",
+      "input": "الولاد يلعبون بالشاروع",
+      "expected": "الأولاد يلعبون بالشارع",
+      "actual": "الأولاد يلعبون بالشارع.",
+      "suggestions": [
+        {
+          "alternatives": [
+            "الأولاد",
+            "الولاد"
+          ],
+          "confidence": 0.7,
+          "correction": "الأولاد",
+          "end": 6,
+          "id": "a4032030-39f8-4973-bd8e-538ef162d154",
+          "locked": true,
+          "original": "الولاد",
+          "priority": 2,
+          "start": 0,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [
+            "بالشارع",
+            "بالشاروع"
+          ],
+          "confidence": 0.7,
+          "correction": "بالشارع.",
+          "end": 22,
+          "id": "9f52b0f3-7be6-40c0-a606-93ea1220c9d5",
+          "locked": true,
+          "original": "بالشاروع",
+          "priority": 2,
+          "start": 14,
+          "type": "spelling"
+        }
+      ],
+      "elapsed_ms": 4935,
+      "verdict": "FAIL",
+      "root_cause_component": "PIPELINE",
+      "root_cause_detail": "Spelling and grammar overlap conflict",
+      "missing_words": [
+        "بالشارع"
+      ]
+    },
+    {
+      "id": "PC003",
+      "category": "spelling_grammar_overlap",
+      "input": "البنات يذهبون الي المدرسه",
+      "expected": "البنات يذهبن إلى المدرسة",
+      "actual": "البنات يذهبن إلى المدرسة.",
+      "suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "يذهبن",
+          "end": 13,
+          "id": "9c098ffd-7939-4aff-93ad-99fd7131140d",
+          "locked": true,
+          "original": "يذهبون",
+          "priority": 3,
+          "start": 7,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [
+            "إلى",
+            "الي"
+          ],
+          "confidence": 0.9,
+          "correction": "إلى",
+          "end": 17,
+          "id": "0f8c624b-74da-4cdc-b9d2-aafe804d3e9a",
+          "locked": true,
+          "original": "الي",
+          "priority": 2,
+          "start": 14,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [
+            "المدرسة",
+            "المدرسه"
+          ],
+          "confidence": 0.9,
+          "correction": "المدرسة.",
+          "end": 25,
+          "id": "40caecb4-8fcb-444d-b101-fcbad3bdd340",
+          "locked": true,
+          "original": "المدرسه",
+          "priority": 2,
+          "start": 18,
+          "type": "spelling"
+        }
+      ],
+      "elapsed_ms": 5431,
+      "verdict": "FAIL",
+      "root_cause_component": "PIPELINE",
+      "root_cause_detail": "Spelling and grammar overlap conflict",
+      "missing_words": [
+        "المدرسة"
+      ]
+    },
+    {
+      "id": "PC004",
+      "category": "spelling_grammar_overlap",
+      "input": "الرجال يعملون في المصنعو",
+      "expected": "الرجال يعملون في المصنع",
+      "actual": "الرجال يعملون في المصنع.",
+      "suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 0.75,
+          "correction": "المصنع.",
+          "end": 24,
+          "id": "900682e8-3725-4ecd-abba-6ee35e8ae587",
+          "locked": true,
+          "original": "المصنعو",
+          "priority": 2,
+          "start": 17,
+          "type": "spelling"
+        }
+      ],
+      "elapsed_ms": 7117,
+      "verdict": "FAIL",
+      "root_cause_component": "PIPELINE",
+      "root_cause_detail": "Spelling and grammar overlap conflict",
+      "missing_words": [
+        "المصنع"
+      ]
+    },
+    {
+      "id": "PC005",
+      "category": "spelling_grammar_overlap",
+      "input": "النساء ذهب الي السوق",
+      "expected": "النساء ذهبن إلى السوق",
+      "actual": "النساء ذهبن إلى السوق.",
+      "suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "ذهبن",
+          "end": 10,
+          "id": "f3d86b4a-048e-48bf-beec-10ba2064d51b",
+          "locked": true,
+          "original": "ذهب",
+          "priority": 3,
+          "start": 7,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [
+            "إلى",
+            "الي"
+          ],
+          "confidence": 0.9,
+          "correction": "إلى",
+          "end": 14,
+          "id": "adef6410-9743-46a7-aa9f-6d7dfd781eab",
+          "locked": true,
+          "original": "الي",
+          "priority": 2,
+          "start": 11,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [],
+          "confidence": 0.7,
+          "correction": "السوق.",
+          "end": 20,
+          "id": "db698fa7-be82-408e-bc0d-3405aeb86d60",
+          "locked": true,
+          "original": "السوق",
+          "priority": 1,
+          "start": 15,
+          "type": "punctuation"
+        }
+      ],
+      "elapsed_ms": 5569,
+      "verdict": "FAIL",
+      "root_cause_component": "PIPELINE",
+      "root_cause_detail": "Spelling and grammar overlap conflict",
+      "missing_words": [
+        "السوق"
+      ]
+    },
+    {
+      "id": "PC006",
+      "category": "grammar_drops_spelling",
+      "input": "رأيت اخوك في المسجيد",
+      "expected": "رأيت أخاك في المسجد",
+      "actual": "رأيت أخاك في المسجد.",
+      "suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "أخاك",
+          "end": 9,
+          "id": "9ca0d2a6-893c-43cf-b0b4-1fb7020302b4",
+          "locked": true,
+          "original": "اخوك",
+          "priority": 3,
+          "start": 5,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [
+            "المسجد",
+            "المسجيد"
+          ],
+          "confidence": 0.7,
+          "correction": "المسجد.",
+          "end": 20,
+          "id": "bc2f6491-05d8-462f-84be-e5e156e09720",
+          "locked": true,
+          "original": "المسجيد",
+          "priority": 2,
+          "start": 13,
+          "type": "spelling"
+        }
+      ],
+      "elapsed_ms": 5770,
+      "verdict": "FAIL",
+      "root_cause_component": "PIPELINE",
+      "root_cause_detail": "Grammar stage dropped spelling fix",
+      "missing_words": [
+        "المسجد"
+      ]
+    },
+    {
+      "id": "PC007",
+      "category": "grammar_drops_spelling",
+      "input": "ان ابوك رجل طييب",
+      "expected": "إن أباك رجل طيب",
+      "actual": "إن أباك رجل طيب.",
+      "suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "إن أباك",
+          "end": 7,
+          "id": "0a65d16f-0216-4f55-94d6-f0b9e2aca0d8",
+          "locked": true,
+          "original": "ان ابوك",
+          "priority": 3,
+          "start": 0,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [
+            "طيب",
+            "طييب"
+          ],
+          "confidence": 0.7,
+          "correction": "طيب.",
+          "end": 16,
+          "id": "0d7b0679-0bd8-4c1f-a4e5-3c5db334dc74",
+          "locked": true,
+          "original": "طييب",
+          "priority": 2,
+          "start": 12,
+          "type": "spelling"
+        }
+      ],
+      "elapsed_ms": 5805,
+      "verdict": "FAIL",
+      "root_cause_component": "PIPELINE",
+      "root_cause_detail": "Grammar stage dropped spelling fix",
+      "missing_words": [
+        "طيب"
+      ]
+    },
+    {
+      "id": "PC008",
+      "category": "grammar_drops_spelling",
+      "input": "في المهندسون الماهروون",
+      "expected": "في المهندسين الماهرين",
+      "actual": "في المهندسين الماهرين",
+      "suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "المهندسين الماهرين",
+          "end": 22,
+          "id": "474621c7-9536-4609-967a-d62c09bd850c",
+          "locked": true,
+          "original": "المهندسون الماهروون",
+          "priority": 3,
+          "start": 3,
+          "type": "grammar"
+        }
+      ],
+      "elapsed_ms": 4630,
+      "verdict": "PASS"
+    },
+    {
+      "id": "PC009",
+      "category": "grammar_drops_spelling",
+      "input": "هذان الطالبتان مجتهدتاان",
+      "expected": "هاتان الطالبتان مجتهدتان",
+      "actual": "هاتان الطالبتان مجتهدتان.",
+      "suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "هاتان",
+          "end": 4,
+          "id": "496c587b-b661-4403-94e7-7292b023d0a1",
+          "locked": true,
+          "original": "هذان",
+          "priority": 3,
+          "start": 0,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "مجتهدتان.",
+          "end": 24,
+          "id": "d94ac434-8613-43da-b0b4-017d7458f5ee",
+          "locked": true,
+          "original": "مجتهدتاان",
+          "priority": 3,
+          "start": 15,
+          "type": "grammar"
+        }
+      ],
+      "elapsed_ms": 6632,
+      "verdict": "FAIL",
+      "root_cause_component": "PIPELINE",
+      "root_cause_detail": "Grammar stage dropped spelling fix",
+      "missing_words": [
+        "مجتهدتان"
+      ]
+    },
+    {
+      "id": "PC010",
+      "category": "grammar_drops_spelling",
+      "input": "كي يتعلمون الدرسو",
+      "expected": "كي يتعلموا الدرس",
+      "actual": "كي يتعلم الدرس.",
+      "suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "يتعلم",
+          "end": 10,
+          "id": "4325622c-f85a-4974-8671-978ad062de0b",
+          "locked": true,
+          "original": "يتعلمون",
+          "priority": 3,
+          "start": 3,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [],
+          "confidence": 0.75,
+          "correction": "الدرس.",
+          "end": 17,
+          "id": "1470f3a4-3a52-44fa-886a-79095732cfa1",
+          "locked": true,
+          "original": "الدرسو",
+          "priority": 2,
+          "start": 11,
+          "type": "spelling"
+        }
+      ],
+      "elapsed_ms": 4587,
+      "verdict": "FAIL",
+      "root_cause_component": "PIPELINE",
+      "root_cause_detail": "Grammar stage dropped spelling fix",
+      "missing_words": [
+        "يتعلموا",
+        "الدرس"
+      ]
+    },
+    {
+      "id": "PC011",
+      "category": "spelling_blocks_grammar",
+      "input": "السياره جميل جدا",
+      "expected": "السيارة جميلة جداً",
+      "actual": "السيارة جميلة جداً",
+      "suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "جميلة جداً",
+          "end": 16,
+          "id": "bd2be1ee-c0c0-4567-9d20-f1c82d6728b3",
+          "locked": true,
+          "original": "جميل جدا",
+          "priority": 3,
+          "start": 8,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [
+            "السيارة",
+            "السياره"
+          ],
+          "confidence": 0.9,
+          "correction": "السيارة",
+          "end": 7,
+          "id": "10c5fe4e-d1e6-4598-bca9-e028cd7cb2fb",
+          "locked": true,
+          "original": "السياره",
+          "priority": 2,
+          "start": 0,
+          "type": "spelling"
+        }
+      ],
+      "elapsed_ms": 4472,
+      "verdict": "PASS"
+    },
+    {
+      "id": "PC012",
+      "category": "spelling_blocks_grammar",
+      "input": "المدينه كبير وواسع",
+      "expected": "المدينة كبيرة وواسعة",
+      "actual": "المدينة كبيرة وواسعة",
+      "suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "كبيرة وواسعة",
+          "end": 18,
+          "id": "ab6b6f94-24fd-4e05-849d-0c25c7b6ae7f",
+          "locked": true,
+          "original": "كبير وواسع",
+          "priority": 3,
+          "start": 8,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [
+            "المدينة",
+            "المدينه"
+          ],
+          "confidence": 0.9,
+          "correction": "المدينة",
+          "end": 7,
+          "id": "25bae43b-8265-4f7e-95fd-a34cd3af1f4f",
+          "locked": true,
+          "original": "المدينه",
+          "priority": 2,
+          "start": 0,
+          "type": "spelling"
+        }
+      ],
+      "elapsed_ms": 4563,
+      "verdict": "PASS"
+    },
+    {
+      "id": "PC013",
+      "category": "spelling_blocks_grammar",
+      "input": "الطالبه متفوق في دراسته",
+      "expected": "الطالبة متفوقة في دراستها",
+      "actual": "الطالبة متفوقة في دراستها.",
+      "suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "متفوقة",
+          "end": 13,
+          "id": "a8da9953-88f5-495f-b32f-d01dacee2211",
+          "locked": true,
+          "original": "متفوق",
+          "priority": 3,
+          "start": 8,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "دراستها.",
+          "end": 23,
+          "id": "27b27dc4-8536-4663-8fe9-6a099bf429e1",
+          "locked": true,
+          "original": "دراسته",
+          "priority": 3,
+          "start": 17,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [
+            "الطالبة",
+            "الطالبه"
+          ],
+          "confidence": 0.9,
+          "correction": "الطالبة",
+          "end": 7,
+          "id": "2e86f777-25ae-48a5-a467-158441da6249",
+          "locked": true,
+          "original": "الطالبه",
+          "priority": 2,
+          "start": 0,
+          "type": "spelling"
+        }
+      ],
+      "elapsed_ms": 4769,
+      "verdict": "FAIL",
+      "root_cause_component": "STAGELOCKER",
+      "root_cause_detail": "spelling→grammar lock collision",
+      "missing_words": [
+        "دراستها"
+      ]
+    },
+    {
+      "id": "PC014",
+      "category": "spelling_blocks_grammar",
+      "input": "الشمس مشرق اليووم",
+      "expected": "الشمس مشرقة اليوم",
+      "actual": "الشمس: مشرقة اليوم.",
+      "suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "مشرقة",
+          "end": 10,
+          "id": "ccd95c7e-2bb8-4c06-8acf-c64a7378c904",
+          "locked": true,
+          "original": "مشرق",
+          "priority": 3,
+          "start": 6,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [
+            "اليوم",
+            "اليووم"
+          ],
+          "confidence": 0.7,
+          "correction": "اليوم.",
+          "end": 17,
+          "id": "37f1a239-5a4e-40a7-8941-a6bf04b0d93e",
+          "locked": true,
+          "original": "اليووم",
+          "priority": 2,
+          "start": 11,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [],
+          "confidence": 0.8,
+          "correction": "الشمس:",
+          "end": 5,
+          "id": "2bad42a6-b21f-4f1d-87ea-1ab3b785e279",
+          "locked": true,
+          "original": "الشمس",
+          "priority": 1,
+          "start": 0,
+          "type": "punctuation"
+        }
+      ],
+      "elapsed_ms": 4591,
+      "verdict": "FAIL",
+      "root_cause_component": "STAGELOCKER",
+      "root_cause_detail": "spelling→grammar lock collision",
+      "missing_words": [
+        "اليوم"
+      ]
+    },
+    {
+      "id": "PC015",
+      "category": "spelling_blocks_grammar",
+      "input": "البنت ذكي في المدرسه",
+      "expected": "البنت ذكية في المدرسة",
+      "actual": "البنت ذكية في المدرسة.",
+      "suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "ذكية",
+          "end": 9,
+          "id": "a45a4d6d-e8bc-4090-ad83-0f9b73c2c16f",
+          "locked": true,
+          "original": "ذكي",
+          "priority": 3,
+          "start": 6,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [
+            "المدرسة",
+            "المدرسه"
+          ],
+          "confidence": 0.9,
+          "correction": "المدرسة.",
+          "end": 20,
+          "id": "8e55c1f0-2eb5-46cb-81bf-adca60cf01f7",
+          "locked": true,
+          "original": "المدرسه",
+          "priority": 2,
+          "start": 13,
+          "type": "spelling"
+        }
+      ],
+      "elapsed_ms": 5318,
+      "verdict": "FAIL",
+      "root_cause_component": "STAGELOCKER",
+      "root_cause_detail": "spelling→grammar lock collision",
+      "missing_words": [
+        "المدرسة"
+      ]
+    },
+    {
+      "id": "PC016",
+      "category": "multi_stage_collision",
+      "input": "انا ذهبت الي المدرسه والمهندسون حضر الاجتماع",
+      "expected": "أنا ذهبت إلى المدرسة والمهندسون حضروا الاجتماع",
+      "actual": "أنا ذهبت إلى المدرسة والمهندسين حضروا الاجتماع.",
+      "suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "والمهندسين حضروا",
+          "end": 35,
+          "id": "114728a6-bfbd-4ede-8262-9d7c86e74c11",
+          "locked": true,
+          "original": "والمهندسون حضر",
+          "priority": 3,
+          "start": 21,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [
+            "أنا",
+            "انا"
+          ],
+          "confidence": 0.9,
+          "correction": "أنا",
+          "end": 3,
+          "id": "c2cb5620-564f-468e-814a-c1d560321d8f",
+          "locked": true,
+          "original": "انا",
+          "priority": 2,
+          "start": 0,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [
+            "إلى",
+            "الي"
+          ],
+          "confidence": 0.9,
+          "correction": "إلى",
+          "end": 12,
+          "id": "42631bb9-9b30-48de-881d-c971686ea21f",
+          "locked": true,
+          "original": "الي",
+          "priority": 2,
+          "start": 9,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [
+            "المدرسة",
+            "المدرسه"
+          ],
+          "confidence": 0.9,
+          "correction": "المدرسة",
+          "end": 20,
+          "id": "0d5cf45f-6b7a-4614-acc1-20153028bb7b",
+          "locked": true,
+          "original": "المدرسه",
+          "priority": 2,
+          "start": 13,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [],
+          "confidence": 0.8,
+          "correction": "الاجتماع.",
+          "end": 44,
+          "id": "e78b8d66-96ec-47c2-b57a-77434fd39c5e",
+          "locked": true,
+          "original": "الاجتماع",
+          "priority": 1,
+          "start": 36,
+          "type": "punctuation"
+        }
+      ],
+      "elapsed_ms": 6002,
+      "verdict": "FAIL",
+      "root_cause_component": "PIPELINE",
+      "root_cause_detail": "Multi-stage interaction failure",
+      "missing_words": [
+        "الاجتماع",
+        "والمهندسون"
+      ]
+    },
+    {
+      "id": "PC017",
+      "category": "multi_stage_collision",
+      "input": "الاطفال يلعب في الحديقه",
+      "expected": "الأطفال يلعبون في الحديقة",
+      "actual": "الأطفال يلعبون في الحديقة.",
+      "suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "يلعبون",
+          "end": 12,
+          "id": "0ab7992d-7737-4c16-8cb9-b8b1ac429928",
+          "locked": true,
+          "original": "يلعب",
+          "priority": 3,
+          "start": 8,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [
+            "الأطفال",
+            "الاطفال"
+          ],
+          "confidence": 0.9,
+          "correction": "الأطفال",
+          "end": 7,
+          "id": "55d7d1a6-cb42-4620-9071-a90893488ce8",
+          "locked": true,
+          "original": "الاطفال",
+          "priority": 2,
+          "start": 0,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [
+            "الحديقة",
+            "الحديقه"
+          ],
+          "confidence": 0.9,
+          "correction": "الحديقة.",
+          "end": 23,
+          "id": "70b238bf-b0b0-4bc9-9438-b8cd998f4a37",
+          "locked": true,
+          "original": "الحديقه",
+          "priority": 2,
+          "start": 16,
+          "type": "spelling"
+        }
+      ],
+      "elapsed_ms": 5205,
+      "verdict": "FAIL",
+      "root_cause_component": "PIPELINE",
+      "root_cause_detail": "Multi-stage interaction failure",
+      "missing_words": [
+        "الحديقة"
+      ]
+    },
+    {
+      "id": "PC018",
+      "category": "multi_stage_collision",
+      "input": "الطالبات كتب الواجب في الغرفه",
+      "expected": "الطالبات كتبن الواجب في الغرفة",
+      "actual": "الطالبات كتبن الواجب في الغرفة.",
+      "suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "كتبن",
+          "end": 12,
+          "id": "6348b075-b858-4a8a-96af-093e6c90765a",
+          "locked": true,
+          "original": "كتب",
+          "priority": 3,
+          "start": 9,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [
+            "الغرفة",
+            "الغرفه"
+          ],
+          "confidence": 0.9,
+          "correction": "الغرفة.",
+          "end": 29,
+          "id": "457b7d3b-5e6b-4fe2-9652-35fbad890d10",
+          "locked": true,
+          "original": "الغرفه",
+          "priority": 2,
+          "start": 23,
+          "type": "spelling"
+        }
+      ],
+      "elapsed_ms": 5446,
+      "verdict": "FAIL",
+      "root_cause_component": "PIPELINE",
+      "root_cause_detail": "Multi-stage interaction failure",
+      "missing_words": [
+        "الغرفة"
+      ]
+    },
+    {
+      "id": "PC019",
+      "category": "multi_stage_collision",
+      "input": "المعلمات حضر الاجتماعو في الجامعه",
+      "expected": "المعلمات حضرن الاجتماع في الجامعة",
+      "actual": "المعلمات حضرن الاجتماع في الجامعة.",
+      "suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "حضرن",
+          "end": 12,
+          "id": "4d67a791-5d1f-48dd-a28c-33c517eac13b",
+          "locked": true,
+          "original": "حضر",
+          "priority": 3,
+          "start": 9,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [
+            "الجامعة",
+            "الجامعه"
+          ],
+          "confidence": 0.9,
+          "correction": "الجامعة.",
+          "end": 33,
+          "id": "852153f8-b941-4b27-b125-d76bd8eb9e74",
+          "locked": true,
+          "original": "الجامعه",
+          "priority": 2,
+          "start": 26,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [
+            "الاجتماع",
+            "الاجتماعو"
+          ],
+          "confidence": 0.7,
+          "correction": "الاجتماع",
+          "end": 22,
+          "id": "b445e0f1-3b9e-4bab-907d-b79812609e26",
+          "locked": true,
+          "original": "الاجتماعو",
+          "priority": 2,
+          "start": 13,
+          "type": "spelling"
+        }
+      ],
+      "elapsed_ms": 6396,
+      "verdict": "FAIL",
+      "root_cause_component": "PIPELINE",
+      "root_cause_detail": "Multi-stage interaction failure",
+      "missing_words": [
+        "الجامعة"
+      ]
+    },
+    {
+      "id": "PC020",
+      "category": "multi_stage_collision",
+      "input": "العمال بنى المبني الجديد",
+      "expected": "العمال بنوا المبنى الجديد",
+      "actual": "العمال بنوا المبنى الجديد.",
+      "suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "بنوا المبنى",
+          "end": 17,
+          "id": "7d7b33d9-f4e2-497c-a4cf-ebed5792375b",
+          "locked": true,
+          "original": "بنى المبني",
+          "priority": 3,
+          "start": 7,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [],
+          "confidence": 0.8,
+          "correction": "الجديد.",
+          "end": 24,
+          "id": "ea0da3b3-dbb4-4462-bcc5-de01673fc2d1",
+          "locked": true,
+          "original": "الجديد",
+          "priority": 1,
+          "start": 18,
+          "type": "punctuation"
+        }
+      ],
+      "elapsed_ms": 6390,
+      "verdict": "FAIL",
+      "root_cause_component": "PIPELINE",
+      "root_cause_detail": "Multi-stage interaction failure",
+      "missing_words": [
+        "الجديد"
+      ]
+    },
+    {
+      "id": "PC021",
+      "category": "spelling_blocks_grammar",
+      "input": "الجامعه قريب من البيت",
+      "expected": "الجامعة قريبة من البيت",
+      "actual": "الجامعة قريبة من البيت.",
+      "suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "قريبة",
+          "end": 12,
+          "id": "d443283e-5ff7-4801-b4fd-92b9a9027ff0",
+          "locked": true,
+          "original": "قريب",
+          "priority": 3,
+          "start": 8,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [
+            "الجامعة",
+            "الجامعه"
+          ],
+          "confidence": 0.9,
+          "correction": "الجامعة",
+          "end": 7,
+          "id": "297bc8de-eba9-42a2-b8f8-d9daec85aa47",
+          "locked": true,
+          "original": "الجامعه",
+          "priority": 2,
+          "start": 0,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [],
+          "confidence": 0.8,
+          "correction": "البيت.",
+          "end": 21,
+          "id": "d364d368-640e-449d-b614-97c80d0f7d88",
+          "locked": true,
+          "original": "البيت",
+          "priority": 1,
+          "start": 16,
+          "type": "punctuation"
+        }
+      ],
+      "elapsed_ms": 6667,
+      "verdict": "FAIL",
+      "root_cause_component": "MODEL",
+      "root_cause_detail": "Grammar model missed correction",
+      "missing_words": [
+        "البيت"
+      ]
+    },
+    {
+      "id": "PC022",
+      "category": "spelling_blocks_grammar",
+      "input": "الطائره سريع جدا",
+      "expected": "الطائرة سريعة جداً",
+      "actual": "الطائرة سريعة جداً",
+      "suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "سريعة جداً",
+          "end": 16,
+          "id": "7273a75b-66b0-45ef-bb81-d1fde5dc7bcd",
+          "locked": true,
+          "original": "سريع جدا",
+          "priority": 3,
+          "start": 8,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [
+            "الطائرة",
+            "الطائره"
+          ],
+          "confidence": 0.9,
+          "correction": "الطائرة",
+          "end": 7,
+          "id": "41141ff8-c00d-4fd2-b6c2-bf171c850742",
+          "locked": true,
+          "original": "الطائره",
+          "priority": 2,
+          "start": 0,
+          "type": "spelling"
+        }
+      ],
+      "elapsed_ms": 5452,
+      "verdict": "PASS"
+    },
+    {
+      "id": "PC023",
+      "category": "spelling_blocks_grammar",
+      "input": "القصه طويل ومملل",
+      "expected": "القصة طويلة ومملة",
+      "actual": "القصة طويلة ومملةل",
+      "suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "طويلة ومملة",
+          "end": 15,
+          "id": "b2f7da1f-4973-4729-af2e-4fe873e1d9f0",
+          "locked": true,
+          "original": "طويل وممل",
+          "priority": 3,
+          "start": 6,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [
+            "القصة",
+            "القصه"
+          ],
+          "confidence": 0.9,
+          "correction": "القصة",
+          "end": 5,
+          "id": "fa94bb6e-42de-48f0-8eee-f4f214c20018",
+          "locked": true,
+          "original": "القصه",
+          "priority": 2,
+          "start": 0,
+          "type": "spelling"
+        }
+      ],
+      "elapsed_ms": 8149,
+      "verdict": "FAIL",
+      "root_cause_component": "STAGELOCKER",
+      "root_cause_detail": "spelling→grammar lock collision",
+      "missing_words": [
+        "ومملة"
+      ]
+    },
+    {
+      "id": "PC024",
+      "category": "spelling_blocks_grammar",
+      "input": "الحديقه واسع وجميل",
+      "expected": "الحديقة واسعة وجميلة",
+      "actual": "الحديقة واسعة وجميلة",
+      "suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "واسعة وجميلة",
+          "end": 18,
+          "id": "498b008e-b557-4b7e-bea7-83c6ab30645f",
+          "locked": true,
+          "original": "واسع وجميل",
+          "priority": 3,
+          "start": 8,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [
+            "الحديقة",
+            "الحديقه"
+          ],
+          "confidence": 0.9,
+          "correction": "الحديقة",
+          "end": 7,
+          "id": "2d3aaa14-5532-456a-b8cb-6a1d93b0045a",
+          "locked": true,
+          "original": "الحديقه",
+          "priority": 2,
+          "start": 0,
+          "type": "spelling"
+        }
+      ],
+      "elapsed_ms": 6524,
+      "verdict": "PASS"
+    },
+    {
+      "id": "PC025",
+      "category": "spelling_blocks_grammar",
+      "input": "المكتبه كبير ومنظم",
+      "expected": "المكتبة كبيرة ومنظمة",
+      "actual": "المكتبة كبيرة ومنظمة",
+      "suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "المكتبة كبيرة ومنظمة",
+          "end": 18,
+          "id": "a869d748-3a58-47e8-8d70-e56be4f0e8d0",
+          "locked": true,
+          "original": "المكتبه كبير ومنظم",
+          "priority": 3,
+          "start": 0,
+          "type": "grammar"
+        }
+      ],
+      "elapsed_ms": 5482,
+      "verdict": "PASS"
+    },
+    {
+      "id": "PC026",
+      "category": "punctuation_near_spelling",
+      "input": "ذهبت الي المدرسه وقابلت صديقتي",
+      "expected": "ذهبت إلى المدرسة وقابلت صديقتي",
+      "actual": "ذهبت إلى المدرسة وقابلت صديقتي.",
+      "suggestions": [
+        {
+          "alternatives": [
+            "إلى",
+            "الي"
+          ],
+          "confidence": 0.9,
+          "correction": "إلى",
+          "end": 8,
+          "id": "a9552cd4-8847-48b5-bf05-2adf17ba6a09",
+          "locked": true,
+          "original": "الي",
+          "priority": 2,
+          "start": 5,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [
+            "المدرسة",
+            "المدرسه"
+          ],
+          "confidence": 0.9,
+          "correction": "المدرسة",
+          "end": 16,
+          "id": "e6889aba-dc8e-4867-8861-cc9652bf62de",
+          "locked": true,
+          "original": "المدرسه",
+          "priority": 2,
+          "start": 9,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [],
+          "confidence": 0.8,
+          "correction": "صديقتي.",
+          "end": 30,
+          "id": "4a3a3037-c684-40f0-98b8-069cffaa2e23",
+          "locked": true,
+          "original": "صديقتي",
+          "priority": 1,
+          "start": 24,
+          "type": "punctuation"
+        }
+      ],
+      "elapsed_ms": 6555,
+      "verdict": "FAIL",
+      "root_cause_component": "UNKNOWN",
+      "root_cause_detail": "Unclassified failure in category 'punctuation_near_spelling'",
+      "missing_words": [
+        "صديقتي"
+      ]
+    },
+    {
+      "id": "PC027",
+      "category": "punctuation_near_spelling",
+      "input": "الكتاب مفيد جدا وانا احبه",
+      "expected": "الكتاب مفيد جداً وأنا أحبه",
+      "actual": "الكتاب مفيد جدا وأنا احبه.",
+      "suggestions": [
+        {
+          "alternatives": [
+            "وأنا",
+            "وانا"
+          ],
+          "confidence": 0.9,
+          "correction": "وأنا",
+          "end": 20,
+          "id": "e9b4c748-2526-4541-a764-35c29fd48457",
+          "locked": true,
+          "original": "وانا",
+          "priority": 2,
+          "start": 16,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [],
+          "confidence": 0.7,
+          "correction": "احبه.",
+          "end": 25,
+          "id": "c677fd69-999e-4625-b1ff-58b63ef9d72c",
+          "locked": true,
+          "original": "احبه",
+          "priority": 1,
+          "start": 21,
+          "type": "punctuation"
+        }
+      ],
+      "elapsed_ms": 7093,
+      "verdict": "FAIL",
+      "root_cause_component": "UNKNOWN",
+      "root_cause_detail": "Unclassified failure in category 'punctuation_near_spelling'",
+      "missing_words": [
+        "أحبه",
+        "جداً"
+      ]
+    },
+    {
+      "id": "PC028",
+      "category": "punctuation_near_spelling",
+      "input": "المعلمه شرحت الدرس واعطت واجب",
+      "expected": "المعلمة شرحت الدرس وأعطت واجب",
+      "actual": "المعلمة شرحت الدرس وأعطت واجب.",
+      "suggestions": [
+        {
+          "alternatives": [
+            "المعلمة",
+            "المعلمه"
+          ],
+          "confidence": 0.9,
+          "correction": "المعلمة",
+          "end": 7,
+          "id": "6303550c-dcda-4885-bd5d-f3cf32fee913",
+          "locked": true,
+          "original": "المعلمه",
+          "priority": 2,
+          "start": 0,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [
+            "وأعطت",
+            "واعطت"
+          ],
+          "confidence": 0.9,
+          "correction": "وأعطت",
+          "end": 24,
+          "id": "073ef036-f7f8-4323-959b-ecacec65c8cb",
+          "locked": true,
+          "original": "واعطت",
+          "priority": 2,
+          "start": 19,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [],
+          "confidence": 0.8,
+          "correction": "واجب.",
+          "end": 29,
+          "id": "c835a642-20b3-42cc-9eb2-7bfde5953f13",
+          "locked": true,
+          "original": "واجب",
+          "priority": 1,
+          "start": 25,
+          "type": "punctuation"
+        }
+      ],
+      "elapsed_ms": 6647,
+      "verdict": "FAIL",
+      "root_cause_component": "UNKNOWN",
+      "root_cause_detail": "Unclassified failure in category 'punctuation_near_spelling'",
+      "missing_words": [
+        "واجب"
+      ]
+    },
+    {
+      "id": "PC029",
+      "category": "punctuation_near_spelling",
+      "input": "قرأت الكتاب كله ولكن لم افهمه",
+      "expected": "قرأت الكتاب كله ولكن لم أفهمه",
+      "actual": "قرأت الكتاب كله، ولكن لم افهمه!",
+      "suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 0.8,
+          "correction": "كله،",
+          "end": 15,
+          "id": "eb504d86-0728-4de3-af04-a01cef4035c4",
+          "locked": true,
+          "original": "كله",
+          "priority": 1,
+          "start": 12,
+          "type": "punctuation"
+        },
+        {
+          "alternatives": [],
+          "confidence": 0.8,
+          "correction": "افهمه!",
+          "end": 29,
+          "id": "ef6ebdf2-bfec-4265-ae2d-148302fc50f2",
+          "locked": true,
+          "original": "افهمه",
+          "priority": 1,
+          "start": 24,
+          "type": "punctuation"
+        }
+      ],
+      "elapsed_ms": 15374,
+      "verdict": "FAIL",
+      "root_cause_component": "UNKNOWN",
+      "root_cause_detail": "Unclassified failure in category 'punctuation_near_spelling'",
+      "missing_words": [
+        "كله",
+        "أفهمه"
+      ]
+    },
+    {
+      "id": "PC030",
+      "category": "punctuation_near_spelling",
+      "input": "الطقس بارد جدا واحتاج معطف",
+      "expected": "الطقس بارد جداً وأحتاج معطف",
+      "actual": "الطقس بارد جدا وأحتاج معطف.",
+      "suggestions": [
+        {
+          "alternatives": [
+            "وأحتاج",
+            "واحتاج"
+          ],
+          "confidence": 0.9,
+          "correction": "وأحتاج",
+          "end": 21,
+          "id": "838260ff-6976-4283-a4c4-67041ee07156",
+          "locked": true,
+          "original": "واحتاج",
+          "priority": 2,
+          "start": 15,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [],
+          "confidence": 0.8,
+          "correction": "معطف.",
+          "end": 26,
+          "id": "b6484d3d-ceed-4525-ba83-582fadb9c313",
+          "locked": true,
+          "original": "معطف",
+          "priority": 1,
+          "start": 22,
+          "type": "punctuation"
+        }
+      ],
+      "elapsed_ms": 10256,
+      "verdict": "FAIL",
+      "root_cause_component": "UNKNOWN",
+      "root_cause_detail": "Unclassified failure in category 'punctuation_near_spelling'",
+      "missing_words": [
+        "معطف",
+        "جداً"
+      ]
+    },
+    {
+      "id": "PC031",
+      "category": "three_stage_collision",
+      "input": "السياره سريع والرجال يعمل في المصنع",
+      "expected": "السيارة سريعة والرجال يعملون في المصنع",
+      "actual": "السيارة سريعة والرجال يعملون في المصنع.",
+      "suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "سريعة",
+          "end": 12,
+          "id": "886cca67-a3b1-40aa-9e2e-9e48cbd20396",
+          "locked": true,
+          "original": "سريع",
+          "priority": 3,
+          "start": 8,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "يعملون",
+          "end": 25,
+          "id": "7d1c814a-d5ae-4b8b-b49b-5c6181aa01e7",
+          "locked": true,
+          "original": "يعمل",
+          "priority": 3,
+          "start": 21,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [
+            "السيارة",
+            "السياره"
+          ],
+          "confidence": 0.9,
+          "correction": "السيارة",
+          "end": 7,
+          "id": "a2438eb3-9678-4c49-81f4-0175ab2e7c4b",
+          "locked": true,
+          "original": "السياره",
+          "priority": 2,
+          "start": 0,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [],
+          "confidence": 0.8,
+          "correction": "المصنع.",
+          "end": 35,
+          "id": "b4696ddf-01ec-4752-8aa7-a04363a1aa1d",
+          "locked": true,
+          "original": "المصنع",
+          "priority": 1,
+          "start": 29,
+          "type": "punctuation"
+        }
+      ],
+      "elapsed_ms": 14198,
+      "verdict": "FAIL",
+      "root_cause_component": "UNKNOWN",
+      "root_cause_detail": "Unclassified failure in category 'three_stage_collision'",
+      "missing_words": [
+        "المصنع"
+      ]
+    },
+    {
+      "id": "PC032",
+      "category": "three_stage_collision",
+      "input": "الطالبه ذكي وذهبت الي المدرسه",
+      "expected": "الطالبة ذكية وذهبت إلى المدرسة",
+      "actual": "الطالبة ذكية وذهبت إلى المدرسة.",
+      "suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "ذكية",
+          "end": 11,
+          "id": "d2f4ac74-cb3d-4290-a9fd-abc91c85bb10",
+          "locked": true,
+          "original": "ذكي",
+          "priority": 3,
+          "start": 8,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [
+            "الطالبة",
+            "الطالبه"
+          ],
+          "confidence": 0.9,
+          "correction": "الطالبة",
+          "end": 7,
+          "id": "a8b82b31-e7db-4976-a5c2-ec91be7ab547",
+          "locked": true,
+          "original": "الطالبه",
+          "priority": 2,
+          "start": 0,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [
+            "إلى",
+            "الي"
+          ],
+          "confidence": 0.9,
+          "correction": "إلى",
+          "end": 21,
+          "id": "e5b0cac9-3717-4e49-a3d2-37769f78917b",
+          "locked": true,
+          "original": "الي",
+          "priority": 2,
+          "start": 18,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [
+            "المدرسة",
+            "المدرسه"
+          ],
+          "confidence": 0.9,
+          "correction": "المدرسة.",
+          "end": 29,
+          "id": "aadbb78e-abb4-4230-9559-e157ad479532",
+          "locked": true,
+          "original": "المدرسه",
+          "priority": 2,
+          "start": 22,
+          "type": "spelling"
+        }
+      ],
+      "elapsed_ms": 15287,
+      "verdict": "FAIL",
+      "root_cause_component": "UNKNOWN",
+      "root_cause_detail": "Unclassified failure in category 'three_stage_collision'",
+      "missing_words": [
+        "المدرسة"
+      ]
+    },
+    {
+      "id": "PC033",
+      "category": "three_stage_collision",
+      "input": "المدرسه كبير والطلاب يدرس بجد",
+      "expected": "المدرسة كبيرة والطلاب يدرسون بجد",
+      "actual": "المدرسة كبيرة والطلاب يدرسون بجد.",
+      "suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "كبيرة",
+          "end": 12,
+          "id": "1146de37-f721-4da7-aeae-148280e5c726",
+          "locked": true,
+          "original": "كبير",
+          "priority": 3,
+          "start": 8,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "يدرسون",
+          "end": 25,
+          "id": "d590e950-1a7f-462d-8649-b9e7d06ce77a",
+          "locked": true,
+          "original": "يدرس",
+          "priority": 3,
+          "start": 21,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [
+            "المدرسة",
+            "المدرسه"
+          ],
+          "confidence": 0.9,
+          "correction": "المدرسة",
+          "end": 7,
+          "id": "d6834c24-f079-4e20-8d6a-0556349fdf6c",
+          "locked": true,
+          "original": "المدرسه",
+          "priority": 2,
+          "start": 0,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [],
+          "confidence": 0.8,
+          "correction": "بجد.",
+          "end": 29,
+          "id": "d8e8bd5c-ecd0-426c-9e5b-1fac852c056c",
+          "locked": true,
+          "original": "بجد",
+          "priority": 1,
+          "start": 26,
+          "type": "punctuation"
+        }
+      ],
+      "elapsed_ms": 15913,
+      "verdict": "FAIL",
+      "root_cause_component": "UNKNOWN",
+      "root_cause_detail": "Unclassified failure in category 'three_stage_collision'",
+      "missing_words": [
+        "بجد"
+      ]
+    },
+    {
+      "id": "PC034",
+      "category": "three_stage_collision",
+      "input": "الحكومه اعلن قرار جديد والمواطنون يتابع",
+      "expected": "الحكومة أعلنت قراراً جديداً والمواطنون يتابعون",
+      "actual": "الحكومة أعلنت قرارا جديدا والمواطن يتابع.",
+      "suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "أعلنت قرارا جديدا والمواطن",
+          "end": 33,
+          "id": "8daddae4-9d5a-49a0-b808-25f5e516b223",
+          "locked": true,
+          "original": "اعلن قرار جديد والمواطنون",
+          "priority": 3,
+          "start": 8,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [
+            "الحكومة",
+            "الحكومه"
+          ],
+          "confidence": 0.9,
+          "correction": "الحكومة",
+          "end": 7,
+          "id": "cbaed9a2-09a8-4634-82d9-b05fc65406a1",
+          "locked": true,
+          "original": "الحكومه",
+          "priority": 2,
+          "start": 0,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [],
+          "confidence": 0.8,
+          "correction": "يتابع.",
+          "end": 39,
+          "id": "b6819c7e-06e5-4978-be49-69a82a22d31b",
+          "locked": true,
+          "original": "يتابع",
+          "priority": 1,
+          "start": 34,
+          "type": "punctuation"
+        }
+      ],
+      "elapsed_ms": 17993,
+      "verdict": "FAIL",
+      "root_cause_component": "UNKNOWN",
+      "root_cause_detail": "Unclassified failure in category 'three_stage_collision'",
+      "missing_words": [
+        "جديداً",
+        "يتابعون",
+        "قراراً",
+        "والمواطنون"
+      ]
+    },
+    {
+      "id": "PC035",
+      "category": "three_stage_collision",
+      "input": "الشركه نجح في المشرووع والموظفون يحتفل",
+      "expected": "الشركة نجحت في المشروع والموظفون يحتفلون",
+      "actual": "الشركة نجحت في المشروع والموظفون يحتفلون.",
+      "suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "نجحت",
+          "end": 10,
+          "id": "25f73cc3-ff1d-4b5b-80dd-c81a15ac4c41",
+          "locked": true,
+          "original": "نجح",
+          "priority": 3,
+          "start": 7,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "يحتفلون.",
+          "end": 38,
+          "id": "5a910be6-4732-4d06-9287-ee5d34da92f9",
+          "locked": true,
+          "original": "يحتفل",
+          "priority": 3,
+          "start": 33,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [
+            "الشركة",
+            "الشركه"
+          ],
+          "confidence": 0.9,
+          "correction": "الشركة",
+          "end": 6,
+          "id": "eee05da3-e88d-4f2e-afda-6dae02d236f9",
+          "locked": true,
+          "original": "الشركه",
+          "priority": 2,
+          "start": 0,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [
+            "المشروع",
+            "المشرووع"
+          ],
+          "confidence": 0.7,
+          "correction": "المشروع",
+          "end": 22,
+          "id": "8435592e-396d-48db-8948-622835399465",
+          "locked": true,
+          "original": "المشرووع",
+          "priority": 2,
+          "start": 14,
+          "type": "spelling"
+        }
+      ],
+      "elapsed_ms": 15805,
+      "verdict": "FAIL",
+      "root_cause_component": "UNKNOWN",
+      "root_cause_detail": "Unclassified failure in category 'three_stage_collision'",
+      "missing_words": [
+        "يحتفلون"
+      ]
+    },
+    {
+      "id": "PC036",
+      "category": "adjacent_corrections",
+      "input": "الولد الصغيره ذهب الي المدرسه",
+      "expected": "الولد الصغير ذهب إلى المدرسة",
+      "actual": "الولد الصغير ذهب إلى المدرسة.",
+      "suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "الصغير",
+          "end": 13,
+          "id": "24099b4d-e450-4ab4-af68-5416f8526c40",
+          "locked": true,
+          "original": "الصغيره",
+          "priority": 3,
+          "start": 6,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [
+            "إلى",
+            "الي"
+          ],
+          "confidence": 0.9,
+          "correction": "إلى",
+          "end": 21,
+          "id": "016150b8-c369-4cc9-9c41-d81ba42795f6",
+          "locked": true,
+          "original": "الي",
+          "priority": 2,
+          "start": 18,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [
+            "المدرسة",
+            "المدرسه"
+          ],
+          "confidence": 0.9,
+          "correction": "المدرسة.",
+          "end": 29,
+          "id": "4387587d-0474-4d7c-b379-6869daaf775d",
+          "locked": true,
+          "original": "المدرسه",
+          "priority": 2,
+          "start": 22,
+          "type": "spelling"
+        }
+      ],
+      "elapsed_ms": 12191,
+      "verdict": "FAIL",
+      "root_cause_component": "UNKNOWN",
+      "root_cause_detail": "Unclassified failure in category 'adjacent_corrections'",
+      "missing_words": [
+        "المدرسة"
+      ]
+    },
+    {
+      "id": "PC037",
+      "category": "adjacent_corrections",
+      "input": "قال المعلمون للطالبه ادرسي بجد",
+      "expected": "قال المعلمون للطالبة ادرسي بجد",
+      "actual": "قال المعلمون للطالبة ادرسي بجد.",
+      "suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "للطالبة",
+          "end": 20,
+          "id": "422d75bb-dd15-4f8e-831f-614c293d8592",
+          "locked": true,
+          "original": "للطالبه",
+          "priority": 2,
+          "start": 13,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [],
+          "confidence": 0.8,
+          "correction": "بجد.",
+          "end": 30,
+          "id": "09f3f4a2-b88c-43e8-9d12-8b9122ecc2aa",
+          "locked": true,
+          "original": "بجد",
+          "priority": 1,
+          "start": 27,
+          "type": "punctuation"
+        }
+      ],
+      "elapsed_ms": 17159,
+      "verdict": "FAIL",
+      "root_cause_component": "UNKNOWN",
+      "root_cause_detail": "Unclassified failure in category 'adjacent_corrections'",
+      "missing_words": [
+        "بجد"
+      ]
+    },
+    {
+      "id": "PC038",
+      "category": "adjacent_corrections",
+      "input": "الكتب القديمه في المكتبه الكبيره",
+      "expected": "الكتب القديمة في المكتبة الكبيرة",
+      "actual": "الكتب القديمة في المكتبة الكبيرة.",
+      "suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "القديمة",
+          "end": 13,
+          "id": "9be505f1-e944-4d63-b7c0-ef4f59afd68a",
+          "locked": true,
+          "original": "القديمه",
+          "priority": 2,
+          "start": 6,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "الكبيرة.",
+          "end": 32,
+          "id": "247a237a-458d-4863-9b64-32b6bffb52c0",
+          "locked": true,
+          "original": "الكبيره",
+          "priority": 2,
+          "start": 25,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [
+            "المكتبة",
+            "المكتبه"
+          ],
+          "confidence": 0.9,
+          "correction": "المكتبة",
+          "end": 24,
+          "id": "3b60bb54-0e91-4b4c-ad69-04e2ad9c2b6b",
+          "locked": true,
+          "original": "المكتبه",
+          "priority": 2,
+          "start": 17,
+          "type": "spelling"
+        }
+      ],
+      "elapsed_ms": 10620,
+      "verdict": "FAIL",
+      "root_cause_component": "UNKNOWN",
+      "root_cause_detail": "Unclassified failure in category 'adjacent_corrections'",
+      "missing_words": [
+        "الكبيرة"
+      ]
+    },
+    {
+      "id": "PC039",
+      "category": "adjacent_corrections",
+      "input": "رأيت البنت الجميله في الحديقه",
+      "expected": "رأيت البنت الجميلة في الحديقة",
+      "actual": "رأيت البنت الجميلة في الحديقة.",
+      "suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "الجميلة",
+          "end": 18,
+          "id": "16a1062c-3551-4566-b9c5-75ad4dac1213",
+          "locked": true,
+          "original": "الجميله",
+          "priority": 2,
+          "start": 11,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [
+            "الحديقة",
+            "الحديقه"
+          ],
+          "confidence": 0.9,
+          "correction": "الحديقة.",
+          "end": 29,
+          "id": "5d053b95-53fe-4609-b713-0badc8188ef0",
+          "locked": true,
+          "original": "الحديقه",
+          "priority": 2,
+          "start": 22,
+          "type": "spelling"
+        }
+      ],
+      "elapsed_ms": 15421,
+      "verdict": "FAIL",
+      "root_cause_component": "UNKNOWN",
+      "root_cause_detail": "Unclassified failure in category 'adjacent_corrections'",
+      "missing_words": [
+        "الحديقة"
+      ]
+    },
+    {
+      "id": "PC040",
+      "category": "adjacent_corrections",
+      "input": "المعلمه الجديده شرحت الدرس",
+      "expected": "المعلمة الجديدة شرحت الدرس",
+      "actual": "المعلمة الجديدة شرحت الدرس.",
+      "suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "الجديدة",
+          "end": 15,
+          "id": "92ff1320-5695-4989-bdaf-bddddb5288fd",
+          "locked": true,
+          "original": "الجديده",
+          "priority": 2,
+          "start": 8,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [
+            "المعلمة",
+            "المعلمه"
+          ],
+          "confidence": 0.9,
+          "correction": "المعلمة",
+          "end": 7,
+          "id": "1cfd4225-3428-43c4-ba3f-f3b1064bc055",
+          "locked": true,
+          "original": "المعلمه",
+          "priority": 2,
+          "start": 0,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [],
+          "confidence": 0.8,
+          "correction": "الدرس.",
+          "end": 26,
+          "id": "fb04eef4-8323-4ff4-a402-3b93b0e73aae",
+          "locked": true,
+          "original": "الدرس",
+          "priority": 1,
+          "start": 21,
+          "type": "punctuation"
+        }
+      ],
+      "elapsed_ms": 17732,
+      "verdict": "FAIL",
+      "root_cause_component": "UNKNOWN",
+      "root_cause_detail": "Unclassified failure in category 'adjacent_corrections'",
+      "missing_words": [
+        "الدرس"
+      ]
+    },
+    {
+      "id": "PC041",
+      "category": "multi_stage_collision",
+      "input": "الدكتور كتب التقريير والممرضات ساعد المرضى",
+      "expected": "الدكتور كتب التقرير والممرضات ساعدن المرضى",
+      "actual": "الدكتور كتب التقرير والممرضات ساعدن المرضى.",
+      "suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "ساعدن",
+          "end": 35,
+          "id": "f46a6796-3f24-4f6e-ae17-b8f663daaf68",
+          "locked": true,
+          "original": "ساعد",
+          "priority": 3,
+          "start": 31,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [
+            "التقرير",
+            "التقريير"
+          ],
+          "confidence": 0.7,
+          "correction": "التقرير",
+          "end": 20,
+          "id": "217998c0-47a2-4f8a-96fc-64bfb2b57e25",
+          "locked": true,
+          "original": "التقريير",
+          "priority": 2,
+          "start": 12,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [],
+          "confidence": 0.8,
+          "correction": "المرضى.",
+          "end": 42,
+          "id": "d56bfed5-fbb7-443d-965e-bdf05b299284",
+          "locked": true,
+          "original": "المرضى",
+          "priority": 1,
+          "start": 36,
+          "type": "punctuation"
+        }
+      ],
+      "elapsed_ms": 14752,
+      "verdict": "FAIL",
+      "root_cause_component": "PIPELINE",
+      "root_cause_detail": "Multi-stage interaction failure",
+      "missing_words": [
+        "المرضى"
+      ]
+    },
+    {
+      "id": "PC042",
+      "category": "multi_stage_collision",
+      "input": "الطلاب حضر المحاضره والاستاذ شرح الدرس",
+      "expected": "الطلاب حضروا المحاضرة والأستاذ شرح الدرس",
+      "actual": "الطلاب حضرو المحاضرة والأستاذ شرح الدرس.",
+      "suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "حضرو المحاضرة والأستاذ",
+          "end": 28,
+          "id": "155ebcbc-fde4-4578-8966-d2901c5897e4",
+          "locked": true,
+          "original": "حضر المحاضره والاستاذ",
+          "priority": 3,
+          "start": 7,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [],
+          "confidence": 0.8,
+          "correction": "الدرس.",
+          "end": 38,
+          "id": "1d90d0bd-21eb-4be9-9389-1881f9e024e7",
+          "locked": true,
+          "original": "الدرس",
+          "priority": 1,
+          "start": 33,
+          "type": "punctuation"
+        }
+      ],
+      "elapsed_ms": 20525,
+      "verdict": "FAIL",
+      "root_cause_component": "PIPELINE",
+      "root_cause_detail": "Multi-stage interaction failure",
+      "missing_words": [
+        "الدرس",
+        "حضروا"
+      ]
+    },
+    {
+      "id": "PC043",
+      "category": "multi_stage_collision",
+      "input": "الامهات طبخ الطعام والاطفال لعب في الحديقه",
+      "expected": "الأمهات طبخن الطعام والأطفال لعبوا في الحديقة",
+      "actual": "الأمهات طبخن الطعام والأطفال لعبوا في الحديقة.",
+      "suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "الأمهات طبخن",
+          "end": 11,
+          "id": "011dc180-af99-4fe3-8945-94e462f9cea7",
+          "locked": true,
+          "original": "الامهات طبخ",
+          "priority": 3,
+          "start": 0,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "لعبوا",
+          "end": 31,
+          "id": "05a8998e-c56a-4b9e-9e47-eb677007ecd4",
+          "locked": true,
+          "original": "لعب",
+          "priority": 3,
+          "start": 28,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [
+            "والأطفال",
+            "والاطفال"
+          ],
+          "confidence": 0.9,
+          "correction": "والأطفال",
+          "end": 27,
+          "id": "83ee5b0e-3b78-4ede-a89b-7562dfd13298",
+          "locked": true,
+          "original": "والاطفال",
+          "priority": 2,
+          "start": 19,
+          "type": "spelling"
+        },
+        {
+          "alternatives": [
+            "الحديقة",
+            "الحديقه"
+          ],
+          "confidence": 0.9,
+          "correction": "الحديقة.",
+          "end": 42,
+          "id": "3bc385fa-d8f8-4e69-8b33-1ddd9a66db86",
+          "locked": true,
+          "original": "الحديقه",
+          "priority": 2,
+          "start": 35,
+          "type": "spelling"
+        }
+      ],
+      "elapsed_ms": 15896,
+      "verdict": "FAIL",
+      "root_cause_component": "PIPELINE",
+      "root_cause_detail": "Multi-stage interaction failure",
+      "missing_words": [
+        "الحديقة"
+      ]
+    },
+    {
+      "id": "PC044",
+      "category": "spelling_grammar_overlap",
+      "verdict": "ERROR",
+      "error": "('Connection aborted.', ConnectionResetError(10054, 'An existing connection was forcibly closed by the remote host', None, 10054, None))"
+    },
+    {
+      "id": "PC045",
+      "category": "spelling_grammar_overlap",
+      "verdict": "ERROR",
+      "error": "('Connection aborted.', ConnectionResetError(10054, 'An existing connection was forcibly closed by the remote host', None, 10054, None))"
+    },
+    {
+      "id": "PC046",
+      "category": "three_stage_collision",
+      "verdict": "ERROR",
+      "error": "('Connection aborted.', ConnectionResetError(10054, 'An existing connection was forcibly closed by the remote host', None, 10054, None))"
+    },
+    {
+      "id": "PC047",
+      "category": "three_stage_collision",
+      "verdict": "ERROR",
+      "error": "('Connection aborted.', ConnectionResetError(10054, 'An existing connection was forcibly closed by the remote host', None, 10054, None))"
+    },
+    {
+      "id": "PC048",
+      "category": "adjacent_corrections",
+      "verdict": "ERROR",
+      "error": "('Connection aborted.', ConnectionResetError(10054, 'An existing connection was forcibly closed by the remote host', None, 10054, None))"
+    },
+    {
+      "id": "PC049",
+      "category": "adjacent_corrections",
+      "input": "الرجل الطويله وقف بجانب البنايه",
+      "expected": "الرجل الطويل وقف بجانب البناية",
+      "actual": "الرجل الطويل وقف بجانب البنية.",
+      "suggestions": [
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "الطويل",
+          "end": 13,
+          "id": "43dad62b-3ae8-4a2c-b0e9-a72c5db91feb",
+          "locked": true,
+          "original": "الطويله",
+          "priority": 3,
+          "start": 6,
+          "type": "grammar"
+        },
+        {
+          "alternatives": [],
+          "confidence": 1.0,
+          "correction": "البنية.",
+          "end": 31,
+          "id": "2e89293a-0146-424a-97d4-99928845678f",
+          "locked": true,
+          "original": "البنايه",
+          "priority": 3,
+          "start": 24,
+          "type": "grammar"
+        }
+      ],
+      "elapsed_ms": 5280,
+      "verdict": "FAIL",
+      "root_cause_component": "UNKNOWN",
+      "root_cause_detail": "Unclassified failure in category 'adjacent_corrections'",
+      "missing_words": [
+        "البناية"
+      ]
+    },
+    {
+      "id": "PC050",
+      "category": "multi_stage_collision",
+      "verdict": "ERROR",
+      "error": "('Connection aborted.', ConnectionResetError(10054, 'An existing connection was forcibly closed by the remote host', None, 10054, None))"
+    }
+  ]
+}
