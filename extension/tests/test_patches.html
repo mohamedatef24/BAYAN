@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Bayan Patch Engine — Tests</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #0f0f14; color: #f0f0f5; padding: 24px; }
+    h1 { color: #818cf8; font-size: 20px; margin-bottom: 20px; }
+    .test-group { margin-bottom: 16px; padding: 12px; background: #1a1a24; border-radius: 8px; border: 1px solid #2d2d3d; }
+    .test-group h2 { font-size: 14px; color: #9898ad; margin-bottom: 8px; }
+    .pass { color: #22c55e; }
+    .fail { color: #ef4444; font-weight: bold; }
+    .result-line { font-size: 13px; margin: 4px 0; font-family: monospace; }
+    .detail { color: #6b6b80; font-size: 12px; margin-left: 24px; }
+    .summary { margin-top: 24px; padding: 16px; background: #1a1a24; border-radius: 8px; border: 2px solid #818cf8; font-size: 16px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>🧪 Bayan Patch Engine — Test Suite</h1>
+  <div id="output"></div>
+
+  <!-- Load modules in dependency order -->
+  <script src="../shared/config.js"></script>
+  <script src="../shared/bayan-renderer.js"></script>
+  <script src="../shared/bayan-ui.js"></script>
+  <script src="../shared/bayan-patches.js"></script>
+
+  <script>
+    const output = document.getElementById('output');
+    let passed = 0;
+    let failed = 0;
+    let currentGroup = null;
+
+    function group(name) {
+      currentGroup = document.createElement('div');
+      currentGroup.className = 'test-group';
+      currentGroup.innerHTML = `<h2>${name}</h2>`;
+      output.appendChild(currentGroup);
+    }
+
+    function assert(condition, message) {
+      const el = document.createElement('div');
+      el.className = 'result-line';
+      if (condition) {
+        passed++;
+        el.innerHTML = `<span class="pass">✅</span> ${message}`;
+      } else {
+        failed++;
+        el.innerHTML = `<span class="fail">❌</span> ${message}`;
+      }
+      currentGroup.appendChild(el);
+    }
+
+    function assertEqual(actual, expected, message) {
+      if (actual === expected) {
+        assert(true, message);
+      } else {
+        assert(false, message);
+        const detail = document.createElement('div');
+        detail.className = 'detail';
+        detail.textContent = `Expected: "${expected}" | Actual: "${actual}"`;
+        currentGroup.appendChild(detail);
+      }
+    }
+
+    // ══════════════════════════════════════════════════════
+    // Test data — offsets verified via JavaScript indexOf()
+    // ══════════════════════════════════════════════════════
+    //
+    // TEXT = 'أنا ذاهب الى البت والمدرسه' (length: 26)
+    //
+    // indexOf('الى')    = 9   → slice(9, 12)  = 'الى'     (3 chars)
+    // indexOf('البت')   = 13  → slice(13, 17) = 'البت'    (4 chars)
+    // indexOf('المدرسه') = 19  → slice(19, 26) = 'المدرسه'  (7 chars)
+    //
+
+    const TEXT = 'أنا ذاهب الى البت والمدرسه';
+
+    function makeSuggestions() {
+      return [
+        { id: 'a', start: 9,  end: 12, original: 'الى', correction: 'إلى', type: 'grammar' },
+        { id: 'b', start: 13, end: 17, original: 'البت', correction: 'البيت', type: 'spelling' },
+        { id: 'c', start: 19, end: 26, original: 'المدرسه', correction: 'المدرسة', type: 'spelling' },
+      ];
+    }
+
+    // ── Prerequisite: verify test data offsets ──
+    group('PREREQ: Verify test data offsets');
+    assertEqual(TEXT.length, 26, 'Text length = 26');
+    assertEqual(TEXT.slice(9, 12), 'الى', 'slice(9,12) = "الى"');
+    assertEqual(TEXT.slice(13, 17), 'البت', 'slice(13,17) = "البت"');
+    assertEqual(TEXT.slice(19, 26), 'المدرسه', 'slice(19,26) = "المدرسه"');
+
+    // ══════════════════════════════════════════════════════
+    // TEST 1: Same-length replacement (delta = 0)
+    // "الى" (3) → "إلى" (3), delta = 0
+    // ══════════════════════════════════════════════════════
+    group('TEST 1: Same-length replacement (delta = 0)');
+    {
+      const suggestions = makeSuggestions();
+      const result = applyAndRebase(TEXT, suggestions[0], 'إلى', suggestions);
+
+      assertEqual(result.text, 'أنا ذاهب إلى البت والمدرسه', 'Text: "الى" → "إلى"');
+      assert(result.suggestions.length === 2, 'Removed applied (2 remaining)');
+      assertEqual(result.suggestions[0].start, 13, 'B.start unchanged (13)');
+      assertEqual(result.suggestions[0].end, 17, 'B.end unchanged (17)');
+      assertEqual(result.suggestions[1].start, 19, 'C.start unchanged (19)');
+      assertEqual(result.suggestions[1].end, 26, 'C.end unchanged (26)');
+      // Verify offsets extract correct text from modified string
+      assertEqual(result.text.slice(result.suggestions[0].start, result.suggestions[0].end), 'البت', 'Rebased B extracts "البت"');
+      assertEqual(result.text.slice(result.suggestions[1].start, result.suggestions[1].end), 'المدرسه', 'Rebased C extracts "المدرسه"');
+    }
+
+    // ══════════════════════════════════════════════════════
+    // TEST 2: Longer replacement (delta > 0)
+    // "البت" (4) → "البيت" (5), delta = +1
+    // ══════════════════════════════════════════════════════
+    group('TEST 2: Longer replacement (delta > 0)');
+    {
+      const suggestions = makeSuggestions();
+      const result = applyAndRebase(TEXT, suggestions[1], 'البيت', suggestions);
+
+      assertEqual(result.text, 'أنا ذاهب الى البيت والمدرسه', 'Text: "البت" → "البيت"');
+      assert(result.suggestions.length === 2, 'Removed applied (2 remaining)');
+
+      // A is BEFORE B — no shift
+      assertEqual(result.suggestions[0].start, 9, 'A.start unchanged (9)');
+      assertEqual(result.suggestions[0].end, 12, 'A.end unchanged (12)');
+
+      // C is AFTER B — shift by +1
+      assertEqual(result.suggestions[1].start, 20, 'C.start shifted 19→20 (+1)');
+      assertEqual(result.suggestions[1].end, 27, 'C.end shifted 26→27 (+1)');
+
+      // Verify rebased offsets
+      assertEqual(result.text.slice(result.suggestions[0].start, result.suggestions[0].end), 'الى', 'Rebased A extracts "الى"');
+      assertEqual(result.text.slice(result.suggestions[1].start, result.suggestions[1].end), 'المدرسه', 'Rebased C extracts "المدرسه"');
+    }
+
+    // ══════════════════════════════════════════════════════
+    // TEST 3: Shorter replacement (delta < 0)
+    // ══════════════════════════════════════════════════════
+    group('TEST 3: Shorter replacement (delta < 0)');
+    {
+      const text = 'هذا النصص خاطئ والكلمه';
+      // Verify offsets
+      const idx1 = text.indexOf('النصص');
+      const idx2 = text.indexOf('والكلمه');
+      const suggestions = [
+        { id: 'x', start: idx1, end: idx1 + 5, original: 'النصص', correction: 'النص', type: 'spelling' },
+        { id: 'y', start: idx2, end: idx2 + 7, original: 'والكلمه', correction: 'والكلمة', type: 'spelling' },
+      ];
+
+      // "النصص" (5) → "النص" (4), delta = -1
+      const result = applyAndRebase(text, suggestions[0], 'النص', suggestions);
+
+      assertEqual(result.text, 'هذا النص خاطئ والكلمه', 'Text: "النصص" → "النص"');
+      assert(result.suggestions.length === 1, '1 remaining');
+      assertEqual(result.suggestions[0].start, idx2 - 1, 'Y.start shifted by -1');
+      assertEqual(result.suggestions[0].end, idx2 + 7 - 1, 'Y.end shifted by -1');
+      assertEqual(
+        result.text.slice(result.suggestions[0].start, result.suggestions[0].end),
+        'والكلمه', 'Rebased Y extracts "والكلمه"'
+      );
+    }
+
+    // ══════════════════════════════════════════════════════
+    // TEST 4: Multiple sequential applies
+    // ══════════════════════════════════════════════════════
+    group('TEST 4: Multiple sequential applies');
+    {
+      let text = TEXT;
+      let suggestions = makeSuggestions();
+
+      // Apply A first (same-length, delta=0)
+      let r1 = applyAndRebase(text, suggestions[0], 'إلى', suggestions);
+      text = r1.text;
+      suggestions = r1.suggestions;
+      assertEqual(text, 'أنا ذاهب إلى البت والمدرسه', 'After apply A');
+      assert(suggestions.length === 2, '2 remaining after A');
+
+      // Apply B (longer, delta=+1)
+      let r2 = applyAndRebase(text, suggestions[0], 'البيت', suggestions);
+      text = r2.text;
+      suggestions = r2.suggestions;
+      assertEqual(text, 'أنا ذاهب إلى البيت والمدرسه', 'After apply B');
+      assert(suggestions.length === 1, '1 remaining after B');
+
+      // Apply C (same-length, delta=0)
+      let r3 = applyAndRebase(text, suggestions[0], 'المدرسة', suggestions);
+      text = r3.text;
+      suggestions = r3.suggestions;
+      assertEqual(text, 'أنا ذاهب إلى البيت والمدرسة', 'After apply C — fully corrected');
+      assert(suggestions.length === 0, '0 remaining — all applied');
+
+      // Verify equals applyAllPatches
+      const expectedFull = applyAllPatches(TEXT, makeSuggestions());
+      assertEqual(text, expectedFull, 'Sequential === applyAllPatches');
+    }
+
+    // ══════════════════════════════════════════════════════
+    // TEST 5: Apply last suggestion (no rebase needed)
+    // ══════════════════════════════════════════════════════
+    group('TEST 5: Apply last suggestion');
+    {
+      const suggestions = makeSuggestions();
+      const result = applyAndRebase(TEXT, suggestions[2], 'المدرسة', suggestions);
+
+      assertEqual(result.text, 'أنا ذاهب الى البت والمدرسة', 'Last suggestion applied');
+      assert(result.suggestions.length === 2, '2 remaining');
+      assertEqual(result.suggestions[0].start, 9, 'A unchanged');
+      assertEqual(result.suggestions[1].start, 13, 'B unchanged');
+      // Verify offsets still work
+      assertEqual(result.text.slice(result.suggestions[0].start, result.suggestions[0].end), 'الى', 'A extracts correctly');
+      assertEqual(result.text.slice(result.suggestions[1].start, result.suggestions[1].end), 'البت', 'B extracts correctly');
+    }
+
+    // ══════════════════════════════════════════════════════
+    // TEST 6: Dismiss (removeSuggestion — no rebase)
+    // ══════════════════════════════════════════════════════
+    group('TEST 6: Dismiss (removeSuggestion)');
+    {
+      const suggestions = makeSuggestions();
+      const remaining = removeSuggestion(suggestions, 'b');
+      assert(remaining.length === 2, '2 remaining after dismiss');
+      assert(remaining.every(s => s.id !== 'b'), 'Dismissed suggestion removed');
+      assertEqual(remaining[0].start, 9, 'A offset unchanged');
+      assertEqual(remaining[1].start, 19, 'C offset unchanged');
+    }
+
+    // ══════════════════════════════════════════════════════
+    // TEST 7: applyAllPatches (reverse-order)
+    // ══════════════════════════════════════════════════════
+    group('TEST 7: applyAllPatches');
+    {
+      const result = applyAllPatches(TEXT, makeSuggestions());
+      assertEqual(result, 'أنا ذاهب إلى البيت والمدرسة', 'All patches applied correctly');
+    }
+
+    // ══════════════════════════════════════════════════════
+    // TEST 8: countByType
+    // ══════════════════════════════════════════════════════
+    group('TEST 8: countByType');
+    {
+      const counts = countByType(makeSuggestions());
+      assertEqual(counts.spelling, 2, '2 spelling');
+      assertEqual(counts.grammar, 1, '1 grammar');
+      assertEqual(counts.punctuation, 0, '0 punctuation');
+    }
+
+    // ══════════════════════════════════════════════════════
+    // TEST 9: Apply first suggestion at start=0
+    // ══════════════════════════════════════════════════════
+    group('TEST 9: Apply first suggestion (start=0)');
+    {
+      const text = 'الخطاء في البداية';
+      const i1 = text.indexOf('الخطاء');
+      const suggestions = [
+        { id: 'f', start: i1, end: i1 + 6, original: 'الخطاء', correction: 'الخطأ', type: 'spelling' },
+        { id: 'g', start: 10, end: 17, original: 'البداية', correction: 'البدايه', type: 'grammar' },
+      ];
+
+      // "الخطاء" (6) → "الخطأ" (5), delta = -1
+      const result = applyAndRebase(text, suggestions[0], 'الخطأ', suggestions);
+      assertEqual(result.text.slice(0, 5), 'الخطأ', 'First word replaced');
+      assertEqual(result.suggestions[0].start, 9, 'G.start shifted 10→9 (-1)');
+      assertEqual(result.suggestions[0].end, 16, 'G.end shifted 17→16 (-1)');
+    }
+
+    // ══════════════════════════════════════════════════════
+    // Summary
+    // ══════════════════════════════════════════════════════
+    const summary = document.createElement('div');
+    summary.className = 'summary';
+    summary.style.color = failed > 0 ? '#ef4444' : '#22c55e';
+    summary.textContent = `Results: ${passed} passed, ${failed} failed`;
+    output.appendChild(summary);
+
+    // Also log to console for easy capture
+    console.log(`[TEST RESULTS] ${passed} passed, ${failed} failed`);
+  </script>
+</body>
+</html>
