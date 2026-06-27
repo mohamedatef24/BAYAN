@@ -12,7 +12,7 @@
 importScripts('shared/constants.js', 'shared/hash.js');
 
 // ── Context constants ──
-const ACTIONS = { CORRECT: 'correct', SUMMARIZE: 'summarize' };
+const ACTIONS = { CORRECT: 'correct', SUMMARIZE: 'summarize', DIALECT: 'dialect', QURAN: 'quran' };
 const CONTEXT_KEYS = ['contextAction', 'contextText', 'contextTimestamp'];
 const SIDE_PANEL_PATH = 'sidepanel/sidepanel.html';
 
@@ -59,6 +59,16 @@ chrome.runtime.onInstalled.addListener(() => {
     title: chrome.i18n.getMessage('contextMenuSummarize') || 'تلخيص مع بيان',
     contexts: ['selection'],
   });
+  chrome.contextMenus.create({
+    id: 'bayan-dialect',
+    title: chrome.i18n.getMessage('contextMenuDialect') || 'تحويل اللهجة إلى الفصحى مع بيان',
+    contexts: ['selection'],
+  });
+  chrome.contextMenus.create({
+    id: 'bayan-quran',
+    title: chrome.i18n.getMessage('contextMenuQuran') || 'تدقيق الآية مع بيان',
+    contexts: ['selection'],
+  });
 });
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
@@ -68,6 +78,8 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   let action = null;
   if (info.menuItemId === 'bayan-correct') action = ACTIONS.CORRECT;
   if (info.menuItemId === 'bayan-summarize') action = ACTIONS.SUMMARIZE;
+  if (info.menuItemId === 'bayan-dialect') action = ACTIONS.DIALECT;
+  if (info.menuItemId === 'bayan-quran') action = ACTIONS.QURAN;
   if (!action) return;
 
   // Open side panel IMMEDIATELY (preserve user gesture)
@@ -172,6 +184,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
     sendResponse({ status: 'ok' });
     return true;
+  }
+
+  if (message.type === 'WRITE_BACK_TO_PAGE') {
+    // Forward to the active tab's content script, which owns page DOM access.
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const tab = tabs[0];
+      if (!tab) { sendResponse({ ok: false }); return; }
+      chrome.tabs.sendMessage(tab.id, {
+        type: 'BAYAN_WRITE_BACK',
+        text: message.text,
+        mode: message.mode || 'replaceAll',
+        source: message.source,
+      }, (resp) => sendResponse(resp || { ok: false }));
+    });
+    return true; // async
   }
 
   return false;
