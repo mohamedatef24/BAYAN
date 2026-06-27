@@ -247,10 +247,13 @@ class AraSpellPostProcessor:
         'اقرا': 'أقرأ', 'اقرأ': 'أقرأ',
         'اعمل': 'أعمل', 'ادرس': 'أدرس',
         'اشتري': 'أشتري', 'اسافر': 'أسافر',
+        'احبه': 'أحبه',
         'مسؤول': 'مسؤول', 'مسؤولية': 'مسؤولية',
         'رؤية': 'رؤية', 'رؤيا': 'رؤيا',
         'مؤسسة': 'مؤسسة', 'مؤتمر': 'مؤتمر',
         'تأثير': 'تأثير', 'تأكيد': 'تأكيد',
+        'البنايه': 'البناية',
+        'جدا': 'جداً', 'جداً': 'جداً',
         # FIX-14: Alif maqsura common errors
         'المستشفي': 'المستشفى',
         'مصطفي': 'مصطفى', 'موسي': 'موسى', 'عيسي': 'عيسى',
@@ -1618,14 +1621,42 @@ class ArabicSpellChecker:
         result = AraSpellPostProcessor.fix_ha_ta_marbuta(result, vocab_manager=self.vocab_manager)
 
         # 11. DESTRUCTIVE TOKENIZATION GUARD
-        # Arabic orthography does not use standalone 1-letter words.
-        # If the model creates a standalone 1-letter word that was not in the original, it's a tokenization hallucination.
+        # Arabic orthography does not use standalone 1-letter words except prepositions.
+        # If the model creates a standalone 1-letter word that was not in the original,
+        # check if it's a legitimate prefix separation (e.g. بالشاروع→ب الشارع).
         orig_standalone = set(w for w in original.split() if len(w) == 1)
+        orig_words = original.split()
         res_words_list = result.split()
-        for w in res_words_list:
+        for idx, w in enumerate(res_words_list):
             if len(w) == 1 and w not in orig_standalone:
                 if w in 'واتيبلفك':
-                    logger.info(f"[SPELLING] Blocked destructive tokenization (hallucinated standalone '{w}'): '{original}' -> '{result}'")
+                    # Check if this is a legitimate prefix separation:
+                    # The original word should have started with this letter as a prefix
+                    is_prefix_separation = False
+                    if w in 'وفبلك' and idx + 1 < len(res_words_list):
+                        next_word = res_words_list[idx + 1]
+                        combined = w + next_word
+                        # If any original word started with the prefix letter and
+                        # the remainder matches the next word, it's legitimate
+                        for ow in orig_words:
+                            if ow.startswith(w) and len(ow) > 2:
+                                is_prefix_separation = True
+                                break
+                    
+                    if not is_prefix_separation:
+                        logger.info(f"[SPELLING] Blocked destructive tokenization (hallucinated standalone '{w}'): '{original}' -> '{result}'")
+                        result = original
+                        break
+
+        # 12. MORPHOLOGICAL MUTATION GUARD (Verb -> Noun)
+        # Prevents spelling from changing a plural verb (e.g. صممو) to a noun (e.g. مصممو) by prepending م
+        if len(orig_words) == len(res_words_list):
+            for idx in range(len(orig_words)):
+                ow = orig_words[idx]
+                rw = res_words_list[idx]
+                # If the word didn't start with م but the correction does, and it looks like a plural verb
+                if not ow.startswith('م') and rw.startswith('م') and rw[1:] == ow and ow.endswith('و'):
+                    logger.info(f"[SPELLING] Blocked morphological mutation (verb→noun '{ow}'→'{rw}'): '{original}' -> '{result}'")
                     result = original
                     break
 

@@ -693,7 +693,7 @@ class OffsetMapper:
         for tag, i1, i2, j1, j2 in s.get_opcodes():
             self._opcodes.append((i1, i2, j1, j2))
 
-    def reverse_map_offset(self, pos_in_after):
+    def reverse_map_offset(self, pos_in_after, is_end=False):
         """
         Map a single position from text_after → text_before.
         (CURRENT_TEXT after mutation → CURRENT_TEXT before mutation)
@@ -701,13 +701,27 @@ class OffsetMapper:
         Used by PipelineContext.map_to_original() to walk the mapper
         chain in reverse, ultimately reaching ORIGINAL_TEXT coordinates.
         """
+        matches = []
         for i1, i2, j1, j2 in self._opcodes:
             if j1 <= pos_in_after <= j2:
-                if j2 == j1:  # insertion point
-                    return i1
+                matches.append((i1, i2, j1, j2))
+                
+        if not matches:
+            return len(self._text_before)
+            
+        mapped_positions = []
+        for i1, i2, j1, j2 in matches:
+            if j2 == j1:  # insertion point in text_before (deleted in text_after)
+                # If we're mapping an 'end' coordinate, we want to encompass the deleted text (i2).
+                # If we're mapping a 'start' coordinate, we want the start of the deletion (i1).
+                mapped_positions.append(i2 if is_end else i1)
+            else:
                 ratio = (pos_in_after - j1) / (j2 - j1)
-                return round(i1 + ratio * (i2 - i1))  # FIX-12: round() instead of int() truncation
-        return len(self._text_before)
+                mapped_positions.append(round(i1 + ratio * (i2 - i1)))
+                
+        # If is_end is True, maximize the mapped offset (include as much as possible)
+        # If is_end is False, minimize the mapped offset
+        return max(mapped_positions) if is_end else min(mapped_positions)
 
     def forward_map_range(self, start_in_before, end_in_before):
         """
