@@ -2581,7 +2581,9 @@ def analyze_text():
 
         # 3. Punctuation (runs on grammar-corrected text — PuncAra-v1 local model)
         # FIX-07: Skip punctuation for religious text
-        if not _is_religious_text:
+        # FIX-51: Skip punctuation when spelling+grammar found no errors (clean text)
+        _has_real_corrections = any(p.stage in ('spelling', 'grammar') for p in ctx.patches.patches)
+        if not _is_religious_text and _has_real_corrections:
           try:
             t0 = time.time()
             logger.info(f"[ANALYZE] Step 3: Punctuation starting...")
@@ -2616,6 +2618,13 @@ def analyze_text():
                             f"(locked by {owner}[{ls}:{le}])"
                         )
                     # Punctuation safety layer: reject non-punctuation changes
+                    # FIX-52: Block punctuation diffs on digit-containing text
+                    if d.get('original', '') and any(c.isdigit() for c in d.get('original', '')):
+                        logger.info(
+                            f"[PUNC-SAFETY] Blocked digit-containing punct diff: "
+                            f"'{d.get('original','')}' → '{d.get('correction','')}'"
+                        )
+                        continue
                     if not validate_punctuation_diff(d, full_text=ctx.current_text):
                         logger.info(
                             f"[PUNC-SAFETY] Rejected diff [{d['start']}:{d['end']}] "

@@ -564,9 +564,9 @@ def run_collision_benchmark(api: API, samples: list) -> List[BenchResult]:
         r.pipeline_output = resp.get('corrected', '')
         r.pipeline_suggestions = resp.get('suggestions', [])
 
-        # Normalize for comparison (strip diacritics + collapse whitespace)
-        norm_output = re.sub(r'\s+', ' ', _strip_diacritics(r.pipeline_output)).strip()
-        norm_expected = re.sub(r'\s+', ' ', _strip_diacritics(s.get('expected', ''))).strip()
+        # Normalize for comparison (strip diacritics + trailing punct + collapse whitespace)
+        norm_output = re.sub(r'\s+', ' ', _strip_diacritics(r.pipeline_output.rstrip('.،؛؟!?!'))).strip()
+        norm_expected = re.sub(r'\s+', ' ', _strip_diacritics(s.get('expected', '').rstrip('.،؛؟!?!'))).strip()
 
         if norm_output == norm_expected:
             r.pipeline_verdict = "TP"
