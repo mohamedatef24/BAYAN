@@ -178,12 +178,10 @@ class PatchSet:
                     overlap_start = max(patch.start_original, cs)
                     overlap_end = min(patch.end_original, ce)
                     overlap_width = overlap_end - overlap_start
-                    # Compare to the smaller patch's width
-                    patch_width = max(1, patch.end_original - patch.start_original)
-                    claimed_width = max(1, ce - cs)
-                    smaller_width = min(patch_width, claimed_width)
-                    overlap_ratio = overlap_width / smaller_width
-                    if overlap_ratio > 0.5:
+                    
+                    if overlap_width > 0:
+                        # STRICT NON-OVERLAP RULE: ANY overlap causes the lower priority patch to be dropped.
+                        # Overlapping patches cannot be safely applied sequentially by standard frontend/benchmark clients.
                         has_substantial_overlap = True
                         overlapping_resolved_idx = res_idx
                         break
