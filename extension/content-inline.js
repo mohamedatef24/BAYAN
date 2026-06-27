@@ -748,11 +748,74 @@
     try { captureSelection(e.target); } catch { pendingSelection = null; }
   }, true);
 
-  function writeTextToField(field, text, mode, source) {
+  function writeTextToField(field, text, mode, source, find) {
     if (!field || typeof text !== 'string') return;
 
     const tag = field.tagName.toLowerCase();
     const suppress = NON_CORRECTION_SOURCES.includes(source);
+
+    // ── find anchor: if the caller passed the original selected text, try to
+    // locate it inside the field and replace ONLY that occurrence. This is the
+    // most reliable way to scope a context-menu correction to the user's
+    // selection — it survives focus loss and timing gaps.
+    if (find && typeof find === 'string' && find.length > 0) {
+      if (tag === 'textarea' || tag === 'input') {
+        const idx = field.value.indexOf(find);
+        if (idx !== -1) {
+          const before = field.value.slice(0, idx);
+          const after = field.value.slice(idx + find.length);
+          field.value = before + text + after;
+          const caret = idx + text.length;
+          try { field.setSelectionRange(caret, caret); } catch {}
+          if (suppress) analysisSuppressed = true;
+          field.dispatchEvent(new Event('input', { bubbles: true }));
+          pendingSelection = null;
+          try { delete field.dataset.bayanSource; } catch {}
+          return;
+        }
+      } else if (field.isContentEditable) {
+        const content = field.innerText || field.textContent || '';
+        const idx = content.indexOf(find);
+        if (idx !== -1) {
+          field.focus();
+          const treeWalker = document.createTreeWalker(field, NodeFilter.SHOW_TEXT);
+          let charCount = 0;
+          let startNode = null, startOffset = 0, endNode = null, endOffset = 0;
+          while (treeWalker.nextNode()) {
+            const node = treeWalker.currentNode;
+            const nodeLen = node.textContent.length;
+            if (!startNode && charCount + nodeLen > idx) {
+              startNode = node;
+              startOffset = idx - charCount;
+            }
+            if (startNode && charCount + nodeLen >= idx + find.length) {
+              endNode = node;
+              endOffset = idx + find.length - charCount;
+              break;
+            }
+            charCount += nodeLen;
+          }
+          if (startNode && endNode) {
+            try {
+              const range = document.createRange();
+              range.setStart(startNode, startOffset);
+              range.setEnd(endNode, endOffset);
+              const winSel = window.getSelection();
+              winSel.removeAllRanges();
+              winSel.addRange(range);
+              range.deleteContents();
+              range.insertNode(document.createTextNode(text));
+              winSel.collapseToEnd();
+              if (suppress) analysisSuppressed = true;
+              field.dispatchEvent(new Event('input', { bubbles: true }));
+              pendingSelection = null;
+              try { delete field.dataset.bayanSource; } catch {}
+              return;
+            } catch {}
+          }
+        }
+      }
+    }
 
     // Resolve the effective mode. 'auto' = replace the captured selection if we
     // have one for THIS field, otherwise replace the whole field.
@@ -834,7 +897,7 @@
       // so it can't win the response race against the frame that does.
       if (!field) return false;
       try {
-        writeTextToField(field, msg.text, msg.mode, msg.source);
+        writeTextToField(field, msg.text, msg.mode, msg.source, msg.find);
         sendResponse({ ok: true });
       } catch (err) {
         console.warn('[Bayan] Write-back error:', err.message);

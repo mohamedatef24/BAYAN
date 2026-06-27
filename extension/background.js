@@ -196,6 +196,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         text: message.text,
         mode: message.mode || 'replaceAll',
         source: message.source,
+        find: message.find || '',
       }, (resp) => sendResponse(resp || { ok: false }));
     });
     return true; // async
