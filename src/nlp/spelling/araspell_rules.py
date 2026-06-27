@@ -1656,8 +1656,8 @@ class ArabicSpellChecker:
                 rw = res_words_list[idx]
                 # If the word didn't start with م but the correction does, and it looks like a plural verb
                 if not ow.startswith('م') and rw.startswith('م') and rw[1:] == ow and ow.endswith('و'):
-                    logger.info(f"[SPELLING] Blocked morphological mutation (verb→noun '{ow}'→'{rw}'): '{original}' -> '{result}'")
-                    result = original
-                    break
+                    logger.info(f"[SPELLING] Blocked morphological mutation (verb→noun '{ow}'→'{rw}')")
+                    res_words_list[idx] = ow
+            result = ' '.join(res_words_list)
 
         return result
