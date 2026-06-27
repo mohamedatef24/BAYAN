@@ -634,6 +634,12 @@
 
     field.addEventListener('input', onFieldInput);
     field.addEventListener('keydown', onFieldKeydown);
+    // Track the user's selection within the field so a later "apply" from the
+    // side panel can splice the result into exactly that range — even when the
+    // panel was opened via the FAB or was already open (not just right-click).
+    field.addEventListener('mouseup', onFieldSelect);
+    field.addEventListener('keyup', onFieldSelect);
+    field.addEventListener('select', onFieldSelect);
     // FIX-20: Removed redundant 'keyup' listener (input event already fires on every change)
 
     if (BayanController.hasArabic(getFieldText(field))) {
@@ -645,6 +651,9 @@
     if (activeField) {
       activeField.removeEventListener('input', onFieldInput);
       activeField.removeEventListener('keydown', onFieldKeydown);
+      activeField.removeEventListener('mouseup', onFieldSelect);
+      activeField.removeEventListener('keyup', onFieldSelect);
+      activeField.removeEventListener('select', onFieldSelect);
       // FIX-20: keyup listener no longer attached
       activeField.removeEventListener('scroll', syncOverlay);
     }
@@ -668,6 +677,24 @@
   // ══════════════════════════════════════════════════════════
 
   const NON_CORRECTION_SOURCES = ['summarize', 'dialect', 'quran'];
+
+  // Snapshot the active field's selection whenever the user changes it. We keep
+  // the LAST non-empty selection so that when focus later moves to the side
+  // panel (which collapses the field's visible selection) we still know which
+  // range the user meant to replace. A collapsed selection does NOT clear the
+  // snapshot — only a real edit (handled in onFieldInput) or a fresh write does.
+  function onFieldSelect(e) {
+    const field = e && e.currentTarget;
+    if (!field) return;
+    const tag = field.tagName.toLowerCase();
+    if (tag !== 'textarea' && tag !== 'input') return;
+    const start = field.selectionStart;
+    const end = field.selectionEnd;
+    if (typeof start === 'number' && typeof end === 'number' && start !== end) {
+      pendingSelection = { field, type: 'input', start, end };
+      lastInteractedField = field;
+    }
+  }
 
   // Capture the field + selection range at right-click time. The context menu
   // flow always acts on the selected text, so we remember exactly what was
