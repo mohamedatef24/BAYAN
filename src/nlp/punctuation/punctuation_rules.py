@@ -66,9 +66,9 @@ def arabic_postprocessing(text: str) -> str:
         prev_word = match.group(1)
         if re.fullmatch(_ALLOWED_COLON_CUES, prev_word):
             return match.group(0)
-        # If it's a definite noun (starts with ال) and not in allowed list, it's hallucinated.
-        # Remove the colon entirely — replacing with comma is also wrong (e.g. الشمس، مشرقة)
-        if prev_word.startswith('ال'):
+        # Strip colons from definite nouns (ال-prefix) and preposition+definite combos
+        # (لل, بال, فال, وال, كال). These are never valid colon targets.
+        if prev_word.startswith(('ال', 'لل', 'بال', 'فال', 'وال', 'كال')):
             return f'{prev_word}'
         return match.group(0)
         
