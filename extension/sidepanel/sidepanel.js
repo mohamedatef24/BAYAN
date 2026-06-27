@@ -65,6 +65,10 @@ document.addEventListener('DOMContentLoaded', () => {
   let isAnalyzing = false;
   let contextConsumed = false;
   let debounceTimer = null;
+  // The exact text the user had selected on the page when this action started
+  // (from the right-click context menu). Used as a precise find/replace anchor
+  // so write-back replaces ONLY that selection, never the whole field.
+  let sourceSelectionText = '';
 
   const SCORE_CIRCUMFERENCE = 440;
   const DEBOUNCE_MS = 500;
@@ -155,14 +159,20 @@ document.addEventListener('DOMContentLoaded', () => {
   // The side panel is a separate document and cannot touch page DOM
   // directly; it relays through background.js. `source` lets the content
   // script decide whether to re-analyze (correct) or suppress (Change 3).
+  //
+  // `find` (optional) is the exact original selected text. When present, the
+  // content script replaces ONLY that occurrence in the field — the most
+  // reliable way to scope the replacement to the user's selection.
   // ══════════════════════════════════════════════════════════
-  function writeBackToPage(text, mode = 'auto', source = 'correct') {
+  function writeBackToPage(text, mode = 'auto', source = 'correct', find = '') {
     try {
       chrome.runtime.sendMessage(
-        { type: 'WRITE_BACK_TO_PAGE', text, mode, source },
+        { type: 'WRITE_BACK_TO_PAGE', text, mode, source, find },
         (resp) => {
-          if (resp && resp.ok) showToast('✓ تم تطبيق التغييرات في الصفحة');
-          else showToast('تعذّر الكتابة في الصفحة — انسخ النص يدوياً');
+          if (resp && resp.ok) {
+            sourceSelectionText = text;
+            showToast('✓ تم تطبيق التغييرات في الصفحة');
+          } else showToast('تعذّر الكتابة في الصفحة — انسخ النص يدوياً');
         }
       );
     } catch {
@@ -353,6 +363,7 @@ document.addEventListener('DOMContentLoaded', () => {
   btnClear.addEventListener('click', () => {
     inputText.value = '';
     analyzedText = '';
+    sourceSelectionText = '';
     updateCounts(inputText, charCount, wordCount);
     scoreSection.classList.add('is-hidden');
     resultSection.classList.add('is-hidden');
@@ -379,7 +390,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateScore(0, 0, 0);
     renderSuggestions([]);
     saveState();
-    writeBackToPage(analyzedText, 'auto', 'correct');
+    writeBackToPage(analyzedText, 'auto', 'correct', sourceSelectionText);
     showToast('✓ تم تطبيق جميع التصحيحات');
   });
 
@@ -393,7 +404,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const finalText = currentSuggestions.length > 0
         ? applyAllPatches(analyzedText, currentSuggestions)
         : analyzedText;
-      writeBackToPage(finalText, 'auto', 'correct');
+      writeBackToPage(finalText, 'auto', 'correct', sourceSelectionText);
     });
   }
 
@@ -588,7 +599,7 @@ document.addEventListener('DOMContentLoaded', () => {
       btnApplyQuranTranslation.addEventListener('click', () => {
         const text = (quranTranslationText.textContent || '').trim();
         if (!text) { showToast('لا توجد ترجمة للتطبيق'); return; }
-        writeBackToPage(text, 'auto', 'quran');
+        writeBackToPage(text, 'auto', 'quran', sourceSelectionText);
       });
     }
 
@@ -706,7 +717,7 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.addEventListener('click', () => {
       const text = (getText() || '').trim();
       if (!text) { showToast('لا يوجد نص للتطبيق'); return; }
-      writeBackToPage(text, 'auto', source);
+      writeBackToPage(text, 'auto', source, sourceSelectionText);
     });
     anchorBtn.parentElement.appendChild(btn);
   }
@@ -744,6 +755,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // the matching tab's input, switching to it, and auto-running its model.
   // Declared after all element refs so dialect/quran handles are in scope.
   function runContextAction(action, text) {
+    sourceSelectionText = text;
     if (action === TAB.CORRECT) {
       inputText.value = text;
       updateCounts(inputText, charCount, wordCount);
