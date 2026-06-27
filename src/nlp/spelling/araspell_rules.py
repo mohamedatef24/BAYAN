@@ -298,23 +298,33 @@ class AraSpellPostProcessor:
         """
         Fix common hamza placement errors using a whitelist.
         Also handles prefixed words: و/ف/ب/ك/ل + whitelist word.
-        e.g. واصدقائي → وأصدقائي, بالاسعار → بالأسعار
+        Handles adjacent punctuation (e.g. واصدقائي، → وأصدقائي،)
         """
         words = text.split()
         result = []
         for word in words:
+            # Separate leading/trailing punctuation from the core word
+            match = re.match(r'^([\.,،؛؟!:;?\(\)\[\]«»"\'\s]*)(.*?)([\.,،؛؟!:;?\(\)\[\]«»"\'\s]*)$', word)
+            if not match or not match.group(2):
+                result.append(word)
+                continue
+                
+            lead_punct = match.group(1)
+            core_word = match.group(2)
+            trail_punct = match.group(3)
+
             # Check exact match first
-            if word in AraSpellPostProcessor.HAMZA_WHITELIST:
-                result.append(AraSpellPostProcessor.HAMZA_WHITELIST[word])
+            if core_word in AraSpellPostProcessor.HAMZA_WHITELIST:
+                result.append(lead_punct + AraSpellPostProcessor.HAMZA_WHITELIST[core_word] + trail_punct)
                 continue
 
             # Try stripping common prefixes and looking up the remainder
             fixed = False
             for prefix in AraSpellPostProcessor.HAMZA_PREFIXES:
-                if word.startswith(prefix) and len(word) > len(prefix) + 1:
-                    remainder = word[len(prefix):]
+                if core_word.startswith(prefix) and len(core_word) > len(prefix) + 1:
+                    remainder = core_word[len(prefix):]
                     if remainder in AraSpellPostProcessor.HAMZA_WHITELIST:
-                        result.append(prefix + AraSpellPostProcessor.HAMZA_WHITELIST[remainder])
+                        result.append(lead_punct + prefix + AraSpellPostProcessor.HAMZA_WHITELIST[remainder] + trail_punct)
                         fixed = True
                         break
             if not fixed:
@@ -1606,5 +1616,17 @@ class ArabicSpellChecker:
         # so they revert corrections back to the erroneous form.
         result = AraSpellPostProcessor.fix_common_hamza(result)
         result = AraSpellPostProcessor.fix_ha_ta_marbuta(result, vocab_manager=self.vocab_manager)
+
+        # 11. DESTRUCTIVE TOKENIZATION GUARD
+        # Arabic orthography does not use standalone 1-letter words.
+        # If the model creates a standalone 1-letter word that was not in the original, it's a tokenization hallucination.
+        orig_standalone = set(w for w in original.split() if len(w) == 1)
+        res_words_list = result.split()
+        for w in res_words_list:
+            if len(w) == 1 and w not in orig_standalone:
+                if w in 'واتيبلفك':
+                    logger.info(f"[SPELLING] Blocked destructive tokenization (hallucinated standalone '{w}'): '{original}' -> '{result}'")
+                    result = original
+                    break
 
         return result
