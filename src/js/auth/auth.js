@@ -138,6 +138,15 @@ async function signOut() {
   setCurrentSession(null);
   clearOfflineAuthMode();
 
+  // Clear sync queue and editor draft to prevent cross-user data leakage
+  if (typeof SyncQueue !== 'undefined' && SyncQueue.clear) {
+    SyncQueue.clear();
+  }
+  try {
+    localStorage.removeItem('bayan_editor_draft');
+    localStorage.removeItem('bayan_dismissed_words');
+  } catch (e) {}
+
   if (typeof updateAuthUI === 'function') {
     updateAuthUI(null);
   }

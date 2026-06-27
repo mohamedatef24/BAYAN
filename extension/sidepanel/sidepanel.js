@@ -48,14 +48,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const summaryMeta = document.getElementById('summary-meta');
   const btnCopySummary = document.getElementById('btn-copy-summary');
 
-  // Score
-  const scoreValue = document.getElementById('score-value');
-  const scoreCircle = document.getElementById('score-circle');
-  const scoreHint = document.getElementById('score-hint');
-  const countSpelling = document.getElementById('count-spelling');
-  const countGrammar = document.getElementById('count-grammar');
-  const countPunctuation = document.getElementById('count-punctuation');
-
   // ══════════════════════════════════════════════════════════
   // State
   // ══════════════════════════════════════════════════════════
@@ -70,7 +62,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // so write-back replaces ONLY that selection, never the whole field.
   let sourceSelectionText = '';
 
-  const SCORE_CIRCUMFERENCE = 440;
   const DEBOUNCE_MS = 500;
 
   // ══════════════════════════════════════════════════════════
@@ -90,15 +81,8 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ══════════════════════════════════════════════════════════
-  // Character & word counter
+  // Character & word counter (shared: bayan-core.js)
   // ══════════════════════════════════════════════════════════
-  function updateCounts(textarea, charEl, wordEl) {
-    const text = textarea.value;
-    const chars = text.length;
-    const words = text.trim() ? text.trim().split(/\s+/).length : 0;
-    if (charEl) charEl.textContent = chars.toLocaleString('ar-EG');
-    if (wordEl) wordEl.textContent = words.toLocaleString('ar-EG');
-  }
 
   inputText.addEventListener('input', () => {
     updateCounts(inputText, charCount, wordCount);
@@ -139,19 +123,11 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ══════════════════════════════════════════════════════════
-  // Loading & Toast
+  // Loading (Toast shared via bayan-core.js)
   // ══════════════════════════════════════════════════════════
   function setLoading(show, text = 'جارٍ التحليل...') {
     loadingOverlay.classList.toggle('is-hidden', !show);
     loadingTextEl.textContent = text;
-  }
-
-  function showToast(message, duration = 2500) {
-    const toast = document.getElementById('toast');
-    toast.textContent = message;
-    toast.classList.add('is-visible');
-    clearTimeout(toast._timer);
-    toast._timer = setTimeout(() => toast.classList.remove('is-visible'), duration);
   }
 
   // ══════════════════════════════════════════════════════════
@@ -180,25 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // ══════════════════════════════════════════════════════════
-  // Score ring
-  // ══════════════════════════════════════════════════════════
-  function updateScore(spelling, grammar, punctuation) {
-    const score = calculateWritingScore(spelling, grammar, punctuation);
-    const total = spelling + grammar + punctuation;
-
-    scoreSection.classList.remove('is-hidden');
-
-    if (scoreValue) scoreValue.textContent = score > 0 || total > 0 ? score.toLocaleString('ar-EG') : '--';
-    if (scoreCircle) {
-      const offset = SCORE_CIRCUMFERENCE - (score / 100) * SCORE_CIRCUMFERENCE;
-      scoreCircle.style.strokeDashoffset = String(offset);
-    }
-    if (scoreHint) scoreHint.textContent = getScoreHint(score, total);
-    if (countSpelling) countSpelling.textContent = spelling.toLocaleString('ar-EG');
-    if (countGrammar) countGrammar.textContent = grammar.toLocaleString('ar-EG');
-    if (countPunctuation) countPunctuation.textContent = punctuation.toLocaleString('ar-EG');
-  }
+  // Score ring — shared via bayan-core.js (updateScore)
 
   // ══════════════════════════════════════════════════════════
   // Render suggestions list
@@ -232,6 +190,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (altText === suggestion.original) {
           currentSuggestions = removeSuggestion(currentSuggestions, suggestion.id);
+          if (suggestion.type === 'spelling' && typeof BayanAuth !== 'undefined') {
+            BayanAuth.addDismissedWord(suggestion.original);
+          }
         } else {
           const result = applyAndRebase(analyzedText, suggestion, altText, currentSuggestions);
           analyzedText = result.text;
@@ -273,7 +234,15 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await bayanAnalyze(text);
 
       if (data.status === 'success' || data.status === 'partial') {
-        const suggestions = sortSuggestions(data.suggestions || []);
+        let suggestions = sortSuggestions(data.suggestions || []);
+
+        if (typeof BayanAuth !== 'undefined') {
+          const dismissed = await BayanAuth.getDismissedWords();
+          if (dismissed.length > 0) {
+            suggestions = suggestions.filter(s => !(s.type === 'spelling' && dismissed.includes(s.original)));
+          }
+        }
+
         currentSuggestions = suggestions;
         analyzedText = data.original;
 
@@ -661,26 +630,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ══════════════════════════════════════════════════════════
   // Phase 5: Download corrected text / summary as .txt
-  // Buttons injected programmatically to avoid touching sidepanel.html.
+  // downloadTxt shared via bayan-core.js
   // ══════════════════════════════════════════════════════════
-  function downloadTxt(text, filename) {
-    if (!text) { showToast('لا يوجد نص للتنزيل'); return; }
-    try {
-      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-      showToast('✓ تم تنزيل الملف');
-    } catch (e) {
-      console.error('[Bayan SP] Download error:', e);
-      showToast('تعذّر التنزيل');
-    }
-  }
 
   const SP_DOWNLOAD_ICON = '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M12 4v12m0 0l-4-4m4 4l4-4"/></svg>';
 
@@ -693,6 +644,17 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.innerHTML = SP_DOWNLOAD_ICON;
     btn.addEventListener('click', () => downloadTxt((getText() || '').trim(), filename));
     anchorBtn.parentElement.appendChild(btn);
+    const docxBtn = document.createElement('button');
+    docxBtn.className = 'sp-btn-icon';
+    docxBtn.type = 'button';
+    docxBtn.title = 'تنزيل كـ Word';
+    docxBtn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>';
+    docxBtn.addEventListener('click', () => {
+      if (typeof downloadDocx === 'function') {
+        downloadDocx((getText() || '').trim(), filename.replace('.txt', '.docx'));
+      }
+    });
+    anchorBtn.parentElement.appendChild(docxBtn);
   }
 
   addDownloadButton(btnCopyResult, () => resultText.textContent, 'bayan-corrected.txt');
@@ -725,6 +687,216 @@ document.addEventListener('DOMContentLoaded', () => {
   addApplyToPageButton(btnCopySummary, () => summaryText.textContent, 'summarize');
   if (btnCopyDialect) addApplyToPageButton(btnCopyDialect, () => dialectText.textContent, 'dialect');
   if (btnCopyQuran) addApplyToPageButton(btnCopyQuran, () => quranText.textContent, 'quran');
+
+  // ══════════════════════════════════════════════════════════
+  // Auth UI wiring (shared via bayan-core.js)
+  // ══════════════════════════════════════════════════════════
+  bayanInitAuth();
+
+  // ══════════════════════════════════════════════════════════
+  // Cloud Documents (Phase 3.4)
+  // Uses BayanDocuments REST API (bayan-documents.js)
+  // ══════════════════════════════════════════════════════════
+  const spDocTitle = document.getElementById('sp-doc-title');
+  const spDocSave = document.getElementById('sp-doc-save');
+  const spDocNew = document.getElementById('sp-doc-new');
+  const spDocRefresh = document.getElementById('sp-doc-refresh');
+  const spDocList = document.getElementById('sp-doc-list');
+
+  let currentDocId = null;
+  let currentDocTitle = 'لا يوجد مستند مفتوح';
+
+  function _escDocHtml(str) {
+    return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function _updateDocBar() {
+    if (spDocTitle) spDocTitle.textContent = currentDocTitle;
+  }
+
+  async function _renderDocList() {
+    if (!spDocList) return;
+
+    if (typeof BayanAuth === 'undefined' || !BayanAuth.isAuthenticated()) {
+      spDocList.innerHTML = `
+        <div class="sp-doc-signin">
+          <p>سجّل دخولك لحفظ مستنداتك في السحابة</p>
+          <button class="sp-doc-signin-btn" id="sp-doc-signin-btn" type="button">الدخول بـ Google</button>
+        </div>`;
+      const signinBtn = document.getElementById('sp-doc-signin-btn');
+      if (signinBtn) {
+        signinBtn.addEventListener('click', () => {
+          const loginBtn = document.getElementById('btn-auth-login');
+          if (loginBtn) loginBtn.click();
+        });
+      }
+      return;
+    }
+
+    spDocList.innerHTML = '<div class="sp-doc-loading">جاري التحميل...</div>';
+
+    const docs = await BayanDocuments.loadDocuments();
+    if (!docs.length) {
+      spDocList.innerHTML = `
+        <div class="sp-doc-empty">
+          <div class="sp-doc-empty-icon">📄</div>
+          <div>لا توجد مستندات بعد</div>
+          <div>أنشئ مستنداً جديداً للبدء</div>
+        </div>`;
+      return;
+    }
+
+    spDocList.innerHTML = docs.map(doc => {
+      const date = new Date(doc.updated_at).toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' });
+      const isActive = doc.id === currentDocId;
+      return `
+        <div class="sp-doc-item${isActive ? ' sp-doc-active' : ''}" data-doc-id="${doc.id}">
+          <button class="sp-doc-item-open" data-doc-id="${doc.id}" type="button">
+            <span class="sp-doc-item-icon">📄</span>
+            <span class="sp-doc-item-title">${_escDocHtml(doc.title)}</span>
+            <span class="sp-doc-item-date">${date}</span>
+          </button>
+          <div class="sp-doc-item-actions">
+            <button class="sp-doc-item-action sp-doc-rename" data-doc-id="${doc.id}" data-doc-title="${_escDocHtml(doc.title)}" title="إعادة تسمية" type="button">✎</button>
+            <button class="sp-doc-item-action sp-doc-delete" data-doc-id="${doc.id}" data-doc-title="${_escDocHtml(doc.title)}" title="حذف" type="button">✕</button>
+          </div>
+        </div>`;
+    }).join('');
+
+    spDocList.querySelectorAll('.sp-doc-item-open').forEach(btn => {
+      btn.addEventListener('click', () => _openDoc(btn.dataset.docId));
+    });
+    spDocList.querySelectorAll('.sp-doc-rename').forEach(btn => {
+      btn.addEventListener('click', (e) => { e.stopPropagation(); _renameDoc(btn.dataset.docId, btn.dataset.docTitle); });
+    });
+    spDocList.querySelectorAll('.sp-doc-delete').forEach(btn => {
+      btn.addEventListener('click', (e) => { e.stopPropagation(); _deleteDoc(btn.dataset.docId, btn.dataset.docTitle); });
+    });
+  }
+
+  async function _openDoc(id) {
+    setLoading(true, 'جاري تحميل المستند...');
+    try {
+      const doc = await BayanDocuments.loadDocument(id);
+      if (!doc) { showToast('تعذّر تحميل المستند'); return; }
+
+      currentDocId = doc.id;
+      currentDocTitle = doc.title;
+      _updateDocBar();
+
+      inputText.value = doc.content || '';
+      updateCounts(inputText, charCount, wordCount);
+      analyzedText = '';
+      currentSuggestions = [];
+      clearStale();
+      scoreSection.classList.add('is-hidden');
+      resultSection.classList.add('is-hidden');
+      suggestionsSection.classList.add('is-hidden');
+      timingSection.classList.add('is-hidden');
+
+      document.querySelector('[data-tab="correct"]')?.click();
+
+      _renderDocList();
+      showToast('✓ تم فتح المستند');
+    } catch (e) {
+      console.error('[Bayan SP] Open doc error:', e);
+      showToast('خطأ في تحميل المستند');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function _createDoc() {
+    if (typeof BayanAuth === 'undefined' || !BayanAuth.isAuthenticated()) {
+      showToast('سجّل دخولك أولاً'); return;
+    }
+    const title = prompt('اسم المستند الجديد:', 'مستند جديد');
+    if (title === null) return;
+
+    setLoading(true, 'جاري الإنشاء...');
+    try {
+      const doc = await BayanDocuments.createDocument(title.trim() || 'مستند جديد', inputText.value || '');
+      if (!doc) { showToast('تعذّر إنشاء المستند'); return; }
+
+      currentDocId = doc.id;
+      currentDocTitle = doc.title;
+      _updateDocBar();
+      await _renderDocList();
+      showToast('✓ تم إنشاء المستند');
+    } catch (e) {
+      console.error('[Bayan SP] Create doc error:', e);
+      showToast('خطأ في إنشاء المستند');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function _saveDoc() {
+    if (!currentDocId) {
+      _createDoc();
+      return;
+    }
+    setLoading(true, 'جاري الحفظ...');
+    try {
+      const ok = await BayanDocuments.saveDocument(currentDocId, inputText.value || '');
+      if (ok) {
+        if (spDocSave) spDocSave.classList.remove('sp-doc-dirty');
+        showToast('✓ تم الحفظ');
+      } else {
+        showToast('تعذّر الحفظ');
+      }
+    } catch (e) {
+      console.error('[Bayan SP] Save doc error:', e);
+      showToast('خطأ في الحفظ');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function _renameDoc(id, currentTitle) {
+    const newTitle = prompt('الاسم الجديد للمستند:', currentTitle);
+    if (!newTitle || newTitle === currentTitle) return;
+
+    const ok = await BayanDocuments.renameDocument(id, newTitle);
+    if (ok) {
+      if (id === currentDocId) { currentDocTitle = newTitle; _updateDocBar(); }
+      await _renderDocList();
+      showToast('✓ تم التسمية');
+    } else {
+      showToast('تعذّر إعادة التسمية');
+    }
+  }
+
+  async function _deleteDoc(id, title) {
+    if (!confirm('هل تريد حذف "' + title + '"؟')) return;
+
+    const ok = await BayanDocuments.deleteDocument(id);
+    if (ok) {
+      if (id === currentDocId) {
+        currentDocId = null;
+        currentDocTitle = 'لا يوجد مستند مفتوح';
+        _updateDocBar();
+      }
+      await _renderDocList();
+      showToast('✓ تم حذف المستند');
+    } else {
+      showToast('تعذّر الحذف');
+    }
+  }
+
+  if (spDocNew) spDocNew.addEventListener('click', _createDoc);
+  if (spDocSave) spDocSave.addEventListener('click', _saveDoc);
+  if (spDocRefresh) spDocRefresh.addEventListener('click', _renderDocList);
+
+  inputText.addEventListener('input', () => {
+    if (currentDocId && spDocSave) spDocSave.classList.add('sp-doc-dirty');
+  });
+
+  if (typeof BayanAuth !== 'undefined') {
+    BayanAuth.onAuthStateChange(() => _renderDocList());
+  }
+
+  _renderDocList();
 
   // ══════════════════════════════════════════════════════════
   // Status check

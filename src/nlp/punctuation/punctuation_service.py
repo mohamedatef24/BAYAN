@@ -15,6 +15,8 @@ import re
 
 logger = logging.getLogger(__name__)
 
+_EXCL_CUES = {'هل', 'أين', 'متى', 'كيف', 'لماذا', 'ماذا', 'أي', 'كم', 'ما'}
+
 # ── Lazy-loaded singletons ──
 _punctuation_checker = None
 _load_error = None
@@ -80,7 +82,6 @@ class PunctuationChecker:
             if o_base == p_base:
                 # Anti-hallucination for question marks
                 if '؟' in p_word and '؟' not in o_word:
-                    _EXCL_CUES = {'هل', 'أين', 'متى', 'كيف', 'لماذا', 'ماذا', 'أي', 'كم', 'ما'}
                     if not any(w in _EXCL_CUES for w in orig_words):
                         p_word = p_word.replace('؟', '.')
                 # Same base word — keep punctuation changes from model
@@ -89,7 +90,6 @@ class PunctuationChecker:
                 pi += 1
             elif self._is_only_punct_difference(o_word, p_word):
                 if '؟' in p_word and '؟' not in o_word:
-                    _EXCL_CUES = {'هل', 'أين', 'متى', 'كيف', 'لماذا', 'ماذا', 'أي', 'كم', 'ما'}
                     if not any(w in _EXCL_CUES for w in orig_words):
                         p_word = p_word.replace('؟', '.')
                 # Words differ only by punctuation — keep model's punctuation
@@ -115,7 +115,6 @@ class PunctuationChecker:
                 # Only add punctuation that wasn't already there
                 if not o_word.endswith(punct_suffix) and punct_suffix:
                     if '؟' in punct_suffix and '؟' not in o_word:
-                        _EXCL_CUES = {'هل', 'أين', 'متى', 'كيف', 'لماذا', 'ماذا', 'أي', 'كم', 'ما'}
                         if not any(w in _EXCL_CUES for w in orig_words):
                             punct_suffix = punct_suffix.replace('؟', '.')
                     result.append(o_word + punct_suffix)
@@ -136,7 +135,6 @@ class PunctuationChecker:
             p_word = punc_words[pi]
             if all(ch in self.PUNCTUATION_CHARS or ch.isspace() for ch in p_word):
                 if '؟' in p_word:
-                    _EXCL_CUES = {'هل', 'أين', 'متى', 'كيف', 'لماذا', 'ماذا', 'أي', 'كم', 'ما'}
                     if not any(w in _EXCL_CUES for w in orig_words):
                         p_word = p_word.replace('؟', '.')
                 result.append(p_word)

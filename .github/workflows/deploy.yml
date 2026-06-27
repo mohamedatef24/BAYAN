@@ -28,7 +28,7 @@ jobs:
 
       - name: Verify critical files exist
         run: |
-          for f in src/app.py src/model_loader.py src/hf_inference.py src/index.html \
+          for f in src/app.py src/model_loader.py src/index.html \
                    src/nlp/__init__.py src/nlp/spelling/araspell_service.py \
                    src/nlp/grammar/grammar_service.py src/nlp/punctuation/punctuation_service.py \
                    Dockerfile Procfile requirements.txt; do
@@ -36,11 +36,11 @@ jobs:
           done
           echo "✅ All critical files present"
 
-      - name: Verify API routes defined in app.py
+      - name: Verify API routes defined
         run: |
           for route in "/api/health" "/api/analyze" "/api/summarize" "/api/spelling" \
                        "/api/grammar" "/api/punctuation" "/api/quran"; do
-            grep -q "$route" src/app.py && echo "  ✅ $route" || { echo "  ❌ MISSING ROUTE: $route"; exit 1; }
+            grep -rq "$route" src/routes/ src/app.py && echo "  ✅ $route" || { echo "  ❌ MISSING ROUTE: $route"; exit 1; }
           done
           echo "✅ All API routes defined"
 

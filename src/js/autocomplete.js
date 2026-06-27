@@ -25,10 +25,13 @@
   let _lastFetchId = 0;
 
   // ─── Initialization ──────────────────────────────────────────────
+  let _initRetries = 0;
+  const MAX_INIT_RETRIES = 20;
+
   function init() {
     editorEl = document.getElementById('editor-container');
     if (!editorEl) {
-      setTimeout(init, 500);
+      if (++_initRetries < MAX_INIT_RETRIES) setTimeout(init, 500);
       return;
     }
 

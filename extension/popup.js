@@ -35,14 +35,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const summaryMeta = document.getElementById('summary-meta');
   const btnCopySummary = document.getElementById('btn-copy-summary');
 
-  // Score elements
-  const scoreValue = document.getElementById('score-value');
-  const scoreCircle = document.getElementById('score-circle');
-  const scoreHint = document.getElementById('score-hint');
-  const countSpelling = document.getElementById('count-spelling');
-  const countGrammar = document.getElementById('count-grammar');
-  const countPunctuation = document.getElementById('count-punctuation');
-
   // ══════════════════════════════════════════════════════════
   // State
   // ══════════════════════════════════════════════════════════
@@ -62,8 +54,6 @@ document.addEventListener('DOMContentLoaded', () => {
    */
   let isStale = false;
 
-  const SCORE_CIRCUMFERENCE = 440;
-
   // ══════════════════════════════════════════════════════════
   // Tab switching
   // ══════════════════════════════════════════════════════════
@@ -81,15 +71,8 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ══════════════════════════════════════════════════════════
-  // Character & word counter
+  // Character & word counter (shared: bayan-core.js)
   // ══════════════════════════════════════════════════════════
-  function updateCounts(textarea, charEl, wordEl) {
-    const text = textarea.value;
-    const chars = text.length;
-    const words = text.trim() ? text.trim().split(/\s+/).length : 0;
-    if (charEl) charEl.textContent = chars.toLocaleString('ar-EG');
-    if (wordEl) wordEl.textContent = words.toLocaleString('ar-EG');
-  }
 
   inputText.addEventListener('input', () => {
     updateCounts(inputText, charCount, wordCount);
@@ -149,40 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadingTextEl.textContent = text;
   }
 
-  // ══════════════════════════════════════════════════════════
-  // Toast
-  // ══════════════════════════════════════════════════════════
-  function showToast(message, duration = 2500) {
-    const toast = document.getElementById('toast');
-    toast.textContent = message;
-    toast.classList.add('is-visible');
-    clearTimeout(toast._timer);
-    toast._timer = setTimeout(() => toast.classList.remove('is-visible'), duration);
-  }
-
-  // ══════════════════════════════════════════════════════════
-  // Score ring
-  // ══════════════════════════════════════════════════════════
-  function updateScore(spelling, grammar, punctuation) {
-    const score = calculateWritingScore(spelling, grammar, punctuation);
-    const total = spelling + grammar + punctuation;
-
-    scoreSection.classList.remove('is-hidden');
-
-    if (scoreValue) {
-      scoreValue.textContent = score > 0 || total > 0 ? score.toLocaleString('ar-EG') : '--';
-    }
-    if (scoreCircle) {
-      const offset = SCORE_CIRCUMFERENCE - (score / 100) * SCORE_CIRCUMFERENCE;
-      scoreCircle.style.strokeDashoffset = String(offset);
-    }
-    if (scoreHint) {
-      scoreHint.textContent = getScoreHint(score, total);
-    }
-    if (countSpelling) countSpelling.textContent = spelling.toLocaleString('ar-EG');
-    if (countGrammar) countGrammar.textContent = grammar.toLocaleString('ar-EG');
-    if (countPunctuation) countPunctuation.textContent = punctuation.toLocaleString('ar-EG');
-  }
+  // Score ring — shared via bayan-core.js (updateScore)
 
   // ══════════════════════════════════════════════════════════
   // Render suggestions list
@@ -218,6 +168,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (altText === suggestion.original) {
           // Dismiss — remove from list, no text change, no rebase needed
           currentSuggestions = removeSuggestion(currentSuggestions, suggestion.id);
+          if (suggestion.type === 'spelling' && typeof BayanAuth !== 'undefined') {
+            BayanAuth.addDismissedWord(suggestion.original);
+          }
         } else {
           // ═══════════════════════════════════════════════════
           // HIGH-1 FIX: Apply + Rebase via atomic function
@@ -287,7 +240,15 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await bayanAnalyze(text);
 
       if (data.status === 'success' || data.status === 'partial') {
-        const suggestions = sortSuggestions(data.suggestions || []);
+        let suggestions = sortSuggestions(data.suggestions || []);
+
+        if (typeof BayanAuth !== 'undefined') {
+          const dismissed = await BayanAuth.getDismissedWords();
+          if (dismissed.length > 0) {
+            suggestions = suggestions.filter(s => !(s.type === 'spelling' && dismissed.includes(s.original)));
+          }
+        }
+
         currentSuggestions = suggestions;
 
         // MED-2: Snapshot the analyzed text — all offsets reference THIS string
@@ -547,26 +508,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ══════════════════════════════════════════════════════════
   // Phase 5: Download corrected text / summary as .txt
-  // Buttons are injected programmatically to avoid touching popup.html.
+  // downloadTxt shared via bayan-core.js
   // ══════════════════════════════════════════════════════════
-  function downloadTxt(text, filename) {
-    if (!text) { showToast('لا يوجد نص للتنزيل'); return; }
-    try {
-      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-      showToast('✓ تم تنزيل الملف');
-    } catch (e) {
-      console.error('[Bayan] Download error:', e);
-      showToast('تعذّر التنزيل');
-    }
-  }
 
   const DOWNLOAD_ICON = '<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M12 4v12m0 0l-4-4m4 4l4-4"/></svg>';
 
@@ -591,6 +534,11 @@ document.addEventListener('DOMContentLoaded', () => {
     () => summaryText.textContent,
     'bayan-summary.txt'
   );
+
+  // ══════════════════════════════════════════════════════════
+  // Auth UI wiring (shared via bayan-core.js)
+  // ══════════════════════════════════════════════════════════
+  bayanInitAuth();
 
   // ══════════════════════════════════════════════════════════
   // Status check on load
@@ -678,5 +626,27 @@ document.addEventListener('DOMContentLoaded', () => {
       console.warn('[Bayan] Context action check failed:', err);
     }
   })();
+
+  // U4: Persist popup state to chrome.storage.session
+  const _popupStorage = chrome.storage?.session || chrome.storage?.local;
+  if (_popupStorage) {
+    _popupStorage.get(['popup_state'], (d) => {
+      if (d.popup_state && inputText && !inputText.value) {
+        inputText.value = d.popup_state.text || '';
+        if (charCount) charCount.textContent = inputText.value.length;
+        var wc = inputText.value.trim().split(/\s+/).filter(w => w).length;
+        if (wordCount) wordCount.textContent = wc;
+      }
+    });
+    var _popupSaveTimer = null;
+    if (inputText) {
+      inputText.addEventListener('input', () => {
+        clearTimeout(_popupSaveTimer);
+        _popupSaveTimer = setTimeout(() => {
+          _popupStorage.set({ popup_state: { text: inputText.value, ts: Date.now() } });
+        }, 1000);
+      });
+    }
+  }
 });
 

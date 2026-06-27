@@ -60,6 +60,7 @@ function restoreSelection(savedSelection) {
     let charCount = 0;
     let nodeStack = [editor];
     let node, foundStart = false, foundEnd = false;
+    let range = null;
 
     while (!foundEnd && (node = nodeStack.pop())) {
       if (node.nodeType === Node.TEXT_NODE) {
@@ -70,7 +71,7 @@ function restoreSelection(savedSelection) {
           savedSelection.selectionStart >= charCount &&
           savedSelection.selectionStart <= nextCharCount
         ) {
-          const range = document.createRange();
+          range = document.createRange();
           range.setStart(node, savedSelection.selectionStart - charCount);
           foundStart = true;
 
@@ -87,7 +88,6 @@ function restoreSelection(savedSelection) {
           savedSelection.selectionEnd >= charCount &&
           savedSelection.selectionEnd <= nextCharCount
         ) {
-          const range = selection.getRangeAt(0);
           range.setEnd(node, savedSelection.selectionEnd - charCount);
           foundEnd = true;
         }
@@ -101,9 +101,9 @@ function restoreSelection(savedSelection) {
       }
     }
 
-    if (foundStart && foundEnd) {
+    if (foundStart && foundEnd && range) {
       selection.removeAllRanges();
-      selection.addRange(selection.getRangeAt(0));
+      selection.addRange(range);
     }
   } catch (e) {
     console.warn('restoreSelection failed:', e);
@@ -188,14 +188,17 @@ function setCaretOffset(offset) {
 function getEditorText() {
   const editor = document.getElementById('editor-container');
   if (!editor) return '';
-  // Clone the editor to mask quran text without modifying the DOM
-  const clone = editor.cloneNode(true);
-  clone.querySelectorAll('.quran-applied').forEach(function(el) {
-    // Replace quran text with spaces of the same length to preserve offsets
-    var len = (el.textContent || '').length;
-    el.textContent = ' '.repeat(len);
-  });
-  return clone.textContent || '';
+  var parts = [];
+  var walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT, null);
+  var node;
+  while ((node = walker.nextNode())) {
+    if (node.parentElement && node.parentElement.closest('.quran-applied')) {
+      parts.push(' '.repeat(node.textContent.length));
+    } else {
+      parts.push(node.textContent);
+    }
+  }
+  return parts.join('');
 }
 
 /**

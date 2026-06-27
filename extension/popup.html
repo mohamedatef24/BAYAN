@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=400">
   <title>بيان</title>
+  <link rel="stylesheet" href="shared/bayan-tokens.css">
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
@@ -25,9 +26,24 @@
       </svg>
       <span class="bayan-header-title">بيان</span>
     </div>
-    <div class="bayan-header-status" id="status-indicator">
-      <span class="bayan-status-dot"></span>
-      <span class="bayan-status-text" id="status-text">جاهز</span>
+    <div class="bayan-header-end">
+      <div class="bayan-auth-section" id="auth-section">
+        <button class="bayan-auth-btn" id="btn-auth-login" title="تسجيل الدخول بـ Google">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+          دخول
+        </button>
+        <div class="bayan-auth-user is-hidden" id="auth-user-info">
+          <img class="bayan-auth-avatar" id="auth-avatar" src="" alt="" width="20" height="20">
+          <span class="bayan-auth-name" id="auth-name"></span>
+          <button class="bayan-auth-logout" id="btn-auth-logout" title="تسجيل الخروج">
+            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="bayan-header-status" id="status-indicator">
+        <span class="bayan-status-dot"></span>
+        <span class="bayan-status-text" id="status-text">جاهز</span>
+      </div>
     </div>
   </header>
 
@@ -299,10 +315,12 @@
   <!-- Scripts: constants first, then config, then shared modules, then popup logic -->
   <script src="shared/constants.js"></script>
   <script src="shared/config.js"></script>
+  <script src="shared/bayan-auth.js"></script>
   <script src="shared/bayan-renderer.js"></script>
   <script src="shared/bayan-ui.js"></script>
   <script src="shared/bayan-patches.js"></script>
   <script src="shared/bayan-api.js"></script>
+  <script src="shared/bayan-core.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

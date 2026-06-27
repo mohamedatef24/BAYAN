@@ -84,7 +84,7 @@ async function _loadAndRenderHistory() {
 }
 
 function _buildHistoryItemHTML(item) {
-  const preview = (item.summary_text || '').slice(0, 80) + (item.summary_text.length > 80 ? '...' : '');
+  const preview = (item.summary_text || '').slice(0, 80) + ((item.summary_text || '').length > 80 ? '...' : '');
   const date = new Date(item.created_at).toLocaleDateString('ar-EG', {
     month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
   });
@@ -117,7 +117,7 @@ function _bindHistoryItemEvents(container) {
   container.querySelectorAll('.summary-delete-btn').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
-      if (!confirm('هل تريد حذف هذا الملخص؟')) return;
+      if (!(await bayanConfirm('هل تريد حذف هذا الملخص؟'))) return;
       const ok = await deleteSummary(btn.dataset.summaryId);
       if (ok) {
         if (typeof showDocToast === 'function') showDocToast('تم حذف الملخص', 'success');
@@ -135,5 +135,9 @@ function _escapeSummaryHtml(str) {
 }
 
 function _escapeSummaryAttr(str) {
-  return String(str || '').replace(/"/g, '&quot;');
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }

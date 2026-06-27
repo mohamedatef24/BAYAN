@@ -223,8 +223,8 @@ async function _createNewDocument() {
     return;
   }
 
-  const titleInput = prompt('اسم المستند الجديد:', 'مستند جديد');
-  if (titleInput === null) return; // User pressed Cancel
+  const titleInput = await bayanPrompt('اسم المستند الجديد:', 'مستند جديد');
+  if (titleInput === null) return;
   const title = titleInput.trim() || 'مستند جديد';
   const doc = await createDocument(title, '');
   if (!doc) {
@@ -273,8 +273,8 @@ async function saveCurrentDocument() {
 
 /* ── Rename ── */
 
-function _startRename(id, currentTitle) {
-  const newTitle = prompt('الاسم الجديد للمستند:', currentTitle);
+async function _startRename(id, currentTitle) {
+  const newTitle = await bayanPrompt('الاسم الجديد للمستند:', currentTitle);
   if (!newTitle || newTitle === currentTitle) return;
   _doRename(id, newTitle);
 }
@@ -299,11 +299,11 @@ async function _confirmDelete(id, title) {
   if (typeof showConfirmDialog === 'function') {
     showConfirmDialog(
       '\u062d\u0630\u0641 \u0627\u0644\u0645\u0633\u062a\u0646\u062f',
-      '\u0647\u0644 \u062a\u0631\u064a\u062f \u062d\u0630\u0641 "' + title + '"\u061f \u0644\u0627 \u064a\u0645\u0643\u0646 \u0627\u0644\u062a\u0631\u0627\u062c\u0639 \u0639\u0646 \u0647\u0630\u0627 \u0627\u0644\u0625\u062c\u0631\u0627\u0621.',
+      '\u0647\u0644 \u062a\u0631\u064a\u062f \u062d\u0630\u0641 "' + title + '"\u061f',
       function() { _doDelete(id); }
     );
   } else {
-    if (!confirm('\u0647\u0644 \u062a\u0631\u064a\u062f \u062d\u0630\u0641 "' + title + '"\u061f \u0644\u0627 \u064a\u0645\u0643\u0646 \u0627\u0644\u062a\u0631\u0627\u062c\u0639 \u0639\u0646 \u0647\u0630\u0627 \u0627\u0644\u0625\u062c\u0631\u0627\u0621.')) return;
+    if (!(await bayanConfirm('\u0647\u0644 \u062a\u0631\u064a\u062f \u062d\u0630\u0641 "' + title + '"\u061f'))) return;
     _doDelete(id);
   }
 }
@@ -321,7 +321,7 @@ async function _doDelete(id) {
     _updateTitleBar();
   }
   await _loadAndRenderList();
-  if (typeof showDocToast === 'function') showDocToast('\u062a\u0645 \u062d\u0630\u0641 \u0627\u0644\u0645\u0633\u062a\u0646\u062f', 'success');
+  if (typeof showDocToast === 'function') showDocToast('\u062a\u0645 \u062d\u0630\u0641 \u0627\u0644\u0645\u0633\u062a\u0646\u062f \u2014 \u064a\u0645\u0643\u0646\u0643 \u0627\u0633\u062a\u0639\u0627\u062f\u062a\u0647 \u0644\u0627\u062d\u0642\u0627\u064b', 'success');
 }
 
 /* ── Title bar ── */

@@ -33,12 +33,18 @@
     "contextMenus",
     "activeTab",
     "storage",
-    "sidePanel"
+    "sidePanel",
+    "identity"
   ],
 
   "host_permissions": [
-    "https://bayan10-bayan-api.hf.space/*"
+    "https://bayan10-bayan-api.hf.space/*",
+    "https://*.supabase.co/*"
   ],
+
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  },
 
   "content_scripts": [
     {

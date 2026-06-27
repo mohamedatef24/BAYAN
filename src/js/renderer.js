@@ -254,7 +254,7 @@ function overlaySuggestions(editor, suggestions) {
       offset += node.length; // still count offset to keep positions correct
       return;
     }
-    textNodes.push({ node, start: offset, end: offset + node.length });
+    textNodes.push({ node, start: offset, end: offset + node.length, _idx: textNodes.length });
     offset += node.length;
   });
 
@@ -267,8 +267,19 @@ function overlaySuggestions(editor, suggestions) {
     const { start, end } = suggestion;
     const errorClass = getErrorClass(suggestion.type);
 
-    // Find text nodes that overlap with this suggestion range
-    const overlapping = textNodes.filter(tn => tn.start < end && tn.end > start);
+    // Binary search for first text node that could overlap
+    const overlapping = [];
+    let lo = 0, hi = textNodes.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (!textNodes[mid] || textNodes[mid].end <= start) lo = mid + 1;
+      else hi = mid;
+    }
+    for (let i = lo; i < textNodes.length; i++) {
+      if (!textNodes[i]) continue;
+      if (textNodes[i].start >= end) break;
+      overlapping.push(textNodes[i]);
+    }
     if (overlapping.length === 0) return;
 
     // Create the wrapper span
@@ -284,6 +295,7 @@ function overlaySuggestions(editor, suggestions) {
     if (overlapping.length === 1) {
       // Simple case: suggestion falls within a single text node
       const tn = overlapping[0];
+      const tnIdx = tn._idx;
       const localStart = Math.max(0, start - tn.start);
       const localEnd = Math.min(tn.node.length, end - tn.start);
 
@@ -303,7 +315,11 @@ function overlaySuggestions(editor, suggestions) {
       }
       parent.insertBefore(wrapper, tn.node.nextSibling || null);
       if (beforeText) {
-        parent.insertBefore(document.createTextNode(beforeText), wrapper);
+        const beforeNode = document.createTextNode(beforeText);
+        parent.insertBefore(beforeNode, wrapper);
+        textNodes[tnIdx] = { node: beforeNode, start: tn.start, end: tn.start + beforeText.length };
+      } else {
+        textNodes[tnIdx] = null;
       }
       parent.removeChild(tn.node);
 
@@ -322,6 +338,8 @@ function overlaySuggestions(editor, suggestions) {
         range.setEnd(lastTN.node, rangeEnd);
 
         range.surroundContents(wrapper);
+
+        overlapping.forEach(tn => { textNodes[tn._idx] = null; });
       } catch (e) {
         // surroundContents can fail if the range crosses element boundaries
         // In that case, just wrap the text of the first overlapping node
@@ -339,19 +357,17 @@ function overlaySuggestions(editor, suggestions) {
           wrapper.appendChild(document.createTextNode(errorText));
           if (afterText) parent.insertBefore(document.createTextNode(afterText), tn.node.nextSibling);
           parent.insertBefore(wrapper, tn.node.nextSibling || null);
-          if (beforeText) parent.insertBefore(document.createTextNode(beforeText), wrapper);
+          if (beforeText) {
+            const beforeNode = document.createTextNode(beforeText);
+            parent.insertBefore(beforeNode, wrapper);
+            textNodes[tn._idx] = { node: beforeNode, start: tn.start, end: tn.start + beforeText.length };
+          } else {
+            textNodes[tn._idx] = null;
+          }
           parent.removeChild(tn.node);
         }
       }
     }
-
-    // Rebuild textNodes array after modification (for next iteration)
-    textNodes.length = 0;
-    offset = 0;
-    walkTextNodes(editor, (node) => {
-      textNodes.push({ node, start: offset, end: offset + node.length });
-      offset += node.length;
-    });
   });
 }
 
@@ -361,7 +377,6 @@ if (typeof module !== 'undefined' && module.exports) {
     render,
     renderHighlightedText,
     escapeHtml,
-    createSegments,
     sortSuggestions,
     getErrorClass,
     overlaySuggestions,

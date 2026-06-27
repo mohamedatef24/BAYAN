@@ -3,43 +3,6 @@
    Arabic-first RTL | Dark mode | Premium feel
    ══════════════════════════════════════════════ */
 
-/* ── Design Tokens ── */
-:root {
-  --bayan-primary: #6366f1;
-  --bayan-primary-light: #818cf8;
-  --bayan-primary-dark: #4f46e5;
-  --bayan-primary-glow: rgba(99, 102, 241, 0.25);
-
-  --bayan-bg: #0f0f14;
-  --bayan-surface: #1a1a24;
-  --bayan-surface-hover: #22222e;
-  --bayan-surface-active: #2a2a38;
-  --bayan-border: #2d2d3d;
-  --bayan-border-light: #3a3a4d;
-
-  --bayan-text: #f0f0f5;
-  --bayan-text-secondary: #9898ad;
-  --bayan-text-muted: #6b6b80;
-
-  --bayan-success: #22c55e;
-  --bayan-warning: #f59e0b;
-  --bayan-error: #ef4444;
-
-  --bayan-spelling: #ef4444;
-  --bayan-grammar: #f59e0b;
-  --bayan-punctuation: #3b82f6;
-
-  --bayan-radius: 10px;
-  --bayan-radius-sm: 6px;
-  --bayan-radius-lg: 14px;
-
-  --bayan-font: 'Segoe UI', 'SF Pro', Tahoma, Arial, sans-serif;
-  --bayan-font-arabic: 'Noto Sans Arabic', 'Segoe UI', Tahoma, sans-serif;
-
-  --bayan-transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  --bayan-spring: 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
 /* ── Reset ── */
 *, *::before, *::after {
   box-sizing: border-box;
@@ -129,6 +92,62 @@ body::-webkit-scrollbar-thumb {
   background: var(--bayan-error);
   box-shadow: 0 0 6px rgba(239, 68, 68, 0.4);
 }
+
+/* ── Auth UI ── */
+.bayan-header-end {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.bayan-auth-section { display: flex; align-items: center; }
+.bayan-auth-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1px solid var(--bayan-border-light);
+  border-radius: var(--bayan-radius-sm);
+  background: transparent;
+  color: var(--bayan-text-secondary);
+  font-family: var(--bayan-font-arabic);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all var(--bayan-transition);
+}
+.bayan-auth-btn:hover { background: var(--bayan-surface-hover); color: var(--bayan-text); border-color: var(--bayan-primary); }
+.bayan-auth-user {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.bayan-auth-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--bayan-border-light);
+}
+.bayan-auth-name {
+  font-size: 12px;
+  color: var(--bayan-text-secondary);
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bayan-auth-logout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: var(--bayan-radius-sm);
+  background: transparent;
+  color: var(--bayan-text-muted);
+  cursor: pointer;
+  transition: all var(--bayan-transition);
+}
+.bayan-auth-logout:hover { background: var(--bayan-surface-hover); color: var(--bayan-error); }
 
 /* ══════════════════════════════════════════════
    Tabs

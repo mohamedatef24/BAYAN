@@ -9,7 +9,7 @@
  *   loaded via importScripts().
  */
 
-importScripts('shared/constants.js', 'shared/hash.js');
+importScripts('shared/constants.js', 'shared/hash.js', 'shared/bayan-auth.js');
 
 // ── Context constants ──
 const ACTIONS = { CORRECT: 'correct', SUMMARIZE: 'summarize', DIALECT: 'dialect', QURAN: 'quran' };
@@ -69,7 +69,12 @@ chrome.runtime.onInstalled.addListener(() => {
     title: chrome.i18n.getMessage('contextMenuQuran') || 'تدقيق الآية مع بيان',
     contexts: ['selection'],
   });
+
+  BayanAuth.init().catch(e => console.warn('[Bayan BG] Auth init error:', e));
 });
+
+// Re-init auth on service worker wake-up (not just install)
+BayanAuth.init().catch(e => console.warn('[Bayan BG] Auth init error:', e));
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   const selectedText = info.selectionText?.trim();
@@ -111,6 +116,28 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       status: 'ok',
       version: chrome.runtime.getManifest().version,
       cache: _cache.size,
+    });
+    return true;
+  }
+
+  if (message.type === 'AUTH_SIGN_IN_GOOGLE') {
+    BayanAuth.signInWithGoogle()
+      .then(result => sendResponse(result))
+      .catch(err => sendResponse({ success: false, error: err.message }));
+    return true;
+  }
+
+  if (message.type === 'AUTH_SIGN_OUT') {
+    BayanAuth.signOut()
+      .then(() => sendResponse({ success: true }))
+      .catch(err => sendResponse({ success: false, error: err.message }));
+    return true;
+  }
+
+  if (message.type === 'AUTH_GET_STATE') {
+    sendResponse({
+      user: BayanAuth.getUser(),
+      isAuthenticated: BayanAuth.isAuthenticated(),
     });
     return true;
   }

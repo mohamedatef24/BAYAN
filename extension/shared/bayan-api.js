@@ -7,21 +7,50 @@
  * Endpoints: analyze, summarize, dialect, quran, autocomplete, health.
  */
 
+const _API_TIMEOUT_MS = 60000;
+
+function _timedFetch(url, options = {}, callerSignal) {
+  const signals = [AbortSignal.timeout(_API_TIMEOUT_MS)];
+  if (callerSignal) signals.push(callerSignal);
+  return fetch(url, { ...options, signal: AbortSignal.any(signals) });
+}
+
 /**
  * Send text to the unified analysis pipeline.
- * Backend: /api/analyze (Spelling → Grammar → Punctuation)
+ * Routes through background.js (INLINE_ANALYZE) for cache + retry benefits.
+ * Falls back to direct fetch if the message channel is unavailable.
  *
  * @param {string} text - Arabic text to analyze
- * @param {AbortSignal} [signal] - Optional abort signal
+ * @param {AbortSignal} [signal] - Optional abort signal (used only in fallback path)
  * @returns {Promise<Object>} { original, corrected, suggestions[], timing_ms, status }
  */
 async function bayanAnalyze(text, signal) {
-  const response = await fetch(`${CONFIG.API_BASE}/api/analyze`, {
+  if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+    try {
+      const result = await new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage({ type: 'INLINE_ANALYZE', text }, (response) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+            return;
+          }
+          if (!response || response.error) {
+            reject(new Error(response?.error || 'No response from background'));
+            return;
+          }
+          resolve(response.data);
+        });
+      });
+      if (result) return result;
+    } catch (e) {
+      console.warn('[Bayan API] Background route failed, falling back to direct fetch:', e.message);
+    }
+  }
+
+  const response = await _timedFetch(`${CONFIG.API_BASE}/api/analyze`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ text }),
-    signal,
-  });
+  }, signal);
   if (!response.ok) {
     throw new Error(`Analyze API error: ${response.status}`);
   }
@@ -37,12 +66,12 @@ async function bayanAnalyze(text, signal) {
  * @param {boolean} [fullText=true] - Summarize full text or first paragraph
  * @returns {Promise<Object>} { summary, status, original_length, summary_length }
  */
-async function bayanSummarize(text, length = 2, fullText = true) {
-  const response = await fetch(`${CONFIG.API_BASE}/api/summarize`, {
+async function bayanSummarize(text, length = 2, fullText = true, signal) {
+  const response = await _timedFetch(`${CONFIG.API_BASE}/api/summarize`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ text, length, full_text: fullText }),
-  });
+  }, signal);
   if (!response.ok) {
     throw new Error(`Summarize API error: ${response.status}`);
   }
@@ -58,12 +87,11 @@ async function bayanSummarize(text, length = 2, fullText = true) {
  * @returns {Promise<Object>} { original_text, converted_text, status }
  */
 async function bayanDialect(text, signal) {
-  const response = await fetch(`${CONFIG.API_BASE}/api/dialect`, {
+  const response = await _timedFetch(`${CONFIG.API_BASE}/api/dialect`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ text }),
-    signal,
-  });
+  }, signal);
   if (!response.ok) {
     throw new Error(`Dialect API error: ${response.status}`);
   }
@@ -80,12 +108,11 @@ async function bayanDialect(text, signal) {
  * @returns {Promise<Object>} { matched_segment, full_verse, ... } or { error }
  */
 async function bayanQuran(text, language = 'تدقيق الايات', signal) {
-  const response = await fetch(`${CONFIG.API_BASE}/api/quran`, {
+  const response = await _timedFetch(`${CONFIG.API_BASE}/api/quran`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ text, language }),
-    signal,
-  });
+  }, signal);
   // Quran endpoint returns 404 with a JSON {error} body on "no match" —
   // treat that as a normal (non-throwing) result so the UI can show it.
   if (!response.ok && response.status !== 404) {
@@ -104,12 +131,11 @@ async function bayanQuran(text, language = 'تدقيق الايات', signal) {
  * @returns {Promise<Object>} { suggestions: string[], status }
  */
 async function bayanAutocomplete(context, n = 3, signal) {
-  const response = await fetch(`${CONFIG.API_BASE}/api/autocomplete`, {
+  const response = await _timedFetch(`${CONFIG.API_BASE}/api/autocomplete`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ context, n }),
-    signal,
-  });
+  }, signal);
   if (!response.ok) {
     throw new Error(`Autocomplete API error: ${response.status}`);
   }
@@ -123,7 +149,7 @@ async function bayanAutocomplete(context, n = 3, signal) {
  * @returns {Promise<Object>} { status, mode, models }
  */
 async function bayanHealthCheck() {
-  const response = await fetch(`${CONFIG.API_BASE}/api/health`, {
+  const response = await _timedFetch(`${CONFIG.API_BASE}/api/health`, {
     method: 'GET',
   });
   if (!response.ok) {

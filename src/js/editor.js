@@ -10,20 +10,52 @@ const MAX_ANALYZE_LENGTH = 5000;
 // Pipeline Hardening v3.3: Guard to prevent input events during suggestion apply
 let _isApplyingSuggestion = false;
 
+// ── API Response Cache (localStorage TTL) ──
+const _ANALYZE_CACHE_TTL = 60000;
+
+function _hashText(str) {
+  var h = 0;
+  for (var i = 0; i < str.length; i++) {
+    h = ((h << 5) - h) + str.charCodeAt(i);
+    h |= 0;
+  }
+  return 'bac_' + h.toString(36);
+}
+
+function _getCachedAnalysis(text) {
+  try {
+    var raw = localStorage.getItem(_hashText(text));
+    if (!raw) return null;
+    var entry = JSON.parse(raw);
+    if (Date.now() - entry.t < _ANALYZE_CACHE_TTL) return entry.d;
+    localStorage.removeItem(_hashText(text));
+  } catch (e) {}
+  return null;
+}
+
+function _setCachedAnalysis(text, data) {
+  try {
+    localStorage.setItem(_hashText(text), JSON.stringify({ t: Date.now(), d: data }));
+  } catch (e) {}
+}
+
 // ── Custom Undo/Redo Stack ──
 const _undoStack = [];
 const _redoStack = [];
 const _MAX_UNDO = 50;
+const _MAX_UNDO_BYTES = 200000;
 
 function pushUndoState() {
   const editor = getEditorElement();
   if (!editor) return;
-  const html = editor.innerHTML;
-  // Avoid duplicate consecutive entries
+  const clone = editor.cloneNode(true);
+  if (typeof clearOverlays === 'function') clearOverlays(clone);
+  const html = clone.innerHTML;
+  if (html.length > _MAX_UNDO_BYTES) return;
   if (_undoStack.length > 0 && _undoStack[_undoStack.length - 1] === html) return;
   _undoStack.push(html);
   if (_undoStack.length > _MAX_UNDO) _undoStack.shift();
-  _redoStack.length = 0; // Clear redo on new action
+  _redoStack.length = 0;
 }
 
 function editorUndo() {
@@ -69,6 +101,9 @@ function initEditor() {
     return;
   }
 
+  var skel = document.getElementById('editor-skeleton');
+  if (skel) skel.remove();
+
   // Restore draft if no document was explicitly loaded yet
   try {
     const draft = localStorage.getItem('bayan_editor_draft');
@@ -81,6 +116,7 @@ function initEditor() {
 
   // Debounced undo push — saves state after 500ms of no typing
   let _undoInputTimer = null;
+  let _draftSaveTimer = null;
   editor.addEventListener('input', () => {
     // Pipeline Hardening v3.3: Skip re-analysis when programmatically applying suggestions
     if (_isApplyingSuggestion) return;
@@ -91,9 +127,10 @@ function initEditor() {
     // Push undo state after typing pauses
     clearTimeout(_undoInputTimer);
     _undoInputTimer = setTimeout(pushUndoState, 500);
-    try {
-      localStorage.setItem('bayan_editor_draft', editor.innerHTML);
-    } catch (e) {}
+    clearTimeout(_draftSaveTimer);
+    _draftSaveTimer = setTimeout(function() {
+      try { localStorage.setItem('bayan_editor_draft', editor.innerHTML); } catch (e) {}
+    }, 2000);
   });
 
   // Strip formatting on paste — prevent rich HTML (colors, opacity, fonts)
@@ -250,6 +287,7 @@ function findSuggestionElement(id) {
 }
 
 async function analyzeText() {
+  if (typeof _bayanAnalytics !== 'undefined') _bayanAnalytics.track('analyze');
   const text = getEditorText();
   updateEditorStats();
   updatePlaceholder();
@@ -278,6 +316,26 @@ async function analyzeText() {
   try {
     const savedSelection = saveSelection();
 
+    // Check cache first
+    const cached = _getCachedAnalysis(textForApi);
+    if (cached && cached.status === 'success' && cached.suggestions) {
+      const rawSuggestions = sortSuggestions(cached.suggestions || []);
+      window.currentSuggestions = rawSuggestions.filter(
+        s => !_dismissedWords.has(s.original)
+      );
+      const editor = getEditorElement();
+      overlaySuggestions(editor, window.currentSuggestions);
+      if (savedSelection) restoreSelection(savedSelection);
+      const spellingCount = window.currentSuggestions.filter((s) => s.type === 'spelling').length;
+      const grammarCount = window.currentSuggestions.filter((s) => s.type === 'grammar').length;
+      const punctuationCount = window.currentSuggestions.filter((s) => s.type === 'punctuation').length;
+      updateSuggestionCounts(spellingCount, grammarCount, punctuationCount);
+      updateWritingScore(spellingCount, grammarCount, punctuationCount);
+      updateSuggestionsList(window.currentSuggestions);
+      setAnalyzingState(false);
+      return;
+    }
+
     // Network delay indicator: show message if API takes > 10s
     const longerTimer = setTimeout(() => {
       if (typeof showToast === 'function') showToast('\u0627\u0644\u062a\u062d\u0644\u064a\u0644 \u064a\u0623\u062e\u0630 \u0648\u0642\u062a\u064b\u0627 \u0623\u0637\u0648\u0644...', 'warning');
@@ -304,6 +362,8 @@ async function analyzeText() {
       renderWithoutSuggestions(text);
       return;
     }
+
+    _setCachedAnalysis(textForApi, data);
 
     // Filter out dismissed (whitelisted) words
     const rawSuggestions = sortSuggestions(data.suggestions || []);
@@ -454,98 +514,8 @@ function hideTooltip() {
   window.currentSuggestionElement = null;
 }
 
-function applySuggestionAtOffsets(suggestion) {
-  _isApplyingSuggestion = true;
-  try {
-    pushUndoState(); // Save state before correction
-    // Pipeline Hardening v3.3: UUID-based span lookup
-    const suggestionId = suggestion.id;
-    const errorSpan = suggestionId ? document.querySelector(`[data-suggestion-id="${suggestionId}"]`) : null;
-
-    if (errorSpan) {
-      const parent = errorSpan.parentNode;
-      const correctedNode = document.createTextNode(suggestion.correction);
-      parent.insertBefore(correctedNode, errorSpan);
-      parent.removeChild(errorSpan);
-      parent.normalize();
-      // Place cursor right after the corrected text
-      try {
-        const sel = window.getSelection();
-        const r = document.createRange();
-        r.setStartAfter(correctedNode);
-        r.collapse(true);
-        sel.removeAllRanges();
-        sel.addRange(r);
-      } catch(e) {}
-    } else {
-      // Fallback: find span by matching original text
-      const allErrorSpans = document.querySelectorAll('.spelling-error, .grammar-error, .punctuation-suggestion');
-      let found = false;
-      allErrorSpans.forEach(span => {
-        if (!found && span.textContent === suggestion.original) {
-          const p = span.parentNode;
-          const correctedNode = document.createTextNode(suggestion.correction);
-          p.insertBefore(correctedNode, span);
-          p.removeChild(span);
-          p.normalize();
-          // Place cursor right after the corrected text
-          try {
-            const sel = window.getSelection();
-            const r = document.createRange();
-            r.setStartAfter(correctedNode);
-            r.collapse(true);
-            sel.removeAllRanges();
-            sel.addRange(r);
-          } catch(e) {}
-          found = true;
-        }
-      });
-      if (!found) {
-        // Last resort: offset-based replacement
-        const text = getEditorText();
-        const before = text.substring(0, suggestion.start);
-        const after = text.substring(suggestion.end);
-        const newText = before + suggestion.correction + after;
-        setEditorHTML(escapeHtml(newText));
-        // Place cursor after the inserted correction
-        setCaretOffset(suggestion.start + suggestion.correction.length);
-      }
-    }
-    hideTooltip();
-    // Re-focus editor so Ctrl+Z works immediately after tooltip correction
-    const _ed = getEditorElement(); if (_ed) _ed.focus();
-
-    // Remove applied suggestion from list (UUID-based, no re-indexing needed)
-    if (window.currentSuggestions) {
-      window.currentSuggestions = window.currentSuggestions.filter(
-        s => s.id !== suggestion.id
-      );
-
-      const spellingCount = window.currentSuggestions.filter(s => s.type === 'spelling').length;
-      const grammarCount = window.currentSuggestions.filter(s => s.type === 'grammar').length;
-      const punctuationCount = window.currentSuggestions.filter(s => s.type === 'punctuation').length;
-      updateSuggestionCounts(spellingCount, grammarCount, punctuationCount);
-      updateWritingScore(spellingCount, grammarCount, punctuationCount);
-      updateSuggestionsList(window.currentSuggestions);
-    }
-    // Pipeline Hardening v3.3: Do NOT call analyzeTextDelayed() — prevents recursive re-analysis
-  } finally {
-    // FIX-32: Delay guard reset until AFTER re-analysis fires,
-    // preventing normalize()/input events from triggering double analysis.
-    setTimeout(() => { _isApplyingSuggestion = false; }, 400);
-  }
-  // P2/User Request: Auto re-analyze after applying suggestion
-  // Calls analyzeText() DIRECTLY (not delayed) for instant re-analysis.
-  setTimeout(() => { analyzeText(); }, 300);
-}
-
-function applyCorrection() {
-  if (!window.currentApplySuggestion) return;
-  applySuggestionAtOffsets(window.currentApplySuggestion);
-  if (typeof showToast === 'function') showToast('✓ تم التصحيح');
-}
-
-function applyAlternativeCorrection(suggestion, correctionText) {
+function applySuggestionAtOffsets(suggestion, correctionText) {
+  correctionText = correctionText || suggestion.correction;
   _isApplyingSuggestion = true;
   try {
     pushUndoState(); // Save state before correction
@@ -569,6 +539,7 @@ function applyAlternativeCorrection(suggestion, correctionText) {
         sel.addRange(r);
       } catch(e) {}
     } else {
+      // Fallback: find span by matching original text
       const allErrorSpans = document.querySelectorAll('.spelling-error, .grammar-error, .punctuation-suggestion');
       let found = false;
       allErrorSpans.forEach(span => {
@@ -591,6 +562,7 @@ function applyAlternativeCorrection(suggestion, correctionText) {
         }
       });
       if (!found) {
+        // Last resort: offset-based replacement
         const text = getEditorText();
         const before = text.substring(0, suggestion.start);
         const after = text.substring(suggestion.end);
@@ -602,8 +574,9 @@ function applyAlternativeCorrection(suggestion, correctionText) {
     }
     hideTooltip();
     // Re-focus editor so Ctrl+Z works immediately after tooltip correction
-    const _ed2 = getEditorElement(); if (_ed2) _ed2.focus();
-    // Remove applied suggestion (UUID-based, no re-indexing needed)
+    const _ed = getEditorElement(); if (_ed) _ed.focus();
+
+    // Remove applied suggestion from list (UUID-based, no re-indexing needed)
     if (window.currentSuggestions) {
       window.currentSuggestions = window.currentSuggestions.filter(
         s => s.id !== suggestion.id
@@ -618,11 +591,23 @@ function applyAlternativeCorrection(suggestion, correctionText) {
     }
     // Pipeline Hardening v3.3: Do NOT call analyzeTextDelayed() — prevents recursive re-analysis
   } finally {
-    // FIX-32: Delay guard reset until AFTER re-analysis fires.
-    setTimeout(() => { _isApplyingSuggestion = false; }, 400);
+    // FIX-32: Delay guard reset until AFTER re-analysis fires,
+    // preventing normalize()/input events from triggering double analysis.
+    setTimeout(() => { _isApplyingSuggestion = false; }, 600);
   }
-  // P2/User Request: Auto re-analyze after applying alternative correction
+  // P2/User Request: Auto re-analyze after applying suggestion
+  // Calls analyzeText() DIRECTLY (not delayed) for instant re-analysis.
   setTimeout(() => { analyzeText(); }, 300);
+}
+
+function applyCorrection() {
+  if (!window.currentApplySuggestion) return;
+  applySuggestionAtOffsets(window.currentApplySuggestion);
+  if (typeof showToast === 'function') showToast('✓ تم التصحيح');
+}
+
+function applyAlternativeCorrection(suggestion, correctionText) {
+  applySuggestionAtOffsets(suggestion, correctionText);
 }
 
 function dismissSuggestion(suggestion) {
@@ -719,18 +704,17 @@ function applyAllSuggestions() {
     if (typeof showToast === 'function') showToast('✓ تم تطبيق ' + suggestions.length + ' تصحيح');
   } finally {
     // FIX-32: Delay guard reset
-    setTimeout(() => { _isApplyingSuggestion = false; }, 400);
+    setTimeout(() => { _isApplyingSuggestion = false; }, 600);
   }
   // FIX-34: Do NOT auto-re-analyze after Apply All.
   // This caused an infinite loop when spelling/grammar disagree.
   // User can click "Analyze" manually if they want to re-check.
 }
 
-function clearEditor() {
-  // Don't prompt if editor is already empty
+async function clearEditor() {
   const text = getEditorText();
   if (text.trim().length > 0) {
-    if (!confirm('هل أنت متأكد من مسح كل المحتوى؟')) return;
+    if (!(await bayanConfirm('هل أنت متأكد من مسح كل المحتوى؟'))) return;
   }
   setEditorHTML('');
   window.currentSuggestions = [];
@@ -788,20 +772,6 @@ function copyText() {
 }
 
 // ── Feedback API (P2) ──
-function _sendFeedback(suggestion, helpful) {
-  const apiBase = window.BAYAN_API_BASE || '';
-  fetch(`${apiBase}/api/feedback`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      suggestion_id: suggestion.id || '',
-      helpful: helpful,
-      original: suggestion.original || '',
-      correction: suggestion.correction || '',
-      text: (document.getElementById('editor-container')?.textContent || '').substring(0, 200),
-    })
-  }).catch(err => console.warn('[Feedback] Failed:', err));
-}
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {

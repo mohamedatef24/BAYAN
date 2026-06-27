@@ -33,8 +33,12 @@ function importTxtFile(file) {
  */
 async function importDocxFile(file) {
   if (typeof mammoth === 'undefined') {
-    showDocToast('مكتبة Word غير محمّلة', 'error');
-    return;
+    try {
+      await loadVendorScript('/js/vendor/mammoth.browser.min.js');
+    } catch {
+      showDocToast('تعذّر تحميل مكتبة Word', 'error');
+      return;
+    }
   }
 
   if (!validateFileSize(file)) {

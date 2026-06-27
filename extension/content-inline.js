@@ -33,7 +33,11 @@
   try {
     if (window.trustedTypes?.createPolicy) {
       ttPolicy = window.trustedTypes.createPolicy('bayan-inline-policy', {
-        createHTML: (input) => input,
+        createHTML: (input) => {
+          const d = document.createElement('div');
+          d.textContent = input;
+          return d.innerHTML;
+        },
       });
     }
   } catch {}
@@ -178,14 +182,36 @@
   // the field value on explicit accept (never mutates while typing).
   // ══════════════════════════════════════════════════════════
 
+  function _isContentEditable(el) {
+    return el && el.isContentEditable && el.tagName.toLowerCase() !== 'textarea' && el.tagName.toLowerCase() !== 'input';
+  }
+
+  function _getFieldText(el) {
+    if (_isContentEditable(el)) return el.textContent || '';
+    return el.value || '';
+  }
+
+  function _isCaretAtEnd(el) {
+    if (_isContentEditable(el)) {
+      var sel = window.getSelection();
+      if (!sel || !sel.isCollapsed || sel.rangeCount === 0) return false;
+      var range = sel.getRangeAt(0);
+      var testRange = document.createRange();
+      testRange.selectNodeContents(el);
+      testRange.setStart(range.endContainer, range.endOffset);
+      return testRange.toString().trim().length === 0;
+    }
+    var val = el.value || '';
+    return el.selectionStart === val.length && el.selectionEnd === val.length;
+  }
+
   function ghostEligible() {
     if (!activeField || paused) return false;
-    const tag = activeField.tagName.toLowerCase();
-    if (tag !== 'textarea' && tag !== 'input') return false;
-    const val = activeField.value || '';
-    // Only when the caret is collapsed at the very end of the text.
-    if (activeField.selectionStart !== val.length) return false;
-    if (activeField.selectionEnd !== val.length) return false;
+    var tag = activeField.tagName.toLowerCase();
+    var isCE = _isContentEditable(activeField);
+    if (tag !== 'textarea' && tag !== 'input' && !isCE) return false;
+    var val = _getFieldText(activeField);
+    if (!_isCaretAtEnd(activeField)) return false;
     if (val.trim().length < AC_MIN_CONTEXT) return false;
     return /[؀-ۿ]/.test(val);
   }
@@ -195,7 +221,7 @@
     clearGhost();
     if (!ghostEligible()) return;
 
-    const ctx = activeField.value;
+    const ctx = _getFieldText(activeField);
     acDebounceTimer = setTimeout(() => {
       acDebounceTimer = null;
       fetchGhost(ctx);
@@ -217,7 +243,7 @@
     }
 
     // Staleness: field changed or caret moved during the fetch.
-    if (!activeField || activeField.value !== ctx || !ghostEligible()) return;
+    if (!activeField || _getFieldText(activeField) !== ctx || !ghostEligible()) return;
 
     const list = (data && data.suggestions) || [];
     const word = list.find((s) => s && s.trim());
@@ -236,13 +262,32 @@
     if (!activeField || !suffix) return;
 
     try {
+      if (_isContentEditable(activeField)) {
+        ghostEl = document.createElement('span');
+        ghostEl.className = 'bayan-il-ghost-suffix bayan-il-ghost-ce';
+        ghostEl.textContent = suffix;
+        ghostEl.style.cssText = 'opacity:0.4;pointer-events:none;user-select:none;';
+        ghostEl.contentEditable = 'false';
+        var sel = window.getSelection();
+        if (sel && sel.rangeCount > 0) {
+          var range = sel.getRangeAt(0);
+          range.collapse(false);
+          range.insertNode(ghostEl);
+          range.setStartAfter(ghostEl);
+          range.collapse(true);
+          sel.removeAllRanges();
+          sel.addRange(range);
+        }
+        return;
+      }
+
       const rect = activeField.getBoundingClientRect();
       const cs = window.getComputedStyle(activeField);
 
       ghostEl = document.createElement('div');
       ghostEl.className = 'bayan-il-ghost';
-      ghostEl.style.cssText = `position:absolute;top:${rect.top + window.scrollY}px;`
-        + `left:${rect.left + window.scrollX}px;width:${rect.width}px;height:${rect.height}px;`
+      ghostEl.style.cssText = `position:fixed;top:${rect.top}px;`
+        + `left:${rect.left}px;width:${rect.width}px;height:${rect.height}px;`
         + `font-family:${cs.fontFamily};font-size:${cs.fontSize};line-height:${cs.lineHeight};`
         + `padding:${cs.padding};border:${cs.border};border-color:transparent;`
         + `direction:${cs.direction};text-align:${cs.textAlign};overflow:hidden;`
@@ -262,9 +307,32 @@
 
   function acceptGhost() {
     if (!ghostSuggestion || !activeField) return false;
-    const tag = activeField.tagName.toLowerCase();
-    if (tag !== 'textarea' && tag !== 'input') return false;
-    // Only accept if the field still matches what the ghost was computed for.
+    var isCE = _isContentEditable(activeField);
+    var tag = activeField.tagName.toLowerCase();
+    if (tag !== 'textarea' && tag !== 'input' && !isCE) return false;
+
+    if (isCE) {
+      if (_getFieldText(activeField).replace(ghostSuggestion, '') !== ghostBaseText) { clearGhost(); return false; }
+      var suffix = ghostSuggestion;
+      if (ghostEl) ghostEl.remove();
+      ghostEl = null;
+      var textNode = document.createTextNode(suffix);
+      var sel = window.getSelection();
+      if (sel && sel.rangeCount > 0) {
+        var range = sel.getRangeAt(0);
+        range.collapse(false);
+        range.insertNode(textNode);
+        range.setStartAfter(textNode);
+        range.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
+      ghostSuggestion = '';
+      ghostBaseText = '';
+      activeField.dispatchEvent(new Event('input', { bubbles: true }));
+      return true;
+    }
+
     if (activeField.value !== ghostBaseText) { clearGhost(); return false; }
 
     const suffix = ghostSuggestion;
@@ -335,8 +403,8 @@
 
       overlayContainer = document.createElement('div');
       overlayContainer.className = 'bayan-il-overlay';
-      overlayContainer.style.cssText = `position:absolute;top:${rect.top + window.scrollY}px;`
-        + `left:${rect.left + window.scrollX}px;width:${rect.width}px;height:${rect.height}px;`
+      overlayContainer.style.cssText = `position:fixed;top:${rect.top}px;`
+        + `left:${rect.left}px;width:${rect.width}px;height:${rect.height}px;`
         + `font-family:${cs.fontFamily};font-size:${cs.fontSize};line-height:${cs.lineHeight};`
         + `padding:${cs.padding};border:${cs.border};border-color:transparent;`
         + `direction:${cs.direction};text-align:${cs.textAlign};overflow:hidden;`
@@ -913,7 +981,11 @@
   // ══════════════════════════════════════════════════════════
 
   document.addEventListener('focusin', (e) => {
-    if (isEditableField(e.target)) attachField(e.target);
+    if (isEditableField(e.target)) {
+      var txt = (e.target.value || e.target.textContent || '').slice(0, 200);
+      if (txt.length > 5 && !/[؀-ۿ]/.test(txt)) return;
+      attachField(e.target);
+    }
   }, true);
 
   document.addEventListener('focusout', () => {
@@ -933,15 +1005,15 @@
     if (activeField && floatingBtn) positionFab(activeField);
     if (overlayContainer && activeField) {
       const rect = activeField.getBoundingClientRect();
-      overlayContainer.style.top = `${rect.top + window.scrollY}px`;
-      overlayContainer.style.left = `${rect.left + window.scrollX}px`;
+      overlayContainer.style.top = `${rect.top}px`;
+      overlayContainer.style.left = `${rect.left}px`;
     }
     if (ghostEl && activeField) {
       const rect = activeField.getBoundingClientRect();
-      ghostEl.style.top = `${rect.top + window.scrollY}px`;
-      ghostEl.style.left = `${rect.left + window.scrollX}px`;
+      ghostEl.style.top = `${rect.top}px`;
+      ghostEl.style.left = `${rect.left}px`;
     }
-  }, { passive: true });
+  }, { passive: true, capture: true });
 
   window.addEventListener('resize', () => {
     if (activeField && floatingBtn) positionFab(activeField);
@@ -962,4 +1034,8 @@
   // ── Log ──
   const mode = IS_PROTECTED ? 'protected' : 'full';
   console.log(`[Bayan] Inline engine v7.1 (mode: ${mode}, TT: ${ttPolicy ? 'yes' : 'no'})`);
+
+  if (IS_PROTECTED) {
+    chrome.runtime?.sendMessage?.({ type: 'PROTECTED_SITE', host: location.hostname });
+  }
 })();

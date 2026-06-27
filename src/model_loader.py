@@ -33,7 +33,7 @@ MODEL_BASE_PATH = Path(__file__).parent.parent / "models"
 SUMMARIZATION_PATH = MODEL_BASE_PATH / "Summarization" / "Model"
 SPELLING_PATH = MODEL_BASE_PATH / "Spelling" / "Model"
 AUTOCOMPLETE_PATH = MODEL_BASE_PATH / "Autocomplete" / "Model"
-GRAMMAR_PATH = MODEL_BASE_PATH / "Grammrar" / "Model"
+GRAMMAR_PATH = MODEL_BASE_PATH / "Grammar" / "Model"
 PUNCTUATION_PATH = MODEL_BASE_PATH / "Punctuation" / "Model"
 
 
@@ -703,7 +703,7 @@ class GrammarModel:
             self.model = AutoModelForCausalLM.from_pretrained(
                 str(self.model_path),
                 local_files_only=True,
-                trust_remote_code=True,
+                trust_remote_code=False,
                 torch_dtype=torch.float32  # safe default for CPU inference
             )
             

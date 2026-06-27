@@ -26,8 +26,12 @@ async function exportDocxFile() {
   }
 
   if (typeof docx === 'undefined') {
-    showDocToast('مكتبة Word غير محمّلة', 'error');
-    return;
+    try {
+      await loadVendorScript('/js/vendor/docx.umd.js');
+    } catch {
+      showDocToast('تعذّر تحميل مكتبة Word', 'error');
+      return;
+    }
   }
 
   try {
@@ -192,8 +196,12 @@ async function exportPdfFile() {
   }
 
   if (typeof html2pdf === 'undefined') {
-    showDocToast('مكتبة PDF غير محمّلة', 'error');
-    return;
+    try {
+      await loadVendorScript('/js/vendor/html2pdf.bundle.min.js');
+    } catch {
+      showDocToast('تعذّر تحميل مكتبة PDF', 'error');
+      return;
+    }
   }
 
   // Show loading indicator

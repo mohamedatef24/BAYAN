@@ -122,11 +122,6 @@
   color: var(--color-text-primary) !important;
 }
 
-.footer-bar {
-  background: var(--color-surface);
-  border-color: var(--color-border);
-}
-
 .theme-toggle {
   display: flex;
   align-items: center;
@@ -237,15 +232,6 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
-}
-
-.card-hover {
-  transition: transform var(--transition-base), box-shadow var(--transition-base);
-}
-
-.card-hover:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-popover);
 }
 
 .feature-icon {
@@ -685,13 +671,6 @@
   padding: var(--spacing-md);
   border-top: 1px solid var(--color-border);
   background: var(--color-surface);
-}
-
-.editor-stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-md);
-  align-items: center;
 }
 
 .stat-dot {
@@ -1197,19 +1176,6 @@
 }
 
 /* ── Empty state ── */
-.empty-state {
-  text-align: center;
-  padding: var(--spacing-xl) var(--spacing-md);
-  color: var(--color-text-muted);
-}
-
-.empty-state-icon {
-  width: 64px;
-  height: 64px;
-  margin: 0 auto var(--spacing-md);
-  opacity: 0.35;
-  color: var(--color-text-muted);
-}
 
 /* ── Sidebar ── */
 .sidebar-panel {
@@ -2803,7 +2769,7 @@ input[type="range"]::-webkit-slider-thumb {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
   cursor: pointer;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
   transition: transform 0.15s ease;
@@ -2817,7 +2783,7 @@ input[type="range"]::-moz-range-thumb {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
   cursor: pointer;
   border: none;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
@@ -2879,7 +2845,7 @@ input[type="range"]::-moz-range-thumb {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
   color: white;
   border: none;
   cursor: pointer;
@@ -2937,7 +2903,7 @@ input[type="range"]::-moz-range-thumb {
   font-size: 11px;
   font-weight: 700;
   background: rgba(107, 163, 224, 0.15);
-  color: var(--primary-color);
+  color: var(--color-primary);
   transition: all 0.3s;
 }
 
@@ -3375,32 +3341,7 @@ input[type="range"]::-moz-range-thumb {
   box-shadow: var(--shadow-glow);
 }
 
-/* ── Empty State Component ── */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 2.5rem 1.5rem;
-  text-align: center;
-  gap: 0.75rem;
-}
-.empty-state__icon {
-  width: 48px;
-  height: 48px;
-  border-radius: var(--radius-lg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-primary-subtle-bg);
-  color: var(--color-primary);
-  margin-bottom: 0.25rem;
-}
-.empty-state__title {
-  font-size: var(--font-size-body);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
-}
+
 .empty-state__subtitle {
   font-size: var(--font-size-caption);
   color: var(--color-text-secondary);
@@ -3635,4 +3576,90 @@ select:focus-visible,
 }
 .editor-tab.active svg {
   opacity: 1;
+}
+
+/* ═══════════════════════════════════════
+   Custom Dialog Overlay
+   ═══════════════════════════════════════ */
+.bayan-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.bayan-dialog-overlay.bayan-dialog-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+.bayan-dialog {
+  background: var(--bg-secondary, #1e1e2e);
+  border: 1px solid var(--border-primary, #3a3a4d);
+  border-radius: 14px;
+  padding: 24px;
+  min-width: 320px;
+  max-width: 420px;
+  width: 90vw;
+  direction: rtl;
+  font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+.bayan-dialog-body {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-primary, #f0f0f5);
+  margin-bottom: 16px;
+}
+.bayan-dialog-input {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 14px;
+  border: 1px solid var(--border-primary, #3a3a4d);
+  border-radius: 8px;
+  background: var(--bg-primary, #0f0f14);
+  color: var(--text-primary, #f0f0f5);
+  margin-bottom: 16px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.bayan-dialog-input:focus {
+  border-color: var(--accent-primary, #6366f1);
+}
+.bayan-dialog-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-start;
+}
+.bayan-dialog-btn {
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  transition: background 0.15s, transform 0.1s;
+}
+.bayan-dialog-btn:active {
+  transform: scale(0.97);
+}
+.bayan-dialog-btn--cancel {
+  background: var(--bg-tertiary, #2a2a38);
+  color: var(--text-secondary, #9898ad);
+}
+.bayan-dialog-btn--cancel:hover {
+  background: var(--bg-hover, #333345);
+}
+.bayan-dialog-btn--confirm {
+  background: var(--accent-primary, #6366f1);
+  color: #fff;
+}
+.bayan-dialog-btn--confirm:hover {
+  background: var(--accent-hover, #4f46e5);
 }

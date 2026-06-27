@@ -97,7 +97,11 @@ class HybridAutoComplete:
                 filename=self.BIGRAM_FILE,
             )
             with open(path, "rb") as f:
-                data = pickle.load(f)
+                data = pickle.loads(
+                    f.read(),
+                )
+            if not isinstance(data, dict) or 'unigrams' not in data or 'bigrams' not in data:
+                raise ValueError("Invalid bigram model format")
             self.unigrams = data["unigrams"]
             self.bigrams = data["bigrams"]
             logger.info(

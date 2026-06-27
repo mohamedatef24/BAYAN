@@ -11,7 +11,7 @@ Bayan/
 ├── data/                       # Directory for raw and processed datasets (empty by default)
 ├── models/                     # Deep learning models directory (organized by task)
 │   ├── Autocomplete/           # GPT-2 autocomplete model
-│   ├── Grammrar/               # Gemma-based grammar correction model
+│   ├── Grammar/                # Gemma-based grammar correction model
 │   ├── Punctuation/            # Seq2Seq punctuation correction model
 │   ├── Spelling/               # BERT-based spelling corrector checkpoint
 │   └── Summarization/          # mBART summarization model checkpoint
@@ -199,7 +199,7 @@ Verify that you have placed the model files under the `models/` directory:
 - Summarization: `models/Summarization/Model/`
 - Spelling: `models/Spelling/Model/`
 - Autocomplete: `models/Autocomplete/Model/`
-- Grammar: `models/Grammrar/Model/`
+- Grammar: `models/Grammar/Model/`
 - Punctuation: `models/Punctuation/Model/`
 
 ### 3. Run the Server

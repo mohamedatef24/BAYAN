@@ -51,6 +51,7 @@ async function loadDocuments() {
       .from('documents')
       .select('id, title, updated_at')
       .eq('user_id', userId)
+      .is('deleted_at', null)
       .order('updated_at', { ascending: false });
     if (error) throw error;
     return data || [];
@@ -67,12 +68,15 @@ async function loadDocuments() {
  */
 async function loadDocument(id) {
   const client = _getClient();
-  if (!client) return null;
+  const userId = _getUserId();
+  if (!client || !userId) return null;
   try {
     const { data, error } = await client
       .from('documents')
       .select('id, title, content, updated_at')
       .eq('id', id)
+      .eq('user_id', userId)
+      .is('deleted_at', null)
       .single();
     if (error) throw error;
     return data;
@@ -90,12 +94,14 @@ async function loadDocument(id) {
  */
 async function saveDocument(id, content) {
   const client = _getClient();
-  if (!client) return false;
+  const userId = _getUserId();
+  if (!client || !userId) return false;
   try {
     const { error } = await client
       .from('documents')
       .update({ content })
-      .eq('id', id);
+      .eq('id', id)
+      .eq('user_id', userId);
     if (error) throw error;
     return true;
   } catch (err) {
@@ -112,12 +118,14 @@ async function saveDocument(id, content) {
  */
 async function renameDocument(id, title) {
   const client = _getClient();
-  if (!client) return false;
+  const userId = _getUserId();
+  if (!client || !userId) return false;
   try {
     const { error } = await client
       .from('documents')
       .update({ title })
-      .eq('id', id);
+      .eq('id', id)
+      .eq('user_id', userId);
     if (error) throw error;
     return true;
   } catch (err) {
@@ -127,22 +135,47 @@ async function renameDocument(id, title) {
 }
 
 /**
- * Delete a document permanently.
+ * Soft-delete a document (sets deleted_at timestamp).
  * @param {string} id
  * @returns {Promise<boolean>}
  */
 async function deleteDocument(id) {
   const client = _getClient();
-  if (!client) return false;
+  const userId = _getUserId();
+  if (!client || !userId) return false;
   try {
     const { error } = await client
       .from('documents')
-      .delete()
-      .eq('id', id);
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', id)
+      .eq('user_id', userId);
     if (error) throw error;
     return true;
   } catch (err) {
     console.warn('[documents-api] deleteDocument failed:', err.message);
+    return false;
+  }
+}
+
+/**
+ * Restore a soft-deleted document.
+ * @param {string} id
+ * @returns {Promise<boolean>}
+ */
+async function restoreDocument(id) {
+  const client = _getClient();
+  const userId = _getUserId();
+  if (!client || !userId) return false;
+  try {
+    const { error } = await client
+      .from('documents')
+      .update({ deleted_at: null })
+      .eq('id', id)
+      .eq('user_id', userId);
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    console.warn('[documents-api] restoreDocument failed:', err.message);
     return false;
   }
 }

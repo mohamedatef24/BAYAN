@@ -28,60 +28,6 @@ class ErrorType(Enum):
     CLEAN = "clean"
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# KEYBOARD PROXIMITY (Phase 12 — from original AraSpell.py L475-520)
-# ═══════════════════════════════════════════════════════════════════════════════
-
-class RulesBasedCorrector:
-    """Arabic keyboard-proximity and character substitution rules."""
-
-    # Arabic keyboard layout adjacency mapping
-    KEYBOARD_NEIGHBORS = {
-        'ض': ['ص', 'ق'],
-        'ص': ['ض', 'ث', 'ق'],
-        'ث': ['ص', 'ق'],
-        'ق': ['ض', 'ص', 'ث', 'ف', 'غ'],
-        'ف': ['ق', 'غ', 'ع', 'ب'],
-        'غ': ['ق', 'ف', 'ع', 'ه'],
-        'ع': ['ف', 'غ', 'ه', 'خ'],
-        'ه': ['غ', 'ع', 'خ', 'ح'],
-        'خ': ['ع', 'ه', 'ح', 'ج'],
-        'ح': ['ه', 'خ', 'ج'],
-        'ج': ['خ', 'ح', 'د'],
-        'د': ['ج', 'ذ'],
-        'ذ': ['د'],
-        'ش': ['س', 'ي', 'ئ'],
-        'س': ['ش', 'ي', 'ب'],
-        'ي': ['ش', 'س', 'ب', 'ت'],
-        'ب': ['ي', 'س', 'ف', 'ل', 'ن'],
-        'ل': ['ب', 'ا', 'ن', 'م'],
-        'ا': ['ل', 'ت', 'م'],
-        'ت': ['ي', 'ا', 'ن'],
-        'ن': ['ب', 'ل', 'ت', 'م', 'ك'],
-        'م': ['ل', 'ا', 'ن', 'ك'],
-        'ك': ['ن', 'م', 'ط'],
-        'ط': ['ك', 'ظ'],
-        'ظ': ['ط'],
-        'ئ': ['ش', 'ء', 'ر'],
-        'ء': ['ئ', 'ؤ'],
-        'ؤ': ['ء', 'ر'],
-        'ر': ['ئ', 'ؤ', 'لا', 'ى', 'ز'],
-        'لا': ['ر', 'ى'],
-        'ى': ['ر', 'لا', 'ة', 'ز'],
-        'ة': ['ى', 'و', 'ز'],
-        'و': ['ة', 'ز'],
-        'ز': ['ر', 'ى', 'ة', 'و'],
-        'أ': ['ا', 'إ', 'آ'],
-        'إ': ['ا', 'أ'],
-        'آ': ['ا', 'أ'],
-    }
-
-    @staticmethod
-    def is_keyboard_neighbor(char1: str, char2: str) -> bool:
-        """Check if two Arabic chars are adjacent on the keyboard."""
-        neighbors = RulesBasedCorrector.KEYBOARD_NEIGHBORS.get(char1, [])
-        return char2 in neighbors
-
-# ═══════════════════════════════════════════════════════════════════════════════
 # POST PROCESSOR
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -1078,9 +1024,46 @@ class ContextualCorrector:
         return score
     
     def score_candidates_batch(self, text: str, position: int, candidates: List[str]) -> dict:
+        uncached = []
         scores = {}
-        for candidate in candidates:
-            scores[candidate] = self.score_with_mlm(text, position, candidate)
+        for c in candidates:
+            ck = f"{text}|{position}|{c}"
+            if ck in self._score_cache:
+                self.cache_hits += 1
+                scores[c] = self._score_cache[ck]
+            else:
+                uncached.append(c)
+        if not uncached:
+            return scores
+        self.cache_misses += len(uncached)
+        words = text.split()
+        if position >= len(words):
+            for c in uncached:
+                scores[c] = 0.0
+            return scores
+        masked_words = words.copy()
+        masked_words[position] = '[MASK]'
+        masked_text = ' '.join(masked_words)
+        inputs = self.tokenizer(masked_text, return_tensors='pt', padding=True, truncation=True)
+        inputs = {k: v.to(self.device) for k, v in inputs.items()}
+        with torch.no_grad():
+            outputs = self.model(**inputs)
+            predictions = outputs.logits
+        mask_token_index = (inputs['input_ids'] == self.tokenizer.mask_token_id).nonzero(as_tuple=True)[1]
+        if len(mask_token_index) == 0:
+            for c in uncached:
+                scores[c] = 0.0
+            return scores
+        mask_token_logits = predictions[0, mask_token_index[0], :]
+        probs = torch.softmax(mask_token_logits, dim=0)
+        for c in uncached:
+            word_tokens = self.tokenizer.encode(c, add_special_tokens=False)
+            s = probs[word_tokens[0]].item() if word_tokens else 0.0
+            ck = f"{text}|{position}|{c}"
+            if len(self._score_cache) >= self.cache_size:
+                self._score_cache.pop(next(iter(self._score_cache)))
+            self._score_cache[ck] = s
+            scores[c] = s
         return scores
     
     def predict_masked_token(self, text: str, position: int, top_k: int = 5) -> List[Tuple[str, float]]:

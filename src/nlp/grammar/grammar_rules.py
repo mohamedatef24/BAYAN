@@ -34,12 +34,23 @@ MASC_TO_FEM_ADJ = {
 class ArabicGrammarGuard:
     def __init__(self):
         self.mle = MLEDisambiguator.pretrained()
+        self._last_disambig_key = None
+        self._last_disambig_result = None
 
         self.number_words = ["واحد", "اثنان", "اثنين", "ثلاث", "أربع", "خمس", "ست", "سبع", "ثمان", "تسع", "عشر",
                              "عشرون", "عشرين", "ثلاثون", "ثلاثين", "أربعون", "أربعين", "خمسون", "خمسين",
                              "ستون", "ستين", "سبعون", "سبعين", "ثمانون", "ثمانين", "تسعون", "تسعين", "مائة", "ألف"]
 
         self.asmaa_khamsa_roots = ['اب', 'اخ', 'حم', 'فو', 'ذو']
+
+    def _cached_disambiguate(self, tokens):
+        key = tuple(tokens)
+        if self._last_disambig_key == key:
+            return self._last_disambig_result
+        result = self.mle.disambiguate(tokens)
+        self._last_disambig_key = key
+        self._last_disambig_result = result
+        return result
 
     def preserve_numbers(self, original_text, generated_text):
         orig_digits = re.findall(r'\d+', original_text)
@@ -56,7 +67,7 @@ class ArabicGrammarGuard:
 
     def fix_number_and_gender_agreement(self, text):
         tokens = simple_word_tokenize(text)
-        disambig_tokens = self.mle.disambiguate(tokens)
+        disambig_tokens = self._cached_disambiguate(tokens)
         corrected_tokens = list(tokens)
 
         for i in range(len(disambig_tokens) - 1):
@@ -78,7 +89,7 @@ class ArabicGrammarGuard:
 
     def smart_asmaa_khamsa_fix(self, text):
         tokens = simple_word_tokenize(text)
-        disambig_tokens = self.mle.disambiguate(tokens)
+        disambig_tokens = self._cached_disambiguate(tokens)
         corrected_tokens = []
         verb_seen = False
 
@@ -179,7 +190,7 @@ class ArabicGrammarGuard:
 
     def fix_verbs_nasb_and_jazm(self, text):
         tokens = simple_word_tokenize(text)
-        disambig_tokens = self.mle.disambiguate(tokens)
+        disambig_tokens = self._cached_disambiguate(tokens)
 
         nasb_particles = ['أن', 'ان', 'لن', 'كي', 'لكي', 'حتى', 'حتي', 'إذن', 'اذا']
         jazm_particles = ['لم', 'لما', 'لا']
@@ -308,7 +319,7 @@ class ArabicGrammarGuard:
         Fix cases (Nominative/Accusative) of nouns after Inna and Kana sisters.
         """
         tokens = simple_word_tokenize(text)
-        disambig_tokens = self.mle.disambiguate(tokens)
+        disambig_tokens = self._cached_disambiguate(tokens)
         corrected_tokens = list(tokens)
         
         INNA_SISTERS = {'إن', 'أن', 'كأن', 'لكن', 'ليت', 'لعل', 'ان'}
@@ -406,7 +417,7 @@ class ArabicGrammarGuard:
         tokens = simple_word_tokenize(text)
         if len(tokens) < 2:
             return text
-        disambig_tokens = self.mle.disambiguate(tokens)
+        disambig_tokens = self._cached_disambiguate(tokens)
         corrected_tokens = list(tokens)
 
         # Words that should NEVER trigger plural verb agreement
@@ -604,7 +615,7 @@ class ArabicGrammarGuard:
     def fix_conditional_sentences(self, text):
         conditional_particles = {'إن', 'ان', 'من', 'ما', 'متى', 'متي', 'مهما', 'أينما', 'حيثما', 'أيان', 'ايان', 'كيفما', 'أنى', 'اني'}
         tokens = simple_word_tokenize(text)
-        disambig_tokens = self.mle.disambiguate(tokens)
+        disambig_tokens = self._cached_disambiguate(tokens)
         corrected_tokens = list(tokens)
         
         # Lookahead for 2nd person context
@@ -648,7 +659,7 @@ class ArabicGrammarGuard:
 
     def fix_demonstrative_agreement(self, text):
         tokens = simple_word_tokenize(text)
-        disambig_tokens = self.mle.disambiguate(tokens)
+        disambig_tokens = self._cached_disambiguate(tokens)
         corrected_tokens = list(tokens)
         
         for i in range(len(disambig_tokens) - 1):
@@ -678,7 +689,7 @@ class ArabicGrammarGuard:
 
     def fix_noun_adjective_agreement_advanced(self, text):
         tokens = simple_word_tokenize(text)
-        disambig_tokens = self.mle.disambiguate(tokens)
+        disambig_tokens = self._cached_disambiguate(tokens)
         corrected_tokens = list(tokens)
         
         for i in range(len(disambig_tokens) - 1):

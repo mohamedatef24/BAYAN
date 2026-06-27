@@ -69,7 +69,7 @@ def get_spelling_model():
         # 5. Load trained weights
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         logger.info(f"Loading checkpoint weights on {device}...")
-        checkpoint = torch.load(model_path, map_location=device, weights_only=False)
+        checkpoint = torch.load(model_path, map_location=device, weights_only=True)
         model.load_state_dict(checkpoint['model_state_dict'], strict=False)
         model = model.to(device)
         model.eval()

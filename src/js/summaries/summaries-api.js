@@ -65,12 +65,14 @@ async function loadSummaries() {
  */
 async function deleteSummary(id) {
   const client = _getSummaryClient();
-  if (!client) return false;
+  const userId = _getSummaryUserId();
+  if (!client || !userId) return false;
   try {
     const { error } = await client
       .from('summaries')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('user_id', userId);
     if (error) throw error;
     return true;
   } catch (err) {

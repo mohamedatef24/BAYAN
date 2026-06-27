@@ -77,6 +77,47 @@ COPY quran.py ./
 COPY quran_master.db ./
 COPY .env* ./
 
+# Minify JS/CSS for production
+RUN pip install --no-cache-dir rjsmin rcssmin && \
+    python -c "\
+import os, rjsmin, rcssmin; \
+for root, dirs, files in os.walk('src'): \
+    for f in files: \
+        p = os.path.join(root, f); \
+        if f.endswith('.js'): \
+            with open(p) as fh: src = fh.read(); \
+            with open(p, 'w') as fh: fh.write(rjsmin.jsmin(src)); \
+        elif f.endswith('.css'): \
+            with open(p) as fh: src = fh.read(); \
+            with open(p, 'w') as fh: fh.write(rcssmin.cssmin(src)); \
+"
+
+# Bundle JS files in dependency order (replaces 33 script tags)
+RUN python -c "\
+import os; \
+js_order = [ \
+    'js/vendor/supabase.min.js', 'js/auth/config.js', 'js/vendor-loader.js', \
+    'js/auth/client.js', 'js/auth/session.js', 'js/auth/auth.js', 'js/auth/auth-ui.js', \
+    'js/theme.js', 'js/vendor/FileSaver.min.js', 'js/dialogs.js', 'js/i18n.js', \
+    'js/analytics.js', 'js/onboarding.js', 'js/renderer.js', 'js/selection.js', \
+    'js/ui.js', 'js/documents/doc-utils.js', 'js/editor.js', 'js/autocomplete.js', \
+    'js/format.js', 'js/documents/import.js', 'js/documents/export.js', \
+    'js/documents/documents.js', 'js/sync/sync-queue.js', 'js/sync/sync-resolver.js', \
+    'js/sync/sync-manager.js', 'js/documents-cloud/documents-api.js', \
+    'js/documents-cloud/documents-state.js', 'js/documents-cloud/documents-ui.js', \
+    'js/summaries/summaries-api.js', 'js/summaries/summaries-ui.js', \
+    'js/settings-sync/settings-api.js', 'js/settings-sync/settings-sync.js', \
+    'js/app.js', \
+]; \
+bundle = ''; \
+for f in js_order: \
+    p = os.path.join('src', f); \
+    if os.path.exists(p): \
+        with open(p) as fh: bundle += fh.read() + '\n'; \
+with open('src/js/bayan.bundle.js', 'w') as fh: fh.write(bundle); \
+print(f'Bundled {len(js_order)} JS files'); \
+"
+
 # Set environment variables
 ENV PORT=7860
 ENV DEBUG=False

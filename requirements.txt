@@ -1,12 +1,9 @@
 huggingface_hub>=0.20.0
 transformers
 torch
-datasets
 camel-tools
 sentencepiece
-scikit-learn
 numpy
-pandas
 flask
 flask-cors
 jellyfish
@@ -14,5 +11,4 @@ python-Levenshtein
 gunicorn
 python-dotenv
 gradio_client
-rapidfuzz
 Flask-Limiter

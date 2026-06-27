@@ -39,3 +39,14 @@ node_modules/
 .pytest_cache/
 test-results/
 extension/assets/icons/*.png
+
+# Build output
+dist/
+src/js/bayan.bundle.js
+
+# Debug/temp output
+out*.txt
+local_debug.txt
+pc_data.txt
+camel_test_out.json
+grammar_fails_output.md

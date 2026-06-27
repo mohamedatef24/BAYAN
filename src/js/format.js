@@ -64,11 +64,11 @@ function setDirection(dir) {
 }
 
 /* ── Insert Link ── */
-function insertLink() {
+async function insertLink() {
   const sel = window.getSelection();
   if (!sel || !sel.rangeCount) return;
   const selectedText = sel.toString();
-  const url = prompt('أدخل الرابط (URL):', 'https://');
+  const url = await bayanPrompt('أدخل الرابط (URL):', 'https://');
   if (!url || url === 'https://') return;
   if (selectedText) {
     execFormat('createLink', url);
@@ -119,8 +119,6 @@ function formatFontSize(size) {
 
   const range = sel.getRangeAt(0);
   if (range.collapsed) {
-    // No selection — size will apply to next typed text
-    // Use a zero-width space trick
     const span = document.createElement('span');
     span.style.fontSize = size;
     span.textContent = '\u200B';
@@ -131,6 +129,14 @@ function formatFontSize(size) {
     newRange.collapse(true);
     sel.removeAllRanges();
     sel.addRange(newRange);
+    var _edRef = getEditorElement();
+    if (_edRef) {
+      _edRef.addEventListener('input', function() {
+        if (span.parentNode && span.textContent.length > 1) {
+          span.textContent = span.textContent.replace(/​/g, '');
+        }
+      }, { once: true });
+    }
   } else {
     // Wrap selected text
     const span = document.createElement('span');
@@ -332,7 +338,11 @@ function initColorPicker(prefix, command, barId) {
   resetSwatch.title = '\u0625\u0639\u0627\u062f\u0629 \u0627\u0644\u0627\u0641\u062a\u0631\u0627\u0636\u064a';
   resetSwatch.textContent = '\u00d7';
   resetSwatch.addEventListener('click', () => {
-    document.execCommand('removeFormat', false, null);
+    if (command === 'foreColor') {
+      document.execCommand('foreColor', false, '#ECEEF2');
+    } else {
+      document.execCommand('hiliteColor', false, 'transparent');
+    }
     const bar = document.getElementById(barId);
     if (bar) bar.style.background = command === 'foreColor' ? '#ECEEF2' : 'transparent';
     closeAllFmtDropdowns();
