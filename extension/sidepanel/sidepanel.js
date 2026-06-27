@@ -499,6 +499,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const quranTranslationText = document.getElementById('quran-translation-text');
   const quranTranslationRef = document.getElementById('quran-translation-ref');
   const btnCopyQuranTranslation = document.getElementById('btn-copy-quran-translation');
+  const btnApplyQuranTranslation = document.getElementById('btn-apply-quran-translation');
   let lastQuranQuery = '';
 
   // Parse the API's "(verse text) 【surah:ayah】" segment into {text, ref}.
@@ -578,6 +579,16 @@ document.addEventListener('DOMContentLoaded', () => {
         navigator.clipboard.writeText(quranTranslationText.textContent || '')
           .then(() => showToast('✓ تم نسخ الترجمة'))
           .catch(() => showToast('تعذّر النسخ'));
+      });
+    }
+
+    // Apply the translated verse straight into the page field (Req 2).
+    // Routed as 'quran' so the content script suppresses correction re-analysis.
+    if (btnApplyQuranTranslation) {
+      btnApplyQuranTranslation.addEventListener('click', () => {
+        const text = (quranTranslationText.textContent || '').trim();
+        if (!text) { showToast('لا توجد ترجمة للتطبيق'); return; }
+        writeBackToPage(text, 'auto', 'quran');
       });
     }
 
