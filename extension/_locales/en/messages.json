@@ -14,5 +14,13 @@
   "contextMenuSummarize": {
     "message": "Summarize with Bayan",
     "description": "Context menu item for summarizing selected text"
+  },
+  "contextMenuDialect": {
+    "message": "Convert dialect to MSA with Bayan",
+    "description": "Context menu: dialect→MSA"
+  },
+  "contextMenuQuran": {
+    "message": "Verify verse with Bayan",
+    "description": "Context menu: Quran verify"
   }
 }
