@@ -98,7 +98,7 @@ RUN echo "import os" > bundle.py && \
     echo "for f in js_order:" >> bundle.py && \
     echo "    p = os.path.join('src', f)" >> bundle.py && \
     echo "    if os.path.exists(p):" >> bundle.py && \
-    echo "        with open(p) as fh: bundle += fh.read() + '\n'" >> bundle.py && \
+    echo "        with open(p) as fh: bundle += fh.read() + chr(10)" >> bundle.py && \
     echo "with open('src/js/bayan.bundle.js', 'w') as fh: fh.write(bundle)" >> bundle.py && \
     echo "print(f'Bundled {len(js_order)} JS files')" >> bundle.py && \
     python bundle.py && rm bundle.py
