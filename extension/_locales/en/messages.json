@@ -1,0 +1,18 @@
+{
+  "extName": {
+    "message": "Bayan — Arabic Writing Assistant",
+    "description": "Extension name shown in Chrome"
+  },
+  "extDescription": {
+    "message": "Spelling, grammar, and punctuation correction for Arabic text, with smart summarization.",
+    "description": "Extension description shown in Chrome Web Store"
+  },
+  "contextMenuCorrect": {
+    "message": "Correct with Bayan",
+    "description": "Context menu item for correcting selected text"
+  },
+  "contextMenuSummarize": {
+    "message": "Summarize with Bayan",
+    "description": "Context menu item for summarizing selected text"
+  }
+}
