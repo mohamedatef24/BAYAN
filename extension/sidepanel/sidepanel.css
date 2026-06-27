@@ -379,6 +379,49 @@ body {
 }
 
 /* ══════════════════════════════════════════════
+   Quran verse translation
+   ══════════════════════════════════════════════ */
+.sp-quran-translate {
+  padding: 10px 12px 12px;
+  border-top: 1px solid var(--sp-border);
+}
+
+.sp-quran-translate-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sp-quran-translate-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sp-text-secondary);
+}
+
+.sp-select {
+  flex: 1;
+  min-width: 140px;
+  padding: 6px 10px;
+  font-size: 13px;
+  color: var(--sp-text);
+  background: var(--sp-surface);
+  border: 1px solid var(--sp-border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.sp-select:focus {
+  outline: none;
+  border-color: var(--sp-primary);
+}
+
+.sp-select option {
+  background: var(--sp-surface);
+  color: var(--sp-text);
+}
+
+/* ══════════════════════════════════════════════
    Highlighted text (from bayan-renderer.js)
    ══════════════════════════════════════════════ */
 .bayan-spelling-error {

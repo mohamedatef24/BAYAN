@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnCorrect = document.getElementById('btn-correct');
   const btnClear = document.getElementById('btn-clear');
   const btnApplyAll = document.getElementById('btn-apply-all');
+  const btnApplyPage = document.getElementById('btn-apply-page');
   const btnCopyResult = document.getElementById('btn-copy-result');
   const scoreSection = document.getElementById('score-section');
   const resultSection = document.getElementById('result-section');
@@ -155,7 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // directly; it relays through background.js. `source` lets the content
   // script decide whether to re-analyze (correct) or suppress (Change 3).
   // ══════════════════════════════════════════════════════════
-  function writeBackToPage(text, mode = 'replaceAll', source = 'correct') {
+  function writeBackToPage(text, mode = 'auto', source = 'correct') {
     try {
       chrome.runtime.sendMessage(
         { type: 'WRITE_BACK_TO_PAGE', text, mode, source },
@@ -234,7 +235,6 @@ document.addEventListener('DOMContentLoaded', () => {
         renderSuggestions(currentSuggestions);
         resultText.innerHTML = renderHighlightedText(analyzedText, currentSuggestions);
         saveState();
-        writeBackToPage(analyzedText, 'replaceAll', 'correct');
         showToast('✓ تم التصحيح');
       });
     });
@@ -379,9 +379,23 @@ document.addEventListener('DOMContentLoaded', () => {
     updateScore(0, 0, 0);
     renderSuggestions([]);
     saveState();
-    writeBackToPage(analyzedText, 'replaceAll', 'correct');
+    writeBackToPage(analyzedText, 'auto', 'correct');
     showToast('✓ تم تطبيق جميع التصحيحات');
   });
+
+  // Explicit "apply corrected text to the page field" button (Bug 1).
+  // Writes the current corrected text — with any still-pending suggestions
+  // applied — back into the source field, honouring selection vs whole-field.
+  if (btnApplyPage) {
+    btnApplyPage.addEventListener('click', () => {
+      if (!analyzedText) { showToast('لا يوجد نص للتطبيق'); return; }
+      if (isStale) { showToast('⚠ أعد التحليل أولاً — النص تغيّر'); return; }
+      const finalText = currentSuggestions.length > 0
+        ? applyAllPatches(analyzedText, currentSuggestions)
+        : analyzedText;
+      writeBackToPage(finalText, 'auto', 'correct');
+    });
+  }
 
   btnCopyResult.addEventListener('click', () => {
     const text = resultText.textContent || '';
@@ -478,6 +492,22 @@ document.addEventListener('DOMContentLoaded', () => {
   const quranText = document.getElementById('quran-text');
   const quranMeta = document.getElementById('quran-meta');
   const btnCopyQuran = document.getElementById('btn-copy-quran');
+  // Translation sub-UI
+  const quranTranslateSection = document.getElementById('quran-translate-section');
+  const quranLangSelect = document.getElementById('quran-lang-select');
+  const quranTranslationResult = document.getElementById('quran-translation-result');
+  const quranTranslationText = document.getElementById('quran-translation-text');
+  const quranTranslationRef = document.getElementById('quran-translation-ref');
+  const btnCopyQuranTranslation = document.getElementById('btn-copy-quran-translation');
+  let lastQuranQuery = '';
+
+  // Parse the API's "(verse text) 【surah:ayah】" segment into {text, ref}.
+  function parseQuranSegment(seg) {
+    seg = seg || '';
+    const refMatch = seg.match(/【([^】]+)】/);
+    const text = seg.replace(/\s*【[^】]+】\s*$/, '').replace(/^\(/, '').replace(/\)$/, '');
+    return { text, ref: refMatch ? refMatch[1] : '' };
+  }
 
   if (quranInput) {
     quranInput.addEventListener('input', () => updateCounts(quranInput, quranCharCount, null));
@@ -490,6 +520,10 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         const data = await bayanQuran(text);
         quranResultSection.classList.remove('is-hidden');
+        // Reset translation UI for the new query.
+        if (quranTranslateSection) quranTranslateSection.classList.add('is-hidden');
+        if (quranTranslationResult) quranTranslationResult.classList.add('is-hidden');
+        if (quranLangSelect) quranLangSelect.value = '';
         if (data.error) {
           quranText.textContent = data.error;
           quranMeta.textContent = '';
@@ -498,6 +532,9 @@ document.addEventListener('DOMContentLoaded', () => {
           quranMeta.textContent = data.matched_segment && data.full_verse
             ? `المقطع المطابق: ${data.matched_segment}`
             : '';
+          // Enable translation now that we have a verified verse.
+          lastQuranQuery = text;
+          if (quranTranslateSection) quranTranslateSection.classList.remove('is-hidden');
           showToast('✓ تم التدقيق');
         }
       } catch (error) {
@@ -507,6 +544,42 @@ document.addEventListener('DOMContentLoaded', () => {
         setLoading(false);
       }
     });
+
+    // Translate the verified verse into the chosen language.
+    if (quranLangSelect) {
+      quranLangSelect.addEventListener('change', async () => {
+        const lang = quranLangSelect.value;
+        if (!lang || !lastQuranQuery) return;
+
+        setLoading(true, 'جارٍ الترجمة...');
+        try {
+          const data = await bayanQuran(lastQuranQuery, lang);
+          quranTranslationResult.classList.remove('is-hidden');
+          if (data.error) {
+            quranTranslationText.textContent = data.error;
+            quranTranslationRef.textContent = '';
+          } else {
+            const parsed = parseQuranSegment(data.matched_segment || data.full_verse || '');
+            quranTranslationText.textContent = parsed.text || data.full_verse || '';
+            quranTranslationRef.textContent = parsed.ref ? `[${parsed.ref}]` : '';
+            showToast('✓ تمت الترجمة');
+          }
+        } catch (error) {
+          console.error('[Bayan SP] Quran translation error:', error);
+          showToast('خطأ في الاتصال — تحقق من الإنترنت');
+        } finally {
+          setLoading(false);
+        }
+      });
+    }
+
+    if (btnCopyQuranTranslation) {
+      btnCopyQuranTranslation.addEventListener('click', () => {
+        navigator.clipboard.writeText(quranTranslationText.textContent || '')
+          .then(() => showToast('✓ تم نسخ الترجمة'))
+          .catch(() => showToast('تعذّر النسخ'));
+      });
+    }
 
     btnCopyQuran.addEventListener('click', () => {
       navigator.clipboard.writeText(quranText.textContent || '')
@@ -622,7 +695,7 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.addEventListener('click', () => {
       const text = (getText() || '').trim();
       if (!text) { showToast('لا يوجد نص للتطبيق'); return; }
-      writeBackToPage(text, 'replaceAll', source);
+      writeBackToPage(text, 'auto', source);
     });
     anchorBtn.parentElement.appendChild(btn);
   }

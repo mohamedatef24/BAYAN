@@ -112,6 +112,9 @@
       <div class="sp-result-header">
         <span>النص المصحح</span>
         <div class="sp-result-actions">
+          <button class="sp-btn-icon" id="btn-apply-page" title="تطبيق في الصفحة">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </button>
           <button class="sp-btn-icon" id="btn-apply-all" title="تطبيق الكل">
             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
           </button>
@@ -246,6 +249,39 @@
       </div>
       <div class="sp-result-text" id="quran-text" dir="rtl"></div>
       <div class="sp-summary-meta" id="quran-meta"></div>
+
+      <!-- Verse translation (14 languages) -->
+      <div class="sp-quran-translate is-hidden" id="quran-translate-section">
+        <div class="sp-quran-translate-row">
+          <span class="sp-quran-translate-label">ترجمة الآية</span>
+          <select id="quran-lang-select" class="sp-select" dir="ltr">
+            <option value="">— اختر لغة —</option>
+            <option value="english">🇬🇧 English</option>
+            <option value="french">🇫🇷 Français</option>
+            <option value="turkish">🇹🇷 Türkçe</option>
+            <option value="persian">🇮🇷 فارسی</option>
+            <option value="russian">🇷🇺 Русский</option>
+            <option value="spanish">🇪🇸 Español</option>
+            <option value="german">🇩🇪 Deutsch</option>
+            <option value="indonesian">🇮🇩 Indonesia</option>
+            <option value="malay">🇲🇾 Melayu</option>
+            <option value="bengali">🇧🇩 বাংলা</option>
+            <option value="bosnian">🇧🇦 Bosanski</option>
+            <option value="portuguese">🇵🇹 Português</option>
+            <option value="uzbek">🇺🇿 O'zbek</option>
+          </select>
+        </div>
+        <div class="sp-result is-hidden" id="quran-translation-result" style="margin-top:8px;">
+          <div class="sp-result-header">
+            <span>الترجمة</span>
+            <button class="sp-btn-icon" id="btn-copy-quran-translation" title="نسخ الترجمة">
+              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+            </button>
+          </div>
+          <div class="sp-result-text" id="quran-translation-text" dir="auto"></div>
+          <div class="sp-summary-meta" id="quran-translation-ref"></div>
+        </div>
+      </div>
     </div>
   </section>
 
