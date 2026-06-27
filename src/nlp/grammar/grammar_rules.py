@@ -765,14 +765,36 @@ class ArabicGrammarGuard:
             ('fix_conditional_sentences', self.fix_conditional_sentences),
             ('fix_tanween_fathah', self.fix_tanween_fathah),
             ('fix_initial_hamza', self.fix_initial_hamza),
+            ('fix_suffix_hallucination', self.fix_suffix_hallucination),
             ('regex_rules_fallback', self.regex_rules_fallback),
         ]:
             try:
-                text = rule_fn(text)
+                text = rule_fn(text, original_text) if rule_name == 'fix_suffix_hallucination' else rule_fn(text)
             except Exception as e:
                 logger.warning(f"[GRAMMAR-RULES] {rule_name} failed: {e}")
 
         text = re.sub(r'\s+', ' ', text).strip()
+        return text
+
+    def fix_suffix_hallucination(self, text, original_text):
+        """
+        Revert grammar hallucination where extra consonants are appended to pronoun suffixes.
+        Example: شجعتهم → شجعتهمت
+        """
+        orig_words = original_text.split()
+        curr_words = text.split()
+        
+        if len(orig_words) == len(curr_words):
+            for i in range(len(orig_words)):
+                ow = orig_words[i]
+                cw = curr_words[i]
+                # If the current word is just the original word + 1 consonant, and original ended in a suffix
+                if len(cw) == len(ow) + 1 and cw.startswith(ow):
+                    added_char = cw[-1]
+                    if ow.endswith(('هم', 'هن', 'كم', 'كن', 'ها', 'نا')) and added_char in 'تمةنل':
+                        curr_words[i] = ow
+                        logger.info(f"[GRAMMAR-RULES] Reverted suffix hallucination: {cw} → {ow}")
+            text = ' '.join(curr_words)
         return text
 
     def fix_tanween_fathah(self, text):

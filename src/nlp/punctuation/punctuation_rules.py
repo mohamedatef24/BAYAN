@@ -67,9 +67,9 @@ def arabic_postprocessing(text: str) -> str:
         if re.fullmatch(_ALLOWED_COLON_CUES, prev_word):
             return match.group(0)
         # If it's a definite noun (starts with ال) and not in allowed list, it's hallucinated.
-        # e.g., "الشمس:" -> "الشمس،"
+        # Remove the colon entirely — replacing with comma is also wrong (e.g. الشمس، مشرقة)
         if prev_word.startswith('ال'):
-            return f'{prev_word}،'
+            return f'{prev_word}'
         return match.group(0)
         
     text = re.sub(r'([\u0600-\u06FF]+)(\s*:)', _colon_guard, text)

@@ -48,8 +48,8 @@ class PipelineContext:
         """
         curr_start, curr_end = start, end
         for mapper in reversed(self._offset_mappers):
-            curr_start = mapper.reverse_map_offset(curr_start)
-            curr_end = mapper.reverse_map_offset(curr_end)
+            curr_start = mapper.reverse_map_offset(curr_start, is_end=False)
+            curr_end = mapper.reverse_map_offset(curr_end, is_end=True)
         return curr_start, curr_end
 
     def add_patch(self, stage: str, start_current: int, end_current: int,
