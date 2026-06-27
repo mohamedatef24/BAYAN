@@ -898,6 +898,17 @@ class ArabicGrammarGuard:
             'انقذ': 'أنقذ', 'انقذت': 'أنقذت', 'انقذوا': 'أنقذوا',
             'الامهات': 'الأمهات', 'الاطفال': 'الأطفال',
             'الامة': 'الأمة', 'الاستاذ': 'الأستاذ',
+            'ايضا': 'أيضا',
+            'اول': 'أول',
+        }
+        # Context-dependent إنّ/أنّ hamza: kasra (إ) at sentence start, fathah (أ) mid-sentence
+        _INNA_SENTENCE_INITIAL = {
+            'ان': 'إن', 'انه': 'إنه', 'انها': 'إنها',
+            'اننا': 'إننا', 'انهم': 'إنهم', 'انك': 'إنك', 'انكم': 'إنكم',
+        }
+        _ANNA_MID_SENTENCE = {
+            'ان': 'أن', 'انه': 'أنه', 'انها': 'أنها',
+            'اننا': 'أننا', 'انهم': 'أنهم', 'انك': 'أنك', 'انكم': 'أنكم',
         }
         _HAMZA_STEMS = {
             'احب': 'أحب', 'افهم': 'أفهم', 'اعلن': 'أعلن',
@@ -911,6 +922,14 @@ class ArabicGrammarGuard:
         for i, w in enumerate(words):
             if w in _HAMZA_FIXES:
                 words[i] = _HAMZA_FIXES[w]
+                continue
+            # إنّ/أنّ: kasra at sentence start, fathah mid-sentence
+            _is_sent_start = (i == 0) or (words[i-1][-1] in '.؟!؛' if words[i-1] else False)
+            if _is_sent_start and w in _INNA_SENTENCE_INITIAL:
+                words[i] = _INNA_SENTENCE_INITIAL[w]
+                continue
+            if not _is_sent_start and w in _ANNA_MID_SENTENCE:
+                words[i] = _ANNA_MID_SENTENCE[w]
                 continue
             for stem, fixed in _HAMZA_STEMS.items():
                 if w.startswith(stem) and len(w) > len(stem):
