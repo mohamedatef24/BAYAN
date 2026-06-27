@@ -21,10 +21,9 @@ def add_security_headers(response):
         "img-src 'self' data:; "
         "connect-src 'self' https://*.supabase.co; "
         "object-src 'none'; "
-        "frame-ancestors 'none'"
+        "frame-ancestors 'self' https://huggingface.co https://*.huggingface.co"
     )
     response.headers['X-Content-Type-Options'] = 'nosniff'
-    response.headers['X-Frame-Options'] = 'DENY'
     return response
 
 
