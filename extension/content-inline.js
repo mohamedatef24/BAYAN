@@ -56,6 +56,7 @@
 
   let activeField = null;
   let lastInteractedField = null; // persists after focus moves to side panel (Change 1)
+  let pendingSelection = null;    // selection captured on right-click, for selection-only write-back
   let analysisSuppressed = false; // true after a non-correction model write-back (Change 3)
   let lastAnalyzedText = '';
   let suggestions = [];
@@ -111,6 +112,8 @@
     // event at all — neither should count as a manual edit (Change 3).
     const isUserKeystroke = !!e && e.isTrusted === true;
     if (isUserKeystroke && analysisSuppressed) analysisSuppressed = false;
+    // A real edit invalidates any selection captured at right-click time.
+    if (isUserKeystroke) pendingSelection = null;
 
     const text = getFieldText(activeField);
 
@@ -563,6 +566,9 @@
       }
       if (suggestions.length > 0) {
         try {
+          // FAB = whole-field intent. Drop any selection captured by an earlier
+          // right-click so write-back replaces the entire field, not a range.
+          pendingSelection = null;
           // Tag the source field so write-back can re-find it after focus
           // moves to the side panel (Change 1).
           if (lastInteractedField) lastInteractedField.dataset.bayanSource = '1';
@@ -663,16 +669,81 @@
 
   const NON_CORRECTION_SOURCES = ['summarize', 'dialect', 'quran'];
 
+  // Capture the field + selection range at right-click time. The context menu
+  // flow always acts on the selected text, so we remember exactly what was
+  // selected and splice the result into THAT range on write-back (Bug 2).
+  function captureSelection(target) {
+    const winSel = window.getSelection();
+
+    // Prefer the already-tracked editable field (it's what write-back resolves
+    // via lastInteractedField); fall back to the right-clicked target. For
+    // contenteditable this avoids latching onto a child node of the root.
+    let field = null;
+    const tracked = lastInteractedField
+      || (isEditableField(document.activeElement) ? document.activeElement : null);
+    if (tracked) {
+      const ttag = tracked.tagName.toLowerCase();
+      if (ttag === 'textarea' || ttag === 'input') field = tracked;
+      else if (tracked.isContentEditable && winSel && winSel.rangeCount > 0
+        && tracked.contains(winSel.anchorNode)) field = tracked;
+    }
+    if (!field && isEditableField(target)) field = target;
+    if (!field) { pendingSelection = null; return; }
+
+    const tag = field.tagName.toLowerCase();
+    if (tag === 'textarea' || tag === 'input') {
+      const start = field.selectionStart;
+      const end = field.selectionEnd;
+      if (typeof start === 'number' && typeof end === 'number' && start !== end) {
+        pendingSelection = { field, type: 'input', start, end };
+      } else {
+        pendingSelection = null;
+      }
+    } else if (field.isContentEditable) {
+      if (winSel && winSel.rangeCount > 0 && !winSel.isCollapsed && field.contains(winSel.anchorNode)) {
+        pendingSelection = { field, type: 'ce', range: winSel.getRangeAt(0).cloneRange() };
+      } else {
+        pendingSelection = null;
+      }
+    } else {
+      pendingSelection = null;
+    }
+
+    // Persist a link to the field so write-back can re-find it after focus
+    // moves to the side panel, even when this was a plain right-click.
+    if (pendingSelection) {
+      lastInteractedField = field;
+      try { field.dataset.bayanSource = '1'; } catch {}
+    }
+  }
+
+  document.addEventListener('contextmenu', (e) => {
+    try { captureSelection(e.target); } catch { pendingSelection = null; }
+  }, true);
+
   function writeTextToField(field, text, mode, source) {
     if (!field || typeof text !== 'string') return;
 
     const tag = field.tagName.toLowerCase();
     const suppress = NON_CORRECTION_SOURCES.includes(source);
 
+    // Resolve the effective mode. 'auto' = replace the captured selection if we
+    // have one for THIS field, otherwise replace the whole field.
+    const sel = (pendingSelection && pendingSelection.field === field) ? pendingSelection : null;
+    let effectiveMode = mode;
+    if (mode === 'auto') effectiveMode = sel ? 'replaceSelection' : 'replaceAll';
+
     if (tag === 'textarea' || tag === 'input') {
-      if (mode === 'replaceSelection'
+      if (effectiveMode === 'replaceSelection' && sel && sel.type === 'input') {
+        const before = field.value.slice(0, sel.start);
+        const after = field.value.slice(sel.end);
+        field.value = before + text + after;
+        const caret = sel.start + text.length;
+        try { field.setSelectionRange(caret, caret); } catch {}
+      } else if (effectiveMode === 'replaceSelection'
         && typeof field.selectionStart === 'number'
         && field.selectionStart !== field.selectionEnd) {
+        // Live selection still present (no captured range) — splice into it.
         const start = field.selectionStart;
         const end = field.selectionEnd;
         field.value = field.value.slice(0, start) + text + field.value.slice(end);
@@ -689,14 +760,31 @@
     } else {
       // contenteditable — mirror the overlay-safe approach used by applyFix.
       field.focus();
-      const sel = window.getSelection();
-      const hasLiveSelection = sel && sel.rangeCount > 0 && field.contains(sel.anchorNode);
-      // NOTE: execCommand('insertText') fires a TRUSTED input event, which
-      // onFieldInput would treat as a user keystroke and clear suppression.
-      // So only take that path when NOT suppressing; suppressed writes use the
-      // textContent path, whose dispatched event is untrusted (Change 3-safe).
-      if (mode === 'replaceSelection' && hasLiveSelection && !sel.isCollapsed && !suppress) {
-        document.execCommand('insertText', false, text);
+      if (effectiveMode === 'replaceSelection' && sel && sel.type === 'ce') {
+        // Restore the captured range, then replace its contents with the text.
+        try {
+          const winSel = window.getSelection();
+          winSel.removeAllRanges();
+          winSel.addRange(sel.range);
+          sel.range.deleteContents();
+          sel.range.insertNode(document.createTextNode(text));
+          winSel.collapseToEnd();
+        } catch {
+          field.textContent = text;
+        }
+        if (suppress) analysisSuppressed = true;
+        field.dispatchEvent(new Event('input', { bubbles: true }));
+      } else if (effectiveMode === 'replaceSelection') {
+        const winSel = window.getSelection();
+        const hasLive = winSel && winSel.rangeCount > 0 && !winSel.isCollapsed && field.contains(winSel.anchorNode);
+        if (hasLive) {
+          winSel.getRangeAt(0).deleteContents();
+          winSel.getRangeAt(0).insertNode(document.createTextNode(text));
+        } else {
+          field.textContent = text;
+        }
+        if (suppress) analysisSuppressed = true;
+        field.dispatchEvent(new Event('input', { bubbles: true }));
       } else {
         field.textContent = text;
         if (suppress) analysisSuppressed = true;
@@ -704,7 +792,8 @@
       }
     }
 
-    // Clear the source tag now that the write succeeded.
+    // Consume the captured selection + source tag now that the write succeeded.
+    pendingSelection = null;
     try { delete field.dataset.bayanSource; } catch {}
   }
 
