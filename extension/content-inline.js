@@ -76,7 +76,7 @@
   const AC_MIN_CONTEXT = 3;
 
   // ══════════════════════════════════════════════════════════
-  // 1. DETECTION
+  // 1. DETECTION — universal editable field finder
   // ══════════════════════════════════════════════════════════
 
   function isEditableField(el) {
@@ -87,8 +87,8 @@
       const type = (el.type || '').toLowerCase();
       return ['text', 'search', 'url', ''].includes(type);
     }
-    // Contenteditable: allow on non-protected sites
     if (el.isContentEditable && !IS_PROTECTED) return true;
+    if (!IS_PROTECTED && (el.getAttribute('role') === 'textbox' || el.getAttribute('aria-multiline') === 'true')) return true;
     return false;
   }
 
@@ -106,30 +106,29 @@
   function onFieldInput(e) {
     if (paused || !activeField) return;
 
-    // Only a genuine user keystroke (a trusted `input` event) clears
-    // suppression and re-enables analysis. Our own write-back dispatches an
-    // untrusted event (isTrusted === false), and internal re-runs pass no
-    // event at all — neither should count as a manual edit (Change 3).
     const isUserKeystroke = !!e && e.isTrusted === true;
     if (isUserKeystroke && analysisSuppressed) analysisSuppressed = false;
-    // A real edit invalidates any selection captured at right-click time.
     if (isUserKeystroke) pendingSelection = null;
 
     const text = getFieldText(activeField);
 
-    // Ghost-text autocomplete (textarea/input only) runs independently of
-    // analysis. Kept active even when suppressed (separate, opt-in feature).
     scheduleGhost();
 
     if (analysisSuppressed) {
-      // Model output (summarize/dialect/quran) was just written — skip the
-      // correction pipeline and show the clean badge, not the spinner.
       clearHighlights();
       updateBadge(0);
       return;
     }
 
+    // Immediately clear stale highlights when text changes — the old overlay
+    // was rendered for a different string and its offsets are invalid now.
+    if (text !== lastAnalyzedText && overlayContainer) {
+      clearHighlights();
+    }
+
     if (!BayanController.hasArabic(text)) {
+      suggestions = [];
+      lastAnalyzedText = '';
       clearHighlights();
       updateBadge(0);
       return;
@@ -241,8 +240,8 @@
 
       ghostEl = document.createElement('div');
       ghostEl.className = 'bayan-il-ghost';
-      ghostEl.style.cssText = `position:absolute;top:${rect.top + window.scrollY}px;`
-        + `left:${rect.left + window.scrollX}px;width:${rect.width}px;height:${rect.height}px;`
+      ghostEl.style.cssText = `position:fixed;top:${rect.top}px;`
+        + `left:${rect.left}px;width:${rect.width}px;height:${rect.height}px;`
         + `font-family:${cs.fontFamily};font-size:${cs.fontSize};line-height:${cs.lineHeight};`
         + `padding:${cs.padding};border:${cs.border};border-color:transparent;`
         + `direction:${cs.direction};text-align:${cs.textAlign};overflow:hidden;`
@@ -329,14 +328,17 @@
     clearHighlights();
     if (!field || !suggs?.length) return;
 
+    const currentText = getFieldText(field);
+    if (currentText !== originalText) return;
+
     try {
       const rect = field.getBoundingClientRect();
       const cs = window.getComputedStyle(field);
 
       overlayContainer = document.createElement('div');
       overlayContainer.className = 'bayan-il-overlay';
-      overlayContainer.style.cssText = `position:absolute;top:${rect.top + window.scrollY}px;`
-        + `left:${rect.left + window.scrollX}px;width:${rect.width}px;height:${rect.height}px;`
+      overlayContainer.style.cssText = `position:fixed;top:${rect.top}px;`
+        + `left:${rect.left}px;width:${rect.width}px;height:${rect.height}px;`
         + `font-family:${cs.fontFamily};font-size:${cs.fontSize};line-height:${cs.lineHeight};`
         + `padding:${cs.padding};border:${cs.border};border-color:transparent;`
         + `direction:${cs.direction};text-align:${cs.textAlign};overflow:hidden;`
@@ -533,8 +535,31 @@
   // UI: FAB + Badge
   // ══════════════════════════════════════════════════════════
 
+  // ── Draggable FAB state ──
+  let fabDragging = false;
+  let fabDragStartX = 0;
+  let fabDragStartY = 0;
+  let fabDragOffsetX = 0;
+  let fabDragOffsetY = 0;
+  let fabCustomPos = null; // {x, y} when user has dragged to a custom position
+
+  function loadFabPosition() {
+    try {
+      const saved = localStorage.getItem('bayan_fab_pos');
+      if (saved) fabCustomPos = JSON.parse(saved);
+    } catch {}
+  }
+
+  function saveFabPosition() {
+    try {
+      if (fabCustomPos) localStorage.setItem('bayan_fab_pos', JSON.stringify(fabCustomPos));
+    } catch {}
+  }
+
   function createFloatingBtn() {
     if (floatingBtn) return;
+
+    loadFabPosition();
 
     floatingBtn = document.createElement('div');
     floatingBtn.className = 'bayan-il-fab';
@@ -556,7 +581,47 @@
     document.body.appendChild(floatingBtn);
     badgeCount = floatingBtn.querySelector('.bayan-il-badge');
 
-    floatingBtn.addEventListener('click', (e) => {
+    // ── Drag handling ──
+    floatingBtn.addEventListener('pointerdown', (e) => {
+      fabDragging = false;
+      fabDragStartX = e.clientX;
+      fabDragStartY = e.clientY;
+      const rect = floatingBtn.getBoundingClientRect();
+      fabDragOffsetX = e.clientX - rect.left;
+      fabDragOffsetY = e.clientY - rect.top;
+      floatingBtn.setPointerCapture(e.pointerId);
+    });
+
+    floatingBtn.addEventListener('pointermove', (e) => {
+      if (!floatingBtn.hasPointerCapture(e.pointerId)) return;
+      const dx = e.clientX - fabDragStartX;
+      const dy = e.clientY - fabDragStartY;
+      if (!fabDragging && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
+        fabDragging = true;
+        floatingBtn.classList.add('bayan-il-fab--dragging');
+      }
+      if (fabDragging) {
+        const x = Math.max(0, Math.min(window.innerWidth - 40, e.clientX - fabDragOffsetX));
+        const y = Math.max(0, Math.min(window.innerHeight - 40, e.clientY - fabDragOffsetY));
+        floatingBtn.style.position = 'fixed';
+        floatingBtn.style.left = `${x}px`;
+        floatingBtn.style.top = `${y}px`;
+      }
+    });
+
+    floatingBtn.addEventListener('pointerup', (e) => {
+      floatingBtn.releasePointerCapture(e.pointerId);
+      if (fabDragging) {
+        fabDragging = false;
+        floatingBtn.classList.remove('bayan-il-fab--dragging');
+        fabCustomPos = {
+          x: parseInt(floatingBtn.style.left, 10),
+          y: parseInt(floatingBtn.style.top, 10),
+        };
+        saveFabPosition();
+        return;
+      }
+      // Click (no drag)
       e.stopPropagation();
       if (paused) {
         paused = false;
@@ -566,11 +631,7 @@
       }
       if (suggestions.length > 0) {
         try {
-          // FAB = whole-field intent. Drop any selection captured by an earlier
-          // right-click so write-back replaces the entire field, not a range.
           pendingSelection = null;
-          // Tag the source field so write-back can re-find it after focus
-          // moves to the side panel (Change 1).
           if (lastInteractedField) lastInteractedField.dataset.bayanSource = '1';
           chrome.runtime.sendMessage({ type: 'OPEN_SIDEPANEL', text: lastAnalyzedText });
         } catch {}
@@ -580,9 +641,16 @@
 
   function positionFab(field) {
     if (!floatingBtn || !field) return;
-    const rect = field.getBoundingClientRect();
-    floatingBtn.style.top = `${Math.max(4, rect.top + window.scrollY + 6)}px`;
-    floatingBtn.style.left = `${Math.max(4, rect.left + window.scrollX + 6)}px`;
+    if (fabCustomPos) {
+      floatingBtn.style.position = 'fixed';
+      floatingBtn.style.left = `${fabCustomPos.x}px`;
+      floatingBtn.style.top = `${fabCustomPos.y}px`;
+    } else {
+      const rect = field.getBoundingClientRect();
+      floatingBtn.style.position = 'fixed';
+      floatingBtn.style.top = `${Math.max(4, rect.top + 6)}px`;
+      floatingBtn.style.left = `${Math.max(4, rect.left + 6)}px`;
+    }
     floatingBtn.classList.add('bayan-il-fab--visible');
   }
 
@@ -933,13 +1001,13 @@
     if (activeField && floatingBtn) positionFab(activeField);
     if (overlayContainer && activeField) {
       const rect = activeField.getBoundingClientRect();
-      overlayContainer.style.top = `${rect.top + window.scrollY}px`;
-      overlayContainer.style.left = `${rect.left + window.scrollX}px`;
+      overlayContainer.style.top = `${rect.top}px`;
+      overlayContainer.style.left = `${rect.left}px`;
     }
     if (ghostEl && activeField) {
       const rect = activeField.getBoundingClientRect();
-      ghostEl.style.top = `${rect.top + window.scrollY}px`;
-      ghostEl.style.left = `${rect.left + window.scrollX}px`;
+      ghostEl.style.top = `${rect.top}px`;
+      ghostEl.style.left = `${rect.left}px`;
     }
   }, { passive: true });
 
@@ -953,9 +1021,28 @@
     }
   }, { passive: true });
 
-  // ── MutationObserver ──
-  observer = new MutationObserver(() => {
+  // ── MutationObserver — detect removed fields AND newly added editable areas ──
+  observer = new MutationObserver((mutations) => {
     if (activeField && !document.body.contains(activeField)) detachField();
+    for (const m of mutations) {
+      if (m.type !== 'childList') continue;
+      for (const node of m.addedNodes) {
+        if (node.nodeType !== 1) continue;
+        if (isEditableField(node) && document.activeElement === node) {
+          attachField(node);
+          return;
+        }
+        const nested = node.querySelectorAll?.('textarea, input, [contenteditable="true"], [role="textbox"]');
+        if (nested) {
+          for (const el of nested) {
+            if (isEditableField(el) && document.activeElement === el) {
+              attachField(el);
+              return;
+            }
+          }
+        }
+      }
+    }
   });
   observer.observe(document.body, { childList: true, subtree: true });
 

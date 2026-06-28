@@ -8,19 +8,19 @@
     "description": "Extension description shown in Chrome Web Store"
   },
   "contextMenuCorrect": {
-    "message": "تصحيح مع بيان",
+    "message": "تصحيح النص مع بيان",
     "description": "Context menu item for correcting selected text"
   },
   "contextMenuSummarize": {
-    "message": "تلخيص مع بيان",
+    "message": "تلخيص النص مع بيان",
     "description": "Context menu item for summarizing selected text"
   },
   "contextMenuDialect": {
-    "message": "تحويل اللهجة إلى الفصحى مع بيان",
+    "message": "تحويل اللهجة إلى العربية الفصحى مع بيان",
     "description": "Context menu: dialect→MSA"
   },
   "contextMenuQuran": {
-    "message": "تدقيق الآية مع بيان",
+    "message": "تدقيق النص القرآني مع بيان",
     "description": "Context menu: Quran verify"
   }
 }

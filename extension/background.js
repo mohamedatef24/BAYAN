@@ -51,22 +51,22 @@ function getStorage() {
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
     id: 'bayan-correct',
-    title: chrome.i18n.getMessage('contextMenuCorrect') || 'تصحيح مع بيان',
+    title: chrome.i18n.getMessage('contextMenuCorrect') || 'تصحيح النص مع بيان',
     contexts: ['selection'],
   });
   chrome.contextMenus.create({
     id: 'bayan-summarize',
-    title: chrome.i18n.getMessage('contextMenuSummarize') || 'تلخيص مع بيان',
+    title: chrome.i18n.getMessage('contextMenuSummarize') || 'تلخيص النص مع بيان',
     contexts: ['selection'],
   });
   chrome.contextMenus.create({
     id: 'bayan-dialect',
-    title: chrome.i18n.getMessage('contextMenuDialect') || 'تحويل اللهجة إلى الفصحى مع بيان',
+    title: chrome.i18n.getMessage('contextMenuDialect') || 'تحويل اللهجة إلى العربية الفصحى مع بيان',
     contexts: ['selection'],
   });
   chrome.contextMenus.create({
     id: 'bayan-quran',
-    title: chrome.i18n.getMessage('contextMenuQuran') || 'تدقيق الآية مع بيان',
+    title: chrome.i18n.getMessage('contextMenuQuran') || 'تدقيق النص القرآني مع بيان',
     contexts: ['selection'],
   });
 });
