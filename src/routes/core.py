@@ -15,7 +15,7 @@ core_bp = Blueprint('core', __name__)
 def add_security_headers(response):
     response.headers['Content-Security-Policy'] = (
         "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "script-src 'self' https://fonts.googleapis.com; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; "
         "font-src 'self' https://fonts.gstatic.com; "
         "img-src 'self' data:; "

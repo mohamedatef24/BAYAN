@@ -21,18 +21,32 @@ function showToast(message, type = 'success', duration = 2500) {
 function showConfirmDialog(title, message, onConfirm) {
   var overlay = document.createElement('div');
   overlay.className = 'confirm-dialog-overlay';
-  overlay.innerHTML =
-    '<div class="confirm-dialog" dir="rtl">' +
-      '<div class="confirm-dialog__title">' + title + '</div>' +
-      '<div class="confirm-dialog__message">' + message + '</div>' +
-      '<div class="confirm-dialog__actions">' +
-        '<button class="confirm-dialog__btn" id="confirm-cancel">إلغاء</button>' +
-        '<button class="confirm-dialog__btn confirm-dialog__btn--danger" id="confirm-ok">تأكيد</button>' +
-      '</div>' +
-    '</div>';
+  var dialog = document.createElement('div');
+  dialog.className = 'confirm-dialog';
+  dialog.dir = 'rtl';
+  var titleEl = document.createElement('div');
+  titleEl.className = 'confirm-dialog__title';
+  titleEl.textContent = title;
+  var msgEl = document.createElement('div');
+  msgEl.className = 'confirm-dialog__message';
+  msgEl.textContent = message;
+  var actions = document.createElement('div');
+  actions.className = 'confirm-dialog__actions';
+  var cancelBtn = document.createElement('button');
+  cancelBtn.className = 'confirm-dialog__btn';
+  cancelBtn.textContent = 'إلغاء';
+  var okBtn = document.createElement('button');
+  okBtn.className = 'confirm-dialog__btn confirm-dialog__btn--danger';
+  okBtn.textContent = 'تأكيد';
+  actions.appendChild(cancelBtn);
+  actions.appendChild(okBtn);
+  dialog.appendChild(titleEl);
+  dialog.appendChild(msgEl);
+  dialog.appendChild(actions);
+  overlay.appendChild(dialog);
   document.body.appendChild(overlay);
-  overlay.querySelector('#confirm-cancel').onclick = function() { overlay.remove(); };
-  overlay.querySelector('#confirm-ok').onclick = function() { overlay.remove(); if (onConfirm) onConfirm(); };
+  cancelBtn.onclick = function() { overlay.remove(); };
+  okBtn.onclick = function() { overlay.remove(); if (onConfirm) onConfirm(); };
   overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
   document.addEventListener('keydown', function _esc(e) {
     if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', _esc); }

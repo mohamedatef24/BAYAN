@@ -325,20 +325,22 @@ def convert_dialect():
         }), 500
 
 
+import os as _os, sys as _sys
+_quran_root = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))))
+if _quran_root not in _sys.path:
+    _sys.path.insert(0, _quran_root)
+try:
+    from quran import search_bayan
+    _quran_available = True
+except Exception:
+    _quran_available = False
+
+
 @nlp_bp.route('/api/quran', methods=['POST'])
 @limiter.limit("20 per minute")
 def quran_verify():
     try:
-        import os, sys
-        _quran_root = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-        sys.path.insert(0, _quran_root)
-        try:
-            from quran import search_bayan
-            _quran_ok = True
-        except Exception:
-            _quran_ok = False
-
-        if not _quran_ok:
+        if not _quran_available:
             return jsonify({'error': 'Quran search module not available'}), 503
 
         if not request.is_json:
@@ -417,7 +419,7 @@ def analyze_text():
         text_len = len(current_text)
         run_spelling = text_len <= 1000
         if not run_spelling:
-            logger.info(f"[ANALYZE] Text length {text_len} > 300 — skipping AraSpell for performance")
+            logger.info(f"[ANALYZE] Text length {text_len} > 1000 — skipping AraSpell for performance")
 
         _RELIGIOUS_PHRASES = [
             'بسم الله', 'الحمد لله', 'سبحان الله', 'لا إله إلا الله',

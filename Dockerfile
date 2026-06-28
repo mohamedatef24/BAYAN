@@ -103,6 +103,9 @@ RUN echo "import os" > bundle.py && \
     echo "print(f'Bundled {len(js_order)} JS files')" >> bundle.py && \
     python bundle.py && rm bundle.py
 
+# Create non-root user and fix permissions
+RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+
 # Set environment variables
 ENV PORT=7860
 ENV DEBUG=False
@@ -110,6 +113,9 @@ ENV PYTHONUNBUFFERED=1
 
 # Expose port
 EXPOSE 7860
+
+# Run as non-root user
+USER appuser
 
 # Start the app with gunicorn (single worker to minimize RAM)
 # Timeout 300s: full pipeline (spelling ~50s + grammar ~8s + punctuation ~30s + cold start)
