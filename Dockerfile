@@ -46,6 +46,7 @@ print('Spelling model + MLM cached!'); \
 "
 
 # 3. Grammar — camel-tools MLE disambiguator data
+# Download as root, then we'll copy to appuser's home later
 RUN camel_data -i light
 
 # 4. Punctuation model (PuncAra-v1 — EncoderDecoderModel)
@@ -104,7 +105,12 @@ RUN echo "import os" > bundle.py && \
     python bundle.py && rm bundle.py
 
 # Create non-root user and fix permissions
-RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+# IMPORTANT: camel_data was downloaded as root → /root/.camel_tools/data
+# The app (running as appuser) looks in /home/appuser/.camel_tools/data
+# We must copy the data to appuser's home directory
+RUN useradd -m -u 1000 appuser && \
+    cp -r /root/.camel_tools /home/appuser/.camel_tools && \
+    chown -R appuser:appuser /app /home/appuser/.camel_tools
 
 # Set environment variables
 ENV PORT=7860
