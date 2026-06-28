@@ -54,21 +54,21 @@ function showConfirmDialog(title, message, onConfirm) {
 }
 
 // Scroll to top
-(function() {
+function initScrollToTop() {
   const btn = document.getElementById('scroll-top-btn');
   const sc = document.querySelector('.h-full.overflow-auto') || document.documentElement;
   if (!btn) return;
   const target = sc === document.documentElement ? window : sc;
-  (sc === document.documentElement ? window : sc).addEventListener('scroll', () => {
+  target.addEventListener('scroll', () => {
     const st = sc === document.documentElement ? window.scrollY : sc.scrollTop;
     btn.classList.toggle('visible', st > 400);
     const nav = document.querySelector('.site-nav');
     if (nav) nav.classList.toggle('nav-scrolled', st > 20);
   });
   btn.addEventListener('click', () => {
-    (sc === document.documentElement ? window : sc).scrollTo({ top: 0, behavior: 'smooth' });
+    target.scrollTo({ top: 0, behavior: 'smooth' });
   });
-})();
+}
 
 // Default configuration
 const defaultConfig = {
@@ -101,7 +101,17 @@ function showPage(pageId) {
     sessionStorage.setItem('bayan_current_page', pageId);
   } catch (e) {}
 
-  window.scrollTo(0, 0);
+  const sc = document.querySelector('.h-full.overflow-auto');
+  if (sc) sc.scrollTo(0, 0);
+  else window.scrollTo(0, 0);
+
+  const drawer = document.getElementById('mobile-drawer');
+  if (drawer && drawer.classList.contains('open')) {
+    drawer.classList.remove('open');
+    document.body.style.overflow = '';
+    const menuBtn = document.getElementById('mobile-menu-btn');
+    if (menuBtn) menuBtn.setAttribute('aria-expanded', 'false');
+  }
 }
 
 
@@ -185,7 +195,9 @@ function importSummaryFile(inputEl) {
     if (!selBar) return;
     var range = sel.getRangeAt(0);
     var rect = range.getBoundingClientRect();
-    selBar.style.top = (rect.top + window.scrollY - 48) + 'px';
+    var sc = document.querySelector('.h-full.overflow-auto');
+    var scrollY = sc ? sc.scrollTop : window.scrollY;
+    selBar.style.top = (rect.top + scrollY - 48) + 'px';
     selBar.style.left = (rect.left + rect.width / 2) + 'px';
     selBar.classList.remove('is-hidden');
   }
@@ -934,7 +946,11 @@ async function exportSummaryAs(format) {
     try {
       if (typeof html2pdf === 'undefined') await loadVendorScript('/js/vendor/html2pdf.bundle.min.js');
       if (typeof showToast === 'function') showToast('جاري تصدير PDF...');
-      const html = buildPdfHtmlString(text);
+      const html = typeof buildPdfHtmlString === 'function' ? buildPdfHtmlString(text) : `
+        <div dir="rtl" style="font-family: 'Cairo', Arial, sans-serif; padding: 20px; line-height: 2;">
+          ${text.replace(/\n/g, '<br>')}
+        </div>
+      `;
       await html2pdf().set({
         margin: [15, 15, 15, 15],
         filename: 'ملخص-بيان.pdf',
@@ -1070,6 +1086,7 @@ if (window.elementSdk) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+  initScrollToTop();
   await initAuth();
   initTheme();
   initUI();
