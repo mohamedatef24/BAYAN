@@ -2582,8 +2582,7 @@ def analyze_text():
         # 3. Punctuation (runs on grammar-corrected text — PuncAra-v1 local model)
         # FIX-07: Skip punctuation for religious text
         # FIX-51: Skip punctuation when spelling+grammar found no errors (clean text)
-        _has_real_corrections = any(p.stage in ('spelling', 'grammar') for p in ctx.patches.patches)
-        if not _is_religious_text and _has_real_corrections:
+        if not _is_religious_text:
           try:
             t0 = time.time()
             logger.info(f"[ANALYZE] Step 3: Punctuation starting...")
