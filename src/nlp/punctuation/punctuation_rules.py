@@ -56,9 +56,6 @@ def arabic_postprocessing(text: str) -> str:
     # Remove colons/semicolons before relative pronouns
     text = re.sub(r'[؛:]\s*(التي|الذي|الذين|اللتان|اللذان|اللاتي|اللواتي)', r' \1', text)
     
-    # Fix misplaced colons for saying verbs (e.g. قال: المعلم -> قال المعلم:)
-    text = re.sub(r'\b(قال|يقول|قالت|تقول|أجاب|أجابت|سأل|سألت|أخبر|أخبرت|صرح|صرحت|أضاف|أضافت|أردف|أردفت):?\s+(ال[أ-ي]+|أحمد|محمد|محمود|علي|عمر|خالد|فاطمة|مريم|عائشة|خديجة)\b:?', r'\1 \2:', text)
-
     # NEW: Strict Colon Guard
     _ALLOWED_COLON_CUES = r'(قال|يقول|قالت|تقول|أجاب|أجابت|سأل|سألت|أخبر|أخبرت|صرح|صرحت|أضاف|أضافت|أردف|أردفت|وضح|وضحت|أوضح|أوضحت|رد|ردت|التالي|الآتي|مثال|ملاحظة|تنبيه|تحذير|قائلا|قائلة|اسم|العمر|تاريخ|رقم|عاجل|الآتية|التالية)'
     
@@ -73,6 +70,9 @@ def arabic_postprocessing(text: str) -> str:
         return match.group(0)
         
     text = re.sub(r'([\u0600-\u06FF]+)(\s*:)', _colon_guard, text)
+    
+    # Fix misplaced colons for saying verbs (e.g. قال: المعلم -> قال المعلم:)
+    text = re.sub(r'\b(قال|يقول|قالت|تقول|أجاب|أجابت|سأل|سألت|أخبر|أخبرت|صرح|صرحت|أضاف|أضافت|أردف|أردفت):?\s+(ال[أ-ي]+|أحمد|محمد|محمود|علي|عمر|خالد|فاطمة|مريم|عائشة|خديجة)\b:?', r'\1 \2:', text)
     
     # Remove colons after specific non-speech verbs (fallback for verbs without ال)
     text = re.sub(r'\b(يقدر|يستطيع|يمكن|يجب|ينبغي|يعتبر|يعد|يرى|يعتقد)\s*:', r'\1 ', text)
