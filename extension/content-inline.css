@@ -29,20 +29,20 @@
 }
 
 .bayan-il-punctuation {
-  background: rgba(59, 130, 246, 0.12) !important;
-  border-bottom: 2px solid #3b82f6 !important;
+  background: rgba(107, 201, 138, 0.14) !important;
+  border-bottom: 2px solid #6BC98A !important;
   border-radius: 2px !important;
   cursor: pointer !important;
   transition: background 150ms ease !important;
 }
 .bayan-il-punctuation:hover {
-  background: rgba(59, 130, 246, 0.25) !important;
+  background: rgba(107, 201, 138, 0.28) !important;
 }
 
 /* ── Floating Action Button (FAB) ── */
 
 .bayan-il-fab {
-  position: absolute;
+  position: fixed;
   z-index: 2147483646 !important;
   width: 34px;
   height: 34px;
@@ -176,8 +176,8 @@
   color: #f59e0b !important;
 }
 .bayan-il-badge-punctuation {
-  background: rgba(59, 130, 246, 0.15) !important;
-  color: #3b82f6 !important;
+  background: rgba(107, 201, 138, 0.15) !important;
+  color: #6BC98A !important;
 }
 
 .bayan-il-tooltip-close {
@@ -277,4 +277,12 @@
 .bayan-il-ghost-suffix {
   color: rgba(120, 120, 130, 0.75) !important;
   opacity: 0.9;
+}
+
+/* ── FAB dragging state ── */
+
+.bayan-il-fab--dragging {
+  cursor: grabbing !important;
+  opacity: 0.85 !important;
+  transition: none !important;
 }
