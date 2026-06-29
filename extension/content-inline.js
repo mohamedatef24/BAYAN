@@ -419,6 +419,7 @@
     const typeLabels = { spelling: 'إملائي', grammar: 'نحوي', punctuation: 'ترقيم' };
 
     tooltip = document.createElement('div');
+    tooltip.setAttribute('data-bayan-theme', currentBayanTheme);
     tooltip.className = 'bayan-il-tooltip';
     tooltip.dir = 'rtl';
 
@@ -566,6 +567,7 @@
     loadFabPosition();
 
     floatingBtn = document.createElement('div');
+      floatingBtn.setAttribute('data-bayan-theme', currentBayanTheme);
     floatingBtn.className = 'bayan-il-fab';
     safeHTML(floatingBtn, `
       <svg width="18" height="18" viewBox="0 0 100 100" fill="none">
@@ -1053,4 +1055,22 @@
   // ── Log ──
   const mode = IS_PROTECTED ? 'protected' : 'full';
   console.log(`[Bayan] Inline engine v7.1 (mode: ${mode}, TT: ${ttPolicy ? 'yes' : 'no'})`);
+
+
+  // ── Theme Sync for Inline UI ──
+  let currentBayanTheme = 'dark';
+  chrome.storage.local.get(['theme'], (res) => {
+    currentBayanTheme = res.theme || 'dark';
+    if (typeof tooltip !== 'undefined' && tooltip) tooltip.setAttribute('data-bayan-theme', currentBayanTheme);
+    if (typeof floatingBtn !== 'undefined' && floatingBtn) floatingBtn.setAttribute('data-bayan-theme', currentBayanTheme);
+  });
+  
+  chrome.storage.onChanged.addListener((changes, namespace) => {
+    if (namespace === 'local' && changes.theme) {
+      currentBayanTheme = changes.theme.newValue;
+      if (typeof tooltip !== 'undefined' && tooltip) tooltip.setAttribute('data-bayan-theme', currentBayanTheme);
+      if (typeof floatingBtn !== 'undefined' && floatingBtn) floatingBtn.setAttribute('data-bayan-theme', currentBayanTheme);
+    }
+  });
+
 })();

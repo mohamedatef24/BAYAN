@@ -286,3 +286,53 @@
   opacity: 0.85 !important;
   transition: none !important;
 }
+
+
+/* ── Light Theme Overrides for Inline UI ── */
+.bayan-il-fab[data-bayan-theme="light"] {
+    background: #ffffff !important;
+    border: 1px solid #e5e7eb !important;
+}
+
+.bayan-il-fab[data-bayan-theme="light"] svg path {
+    fill: #6366f1 !important;
+}
+
+.bayan-il-tooltip[data-bayan-theme="light"] {
+    background: #ffffff !important;
+    border: 1px solid #e5e7eb !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(99, 102, 241, 0.1) !important;
+}
+
+.bayan-il-tooltip[data-bayan-theme="light"] .bayan-il-tooltip-header {
+    background: #f9fafb !important;
+    border-bottom: 1px solid #e5e7eb !important;
+    color: #4b5563 !important;
+}
+
+.bayan-il-tooltip[data-bayan-theme="light"] .bayan-il-tooltip-body {
+    background: #ffffff !important;
+}
+
+.bayan-il-tooltip[data-bayan-theme="light"] .bayan-il-tooltip-original {
+    color: #4b5563 !important;
+}
+
+.bayan-il-tooltip[data-bayan-theme="light"] .bayan-il-tooltip-correction {
+    color: #111827 !important;
+}
+
+.bayan-il-tooltip[data-bayan-theme="light"] .bayan-il-tooltip-actions {
+    border-top: 1px solid #e5e7eb !important;
+    background: #f9fafb !important;
+}
+
+.bayan-il-tooltip[data-bayan-theme="light"] .bayan-il-tooltip-ignore {
+    color: #4b5563 !important;
+}
+
+.bayan-il-tooltip[data-bayan-theme="light"] .bayan-il-tooltip-ignore:hover {
+    background: #e5e7eb !important;
+    color: #111827 !important;
+}
+
