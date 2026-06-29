@@ -336,3 +336,487 @@
     color: #111827 !important;
 }
 
+/* ══════════════════════════════════════════════
+   Modal Dialog — Analysis Panel
+   ══════════════════════════════════════════════ */
+
+.bayan-il-modal-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483646 !important;
+  background: rgba(0, 0, 0, 0.55) !important;
+  backdrop-filter: blur(4px) !important;
+  opacity: 0;
+  transition: opacity 200ms ease !important;
+  display: none;
+}
+
+.bayan-il-modal-backdrop--visible {
+  display: block !important;
+  opacity: 1 !important;
+}
+
+.bayan-il-modal-panel {
+  position: fixed !important;
+  z-index: 2147483647 !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) scale(0.95) !important;
+  width: 400px !important;
+  max-width: calc(100vw - 32px) !important;
+  max-height: 80vh !important;
+  background: #1a1a24 !important;
+  border: 1px solid #3a3a4d !important;
+  border-radius: 14px !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(99, 102, 241, 0.1) !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  font-family: 'Segoe UI', Tahoma, Arial, sans-serif !important;
+  font-size: 13px !important;
+  color: #f0f0f5 !important;
+  direction: rtl !important;
+  opacity: 0;
+  transition: opacity 200ms ease, transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+.bayan-il-modal-panel--visible {
+  opacity: 1 !important;
+  transform: translate(-50%, -50%) scale(1) !important;
+}
+
+/* ── Modal Header ── */
+
+.bayan-il-modal-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 12px 16px !important;
+  background: linear-gradient(135deg, #1a1a24 0%, rgba(99, 102, 241, 0.08) 100%) !important;
+  border-bottom: 1px solid #2d2d3d !important;
+  flex-shrink: 0 !important;
+}
+
+.bayan-il-modal-brand {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.bayan-il-modal-title {
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  background: linear-gradient(135deg, #818cf8, #6366f1) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  letter-spacing: -0.3px !important;
+}
+
+.bayan-il-modal-close {
+  background: none !important;
+  border: none !important;
+  color: #6b6b80 !important;
+  cursor: pointer !important;
+  font-size: 18px !important;
+  padding: 4px !important;
+  line-height: 1 !important;
+  border-radius: 6px !important;
+  transition: background 150ms ease, color 150ms ease !important;
+}
+
+.bayan-il-modal-close:hover {
+  color: #f0f0f5 !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* ── Modal Body (scrollable) ── */
+
+.bayan-il-modal-body {
+  overflow-y: auto !important;
+  padding: 16px !important;
+  flex: 1 !important;
+  min-height: 0 !important;
+}
+
+.bayan-il-modal-body::-webkit-scrollbar { width: 4px !important; }
+.bayan-il-modal-body::-webkit-scrollbar-track { background: transparent !important; }
+.bayan-il-modal-body::-webkit-scrollbar-thumb { background: #3a3a4d !important; border-radius: 4px !important; }
+
+/* ── Score Section ── */
+
+.bayan-il-modal-score {
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+  padding: 14px !important;
+  margin-bottom: 14px !important;
+  background: #22222e !important;
+  border: 1px solid #2d2d3d !important;
+  border-radius: 10px !important;
+}
+
+.bayan-il-modal-score-ring {
+  position: relative !important;
+  width: 80px !important;
+  height: 80px !important;
+  flex-shrink: 0 !important;
+}
+
+.bayan-il-modal-score-ring svg {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.bayan-il-modal-score-ring circle:last-child {
+  transition: stroke-dashoffset 800ms cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+.bayan-il-modal-score-value {
+  position: absolute !important;
+  inset: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 22px !important;
+  font-weight: 800 !important;
+  color: #818cf8 !important;
+}
+
+.bayan-il-modal-score-meta {
+  flex: 1 !important;
+  min-width: 0 !important;
+}
+
+.bayan-il-modal-score-hint {
+  display: block !important;
+  font-size: 12px !important;
+  color: #9898ad !important;
+  margin-bottom: 8px !important;
+}
+
+.bayan-il-modal-counts {
+  display: flex !important;
+  gap: 10px !important;
+  flex-wrap: wrap !important;
+}
+
+.bayan-il-modal-count {
+  font-size: 11px !important;
+  color: #6b6b80 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 3px !important;
+}
+
+.bayan-il-modal-count strong {
+  font-weight: 700 !important;
+}
+
+.bayan-il-modal-count--spelling strong { color: #ef4444 !important; }
+.bayan-il-modal-count--grammar strong { color: #f59e0b !important; }
+.bayan-il-modal-count--punctuation strong { color: #6BC98A !important; }
+
+/* ── Suggestions Header ── */
+
+.bayan-il-modal-sugg-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  margin-bottom: 10px !important;
+}
+
+.bayan-il-modal-sugg-title {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: #9898ad !important;
+}
+
+.bayan-il-modal-sugg-count {
+  font-size: 11px !important;
+  color: #6b6b80 !important;
+}
+
+/* ── Suggestion Cards ── */
+
+.bayan-il-modal-cards {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  margin-bottom: 14px !important;
+}
+
+.bayan-il-modal-card {
+  padding: 10px 12px !important;
+  background: #1a1a24 !important;
+  border: 1px solid #2d2d3d !important;
+  border-right: 4px solid #6b6b80 !important;
+  border-radius: 10px !important;
+  cursor: pointer !important;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.bayan-il-modal-card:hover {
+  border-color: #3a3a4d !important;
+  background: #22222e !important;
+  transform: translateX(-2px) !important;
+}
+
+.bayan-il-modal-card--spelling { border-right-color: #ef4444 !important; }
+.bayan-il-modal-card--grammar { border-right-color: #f59e0b !important; }
+.bayan-il-modal-card--punctuation { border-right-color: #6BC98A !important; }
+
+.bayan-il-modal-card-badge {
+  display: inline-block !important;
+  padding: 2px 8px !important;
+  border-radius: 20px !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  margin-bottom: 6px !important;
+}
+
+.bayan-il-modal-badge--spelling {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #ef4444 !important;
+}
+
+.bayan-il-modal-badge--grammar {
+  background: rgba(245, 158, 11, 0.15) !important;
+  color: #f59e0b !important;
+}
+
+.bayan-il-modal-badge--punctuation {
+  background: rgba(107, 201, 138, 0.15) !important;
+  color: #6BC98A !important;
+}
+
+.bayan-il-modal-card-change {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  margin-bottom: 8px !important;
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+}
+
+.bayan-il-modal-card-original {
+  text-decoration: line-through !important;
+  text-decoration-color: rgba(239, 68, 68, 0.4) !important;
+  color: #ef4444 !important;
+  opacity: 0.75 !important;
+}
+
+.bayan-il-modal-card-arrow {
+  color: #6b6b80 !important;
+  font-size: 12px !important;
+}
+
+.bayan-il-modal-card-fix {
+  color: #22c55e !important;
+  font-weight: 600 !important;
+}
+
+.bayan-il-modal-card-alts {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+}
+
+.bayan-il-modal-alt-chip {
+  padding: 4px 10px !important;
+  border: 1px solid #3a3a4d !important;
+  border-radius: 20px !important;
+  background: transparent !important;
+  color: #9898ad !important;
+  font-family: 'Segoe UI', Tahoma, sans-serif !important;
+  font-size: 11px !important;
+  cursor: pointer !important;
+  transition: all 200ms ease !important;
+}
+
+.bayan-il-modal-alt-chip:hover {
+  border-color: #6366f1 !important;
+  color: #f0f0f5 !important;
+  background: rgba(99, 102, 241, 0.1) !important;
+}
+
+.bayan-il-modal-alt-chip--main {
+  background: #6366f1 !important;
+  border-color: #6366f1 !important;
+  color: white !important;
+}
+
+.bayan-il-modal-alt-chip--main:hover {
+  background: #4f46e5 !important;
+  color: white !important;
+}
+
+.bayan-il-modal-alt-chip--keep {
+  border-style: dashed !important;
+  color: #6b6b80 !important;
+  opacity: 0.8 !important;
+}
+
+.bayan-il-modal-alt-chip--keep:hover {
+  opacity: 1 !important;
+  border-color: #6b6b80 !important;
+  background: rgba(107, 107, 128, 0.1) !important;
+}
+
+/* ── Apply All Button ── */
+
+.bayan-il-modal-apply-all {
+  width: 100% !important;
+  padding: 10px 18px !important;
+  border: none !important;
+  border-radius: 10px !important;
+  background: linear-gradient(135deg, #6366f1, #4f46e5) !important;
+  color: white !important;
+  font-family: 'Segoe UI', Tahoma, sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: transform 150ms ease, box-shadow 150ms ease !important;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+}
+
+.bayan-il-modal-apply-all:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.45) !important;
+}
+
+.bayan-il-modal-apply-all:active {
+  transform: translateY(0) !important;
+}
+
+/* ── Empty State ── */
+
+.bayan-il-modal-empty {
+  text-align: center !important;
+  padding: 24px 16px !important;
+  color: #6b6b80 !important;
+  font-size: 13px !important;
+}
+
+.bayan-il-modal-empty-icon {
+  font-size: 32px !important;
+  margin-bottom: 8px !important;
+  display: block !important;
+}
+
+/* ══════════════════════════════════════════════
+   Modal — Light Theme Overrides
+   ══════════════════════════════════════════════ */
+
+.bayan-il-modal-backdrop[data-bayan-theme="light"] {
+  background: rgba(0, 0, 0, 0.3) !important;
+}
+
+.bayan-il-modal-panel[data-bayan-theme="light"] {
+  background: #ffffff !important;
+  border-color: #e5e7eb !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(99, 102, 241, 0.08) !important;
+  color: #1f2937 !important;
+}
+
+.bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-modal-header {
+  background: linear-gradient(135deg, #ffffff 0%, rgba(99, 102, 241, 0.05) 100%) !important;
+  border-bottom-color: #e5e7eb !important;
+}
+
+.bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-modal-close {
+  color: #9ca3af !important;
+}
+
+.bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-modal-close:hover {
+  color: #1f2937 !important;
+  background: rgba(0, 0, 0, 0.05) !important;
+}
+
+.bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-modal-body::-webkit-scrollbar-thumb {
+  background: #d1d5db !important;
+}
+
+.bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-modal-score {
+  background: #f9fafb !important;
+  border-color: #e5e7eb !important;
+}
+
+.bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-modal-score-value {
+  color: #6366f1 !important;
+}
+
+.bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-modal-score-hint {
+  color: #6b7280 !important;
+}
+
+.bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-modal-count {
+  color: #9ca3af !important;
+}
+
+.bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-modal-sugg-title {
+  color: #6b7280 !important;
+}
+
+.bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-modal-sugg-count {
+  color: #9ca3af !important;
+}
+
+.bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-modal-card {
+  background: #ffffff !important;
+  border-color: #e5e7eb !important;
+}
+
+.bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-modal-card:hover {
+  background: #f9fafb !important;
+  border-color: #d1d5db !important;
+}
+
+.bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-modal-card-original {
+  color: #dc2626 !important;
+}
+
+.bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-modal-card-arrow {
+  color: #9ca3af !important;
+}
+
+.bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-modal-card-fix {
+  color: #16a34a !important;
+}
+
+.bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-modal-alt-chip {
+  border-color: #d1d5db !important;
+  color: #6b7280 !important;
+  background: transparent !important;
+}
+
+.bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-modal-alt-chip:hover {
+  border-color: #6366f1 !important;
+  color: #4f46e5 !important;
+  background: rgba(99, 102, 241, 0.06) !important;
+}
+
+.bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-modal-alt-chip--main {
+  background: #6366f1 !important;
+  border-color: #6366f1 !important;
+  color: white !important;
+}
+
+.bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-modal-alt-chip--keep {
+  color: #9ca3af !important;
+  border-color: #d1d5db !important;
+}
+
+.bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-modal-alt-chip--keep:hover {
+  border-color: #9ca3af !important;
+  background: rgba(0, 0, 0, 0.03) !important;
+}
+
+.bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-modal-empty {
+  color: #9ca3af !important;
+}
+

@@ -1662,6 +1662,8 @@ def analyze_text():
         _has_hashtag = bool(_re_spell_guard.search(r'#[\u0600-\u06FF\w]{2,}', ctx.current_text))
         _has_percent = bool(_re_spell_guard.search(r'\d+\.\d+%', ctx.current_text))
         _has_latin_word = bool(_re_spell_guard.search(r'\b[A-Za-z]{3,}\b', ctx.current_text))
+        
+        _skip_all_stages = _is_religious_text or _has_url or _has_email or _has_hashtag or _has_percent or _has_latin_word
         if _has_url or _has_email:
             logger.info(f"[ANALYZE] Text contains URLs/emails — skipping spelling")
             run_spelling = False
@@ -2049,7 +2051,7 @@ def analyze_text():
         #
         # For each remaining OOV word, try to find the closest IV word
         # using edit-distance-1 candidates from BERT vocabulary.
-        if not _is_religious_text:
+        if not _skip_all_stages:
           try:
             from nlp.spelling.araspell_service import get_spelling_model
             _oov_checker = get_spelling_model()
@@ -2182,7 +2184,7 @@ def analyze_text():
         ]
         _structured_placeholders = []  # (start, end, original_text, label)
         _grammar_input_text = ctx.current_text
-        if not _is_religious_text:
+        if not _skip_all_stages:
             import re as _re_struct
             for _pat in _PROTECTED_PATTERNS:
                 for _m in _re_struct.finditer(_pat, _grammar_input_text):
@@ -2195,7 +2197,7 @@ def analyze_text():
                 logger.info(f"[ANALYZE] Protected {len(_structured_placeholders)} structured elements")
 
         # 2. Grammar (runs on spelling-corrected text — word-level dependency)
-        if not _is_religious_text:
+        if not _skip_all_stages:
           try:
             t0 = time.time()
             logger.info(f"[ANALYZE] Step 2: Grammar correction starting...")
@@ -2583,7 +2585,7 @@ def analyze_text():
         # FIX-07: Skip punctuation for religious text
         # FIX-51: Skip punctuation when spelling+grammar found no errors (clean text)
         _has_real_corrections = any(p.stage in ('spelling', 'grammar') for p in ctx.patches.patches)
-        if not _is_religious_text and _has_real_corrections:
+        if not _skip_all_stages:
           try:
             t0 = time.time()
             logger.info(f"[ANALYZE] Step 3: Punctuation starting...")
