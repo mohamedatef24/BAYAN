@@ -56,23 +56,42 @@ def arabic_postprocessing(text: str) -> str:
     # Remove colons/semicolons before relative pronouns
     text = re.sub(r'[؛:]\s*(التي|الذي|الذين|اللتان|اللذان|اللاتي|اللواتي)', r' \1', text)
     
-    # NEW: Strict Colon Guard
-    _ALLOWED_COLON_CUES = r'(قال|يقول|قالت|تقول|أجاب|أجابت|سأل|سألت|أخبر|أخبرت|صرح|صرحت|أضاف|أضافت|أردف|أردفت|وضح|وضحت|أوضح|أوضحت|رد|ردت|التالي|الآتي|مثال|ملاحظة|تنبيه|تحذير|قائلا|قائلة|اسم|العمر|تاريخ|رقم|عاجل|الآتية|التالية)'
+    # 1. Fix misplaced colons (e.g. قال: المعلم -> قال المعلم:)
+    # Only applies if a colon is actually present on the verb or the name
+    def _fix_misplaced(m):
+        verb, col1, name, col2 = m.groups()
+        if col1 == ':' or col2 == ':':
+            return f"{verb} {name}:"
+        return m.group(0)
+        
+    text = re.sub(
+        r'\b([وفلس]?(?:قال|يقول|قالت|تقول|أجاب|أجابت|سأل|سألت|أخبر|أخبرت|صرح|صرحت|أضاف|أضافت|أردف|أردفت))(:?)\s+(ال[أ-ي]+|أحمد|محمد|محمود|علي|عمر|خالد|فاطمة|مريم|عائشة|خديجة)\b(:?)',
+        _fix_misplaced, text
+    )
+
+    # 2. Smart Colon Guard (looks up to 6 words back)
+    _ALLOWED_COLON_CUES = r'^[وفلس]?(قال|يقول|قالت|تقول|أجاب|أجابت|سأل|سألت|أخبر|أخبرت|صرح|صرحت|أضاف|أضافت|أردف|أردفت|وضح|وضحت|أوضح|أوضحت|رد|ردت|التالي|الآتي|مثال|ملاحظة|تنبيه|تحذير|قائلا|قائلة|اسم|العمر|تاريخ|رقم|عاجل|الآتية|التالية)$'
     
     def _colon_guard(match):
-        prev_word = match.group(1)
-        if re.fullmatch(_ALLOWED_COLON_CUES, prev_word):
+        context = match.group(1)
+        colon = match.group(2)
+        
+        words = re.findall(r'[\u0600-\u06FFa-zA-Z]+', context)
+        if not words:
             return match.group(0)
-        # Strip colons from definite nouns (ال-prefix) and preposition+definite combos
-        # (لل, بال, فال, وال, كال). These are never valid colon targets.
+            
+        prev_word = words[-1]
+        last_6_words = words[-6:]
+        
+        if any(re.match(_ALLOWED_COLON_CUES, w) for w in last_6_words):
+            return match.group(0)
+            
         if prev_word.startswith(('ال', 'لل', 'بال', 'فال', 'وال', 'كال')):
-            return f'{prev_word}'
+            return context + " " 
+            
         return match.group(0)
         
-    text = re.sub(r'([\u0600-\u06FF]+)(\s*:)', _colon_guard, text)
-    
-    # Fix misplaced colons for saying verbs (e.g. قال: المعلم -> قال المعلم:)
-    text = re.sub(r'\b(قال|يقول|قالت|تقول|أجاب|أجابت|سأل|سألت|أخبر|أخبرت|صرح|صرحت|أضاف|أضافت|أردف|أردفت):?\s+(ال[أ-ي]+|أحمد|محمد|محمود|علي|عمر|خالد|فاطمة|مريم|عائشة|خديجة)\b:?', r'\1 \2:', text)
+    text = re.sub(r'([^:]+)(:)', _colon_guard, text)
     
     # Remove colons after specific non-speech verbs (fallback for verbs without ال)
     text = re.sub(r'\b(يقدر|يستطيع|يمكن|يجب|ينبغي|يعتبر|يعد|يرى|يعتقد)\s*:', r'\1 ', text)

@@ -680,3 +680,32 @@ document.addEventListener('DOMContentLoaded', () => {
   })();
 });
 
+
+
+// ── Theme Toggle Logic ──
+(function initBayanThemeToggle() {
+  const toggleBtn = document.getElementById('ext-theme-toggle');
+  
+  // Load theme from storage
+  chrome.storage.local.get(['theme'], (result) => {
+    const currentTheme = result.theme || 'dark'; // default to dark
+    document.documentElement.setAttribute('data-theme', currentTheme);
+  });
+
+  // Sync theme changes instantly across all views
+  chrome.storage.onChanged.addListener((changes, namespace) => {
+    if (namespace === 'local' && changes.theme) {
+      document.documentElement.setAttribute('data-theme', changes.theme.newValue);
+    }
+  });
+
+
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      let theme = document.documentElement.getAttribute('data-theme') || 'dark';
+      let targetTheme = theme === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', targetTheme);
+      chrome.storage.local.set({ theme: targetTheme });
+    });
+  }
+})();
