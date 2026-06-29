@@ -636,11 +636,7 @@
         return;
       }
       if (suggestions.length > 0) {
-        try {
-          pendingSelection = null;
-          if (lastInteractedField) lastInteractedField.dataset.bayanSource = '1';
-          chrome.runtime.sendMessage({ type: 'OPEN_SIDEPANEL', text: lastAnalyzedText });
-        } catch {}
+        showModal();
       }
     });
   }
@@ -998,6 +994,8 @@
       if (tooltip?.contains(a)) return;
       if (floatingBtn?.contains(a)) return;
       if (overlayContainer?.contains(a)) return;
+      if (modalPanel?.contains(a)) return;
+      if (modalBackdrop?.contains(a)) return;
       if (document.querySelector('.bayan-il-tooltip')) return;
       detachField();
     }, 300);
@@ -1057,19 +1055,296 @@
   console.log(`[Bayan] Inline engine v7.1 (mode: ${mode}, TT: ${ttPolicy ? 'yes' : 'no'})`);
 
 
+  // ══════════════════════════════════════════════════════════
+  // Modal Dialog — Full Analysis Panel
+  // ══════════════════════════════════════════════════════════
+
+  let modalBackdrop = null;
+  let modalPanel = null;
+
+  const TYPE_LABELS = { spelling: 'إملائي', grammar: 'نحوي', punctuation: 'ترقيم' };
+  const SCORE_CIRCUMFERENCE = 440;
+
+  function calculateWritingScore(spelling, grammar, punctuation) {
+    const raw = 100 - spelling * 8 - grammar * 6 - punctuation * 3;
+    return Math.max(0, Math.min(100, raw));
+  }
+
+  function getScoreColor(score) {
+    if (score >= 80) return '#22c55e';
+    if (score >= 50) return '#f59e0b';
+    return '#ef4444';
+  }
+
+  function getScoreHint(score) {
+    if (score >= 90) return 'ممتاز! كتابة نظيفة';
+    if (score >= 70) return 'جيد، بعض التحسينات ممكنة';
+    if (score >= 50) return 'مقبول، يحتاج مراجعة';
+    return 'يحتاج تحسين كبير';
+  }
+
+  function resolveAlternatives(s) {
+    if (s.alternatives && s.alternatives.length > 0) return s.alternatives;
+    const alts = [];
+    if (s.correction) alts.push(s.correction);
+    alts.push(s.original);
+    return alts;
+  }
+
+  function createModal() {
+    if (modalBackdrop) return;
+
+    modalBackdrop = document.createElement('div');
+    modalBackdrop.className = 'bayan-il-modal-backdrop';
+    modalBackdrop.setAttribute('data-bayan-theme', currentBayanTheme);
+
+    modalPanel = document.createElement('div');
+    modalPanel.className = 'bayan-il-modal-panel';
+    modalPanel.setAttribute('data-bayan-theme', currentBayanTheme);
+    modalPanel.dir = 'rtl';
+
+    safeHTML(modalPanel, `
+      <div class="bayan-il-modal-header">
+        <div class="bayan-il-modal-brand">
+          <svg width="22" height="22" viewBox="0 0 100 100" fill="none">
+            <circle cx="50" cy="50" r="46" fill="url(#bmGrad)" />
+            <path d="M30 55 Q35 35, 50 30 Q65 35, 70 55 Q65 65, 50 70 Q35 65, 30 55Z" fill="rgba(255,255,255,0.9)" />
+            <circle cx="50" cy="42" r="4" fill="url(#bmGrad)" />
+            <defs>
+              <linearGradient id="bmGrad" x1="0" y1="0" x2="100" y2="100">
+                <stop offset="0%" stop-color="#6366f1"/>
+                <stop offset="100%" stop-color="#8b5cf6"/>
+              </linearGradient>
+            </defs>
+          </svg>
+          <span class="bayan-il-modal-title">بيان</span>
+        </div>
+        <button class="bayan-il-modal-close" title="إغلاق">✕</button>
+      </div>
+      <div class="bayan-il-modal-body">
+        <div class="bayan-il-modal-score">
+          <div class="bayan-il-modal-score-ring">
+            <svg viewBox="0 0 160 160">
+              <circle cx="80" cy="80" r="70" fill="none" stroke="#2d2d3d" stroke-width="8" />
+              <circle cx="80" cy="80" r="70" fill="none" stroke="#6366f1" stroke-width="8"
+                stroke-dasharray="${SCORE_CIRCUMFERENCE}" stroke-dashoffset="${SCORE_CIRCUMFERENCE}" stroke-linecap="round"
+                id="bayan-modal-score-circle" transform="rotate(-90 80 80)" />
+            </svg>
+            <span class="bayan-il-modal-score-value" id="bayan-modal-score-value">--</span>
+          </div>
+          <div class="bayan-il-modal-score-meta">
+            <span class="bayan-il-modal-score-hint" id="bayan-modal-score-hint"></span>
+            <div class="bayan-il-modal-counts">
+              <span class="bayan-il-modal-count bayan-il-modal-count--spelling">إملائي: <strong id="bayan-modal-count-spelling">٠</strong></span>
+              <span class="bayan-il-modal-count bayan-il-modal-count--grammar">نحوي: <strong id="bayan-modal-count-grammar">٠</strong></span>
+              <span class="bayan-il-modal-count bayan-il-modal-count--punctuation">ترقيم: <strong id="bayan-modal-count-punctuation">٠</strong></span>
+            </div>
+          </div>
+        </div>
+        <div class="bayan-il-modal-sugg-header">
+          <span class="bayan-il-modal-sugg-title">الاقتراحات</span>
+          <span class="bayan-il-modal-sugg-count" id="bayan-modal-sugg-count"></span>
+        </div>
+        <div class="bayan-il-modal-cards" id="bayan-modal-cards"></div>
+        <button class="bayan-il-modal-apply-all" id="bayan-modal-apply-all" style="display:none;">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          تطبيق الكل
+        </button>
+      </div>
+    `);
+
+    document.body.appendChild(modalBackdrop);
+    document.body.appendChild(modalPanel);
+
+    modalPanel.querySelector('.bayan-il-modal-close').addEventListener('click', hideModal);
+    modalBackdrop.addEventListener('click', hideModal);
+
+    modalPanel.querySelector('#bayan-modal-apply-all').addEventListener('click', applyAllFixes);
+
+    document.addEventListener('keydown', onModalKeydown);
+  }
+
+  function onModalKeydown(e) {
+    if (e.key === 'Escape' && modalBackdrop?.classList.contains('bayan-il-modal-backdrop--visible')) {
+      hideModal();
+    }
+  }
+
+  function showModal() {
+    createModal();
+
+    modalBackdrop.setAttribute('data-bayan-theme', currentBayanTheme);
+    modalPanel.setAttribute('data-bayan-theme', currentBayanTheme);
+
+    updateModalThemeColors();
+    updateModalScore();
+    renderModalSuggestions();
+
+    modalBackdrop.classList.add('bayan-il-modal-backdrop--visible');
+    requestAnimationFrame(() => {
+      modalPanel.classList.add('bayan-il-modal-panel--visible');
+    });
+  }
+
+  function hideModal() {
+    if (modalPanel) modalPanel.classList.remove('bayan-il-modal-panel--visible');
+    if (modalBackdrop) modalBackdrop.classList.remove('bayan-il-modal-backdrop--visible');
+  }
+
+  function updateModalThemeColors() {
+    if (!modalPanel) return;
+    const scoreTrack = modalPanel.querySelector('#bayan-modal-score-circle')?.previousElementSibling;
+    if (scoreTrack) {
+      scoreTrack.setAttribute('stroke', currentBayanTheme === 'light' ? '#e5e7eb' : '#2d2d3d');
+    }
+  }
+
+  function updateModalScore() {
+    if (!modalPanel) return;
+
+    const counts = { spelling: 0, grammar: 0, punctuation: 0 };
+    suggestions.forEach((s) => {
+      if (counts[s.type] !== undefined) counts[s.type]++;
+    });
+
+    const score = calculateWritingScore(counts.spelling, counts.grammar, counts.punctuation);
+    const color = getScoreColor(score);
+    const offset = SCORE_CIRCUMFERENCE - (SCORE_CIRCUMFERENCE * score) / 100;
+
+    const circle = modalPanel.querySelector('#bayan-modal-score-circle');
+    const valueEl = modalPanel.querySelector('#bayan-modal-score-value');
+    const hintEl = modalPanel.querySelector('#bayan-modal-score-hint');
+
+    if (circle) {
+      circle.setAttribute('stroke', color);
+      requestAnimationFrame(() => {
+        circle.setAttribute('stroke-dashoffset', String(offset));
+      });
+    }
+    if (valueEl) valueEl.textContent = String(score);
+    if (hintEl) hintEl.textContent = getScoreHint(score);
+
+    const toArabicNum = (n) => String(n).replace(/\d/g, (d) => '٠١٢٣٤٥٦٧٨٩'[d]);
+
+    const cSpelling = modalPanel.querySelector('#bayan-modal-count-spelling');
+    const cGrammar = modalPanel.querySelector('#bayan-modal-count-grammar');
+    const cPunctuation = modalPanel.querySelector('#bayan-modal-count-punctuation');
+    if (cSpelling) cSpelling.textContent = toArabicNum(counts.spelling);
+    if (cGrammar) cGrammar.textContent = toArabicNum(counts.grammar);
+    if (cPunctuation) cPunctuation.textContent = toArabicNum(counts.punctuation);
+  }
+
+  function renderModalSuggestions() {
+    if (!modalPanel) return;
+
+    const container = modalPanel.querySelector('#bayan-modal-cards');
+    const countEl = modalPanel.querySelector('#bayan-modal-sugg-count');
+    const applyAllBtn = modalPanel.querySelector('#bayan-modal-apply-all');
+
+    if (!container) return;
+
+    if (suggestions.length === 0) {
+      safeHTML(container, `
+        <div class="bayan-il-modal-empty">
+          <span class="bayan-il-modal-empty-icon">✓</span>
+          لا توجد اقتراحات — نص نظيف!
+        </div>
+      `);
+      if (countEl) countEl.textContent = '';
+      if (applyAllBtn) applyAllBtn.style.display = 'none';
+      return;
+    }
+
+    const toArabicNum = (n) => String(n).replace(/\d/g, (d) => '٠١٢٣٤٥٦٧٨٩'[d]);
+    if (countEl) countEl.textContent = `${toArabicNum(suggestions.length)} اقتراح`;
+    if (applyAllBtn) applyAllBtn.style.display = suggestions.length >= 2 ? 'flex' : 'none';
+
+    let html = '';
+    suggestions.forEach((s, idx) => {
+      const alts = resolveAlternatives(s);
+      const typeLabel = TYPE_LABELS[s.type] || s.type;
+
+      html += `<div class="bayan-il-modal-card bayan-il-modal-card--${s.type}" data-modal-idx="${idx}">`;
+      html += `<span class="bayan-il-modal-card-badge bayan-il-modal-badge--${s.type}">${typeLabel}</span>`;
+      html += `<div class="bayan-il-modal-card-change">`;
+      html += `<span class="bayan-il-modal-card-original">${esc(s.original)}</span>`;
+      html += `<span class="bayan-il-modal-card-arrow">←</span>`;
+      html += `<span class="bayan-il-modal-card-fix">${s.correction ? esc(s.correction) : '<s style="opacity:0.5">حذف</s>'}</span>`;
+      html += `</div>`;
+      html += `<div class="bayan-il-modal-card-alts">`;
+
+      alts.forEach((alt, ai) => {
+        const isMain = alt === s.correction && ai === 0;
+        const isKeep = alt === s.original;
+        let cls = 'bayan-il-modal-alt-chip';
+        if (isMain) cls += ' bayan-il-modal-alt-chip--main';
+        else if (isKeep) cls += ' bayan-il-modal-alt-chip--keep';
+        const label = isKeep ? 'إبقاء الأصل' : esc(alt);
+        html += `<button class="${cls}" data-modal-alt="${esc(alt)}" data-modal-sidx="${idx}" data-modal-keep="${isKeep ? '1' : ''}">${label}</button>`;
+      });
+
+      html += `</div></div>`;
+    });
+
+    safeHTML(container, html);
+
+    container.querySelectorAll('.bayan-il-modal-alt-chip').forEach((chip) => {
+      chip.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const sidx = parseInt(chip.dataset.modalSidx, 10);
+        const isKeep = chip.dataset.modalKeep === '1';
+        const s = suggestions[sidx];
+        if (!s) return;
+
+        if (isKeep) {
+          dismissSuggestion(s);
+        } else {
+          const altVal = chip.dataset.modalAlt;
+          const fixSugg = { ...s, correction: altVal };
+          applyFix(activeField || lastInteractedField, fixSugg);
+        }
+
+        updateModalScore();
+        renderModalSuggestions();
+
+        if (suggestions.length === 0) {
+          setTimeout(hideModal, 600);
+        }
+      });
+    });
+  }
+
+  function applyAllFixes() {
+    const field = activeField || lastInteractedField;
+    if (!field || suggestions.length === 0) return;
+
+    while (suggestions.length > 0) {
+      const last = suggestions.reduce((a, b) => a.start > b.start ? a : b);
+      applyFix(field, last);
+    }
+
+    updateModalScore();
+    renderModalSuggestions();
+    setTimeout(hideModal, 600);
+  }
+
   // ── Theme Sync for Inline UI ──
   let currentBayanTheme = 'dark';
   chrome.storage.local.get(['theme'], (res) => {
     currentBayanTheme = res.theme || 'dark';
     if (typeof tooltip !== 'undefined' && tooltip) tooltip.setAttribute('data-bayan-theme', currentBayanTheme);
     if (typeof floatingBtn !== 'undefined' && floatingBtn) floatingBtn.setAttribute('data-bayan-theme', currentBayanTheme);
+    if (modalBackdrop) modalBackdrop.setAttribute('data-bayan-theme', currentBayanTheme);
+    if (modalPanel) { modalPanel.setAttribute('data-bayan-theme', currentBayanTheme); updateModalThemeColors(); }
   });
-  
+
   chrome.storage.onChanged.addListener((changes, namespace) => {
     if (namespace === 'local' && changes.theme) {
       currentBayanTheme = changes.theme.newValue;
       if (typeof tooltip !== 'undefined' && tooltip) tooltip.setAttribute('data-bayan-theme', currentBayanTheme);
       if (typeof floatingBtn !== 'undefined' && floatingBtn) floatingBtn.setAttribute('data-bayan-theme', currentBayanTheme);
+      if (modalBackdrop) modalBackdrop.setAttribute('data-bayan-theme', currentBayanTheme);
+      if (modalPanel) { modalPanel.setAttribute('data-bayan-theme', currentBayanTheme); updateModalThemeColors(); }
     }
   });
 
