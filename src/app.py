@@ -1649,21 +1649,31 @@ def analyze_text():
             'اهدنا الصراط',                # R004 Fatiha
         ]
         _is_religious_text = any(phrase in ctx.current_text for phrase in _RELIGIOUS_PHRASES)
-        
+        if _is_religious_text:
+            logger.info(f"[ANALYZE] Religious text detected — skipping ALL stages")
+            # Skip ALL stages for religious text
+            run_spelling = False
+
+        # ── Batch 5: Skip spelling for text containing URLs/emails ──
+        # The spelling model destroys URLs (https→htps, .com→. com)
         import re as _re_spell_guard
         _has_url = bool(_re_spell_guard.search(r'https?://\S+', ctx.current_text))
         _has_email = bool(_re_spell_guard.search(r'\S+@\S+\.\S+', ctx.current_text))
         _has_hashtag = bool(_re_spell_guard.search(r'#[\u0600-\u06FF\w]{2,}', ctx.current_text))
         _has_percent = bool(_re_spell_guard.search(r'\d+\.\d+%', ctx.current_text))
-        _has_latin_word = bool(_re_spell_guard.search(r'\b[A-Za-z]{2,}\b', ctx.current_text))
-
-        _skip_all_stages = _is_religious_text or _has_url or _has_email or _has_hashtag or _has_percent or _has_latin_word
-        
-        if _skip_all_stages:
-            logger.info(f"[ANALYZE] Text contains protected content (religious/url/email/code) — skipping ALL stages")
+        _has_latin_word = bool(_re_spell_guard.search(r'\b[A-Za-z]{3,}\b', ctx.current_text))
+        if _has_url or _has_email:
+            logger.info(f"[ANALYZE] Text contains URLs/emails — skipping spelling")
             run_spelling = False
-        else:
-            run_spelling = True
+        elif _has_latin_word:
+            logger.info(f"[ANALYZE] Text contains Latin words — skipping spelling")
+            run_spelling = False
+        elif _has_hashtag:
+            logger.info(f"[ANALYZE] Text contains hashtags — skipping spelling")
+            run_spelling = False
+        elif _has_percent:
+            logger.info(f"[ANALYZE] Text contains percentages — skipping spelling")
+            run_spelling = False
 
         # 1. Spelling (with conservative post-filtering to avoid over-editing)
         if run_spelling:
@@ -2039,7 +2049,7 @@ def analyze_text():
         #
         # For each remaining OOV word, try to find the closest IV word
         # using edit-distance-1 candidates from BERT vocabulary.
-        if not _skip_all_stages:
+        if not _is_religious_text:
           try:
             from nlp.spelling.araspell_service import get_spelling_model
             _oov_checker = get_spelling_model()
@@ -2169,11 +2179,10 @@ def analyze_text():
             r'\+?\d{10,13}',           # Phone numbers
             r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}',  # IP addresses
             r'v\d+\.\d+\.\d+',         # Version numbers
-            r'كرة قدم',                # Protect fixed phrases from grammar
         ]
         _structured_placeholders = []  # (start, end, original_text, label)
         _grammar_input_text = ctx.current_text
-        if not _skip_all_stages:
+        if not _is_religious_text:
             import re as _re_struct
             for _pat in _PROTECTED_PATTERNS:
                 for _m in _re_struct.finditer(_pat, _grammar_input_text):
@@ -2186,7 +2195,7 @@ def analyze_text():
                 logger.info(f"[ANALYZE] Protected {len(_structured_placeholders)} structured elements")
 
         # 2. Grammar (runs on spelling-corrected text — word-level dependency)
-        if not _skip_all_stages:
+        if not _is_religious_text:
           try:
             t0 = time.time()
             logger.info(f"[ANALYZE] Step 2: Grammar correction starting...")
@@ -2573,7 +2582,8 @@ def analyze_text():
         # 3. Punctuation (runs on grammar-corrected text — PuncAra-v1 local model)
         # FIX-07: Skip punctuation for religious text
         # FIX-51: Skip punctuation when spelling+grammar found no errors (clean text)
-        if not _skip_all_stages:
+        _has_real_corrections = any(p.stage in ('spelling', 'grammar') for p in ctx.patches.patches)
+        if not _is_religious_text and _has_real_corrections:
           try:
             t0 = time.time()
             logger.info(f"[ANALYZE] Step 3: Punctuation starting...")

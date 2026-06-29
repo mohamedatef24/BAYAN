@@ -83,10 +83,6 @@ def strip_punct_only(text):
     """Remove ONLY punctuation chars to compare word content."""
     return re.sub(r'[.,،؛؟!:;?!\s\u060C\u061B\u061F]+', ' ', text).strip()
 
-def _strip_trailing_punct(text):
-    """Remove trailing punctuation to ignore deceptive failures."""
-    return re.sub(r'[.,،؛؟!:;?!\s]+$', '', text)
-
 def words(text):
     return re.sub(r'[.,،؛؟!:;?!\s]+', ' ', text).strip().split()
 
@@ -111,7 +107,7 @@ def run_spelling_benchmark(api: API, samples: list) -> List[BenchResult]:
         r.pipeline_output = resp.get('corrected', '')
         r.pipeline_suggestions = resp.get('suggestions', [])
         original = resp.get('original', s['input'])
-        changed = _strip_trailing_punct(r.pipeline_output) != _strip_trailing_punct(original)
+        changed = r.pipeline_output != original
 
         error_words = s.get('error_words', [])
         has_errors = len(error_words) > 0
@@ -215,7 +211,7 @@ def run_grammar_benchmark(api: API, samples: list) -> List[BenchResult]:
         r.pipeline_output = resp.get('corrected', '')
         r.pipeline_suggestions = resp.get('suggestions', [])
         original = resp.get('original', s['input'])
-        changed = _strip_trailing_punct(r.pipeline_output) != _strip_trailing_punct(original)
+        changed = r.pipeline_output != original
         error_words = s.get('error_words', [])
         has_errors = len(error_words) > 0
         expected_fix = s.get('expected_fix', '')
@@ -388,7 +384,7 @@ def run_entity_benchmark(api: API, samples: list) -> List[BenchResult]:
             else:
                 r.root_cause_stage = "punctuation"
             r.root_cause_detail = f"Entity '{entity}' was modified"
-        elif _strip_trailing_punct(r.pipeline_output) != _strip_trailing_punct(resp.get('original', s['input'])):
+        elif r.pipeline_output != resp.get('original', s['input']):
             changes = [f"{sg.get('original','')}→{sg.get('correction','')}" for sg in r.pipeline_suggestions]
             if changes:
                 r.pipeline_verdict = "FP"
@@ -428,7 +424,7 @@ def run_religious_benchmark(api: API, samples: list) -> List[BenchResult]:
         r.pipeline_suggestions = resp.get('suggestions', [])
         original = resp.get('original', s['input'])
 
-        if _strip_trailing_punct(r.pipeline_output) != _strip_trailing_punct(original):
+        if r.pipeline_output != original:
             changes = [f"{sg.get('original','')}→{sg.get('correction','')}" for sg in r.pipeline_suggestions]
             r.pipeline_verdict = "FP"
             r.pipeline_detail = f"RELIGIOUS TEXT MODIFIED: {changes[:3]}"
@@ -476,7 +472,7 @@ def run_structured_benchmark(api: API, samples: list) -> List[BenchResult]:
             r.root_cause_component = "MODEL"
             r.root_cause_stage = "grammar"
             r.root_cause_detail = f"Grammar model destroyed: {s.get('category','')}"
-        elif _strip_trailing_punct(r.pipeline_output) != _strip_trailing_punct(resp.get('original', s['input'])):
+        elif r.pipeline_output != resp.get('original', s['input']):
             changes = [f"{sg.get('original','')}→{sg.get('correction','')}" for sg in r.pipeline_suggestions]
             r.pipeline_verdict = "FP"
             r.pipeline_detail = f"Modified: {changes[:3]}"
@@ -512,7 +508,7 @@ def run_hallucination_benchmark(api: API, samples: list) -> List[BenchResult]:
         r.pipeline_suggestions = resp.get('suggestions', [])
         original = resp.get('original', s['input'])
 
-        if _strip_trailing_punct(r.pipeline_output) != _strip_trailing_punct(original):
+        if r.pipeline_output != original:
             changes = [f"{sg.get('original','')}→{sg.get('correction','')}" for sg in r.pipeline_suggestions]
             r.pipeline_verdict = "FP"
             r.pipeline_detail = f"HALLUCINATION: {changes[:3]}"
