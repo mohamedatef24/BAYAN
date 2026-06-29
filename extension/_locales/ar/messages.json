@@ -16,7 +16,7 @@
     "description": "Context menu item for summarizing selected text"
   },
   "contextMenuDialect": {
-    "message": "تحويل اللهجة إلى العربية الفصحى مع بيان",
+    "message": "تحويل للفصحى مع بيان",
     "description": "Context menu: dialect→MSA"
   },
   "contextMenuQuran": {

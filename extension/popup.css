@@ -27,7 +27,7 @@
 
   --bayan-spelling: #ef4444;
   --bayan-grammar: #f59e0b;
-  --bayan-punctuation: #3b82f6;
+  --bayan-punctuation: #6BC98A;
 
   --bayan-radius: 10px;
   --bayan-radius-sm: 6px;
@@ -473,7 +473,7 @@ body::-webkit-scrollbar-thumb {
 }
 
 .bayan-punctuation-suggestion {
-  background: rgba(59, 130, 246, 0.15);
+  background: rgba(107, 201, 138, 0.14);
   border-bottom: 2px solid var(--bayan-punctuation);
   border-radius: 2px;
   padding: 0 2px;
@@ -481,7 +481,7 @@ body::-webkit-scrollbar-thumb {
   transition: background var(--bayan-transition);
 }
 .bayan-punctuation-suggestion:hover {
-  background: rgba(59, 130, 246, 0.25);
+  background: rgba(107, 201, 138, 0.28);
 }
 
 /* ══════════════════════════════════════════════
@@ -556,7 +556,7 @@ body::-webkit-scrollbar-thumb {
   color: var(--bayan-grammar);
 }
 .bayan-badge-punctuation {
-  background: rgba(59, 130, 246, 0.15);
+  background: rgba(107, 201, 138, 0.15);
   color: var(--bayan-punctuation);
 }
 
