@@ -16,6 +16,9 @@ RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/wh
 # Pre-download models during build (network is available here)
 # At runtime, the container has NO outbound DNS, so models must be cached
 
+# Set HF_HOME to a global path so non-root users (like in HF Spaces) can access cached models
+ENV HF_HOME=/opt/huggingface
+RUN mkdir -p /opt/huggingface && chmod 777 /opt/huggingface
 # 1. Summarization model (MBart, float16)
 RUN python -c "\
 from transformers import MBartForConditionalGeneration, AutoTokenizer, AutoConfig; \
@@ -46,7 +49,9 @@ print('Spelling model + MLM cached!'); \
 "
 
 # 3. Grammar — camel-tools MLE disambiguator data
-RUN camel_data -i light
+# Set CAMELTOOLS_DATA to a global path so non-root users (like in HF Spaces) can access it
+ENV CAMELTOOLS_DATA=/opt/camel_tools
+RUN mkdir -p /opt/camel_tools && chmod 777 /opt/camel_tools && camel_data -i light
 
 # 4. Punctuation model (PuncAra-v1 — EncoderDecoderModel)
 RUN python -c "\

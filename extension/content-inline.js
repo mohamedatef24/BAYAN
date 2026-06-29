@@ -244,8 +244,10 @@
         + `left:${rect.left}px;width:${rect.width}px;height:${rect.height}px;`
         + `font-family:${cs.fontFamily};font-size:${cs.fontSize};line-height:${cs.lineHeight};`
         + `padding:${cs.padding};border:${cs.border};border-color:transparent;`
-        + `direction:${cs.direction};text-align:${cs.textAlign};overflow:hidden;`
-        + `pointer-events:none;z-index:2147483645;box-sizing:border-box;`
+        + `direction:${cs.direction};text-align:${cs.textAlign};`
+        + `unicode-bidi:${cs.unicodeBidi};letter-spacing:${cs.letterSpacing};`
+        + `word-spacing:${cs.wordSpacing};text-indent:${cs.textIndent};`
+        + `overflow:hidden;pointer-events:none;z-index:2147483645;box-sizing:border-box;`
         + `white-space:pre-wrap;word-wrap:break-word;color:transparent;`;
 
       const html = esc(baseText) + `<span class="bayan-il-ghost-suffix">${esc(suffix)}</span>`;
@@ -341,8 +343,10 @@
         + `left:${rect.left}px;width:${rect.width}px;height:${rect.height}px;`
         + `font-family:${cs.fontFamily};font-size:${cs.fontSize};line-height:${cs.lineHeight};`
         + `padding:${cs.padding};border:${cs.border};border-color:transparent;`
-        + `direction:${cs.direction};text-align:${cs.textAlign};overflow:hidden;`
-        + `pointer-events:none;z-index:2147483645;box-sizing:border-box;`
+        + `direction:${cs.direction};text-align:${cs.textAlign};`
+        + `unicode-bidi:${cs.unicodeBidi};letter-spacing:${cs.letterSpacing};`
+        + `word-spacing:${cs.wordSpacing};text-indent:${cs.textIndent};`
+        + `overflow:hidden;pointer-events:none;z-index:2147483645;box-sizing:border-box;`
         + `white-space:pre-wrap;word-wrap:break-word;color:transparent;`;
 
       const sorted = [...suggs].sort((a, b) => a.start - b.start);

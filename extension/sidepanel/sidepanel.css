@@ -27,7 +27,7 @@
 
   --sp-spelling: #ef4444;
   --sp-grammar: #f59e0b;
-  --sp-punctuation: #3b82f6;
+  --sp-punctuation: #6BC98A;
 
   --sp-radius: 10px;
   --sp-radius-sm: 6px;
@@ -439,7 +439,7 @@ body {
   cursor: pointer;
 }
 .bayan-punctuation-suggestion {
-  background: rgba(59, 130, 246, 0.15);
+  background: rgba(107, 201, 138, 0.14);
   border-bottom: 2px solid var(--sp-punctuation);
   padding: 0 2px;
   border-radius: 2px;
@@ -504,7 +504,7 @@ body {
 }
 .bayan-badge-spelling { background: rgba(239, 68, 68, 0.15); color: var(--sp-spelling); }
 .bayan-badge-grammar { background: rgba(245, 158, 11, 0.15); color: var(--sp-grammar); }
-.bayan-badge-punctuation { background: rgba(59, 130, 246, 0.15); color: var(--sp-punctuation); }
+.bayan-badge-punctuation { background: rgba(107, 201, 138, 0.15); color: var(--sp-punctuation); }
 
 .bayan-suggestion-change {
   display: flex;
