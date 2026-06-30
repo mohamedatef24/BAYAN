@@ -688,8 +688,8 @@ class ArabicGrammarGuard:
                     else:
                         corrected_tokens[i+1] = base_adj + ('ان' if is_nom else 'ين')
                         
-            # Plural Human Adjective Agreement
-            elif w1_num == 'p' and w1_pos in ['noun', 'unknown']:
+            # Plural Human Adjective Agreement (Sound Plurals Only)
+            elif w1_num == 'p' and w1_pos in ['noun', 'unknown'] and (w1.endswith('ون') or w1.endswith('ين') or w1.endswith('ات')):
                 base_adj = None
                 for suffix in ['ان', 'ين', 'تان', 'تين', 'ة', 'ون', 'ات', 'ين', '']:
                     stem = w2[:-len(suffix)] if suffix else w2
