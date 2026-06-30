@@ -633,7 +633,7 @@ class OutputValidator:
             
         # ── Protect Structured Data ──
         # Reject spelling modifications to English, JSON, URLs, Emails, Hashtags
-        if re.search(r'[a-zA-Z]|\{.*\}|\[.*\]|<.*>|#\S+|@\S+', original):
+        if re.search(r'[a-zA-Z]|\{|\[|<|#|@|://', original):
             if original != corrected:
                 return False, "structural_protection"
                 
