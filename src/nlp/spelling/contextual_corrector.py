@@ -11,6 +11,7 @@
 
 import logging
 import torch
+import threading
 from typing import List, Tuple, Optional, Dict
 
 logger = logging.getLogger(__name__)
@@ -18,6 +19,7 @@ logger = logging.getLogger(__name__)
 # Singleton instance
 _instance = None
 _loading = False
+_lock = threading.Lock()
 
 
 class ContextualCorrector:
@@ -61,7 +63,7 @@ class ContextualCorrector:
         Returns:
             Probability score (0.0 to 1.0) — higher = better fit
         """
-        cache_key = f"{text[:100]}|{position}|{word}"
+        cache_key = f"{text[:200]}|{len(text)}|{position}|{word}"
         if cache_key in self._cache:
             return self._cache[cache_key]
 
@@ -71,7 +73,7 @@ class ContextualCorrector:
 
         # Create masked text
         masked_words = words.copy()
-        masked_words[position] = '[MASK]'
+        masked_words[position] = self.tokenizer.mask_token
         masked_text = ' '.join(masked_words)
 
         try:
@@ -97,7 +99,13 @@ class ContextualCorrector:
             if not word_tokens:
                 return 0.0
 
-            score = probs[word_tokens[0]].item()
+            if len(word_tokens) == 1:
+                score = probs[word_tokens[0]].item()
+            else:
+                score = probs[word_tokens[0]].item()
+                for t_id in word_tokens[1:]:
+                    score *= probs[t_id].item()
+                score = score ** (1.0 / len(word_tokens))
 
         except Exception as e:
             logger.warning(f"[MLM] Score error for '{word}': {e}")
@@ -222,7 +230,7 @@ class ContextualCorrector:
             return []
 
         masked_words = words.copy()
-        masked_words[position] = '[MASK]'
+        masked_words[position] = self.tokenizer.mask_token
         masked_text = ' '.join(masked_words)
 
         try:
@@ -284,7 +292,7 @@ class ContextualCorrector:
 
 def get_contextual_corrector() -> Optional[ContextualCorrector]:
     """Get or create the singleton ContextualCorrector instance.
-    
+
     Returns None if loading fails (graceful degradation).
     """
     global _instance, _loading
@@ -292,18 +300,22 @@ def get_contextual_corrector() -> Optional[ContextualCorrector]:
     if _instance is not None:
         return _instance
 
-    if _loading:
-        return None  # Prevent recursive loading
+    with _lock:
+        if _instance is not None:
+            return _instance
 
-    _loading = True
-    try:
-        _instance = ContextualCorrector()
-        return _instance
-    except Exception as e:
-        logger.warning(f"[MLM] Failed to load contextual corrector: {e}")
-        return None
-    finally:
-        _loading = False
+        if _loading:
+            return None  # Prevent recursive loading
+
+        _loading = True
+        try:
+            _instance = ContextualCorrector()
+            return _instance
+        except Exception as e:
+            logger.warning(f"[MLM] Failed to load contextual corrector: {e}")
+            return None
+        finally:
+            _loading = False
 
 
 def is_loaded() -> bool:

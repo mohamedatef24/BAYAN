@@ -1,0 +1,301 @@
+
+/* ── UI Sync CSS ── */
+
+.bayan-il-suggestion-popover {
+  position: absolute;
+  z-index: 2147483647 !important;
+  background: #1A1D26 !important;
+  border: 1px solid rgba(236, 238, 242, 0.16) !important;
+  border-radius: 1rem !important;
+  padding: 1rem !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.38) !important;
+  width: 320px !important;
+  display: none;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  font-family: 'Cairo', 'Tajawal', 'Noto Sans Arabic', sans-serif !important;
+  direction: rtl;
+  color: #ECEEF2;
+}
+.bayan-il-suggestion-popover.bayan-il-show {
+  display: block !important;
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+.bayan-il-popover-type {
+  font-size: 0.75rem !important;
+  font-weight: 700 !important;
+  margin-bottom: 0.5rem !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+}
+.bayan-il-popover-type--spelling { color: #E88A8A !important; }
+.bayan-il-popover-type--grammar { color: #E4B35A !important; }
+.bayan-il-popover-type--punctuation { color: #6BC98A !important; }
+
+.bayan-il-popover-original-word {
+  font-size: 0.875rem !important;
+  color: #B4BBC6 !important;
+  margin-bottom: 0.5rem !important;
+  text-align: right !important;
+}
+.bayan-il-popover-label {
+  font-weight: 700 !important;
+}
+.bayan-il-popover-alternatives {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+  margin-bottom: 0.5rem !important;
+}
+.bayan-il-popover-alt-btn {
+  width: 100% !important;
+  padding: 8px 12px !important;
+  border: 1px solid rgba(236, 238, 242, 0.09) !important;
+  border-radius: 0.75rem !important;
+  background: #1A1D26 !important;
+  color: #ECEEF2 !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  font-family: inherit !important;
+  font-size: 1rem !important;
+  text-align: right !important;
+  transition: all 0.2s ease !important;
+  min-height: 40px !important;
+}
+.bayan-il-popover-alt-main {
+  background: linear-gradient(135deg, #6BA3E0, #A594E8) !important;
+  color: #F4F5F7 !important;
+  border-color: transparent !important;
+  font-weight: 700 !important;
+}
+.bayan-il-popover-alt-main:hover {
+  opacity: 0.92 !important;
+  transform: translateX(-2px) !important;
+}
+.bayan-il-popover-dismiss {
+  display: block !important;
+  width: 100% !important;
+  padding: 6px 0 !important;
+  margin-top: 6px !important;
+  background: none !important;
+  border: 1px dashed rgba(236, 238, 242, 0.16) !important;
+  border-radius: 0.5rem !important;
+  color: #8A939F !important;
+  font-size: 0.75rem !important;
+  font-family: inherit !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+.bayan-il-popover-dismiss:hover {
+  color: #E88A8A !important;
+  border-color: #E88A8A !important;
+  background: rgba(232, 138, 138, 0.08) !important;
+}
+.bayan-il-popover-hint {
+  font-size: 0.75rem !important;
+  color: #8A939F !important;
+  text-align: center !important;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0 !important;
+}
+
+/* Modal Panel UI Sync */
+.bayan-il-sidebar-panel {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1rem !important;
+  max-height: calc(100vh - 140px) !important;
+  overflow-y: auto !important;
+  scrollbar-width: thin !important;
+  font-family: 'Cairo', 'Tajawal', 'Noto Sans Arabic', sans-serif !important;
+  color: #ECEEF2 !important;
+}
+.bayan-il-sidebar-card {
+  padding: 1.5rem !important;
+}
+.bayan-il-surface-card {
+  background: #1A1D26 !important;
+  border-radius: 1rem !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28) !important;
+  border: 1px solid rgba(26, 29, 33, 0.08) !important;
+}
+.bayan-il-card-title {
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  margin-top: 0 !important;
+  margin-bottom: 1rem !important;
+  text-align: right !important;
+  color: #ECEEF2 !important;
+}
+
+/* Score Ring */
+.bayan-il-score-ring-wrap {
+  position: relative !important;
+  width: 140px !important;
+  height: 140px !important;
+  margin: 0 auto 1rem !important;
+}
+.bayan-il-score-svg {
+  width: 100% !important;
+  height: 100% !important;
+  transform: rotate(-90deg) !important;
+}
+.bayan-il-score-circle {
+  transition: stroke-dashoffset 0.6s ease-in-out !important;
+}
+.bayan-il-score-value {
+  position: absolute !important;
+  inset: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 2.25rem !important;
+  font-weight: 700 !important;
+  color: #ECEEF2 !important;
+}
+.bayan-il-score-hint {
+  text-align: center !important;
+  font-size: 0.875rem !important;
+  color: #B4BBC6 !important;
+  margin: 0 !important;
+}
+
+/* Suggestions scroll & card */
+.bayan-il-suggestions-scroll {
+  max-height: 320px !important;
+  overflow-y: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.5rem !important;
+}
+.bayan-il-suggestion-card {
+  padding: 1rem !important;
+  padding-right: calc(1rem + 4px) !important;
+  border-radius: 0.75rem !important;
+  border: 1px solid rgba(236, 238, 242, 0.09) !important;
+  border-right: 4px solid rgba(236, 238, 242, 0.16) !important;
+  background: #242833 !important;
+  cursor: pointer !important;
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease !important;
+  text-align: right !important;
+}
+.bayan-il-suggestion-card[data-suggestion-type="spelling"] { border-right-color: #E88A8A !important; }
+.bayan-il-suggestion-card[data-suggestion-type="grammar"] { border-right-color: #E4B35A !important; }
+.bayan-il-suggestion-card[data-suggestion-type="punctuation"] { border-right-color: #6BC98A !important; }
+.bayan-il-suggestion-card:hover {
+  border-color: #6BA3E0 !important;
+  background: rgba(107, 163, 224, 0.12) !important;
+  transform: translateX(-2px) !important;
+}
+.bayan-il-suggestion-card-badge {
+  display: inline-block !important;
+  font-size: 0.75rem !important;
+  font-weight: 700 !important;
+  padding: 2px 8px !important;
+  border-radius: 999px !important;
+  margin-bottom: 0.5rem !important;
+}
+.bayan-il-suggestion-card-change {
+  font-size: 0.875rem !important;
+  margin-bottom: 4px !important;
+  color: #ECEEF2 !important;
+}
+.bayan-il-suggestion-card-original {
+  text-decoration: line-through !important;
+  color: #8A939F !important;
+}
+.bayan-il-suggestion-card-arrow {
+  margin: 0 0.5rem !important;
+  color: #8A939F !important;
+}
+.bayan-il-suggestion-card-fix {
+  color: #6BC98A !important;
+  font-weight: 600 !important;
+}
+.bayan-il-suggestion-card-alts {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+  margin-top: 8px !important;
+}
+.bayan-il-suggestion-card-apply {
+  padding: 4px 10px !important;
+  border: none !important;
+  border-radius: 0.5rem !important;
+  background: #6BA3E0 !important;
+  color: #F4F5F7 !important;
+  font-size: 0.75rem !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  font-family: inherit !important;
+  min-height: 32px !important;
+  transition: opacity 0.2s ease !important;
+}
+.bayan-il-suggestion-card-apply:hover {
+  opacity: 0.9 !important;
+}
+.bayan-il-suggestion-card-alt-keep {
+  background: transparent !important;
+  border: 1px dashed rgba(236, 238, 242, 0.09) !important;
+  color: #8A939F !important;
+  font-size: 0.75rem !important;
+  font-weight: 500 !important;
+  padding: 4px 10px !important;
+  border-radius: 0.5rem !important;
+  cursor: pointer !important;
+}
+.bayan-il-suggestion-card-alt-keep:hover {
+  color: #ECEEF2 !important;
+  border-color: #B4BBC6 !important;
+  background: #242833 !important;
+}
+.bayan-il-apply-all-btn {
+  width: 100% !important;
+  padding: 8px 16px !important;
+  background: linear-gradient(135deg, #6BA3E0, #A594E8) !important;
+  color: #F4F5F7 !important;
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+  border: none !important;
+  border-radius: 0.75rem !important;
+  cursor: pointer !important;
+  margin-top: 1rem !important;
+  transition: opacity 0.2s ease !important;
+}
+.bayan-il-apply-all-btn:hover {
+  opacity: 0.9 !important;
+}
+
+/* Modal header wrapper */
+.bayan-il-modal-top-bar {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 0 0.5rem !important;
+}
+.bayan-il-modal-brand {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+}
+.bayan-il-modal-title {
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  background: linear-gradient(135deg, #6BA3E0, #A594E8) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+.bayan-il-modal-close {
+  background: none !important;
+  border: none !important;
+  color: #B4BBC6 !important;
+  font-size: 1.25rem !important;
+  cursor: pointer !important;
+}
+.bayan-il-modal-close:hover {
+  color: #E88A8A !important;
+}
+

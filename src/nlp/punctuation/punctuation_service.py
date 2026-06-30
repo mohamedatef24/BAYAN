@@ -12,12 +12,14 @@ import logging
 import time
 import torch
 import re
+import threading
 
 logger = logging.getLogger(__name__)
 
 # ── Lazy-loaded singletons ──
 _punctuation_checker = None
 _load_error = None
+_lock = threading.Lock()
 
 HF_REPO_ID = "bayan10/PuncAra-v1"
 
@@ -43,6 +45,11 @@ class PunctuationChecker:
     def _strip_punct(word: str) -> str:
         """Remove leading/trailing punctuation from a word."""
         return word.strip('.,;:!?،؛؟!.:«»"\'()-–—…')
+
+    @staticmethod
+    def _normalize_hamza(word: str) -> str:
+        import re
+        return re.sub(r'[أإآ]', 'ا', word).replace('ة', 'ه').replace('ى', 'ي')
 
     def _strip_non_punctuation_changes(self, original: str, punctuated: str) -> str:
         """
@@ -77,7 +84,7 @@ class PunctuationChecker:
             o_base = self._strip_punct(o_word)
             p_base = self._strip_punct(p_word)
 
-            if o_base == p_base:
+            if o_base == p_base or self._normalize_hamza(o_base) == self._normalize_hamza(p_base):
                 # Anti-hallucination for question marks
                 if '؟' in p_word and '؟' not in o_word:
                     _EXCL_CUES = {'هل', 'أين', 'متى', 'كيف', 'لماذا', 'ماذا', 'أي', 'كم', 'ما'}
@@ -236,7 +243,7 @@ class PunctuationChecker:
                 cleaned = arabic_postprocessing(punctuated)
                 processed_paragraphs.append(cleaned)
 
-            result = "\n\n".join(processed_paragraphs)
+            result = "\n".join(processed_paragraphs)
             _r_display = result[:80] + ('...' if len(result) > 80 else '')
             _t_display = text[:80] + ('...' if len(text) > 80 else '')
             logger.info(f"Punctuation output: '{_r_display}' (input: '{_t_display}')")
@@ -257,43 +264,47 @@ def get_punctuation_model():
     if _punctuation_checker is not None:
         return _punctuation_checker
 
-    if _load_error is not None:
-        raise RuntimeError(f"Punctuation model previously failed to load: {_load_error}")
+    with _lock:
+        if _punctuation_checker is not None:
+            return _punctuation_checker
 
-    try:
-        t0 = time.time()
-        logger.info("Loading PuncAra-v1 punctuation model (lazy init)...")
+        if _load_error is not None:
+            raise RuntimeError(f"Punctuation model previously failed to load: {_load_error}")
 
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        logger.info(f"Punctuation model device: {device}")
+        try:
+            t0 = time.time()
+            logger.info("Loading PuncAra-v1 punctuation model (lazy init)...")
 
-        from transformers import EncoderDecoderModel, AutoTokenizer
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            logger.info(f"Punctuation model device: {device}")
 
-        logger.info(f"Loading model from HF Hub: {HF_REPO_ID}")
-        model = EncoderDecoderModel.from_pretrained(HF_REPO_ID)
-        tokenizer = AutoTokenizer.from_pretrained(HF_REPO_ID)
+            from transformers import EncoderDecoderModel, AutoTokenizer
 
-        # Configure special tokens
-        model.config.decoder_start_token_id = tokenizer.cls_token_id
-        model.config.bos_token_id = tokenizer.cls_token_id
-        model.config.eos_token_id = tokenizer.sep_token_id
-        model.config.pad_token_id = tokenizer.pad_token_id
+            logger.info(f"Loading model from HF Hub: {HF_REPO_ID}")
+            model = EncoderDecoderModel.from_pretrained(HF_REPO_ID)
+            tokenizer = AutoTokenizer.from_pretrained(HF_REPO_ID)
 
-        model = model.to(device)
-        model.eval()
+            # Configure special tokens
+            model.config.decoder_start_token_id = tokenizer.cls_token_id
+            model.config.bos_token_id = tokenizer.cls_token_id
+            model.config.eos_token_id = tokenizer.sep_token_id
+            model.config.pad_token_id = tokenizer.pad_token_id
 
-        _punctuation_checker = PunctuationChecker(model, tokenizer, device)
+            model = model.to(device)
+            model.eval()
 
-        elapsed = time.time() - t0
-        logger.info(f"PuncAra-v1 ready in {elapsed:.1f}s")
-        return _punctuation_checker
+            _punctuation_checker = PunctuationChecker(model, tokenizer, device)
 
-    except Exception as e:
-        import traceback
-        _load_error = str(e)
-        logger.error(f"Failed to load punctuation model: {e}")
-        logger.error(traceback.format_exc())
-        raise RuntimeError(f"Punctuation model load failed: {e}")
+            elapsed = time.time() - t0
+            logger.info(f"PuncAra-v1 ready in {elapsed:.1f}s")
+            return _punctuation_checker
+
+        except Exception as e:
+            import traceback
+            _load_error = str(e)
+            logger.error(f"Failed to load punctuation model: {e}")
+            logger.error(traceback.format_exc())
+            raise RuntimeError(f"Punctuation model load failed: {e}")
 
 
 def is_loaded() -> bool:

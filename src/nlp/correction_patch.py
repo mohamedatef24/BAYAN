@@ -88,9 +88,11 @@ class PatchSet:
 
     def __init__(self):
         self.patches: list = []
+        self._resolved_cache = None
 
     def add(self, patch: CorrectionPatch):
         self.patches.append(patch)
+        self._resolved_cache = None
 
     def resolve_overlaps(self) -> list:
         """
@@ -206,4 +208,6 @@ class PatchSet:
 
     def to_list(self) -> list:
         """Serialize resolved patches for API response."""
-        return [p.to_dict() for p in self.resolve_overlaps()]
+        if self._resolved_cache is None:
+            self._resolved_cache = self.resolve_overlaps()
+        return [p.to_dict() for p in self._resolved_cache]

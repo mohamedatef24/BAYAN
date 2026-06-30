@@ -15,10 +15,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnCorrect = document.getElementById('btn-correct');
   const btnClear = document.getElementById('btn-clear');
   const btnApplyAll = document.getElementById('btn-apply-all');
-  const btnCopyResult = document.getElementById('btn-copy-result');
+  const btnCopyText = document.getElementById('btn-copy-text');
   const scoreSection = document.getElementById('score-section');
-  const resultSection = document.getElementById('result-section');
-  const resultText = document.getElementById('result-text');
   const suggestionsSection = document.getElementById('suggestions-section');
   const suggestionsList = document.getElementById('suggestions-list');
   const timingSection = document.getElementById('timing-section');
@@ -28,11 +26,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Summary tab elements
   const summaryInputText = document.getElementById('summary-input-text');
-  const summaryCharCount = document.getElementById('summary-char-count');
+  const summaryWordCountInput = document.getElementById('summary-word-count-input');
   const btnSummarize = document.getElementById('btn-summarize');
   const summaryResultSection = document.getElementById('summary-result-section');
   const summaryText = document.getElementById('summary-text');
-  const summaryMeta = document.getElementById('summary-meta');
+  const summaryStats = document.getElementById('summary-stats');
+  const summaryWordCount = document.getElementById('summary-word-count');
+  const summaryCompression = document.getElementById('summary-compression');
   const btnCopySummary = document.getElementById('btn-copy-summary');
 
   // Score elements
@@ -65,6 +65,54 @@ document.addEventListener('DOMContentLoaded', () => {
   const SCORE_CIRCUMFERENCE = 440;
 
   // ══════════════════════════════════════════════════════════
+  // State persistence — survive popup close/reopen
+  // ══════════════════════════════════════════════════════════
+  const STORAGE_KEY = 'bayan_popup_state';
+
+  function saveState() {
+    const activeTab = document.querySelector('.bayan-tab.active');
+    const state = {
+      tab: activeTab ? activeTab.dataset.tab : 'correct',
+      inputText: inputText.value,
+      summaryInput: summaryInputText.value,
+      dialectInput: document.getElementById('dialect-input-text')?.value || '',
+      quranInput: document.getElementById('quran-input-text')?.value || '',
+    };
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch { /* quota exceeded — ignore */ }
+  }
+
+  function restoreState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const state = JSON.parse(raw);
+
+      if (state.inputText) {
+        inputText.value = state.inputText;
+        updateCounts(inputText, charCount, wordCount);
+      }
+      if (state.summaryInput) {
+        summaryInputText.value = state.summaryInput;
+        const words = state.summaryInput.trim() ? state.summaryInput.trim().split(/\s+/).length : 0;
+        if (summaryWordCountInput) summaryWordCountInput.textContent = words.toLocaleString('ar-EG');
+      }
+      const dialectEl = document.getElementById('dialect-input-text');
+      if (state.dialectInput && dialectEl) dialectEl.value = state.dialectInput;
+      const quranEl = document.getElementById('quran-input-text');
+      if (state.quranInput && quranEl) quranEl.value = state.quranInput;
+
+      if (state.tab && state.tab !== 'correct') {
+        const tabBtn = document.querySelector(`.bayan-tab[data-tab="${state.tab}"]`);
+        if (tabBtn) tabBtn.click();
+      }
+    } catch { /* corrupt state — ignore */ }
+  }
+
+  restoreState();
+
+  // ══════════════════════════════════════════════════════════
   // Tab switching
   // ══════════════════════════════════════════════════════════
   document.querySelectorAll('.bayan-tab').forEach((tab) => {
@@ -77,6 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
       document.querySelectorAll('.bayan-panel').forEach((p) => {
         p.classList.toggle('active', p.id === `panel-${targetTab}`);
       });
+      saveState();
     });
   });
 
@@ -93,6 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   inputText.addEventListener('input', () => {
     updateCounts(inputText, charCount, wordCount);
+    saveState();
 
     // MED-2: Detect user edit after analysis → mark stale
     if (currentSuggestions.length > 0 && inputText.value !== analyzedText) {
@@ -100,7 +150,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  summaryInputText.addEventListener('input', () => updateCounts(summaryInputText, summaryCharCount, null));
+  summaryInputText.addEventListener('input', () => {
+    const text = summaryInputText.value.trim();
+    const words = text ? text.split(/\s+/).length : 0;
+    if (summaryWordCountInput) summaryWordCountInput.textContent = words.toLocaleString('ar-EG');
+    saveState();
+  });
 
   // ══════════════════════════════════════════════════════════
   // MED-2: Staleness management
@@ -111,17 +166,13 @@ document.addEventListener('DOMContentLoaded', () => {
    * Disables suggestion actions and shows a re-analysis prompt.
    */
   function markStale() {
-    if (isStale) return; // already stale
+    if (isStale) return;
     isStale = true;
 
-    // Visual indicator: dim the results area
-    if (resultSection) resultSection.classList.add('bayan-stale');
     if (suggestionsSection) suggestionsSection.classList.add('bayan-stale');
 
-    // Show re-analysis toast
     showToast('⚠ النص تغيّر — أعد التحليل لتحديث الاقتراحات', 4000);
 
-    // Update button text to indicate re-analysis needed
     btnCorrect.innerHTML = `
       <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M4 9a8 8 0 0114-3M20 15a8 8 0 01-14 3"/></svg>
       إعادة التحليل`;
@@ -132,10 +183,8 @@ document.addEventListener('DOMContentLoaded', () => {
    */
   function clearStale() {
     isStale = false;
-    if (resultSection) resultSection.classList.remove('bayan-stale');
     if (suggestionsSection) suggestionsSection.classList.remove('bayan-stale');
 
-    // Restore button text
     btnCorrect.innerHTML = `
       <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"/></svg>
       تحليل وتصحيح`;
@@ -236,10 +285,8 @@ document.addEventListener('DOMContentLoaded', () => {
         updateScore(counts.spelling, counts.grammar, counts.punctuation);
         renderSuggestions(currentSuggestions);
 
-        // Re-render highlighted text with updated offsets
-        resultText.innerHTML = renderHighlightedText(analyzedText, currentSuggestions);
-
         showToast('✓ تم التصحيح');
+        saveState();
       });
     });
 
@@ -255,11 +302,11 @@ document.addEventListener('DOMContentLoaded', () => {
     analyzedText = '';
     updateCounts(inputText, charCount, wordCount);
     scoreSection.classList.add('is-hidden');
-    resultSection.classList.add('is-hidden');
     suggestionsSection.classList.add('is-hidden');
     timingSection.classList.add('is-hidden');
     currentSuggestions = [];
     clearStale();
+    saveState();
   });
 
   // ══════════════════════════════════════════════════════════
@@ -271,8 +318,8 @@ document.addEventListener('DOMContentLoaded', () => {
       showToast('أدخل نصاً للتحليل');
       return;
     }
-    if (text.length < CONFIG.MIN_ANALYZE_LENGTH) {
-      showToast('النص قصير جداً (الحد الأدنى ١٥ حرفاً)');
+    if (text.trim().split(/\s+/).length < 2) {
+      showToast('أدخل كلمتين على الأقل');
       return;
     }
     if (text.length > CONFIG.MAX_ANALYZE_LENGTH) {
@@ -296,9 +343,8 @@ document.addEventListener('DOMContentLoaded', () => {
         inputText.value = analyzedText;
         updateCounts(inputText, charCount, wordCount);
 
-        // Show corrected text with highlights
-        resultSection.classList.remove('is-hidden');
-        resultText.innerHTML = renderHighlightedText(analyzedText, suggestions);
+        // Show corrected text in textarea
+        // (suggestions apply directly to textarea via chips or Apply All)
 
         // Update score
         const counts = countByType(suggestions);
@@ -316,6 +362,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (suggestions.length === 0) {
           showToast('نصك ممتاز! لم نجد أي أخطاء ✨');
         }
+
+        saveState();
       } else {
         showToast('تعذّر التحليل — حاول مرة أخرى');
       }
@@ -344,20 +392,34 @@ document.addEventListener('DOMContentLoaded', () => {
     inputText.value = analyzedText;
     updateCounts(inputText, charCount, wordCount);
     currentSuggestions = [];
-    resultText.innerHTML = escapeHtml(analyzedText);
     updateScore(0, 0, 0);
     renderSuggestions([]);
     showToast('✓ تم تطبيق جميع التصحيحات');
+    saveState();
   });
 
   // ══════════════════════════════════════════════════════════
-  // Copy result (MED-1: .catch() for clipboard errors)
+  // Copy text from textarea (MED-1: .catch() for clipboard errors)
   // ══════════════════════════════════════════════════════════
-  btnCopyResult.addEventListener('click', () => {
-    const text = resultText.textContent || '';
+  btnCopyText.addEventListener('click', () => {
+    const text = inputText.value || '';
     navigator.clipboard.writeText(text)
       .then(() => showToast('✓ تم نسخ النص'))
       .catch(() => showToast('تعذّر النسخ'));
+  });
+
+  // ══════════════════════════════════════════════════════════
+  // Summary mode toggle (paragraph / bullets)
+  // ══════════════════════════════════════════════════════════
+  let summaryMode = 'paragraph';
+
+  document.querySelectorAll('.bayan-mode-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      summaryMode = btn.dataset.mode;
+      document.querySelectorAll('.bayan-mode-btn').forEach((b) => {
+        b.classList.toggle('active', b.dataset.mode === summaryMode);
+      });
+    });
   });
 
   // ══════════════════════════════════════════════════════════
@@ -383,8 +445,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (data.status === 'success' && data.summary) {
         summaryResultSection.classList.remove('is-hidden');
-        summaryText.textContent = data.summary;
-        summaryMeta.textContent = `النص الأصلي: ${(data.original_length || 0).toLocaleString('ar-EG')} حرف → الملخص: ${(data.summary_length || 0).toLocaleString('ar-EG')} حرف`;
+
+        const summaryContent = data.summary;
+
+        if (summaryMode === 'bullets') {
+          const sentences = summaryContent.split(/[.،؛]\s*/).filter(s => s.trim().length > 2);
+          const ul = document.createElement('ul');
+          ul.style.cssText = 'list-style: disc; padding-right: 1.5rem; direction: rtl; text-align: right;';
+          sentences.forEach(s => {
+            const li = document.createElement('li');
+            li.textContent = s.trim();
+            li.style.marginBottom = '8px';
+            ul.appendChild(li);
+          });
+          summaryText.textContent = '';
+          summaryText.appendChild(ul);
+        } else {
+          summaryText.textContent = summaryContent;
+        }
+
+        const origWords = text.trim().split(/\s+/).length;
+        const sumWords = summaryContent.trim().split(/\s+/).length;
+        const compression = origWords > 0 ? Math.round((1 - sumWords / origWords) * 100) : 0;
+
+        if (summaryStats) {
+          summaryStats.classList.remove('is-hidden');
+          if (summaryWordCount) summaryWordCount.textContent = sumWords.toLocaleString('ar-EG');
+          if (summaryCompression) summaryCompression.textContent = compression.toLocaleString('ar-EG') + '٪';
+        }
+
         showToast('✓ تم التلخيص');
       } else {
         showToast('تعذّر التلخيص — حاول مرة أخرى');
@@ -401,7 +490,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Copy summary (MED-1: .catch() for clipboard errors)
   // ══════════════════════════════════════════════════════════
   btnCopySummary.addEventListener('click', () => {
-    const text = summaryText.textContent || '';
+    const text = summaryText.innerText || summaryText.textContent || '';
     navigator.clipboard.writeText(text)
       .then(() => showToast('✓ تم نسخ الملخص'))
       .catch(() => showToast('تعذّر النسخ'));
@@ -418,7 +507,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnCopyDialect = document.getElementById('btn-copy-dialect');
 
   if (dialectInput) {
-    dialectInput.addEventListener('input', () => updateCounts(dialectInput, dialectCharCount, null));
+    dialectInput.addEventListener('input', () => {
+      const chars = dialectInput.value.length;
+      if (dialectCharCount) dialectCharCount.textContent = chars.toLocaleString('ar-EG');
+      saveState();
+    });
 
     btnDialect.addEventListener('click', async () => {
       const text = dialectInput.value.trim();
@@ -450,147 +543,257 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ══════════════════════════════════════════════════════════
-  // Quran verification
+  // Quran verification + translation (matching website)
   // ══════════════════════════════════════════════════════════
   const quranInput = document.getElementById('quran-input-text');
   const quranCharCount = document.getElementById('quran-char-count');
   const btnQuran = document.getElementById('btn-quran');
   const quranResultSection = document.getElementById('quran-result-section');
-  const quranText = document.getElementById('quran-text');
-  const quranMeta = document.getElementById('quran-meta');
+  const quranUthmani = document.getElementById('quran-uthmani');
+  const quranReference = document.getElementById('quran-reference');
   const btnCopyQuran = document.getElementById('btn-copy-quran');
+  const quranLangSelect = document.getElementById('quran-lang-select');
+  const quranTransSection = document.getElementById('quran-translation-section');
+  const quranTransText = document.getElementById('quran-trans-text');
+  const quranTransRef = document.getElementById('quran-trans-ref');
+
+  let _quranQuery = '';
+  let _quranVerse = '';
+  let _quranRef = '';
+  let _quranTransText = '';
+  let _quranTransRef = '';
 
   if (quranInput) {
-    quranInput.addEventListener('input', () => updateCounts(quranInput, quranCharCount, null));
+    quranInput.addEventListener('input', () => { updateCounts(quranInput, quranCharCount, null); saveState(); });
 
     btnQuran.addEventListener('click', async () => {
       const text = quranInput.value.trim();
       if (!text) { showToast('أدخل آية للتدقيق'); return; }
 
+      _quranQuery = text;
       setLoading(true, 'جارٍ التدقيق...');
+      quranTransSection.classList.add('is-hidden');
+      quranLangSelect.value = '';
+
       try {
         const data = await bayanQuran(text);
         quranResultSection.classList.remove('is-hidden');
+
         if (data.error) {
-          quranText.textContent = data.error;
-          quranMeta.textContent = '';
-        } else {
-          quranText.textContent = data.full_verse || data.matched_segment || JSON.stringify(data);
-          quranMeta.textContent = data.matched_segment && data.full_verse
-            ? `المقطع المطابق: ${data.matched_segment}`
-            : '';
-          showToast('✓ تم التدقيق');
+          quranUthmani.textContent = data.error;
+          quranReference.textContent = '';
+          return;
         }
+
+        const seg = data.matched_segment || '';
+        const refMatch = seg.match(/【([^】]+)】/);
+        const verseText = seg.replace(/\s*【[^】]+】\s*$/, '').replace(/^\(/, '').replace(/\)$/, '');
+        const reference = refMatch ? refMatch[1] : '';
+
+        _quranVerse = verseText;
+        _quranRef = reference;
+        quranUthmani.textContent = verseText;
+        quranReference.textContent = reference ? `[${reference}]` : '';
+        showToast('✓ تم التدقيق');
       } catch (error) {
         console.error('[Bayan] Quran error:', error);
-        showToast('خطأ في الاتصال — تحقق من الإنترنت');
+        quranResultSection.classList.remove('is-hidden');
+        quranUthmani.textContent = 'خطأ في الاتصال — تحقق من الإنترنت';
+        quranReference.textContent = '';
       } finally {
         setLoading(false);
+      }
+    });
+
+    // Translation dropdown
+    quranLangSelect.addEventListener('change', async () => {
+      const lang = quranLangSelect.value;
+      if (!lang || !_quranQuery) return;
+
+      quranTransSection.classList.remove('is-hidden');
+      quranTransText.textContent = '⏳ جاري الترجمة...';
+      if (quranTransRef) quranTransRef.style.display = 'none';
+
+      try {
+        const data = await bayanQuran(_quranQuery, lang);
+
+        if (data.error) {
+          quranTransText.textContent = data.error;
+          return;
+        }
+
+        const seg = data.matched_segment || '';
+        const refMatch = seg.match(/【([^】]+)】/);
+        const transText = seg.replace(/\s*【[^】]+】\s*$/, '').replace(/^\(/, '').replace(/\)$/, '');
+        const transRef = refMatch ? refMatch[1] : '';
+
+        _quranTransText = transText;
+        _quranTransRef = transRef;
+
+        quranTransText.textContent = transText;
+        if (quranTransRef && transRef) {
+          quranTransRef.textContent = `[${transRef}]`;
+          quranTransRef.style.display = '';
+        }
+        const transActions = document.getElementById('quran-trans-actions');
+        if (transActions) transActions.style.display = 'flex';
+      } catch (error) {
+        console.error('[Bayan] Quran translation error:', error);
+        quranTransText.textContent = 'حدث خطأ في الترجمة';
       }
     });
 
     btnCopyQuran.addEventListener('click', () => {
-      navigator.clipboard.writeText(quranText.textContent || '')
+      const text = (_quranVerse || '') + (_quranRef ? ` [${_quranRef}]` : '');
+      navigator.clipboard.writeText(text)
         .then(() => showToast('✓ تم النسخ'))
         .catch(() => showToast('تعذّر النسخ'));
     });
+
+    const btnCopyQuranTrans = document.getElementById('btn-copy-quran-trans');
+    if (btnCopyQuranTrans) {
+      btnCopyQuranTrans.addEventListener('click', () => {
+        const text = (_quranTransText || '') + (_quranTransRef ? ` [${_quranTransRef}]` : '');
+        navigator.clipboard.writeText(text)
+          .then(() => showToast('✓ تم نسخ الترجمة'))
+          .catch(() => showToast('تعذّر النسخ'));
+      });
+    }
   }
 
   // ══════════════════════════════════════════════════════════
-  // Autocomplete suggestions
+  // Summary: File import (.txt / .docx)
   // ══════════════════════════════════════════════════════════
-  const acInput = document.getElementById('autocomplete-input-text');
-  const acCharCount = document.getElementById('autocomplete-char-count');
-  const btnAutocomplete = document.getElementById('btn-autocomplete');
-  const acResultSection = document.getElementById('autocomplete-result-section');
-  const acList = document.getElementById('autocomplete-list');
+  const summaryImportInput = document.getElementById('summary-import-input');
+  if (summaryImportInput) {
+    summaryImportInput.addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
 
-  if (acInput) {
-    acInput.addEventListener('input', () => updateCounts(acInput, acCharCount, null));
-
-    btnAutocomplete.addEventListener('click', async () => {
-      const text = acInput.value;
-      if (!text.trim() || text.trim().length < 3) { showToast('اكتب ٣ أحرف على الأقل'); return; }
-
-      setLoading(true, 'جارٍ الاقتراح...');
-      try {
-        const data = await bayanAutocomplete(text, 5);
-        const suggestions = data.suggestions || [];
-        acResultSection.classList.remove('is-hidden');
-
-        if (suggestions.length === 0) {
-          acList.innerHTML = '<div class="bayan-ac-empty">لا توجد اقتراحات</div>';
-          return;
+      if (file.name.endsWith('.txt')) {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          summaryInputText.value = ev.target.result;
+          const words = summaryInputText.value.trim() ? summaryInputText.value.trim().split(/\s+/).length : 0;
+          if (summaryWordCountInput) summaryWordCountInput.textContent = words.toLocaleString('ar-EG');
+          showToast('✓ تم استيراد الملف');
+          saveState();
+        };
+        reader.readAsText(file, 'UTF-8');
+      } else if (file.name.endsWith('.docx')) {
+        if (typeof mammoth !== 'undefined') {
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            mammoth.extractRawText({ arrayBuffer: ev.target.result })
+              .then((result) => {
+                summaryInputText.value = result.value;
+                const words = result.value.trim() ? result.value.trim().split(/\s+/).length : 0;
+                if (summaryWordCountInput) summaryWordCountInput.textContent = words.toLocaleString('ar-EG');
+                showToast('✓ تم استيراد الملف');
+                saveState();
+              })
+              .catch(() => showToast('خطأ في قراءة الملف'));
+          };
+          reader.readAsArrayBuffer(file);
+        } else {
+          showToast('صيغة .docx غير مدعومة — استخدم .txt');
         }
-
-        acList.innerHTML = suggestions
-          .map((s) => `<button class="bayan-alt-chip bayan-alt-chip--main bayan-ac-chip" type="button">${escapeHtml(s)}</button>`)
-          .join('');
-
-        acList.querySelectorAll('.bayan-ac-chip').forEach((chip) => {
-          chip.addEventListener('click', () => {
-            const needsSpace = acInput.value.length > 0 && !/\s$/.test(acInput.value);
-            acInput.value += (needsSpace ? ' ' : '') + chip.textContent;
-            updateCounts(acInput, acCharCount, null);
-            acInput.focus();
-            showToast('✓ تمت الإضافة');
-          });
-        });
-      } catch (error) {
-        console.error('[Bayan] Autocomplete error:', error);
-        showToast('خطأ في الاتصال — تحقق من الإنترنت');
-      } finally {
-        setLoading(false);
       }
+      e.target.value = '';
     });
   }
 
   // ══════════════════════════════════════════════════════════
-  // Phase 5: Download corrected text / summary as .txt
-  // Buttons are injected programmatically to avoid touching popup.html.
+  // Summary: Export dropdown (.txt / .docx / .pdf)
   // ══════════════════════════════════════════════════════════
-  function downloadTxt(text, filename) {
-    if (!text) { showToast('لا يوجد نص للتنزيل'); return; }
-    try {
-      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-      showToast('✓ تم تنزيل الملف');
-    } catch (e) {
-      console.error('[Bayan] Download error:', e);
-      showToast('تعذّر التنزيل');
+  const btnExportSummary = document.getElementById('btn-export-summary');
+  const summaryExportMenu = document.getElementById('summary-export-menu');
+
+  if (btnExportSummary && summaryExportMenu) {
+    btnExportSummary.addEventListener('click', (e) => {
+      e.stopPropagation();
+      summaryExportMenu.classList.toggle('is-hidden');
+    });
+
+    document.addEventListener('click', () => {
+      summaryExportMenu.classList.add('is-hidden');
+    });
+
+    summaryExportMenu.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+
+    summaryExportMenu.querySelectorAll('.bayan-export-item').forEach((item) => {
+      item.addEventListener('click', () => {
+        const format = item.dataset.format;
+        const text = (summaryText.innerText || summaryText.textContent || '').trim();
+        if (!text) { showToast('لا يوجد ملخص للتصدير'); return; }
+
+        summaryExportMenu.classList.add('is-hidden');
+        exportSummary(format, text);
+      });
+    });
+  }
+
+  function exportSummary(format, text) {
+    if (format === 'txt') {
+      downloadFile(text, 'ملخص-بيان.txt', 'text/plain;charset=utf-8');
+      showToast('✓ تم تصدير الملخص');
+    } else if (format === 'docx') {
+      if (typeof docx === 'undefined') { showToast('مكتبة Word غير محمّلة'); return; }
+      try {
+        const paragraphs = text.split(/\n+/).filter(p => p.trim());
+        const children = paragraphs.map(block =>
+          new docx.Paragraph({
+            bidirectional: true,
+            alignment: docx.AlignmentType.RIGHT,
+            children: [new docx.TextRun({ text: block, rightToLeft: true, font: 'Arial' })]
+          })
+        );
+        const doc = new docx.Document({ sections: [{ properties: { rightToLeft: true }, children }] });
+        docx.Packer.toBlob(doc).then((blob) => {
+          downloadBlob(blob, 'ملخص-بيان.docx');
+          showToast('✓ تم تصدير الملخص كـ Word');
+        }).catch(() => showToast('تعذر تصدير ملف Word'));
+      } catch { showToast('تعذر تصدير ملف Word'); }
+    } else if (format === 'pdf') {
+      if (typeof html2pdf === 'undefined') { showToast('مكتبة PDF غير محمّلة'); return; }
+      showToast('جاري تصدير PDF...');
+      const html = '<div dir="rtl" style="font-family:Arial,sans-serif;font-size:16px;line-height:2;text-align:right;padding:20px;">' +
+        text.split(/\n+/).map(p => '<p>' + p + '</p>').join('') + '</div>';
+      html2pdf().set({
+        margin: [15, 15, 15, 15],
+        filename: 'ملخص-بيان.pdf',
+        image: { type: 'jpeg', quality: 0.95 },
+        html2canvas: { scale: 1.5, useCORS: true, backgroundColor: '#ffffff' },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      }).from(html, 'string').save()
+        .then(() => showToast('✓ تم تصدير الملخص كـ PDF'))
+        .catch(() => showToast('تعذر تصدير PDF'));
     }
   }
 
-  const DOWNLOAD_ICON = '<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M12 4v12m0 0l-4-4m4 4l4-4"/></svg>';
-
-  function addDownloadButton(headerEl, getText, filename) {
-    if (!headerEl) return;
-    const btn = document.createElement('button');
-    btn.className = 'bayan-btn-icon';
-    btn.type = 'button';
-    btn.title = 'تنزيل كملف نصي';
-    btn.innerHTML = DOWNLOAD_ICON;
-    btn.addEventListener('click', () => downloadTxt((getText() || '').trim(), filename));
-    headerEl.appendChild(btn);
+  function downloadFile(text, filename, mime) {
+    const blob = new Blob([text], { type: mime });
+    downloadBlob(blob, filename);
   }
 
-  addDownloadButton(
-    btnCopyResult ? btnCopyResult.parentElement : null,
-    () => resultText.textContent,
-    'bayan-corrected.txt'
-  );
-  addDownloadButton(
-    btnCopySummary ? btnCopySummary.parentElement : null,
-    () => summaryText.textContent,
-    'bayan-summary.txt'
-  );
+  function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  // ── Close button: close the popup window ──
+  const btnClosePopup = document.getElementById('btn-close-popup');
+  if (btnClosePopup) {
+    btnClosePopup.addEventListener('click', () => window.close());
+  }
 
   // ══════════════════════════════════════════════════════════
   // Status check on load
@@ -661,7 +864,8 @@ document.addEventListener('DOMContentLoaded', () => {
       } else if (data.contextAction === TAB_ACTIONS.summarize) {
         // Fill the summary tab and auto-trigger summarization
         summaryInputText.value = data.contextText;
-        updateCounts(summaryInputText, summaryCharCount, null);
+        const ctxWords = data.contextText.trim() ? data.contextText.trim().split(/\s+/).length : 0;
+        if (summaryWordCountInput) summaryWordCountInput.textContent = ctxWords.toLocaleString('ar-EG');
 
         // Switch to summarize tab
         const summarizeTab = document.querySelector(`[data-tab="${TAB_ACTIONS.summarize}"]`);

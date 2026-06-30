@@ -393,7 +393,8 @@ function updateEnhancedStats() {
 
 /* ── Item 6: Summary Stats ── */
 function updateSummaryStats(summaryText) {
-  const originalText = getEditorText();
+  const customInput = document.getElementById('summary-custom-input');
+  const originalText = customInput ? customInput.value : getEditorText();
   const summaryWords = summaryText.trim().split(/\s+/).filter(w => w.length > 0).length;
   const originalWords = originalText.trim().split(/\s+/).filter(w => w.length > 0).length;
   const compression = originalWords > 0 ? Math.round((1 - summaryWords / originalWords) * 100) : 0;

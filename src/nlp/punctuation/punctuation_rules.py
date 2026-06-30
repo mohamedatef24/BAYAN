@@ -60,7 +60,9 @@ def arabic_postprocessing(text: str) -> str:
     # Only applies if a colon is actually present on the verb or the name
     def _fix_misplaced(m):
         verb, col1, name, col2 = m.groups()
-        if col1 == ':' or col2 == ':':
+        if col1 == ':':
+            return f"{verb}: {name}"
+        if col2 == ':':
             return f"{verb} {name}:"
         return m.group(0)
         
@@ -87,7 +89,7 @@ def arabic_postprocessing(text: str) -> str:
             return match.group(0)
             
         if prev_word.startswith(('ال', 'لل', 'بال', 'فال', 'وال', 'كال')):
-            return context + " " 
+            return match.group(0)  # Preserve the colon! Do not delete it.
             
         return match.group(0)
         
@@ -132,16 +134,11 @@ _EXCL_CUES = {'يا', 'ما', 'كم', 'لا', 'هل', 'أين', 'متى',
 def _normalize_for_comparison(text: str) -> str:
     """
     Normalize Arabic for safe comparison.
-    Prevents false rejection from hamza/alef/ya variants.
+    Only removes diacritics to prevent punctuation model from stripping harakat.
+    Does NOT fold hamza/ya/ta-marbuta to ensure we catch spelling regressions!
     """
     # Remove diacritics
     text = re.sub(r'[\u064B-\u0652]', '', text)
-    # Fold hamza/alef variants: أ إ آ → ا
-    text = re.sub(r'[أإآ]', 'ا', text)
-    # Fold ya: ى → ي
-    text = text.replace('ى', 'ي')
-    # Fold ta marbuta: ة → ه (comparison only)
-    text = text.replace('ة', 'ه')
     return text
 
 

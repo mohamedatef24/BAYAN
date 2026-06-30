@@ -42,6 +42,16 @@
     "https://bayan10-bayan-api.hf.space/*"
   ],
 
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "assets/icons/fab_logo.png",
+        "assets/icons/icon128.png"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ],
+
   "content_scripts": [
     {
       "matches": ["https://*/*", "http://*/*"],

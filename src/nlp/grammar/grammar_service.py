@@ -10,12 +10,14 @@ Model + rules loaded on first request and kept in memory.
 
 import logging
 import time
+import threading
 
 logger = logging.getLogger(__name__)
 
 # ── Lazy-loaded singletons ──
 _grammar_checker = None
 _load_error = None
+_lock = threading.Lock()
 
 GRADIO_SPACE = "mohammedahmedezz2004/bayan_arabic_grammarly_correction"
 
@@ -47,19 +49,20 @@ class GrammarChecker:
         if len(orig_words) == len(corr_words):
             result = []
             for o_w, c_w in zip(orig_words, corr_words):
-                prefix = ""
-                for ch in o_w:
-                    if ch in PUNCT_CHARS: prefix += ch
-                    else: break
-                suffix = ""
-                for ch in reversed(o_w):
-                    if ch in PUNCT_CHARS: suffix = ch + suffix
-                    else: break
-                
-                c_base = c_w.strip('.,;:!?،؛؟!.:«»"\'()-–—…')
-                if not c_base:
-                    c_base = c_w
-                result.append(prefix + c_base + suffix)
+                c_has_punct = any(ch in PUNCT_CHARS for ch in c_w)
+                o_has_punct = any(ch in PUNCT_CHARS for ch in o_w)
+                if o_has_punct and not c_has_punct:
+                    prefix = ""
+                    for ch in o_w:
+                        if ch in PUNCT_CHARS: prefix += ch
+                        else: break
+                    suffix = ""
+                    for ch in reversed(o_w):
+                        if ch in PUNCT_CHARS: suffix = ch + suffix
+                        else: break
+                    result.append(prefix + c_w + suffix)
+                else:
+                    result.append(c_w)
             return " ".join(result)
             
         # Global prefix/suffix if lengths differ
@@ -139,78 +142,82 @@ def get_grammar_model():
     if _grammar_checker is not None:
         return _grammar_checker
 
-    if _load_error is not None:
-        raise RuntimeError(f"Grammar model previously failed to load: {_load_error}")
+    with _lock:
+        if _grammar_checker is not None:
+            return _grammar_checker
 
-    try:
-        t0 = time.time()
-        logger.info("Loading Grammar model (lazy init)...")
+        if _load_error is not None:
+            raise RuntimeError(f"Grammar model previously failed to load: {_load_error}")
 
-        # 1. Initialize Gradio Client — with retry for rate limiting / sleeping Spaces
-        from gradio_client import Client
-        client = None
-        max_retries = 3
-        last_err = None
+        try:
+            t0 = time.time()
+            logger.info("Loading Grammar model (lazy init)...")
 
-        for attempt in range(1, max_retries + 1):
-            try:
-                logger.info(f"Connecting to Gradio Space: {GRADIO_SPACE} (attempt {attempt}/{max_retries})")
-                client = Client(GRADIO_SPACE)
-                logger.info("Gradio Client connected")
-                break
-            except Exception as conn_err:
-                last_err = conn_err
-                err_msg = str(conn_err).lower()
-                is_retryable = any(kw in err_msg for kw in [
-                    'too many requests', 'rate limit', '429',
-                    'timeout', 'connection', 'sleeping'
-                ])
-                if is_retryable and attempt < max_retries:
-                    wait = 2 ** attempt  # 2s, 4s, 8s
-                    logger.warning(
-                        f"Gradio connection attempt {attempt} failed ({conn_err}). "
-                        f"Retrying in {wait}s..."
-                    )
-                    time.sleep(wait)
-                else:
-                    raise  # Not retryable or last attempt — bubble up
+            # 1. Initialize Gradio Client — with retry for rate limiting / sleeping Spaces
+            from gradio_client import Client
+            client = None
+            max_retries = 3
+            last_err = None
 
-        if client is None:
-            raise RuntimeError(f"Gradio connection failed after {max_retries} attempts: {last_err}")
+            for attempt in range(1, max_retries + 1):
+                try:
+                    logger.info(f"Connecting to Gradio Space: {GRADIO_SPACE} (attempt {attempt}/{max_retries})")
+                    client = Client(GRADIO_SPACE)
+                    logger.info("Gradio Client connected")
+                    break
+                except Exception as conn_err:
+                    last_err = conn_err
+                    err_msg = str(conn_err).lower()
+                    is_retryable = any(kw in err_msg for kw in [
+                        'too many requests', 'rate limit', '429',
+                        'timeout', 'connection', 'sleeping'
+                    ])
+                    if is_retryable and attempt < max_retries:
+                        wait = 2 ** attempt  # 2s, 4s, 8s
+                        logger.warning(
+                            f"Gradio connection attempt {attempt} failed ({conn_err}). "
+                            f"Retrying in {wait}s..."
+                        )
+                        time.sleep(wait)
+                    else:
+                        raise  # Not retryable or last attempt — bubble up
 
-        # 2. Initialize rule-based post-processor (camel-tools)
-        logger.info("Loading ArabicGrammarGuard (camel-tools MLE disambiguator)...")
-        from nlp.grammar.grammar_rules import ArabicGrammarGuard
-        rules = ArabicGrammarGuard()
-        logger.info("ArabicGrammarGuard loaded")
+            if client is None:
+                raise RuntimeError(f"Gradio connection failed after {max_retries} attempts: {last_err}")
 
-        # 3. Create GrammarChecker instance
-        _grammar_checker = GrammarChecker(client, rules)
+            # 2. Initialize rule-based post-processor (camel-tools)
+            logger.info("Loading ArabicGrammarGuard (camel-tools MLE disambiguator)...")
+            from nlp.grammar.grammar_rules import ArabicGrammarGuard
+            rules = ArabicGrammarGuard()
+            logger.info("ArabicGrammarGuard loaded")
 
-        elapsed = time.time() - t0
-        logger.info(f"Grammar model ready in {elapsed:.1f}s")
-        return _grammar_checker
+            # 3. Create GrammarChecker instance
+            _grammar_checker = GrammarChecker(client, rules)
 
-    except Exception as e:
-        import traceback
-        error_msg = str(e)
-        logger.error(f"Failed to load grammar model: {e}")
-        logger.error(traceback.format_exc())
+            elapsed = time.time() - t0
+            logger.info(f"Grammar model ready in {elapsed:.1f}s")
+            return _grammar_checker
 
-        # Transient errors (rate limiting, network) should NOT be cached —
-        # allow retry on next request
-        transient_keywords = ['Too many requests', 'rate limit', 'timeout',
-                              'ConnectionError', 'ConnectTimeout', 'ReadTimeout',
-                              '429', 'sleeping']
-        is_transient = any(kw.lower() in error_msg.lower() for kw in transient_keywords)
+        except Exception as e:
+            import traceback
+            error_msg = str(e)
+            logger.error(f"Failed to load grammar model: {e}")
+            logger.error(traceback.format_exc())
 
-        if is_transient:
-            logger.warning(f"Grammar load error is TRANSIENT — will retry on next request: {error_msg}")
-            # Do NOT set _load_error — next call will retry
-        else:
-            _load_error = error_msg  # Cache permanent failures only
+            # Transient errors (rate limiting, network) should NOT be cached —
+            # allow retry on next request
+            transient_keywords = ['Too many requests', 'rate limit', 'timeout',
+                                  'ConnectionError', 'ConnectTimeout', 'ReadTimeout',
+                                  '429', 'sleeping']
+            is_transient = any(kw.lower() in error_msg.lower() for kw in transient_keywords)
 
-        raise RuntimeError(f"Grammar model load failed: {e}")
+            if is_transient:
+                logger.warning(f"Grammar load error is TRANSIENT — will retry on next request: {error_msg}")
+                # Do NOT set _load_error — next call will retry
+            else:
+                _load_error = error_msg  # Cache permanent failures only
+
+            raise RuntimeError(f"Grammar model load failed: {e}")
 
 
 def is_loaded() -> bool:

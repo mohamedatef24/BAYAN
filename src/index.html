@@ -12,7 +12,7 @@
    <meta property="og:description" content="تدقيق إملائي ونحوي وترقيم، تلخيص ذكي، إكمال تلقائي، تدقيق القرآن الكريم، وتحويل اللهجات">
    <meta name="twitter:card" content="summary_large_image">
    <meta name="twitter:image" content="https://raw.githubusercontent.com/mohamedatef24/BAYAN/main/extension/assets/icons/icon128.png">
-   <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/mohamedatef24/BAYAN/main/extension/assets/icons/icon128.png">
+   <link rel="icon" type="image/png" href="favicon.png">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -847,9 +847,9 @@
              <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--color-primary);"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
              <span class="text-base font-bold">تلخيص النصوص</span>
             </div>
-             <textarea id="summary-custom-input" class="w-full p-4 rounded-xl text-right text-lg editor-content" dir="rtl" rows="6" placeholder="الصق أو اكتب النص الذي تريد تلخيصه هنا..." style="background: var(--color-surface); border: 1px solid var(--color-border); color: var(--color-text-primary); resize: vertical; font-family: inherit;"></textarea>
+             <textarea id="summary-custom-input" class="w-full p-4 rounded-xl text-right text-lg editor-content" dir="rtl" rows="6" placeholder="الصق أو اكتب النص الذي تريد تلخيصه هنا..." oninput="updateSummaryWordCount()" style="background: var(--color-surface); border: 1px solid var(--color-border); color: var(--color-text-primary); resize: vertical; font-family: inherit;"></textarea>
              <div class="flex items-center justify-between mt-2 mb-2" dir="rtl">
-              <span id="summary-char-count" class="text-xs" style="color: var(--text-secondary);">0 حرف</span>
+              <span id="summary-char-count" class="text-xs" style="color: var(--text-secondary);">٠ كلمة</span>
               <label class="btn-ghost" style="cursor:pointer; display:inline-flex; align-items:center; gap:5px; padding:4px 12px; min-height:32px; font-size:12px;">
                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
                استيراد ملف
@@ -915,7 +915,7 @@
           </div>
           <textarea id="dialect-input" class="w-full p-4 rounded-xl text-right text-lg editor-content" dir="rtl" rows="6" placeholder="اكتب النص باللهجة هنا..." oninput="updateDialectCharCount()" style="background: var(--color-surface); border: 1px solid var(--color-border); color: var(--color-text-primary); resize: vertical; font-family: inherit;"></textarea>
           <div class="flex items-center justify-between mt-1 mb-2" dir="rtl">
-           <span id="dialect-char-count" class="text-xs" style="color: var(--text-secondary);">٠ / ٥٬٠٠٠ حرف</span>
+           <span id="dialect-char-count" class="text-xs" style="color: var(--text-secondary);">٠ حرف</span>
           </div>
           <button id="dialect-convert-btn" onclick="convertDialect()" class="btn-primary w-full py-4 text-lg mt-4 mb-4" type="button">تحويل إلى الفصحى</button>
           <div id="dialect-result-card" class="is-hidden" style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 1rem; padding: 1.5rem;">
@@ -1675,13 +1675,22 @@
       if (typeof showToast === 'function') showToast('✓ تم تطبيق النص الفصيح في المحرر');
     }
 
+    function updateSummaryWordCount() {
+      var input = document.getElementById('summary-custom-input');
+      var counter = document.getElementById('summary-char-count');
+      if (!input || !counter) return;
+      var text = input.value.trim();
+      var words = text ? text.split(/\s+/).length : 0;
+      counter.textContent = words.toLocaleString('ar-EG') + ' كلمة';
+    }
+
     function updateDialectCharCount() {
       var input = document.getElementById('dialect-input');
       var counter = document.getElementById('dialect-char-count');
       if (!input || !counter) return;
       var len = input.value.length;
       var arabicLen = len.toLocaleString('ar-EG');
-      counter.textContent = arabicLen + ' / ٥٬٠٠٠ حرف';
+      counter.textContent = arabicLen + ' حرف';
       counter.style.color = len > 5000 ? '#ef4444' : 'var(--text-secondary)';
     }
 

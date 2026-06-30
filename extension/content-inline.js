@@ -66,6 +66,7 @@
   let overlayContainer = null;
   let badgeCount = null;
   let observer = null;
+  let ancestorScrollCleanups = [];
 
   // ── Ghost-text autocomplete state ──
   let ghostEl = null;            // the ghost overlay element
@@ -182,10 +183,10 @@
     const tag = activeField.tagName.toLowerCase();
     if (tag !== 'textarea' && tag !== 'input') return false;
     const val = activeField.value || '';
-    // Only when the caret is collapsed at the very end of the text.
     if (activeField.selectionStart !== val.length) return false;
     if (activeField.selectionEnd !== val.length) return false;
     if (val.trim().length < AC_MIN_CONTEXT) return false;
+    if (!/[\s ]$/.test(val)) return false;
     return /[؀-ۿ]/.test(val);
   }
 
@@ -237,11 +238,12 @@
     try {
       const rect = activeField.getBoundingClientRect();
       const cs = window.getComputedStyle(activeField);
+      const sbW = activeField.offsetWidth - activeField.clientWidth;
 
       ghostEl = document.createElement('div');
       ghostEl.className = 'bayan-il-ghost';
       ghostEl.style.cssText = `position:fixed;top:${rect.top}px;`
-        + `left:${rect.left}px;width:${rect.width}px;height:${rect.height}px;`
+        + `left:${rect.left}px;width:${rect.width - sbW}px;height:${rect.height}px;`
         + `font-family:${cs.fontFamily};font-size:${cs.fontSize};line-height:${cs.lineHeight};`
         + `padding:${cs.padding};border:${cs.border};border-color:transparent;`
         + `direction:${cs.direction};text-align:${cs.textAlign};`
@@ -336,11 +338,12 @@
     try {
       const rect = field.getBoundingClientRect();
       const cs = window.getComputedStyle(field);
+      const sbW = field.offsetWidth - field.clientWidth;
 
       overlayContainer = document.createElement('div');
       overlayContainer.className = 'bayan-il-overlay';
       overlayContainer.style.cssText = `position:fixed;top:${rect.top}px;`
-        + `left:${rect.left}px;width:${rect.width}px;height:${rect.height}px;`
+        + `left:${rect.left}px;width:${rect.width - sbW}px;height:${rect.height}px;`
         + `font-family:${cs.fontFamily};font-size:${cs.fontSize};line-height:${cs.lineHeight};`
         + `padding:${cs.padding};border:${cs.border};border-color:transparent;`
         + `direction:${cs.direction};text-align:${cs.textAlign};`
@@ -394,6 +397,49 @@
     syncGhostScroll();
   }
 
+  function repositionOverlay() {
+    if (!activeField) return;
+    const rect = activeField.getBoundingClientRect();
+    const sbW = activeField.offsetWidth - activeField.clientWidth;
+    if (overlayContainer) {
+      overlayContainer.style.top = `${rect.top}px`;
+      overlayContainer.style.left = `${rect.left}px`;
+      overlayContainer.style.width = `${rect.width - sbW}px`;
+      overlayContainer.style.height = `${rect.height}px`;
+      overlayContainer.scrollTop = activeField.scrollTop;
+      overlayContainer.scrollLeft = activeField.scrollLeft;
+    }
+    if (ghostEl) {
+      ghostEl.style.top = `${rect.top}px`;
+      ghostEl.style.left = `${rect.left}px`;
+      ghostEl.style.width = `${rect.width - sbW}px`;
+      ghostEl.style.height = `${rect.height}px`;
+      ghostEl.scrollTop = activeField.scrollTop;
+      ghostEl.scrollLeft = activeField.scrollLeft;
+    }
+    if (floatingBtn) positionFab(activeField);
+  }
+
+  function watchAncestorScroll(field) {
+    unwatchAncestorScroll();
+    let el = field.parentElement;
+    while (el && el !== document.body) {
+      const ov = window.getComputedStyle(el).overflowY;
+      if (ov === 'auto' || ov === 'scroll' || ov === 'overlay') {
+        const handler = () => repositionOverlay();
+        el.addEventListener('scroll', handler, { passive: true });
+        const ref = el;
+        ancestorScrollCleanups.push(() => ref.removeEventListener('scroll', handler));
+      }
+      el = el.parentElement;
+    }
+  }
+
+  function unwatchAncestorScroll() {
+    ancestorScrollCleanups.forEach((fn) => fn());
+    ancestorScrollCleanups = [];
+  }
+
   function clearHighlights() {
     if (overlayContainer) { overlayContainer.remove(); overlayContainer = null; }
     hideTooltip();
@@ -420,23 +466,28 @@
 
     tooltip = document.createElement('div');
     tooltip.setAttribute('data-bayan-theme', currentBayanTheme);
-    tooltip.className = 'bayan-il-tooltip';
+    tooltip.className = 'bayan-il-suggestion-popover bayan-il-show';
     tooltip.dir = 'rtl';
 
+    const typeLabel = typeLabels[type] || type;
+    const typeClass = type === 'spelling' ? 'bayan-il-popover-type--spelling' : type === 'grammar' ? 'bayan-il-popover-type--grammar' : 'bayan-il-popover-type--punctuation';
+    const icon = type === 'spelling' ? '✕' : type === 'grammar' ? '!' : '✓';
+    
     safeHTML(tooltip, `
-      <div class="bayan-il-tooltip-header">
-        <span class="bayan-il-tooltip-badge bayan-il-badge-${type}">${typeLabels[type] || type}</span>
-        <button class="bayan-il-tooltip-close" title="إغلاق">✕</button>
-      </div>
-      <div class="bayan-il-tooltip-body">
-        <span class="bayan-il-tooltip-original">${esc(original)}</span>
-        <span class="bayan-il-tooltip-arrow">←</span>
-        <span class="bayan-il-tooltip-correction">${correction ? esc(correction) : '<s style="opacity:0.5">حذف</s>'}</span>
-      </div>
-      <div class="bayan-il-tooltip-actions">
-        <button class="bayan-il-tooltip-apply" data-action="apply">تطبيق</button>
-        <button class="bayan-il-tooltip-ignore" data-action="ignore">تجاهل</button>
-      </div>
+        <div class="bayan-il-popover-type ${typeClass}">
+          <span class="bayan-il-popover-type-icon">${icon}</span> ${typeLabel}
+        </div>
+        <div class="bayan-il-popover-original-word">
+          <span class="bayan-il-popover-label">الكلمة:</span>
+          <span class="bayan-il-tooltip-original">${esc(original)}</span>
+        </div>
+        <div class="bayan-il-popover-alternatives">
+          <button class="bayan-il-popover-alt-btn bayan-il-popover-alt-main" data-action="apply">
+            ${correction ? esc(correction) : '<s style="opacity:0.5">حذف</s>'}
+          </button>
+        </div>
+        <button type="button" class="bayan-il-popover-dismiss" data-action="ignore" title="تجاهل هذا الاقتراح">تجاهل</button>
+        <p class="bayan-il-popover-hint">اختر التصحيح المناسب</p>
     `);
 
     document.body.appendChild(tooltip);
@@ -468,12 +519,10 @@
       hideTooltip();
     });
 
-    tooltip.querySelector('[data-action="ignore"]').addEventListener('click', () => {
+    tooltip.querySelector('.bayan-il-popover-dismiss').addEventListener('click', () => {
       dismissSuggestion(suggestion);
       hideTooltip();
     });
-
-    tooltip.querySelector('.bayan-il-tooltip-close').addEventListener('click', () => hideTooltip());
 
     setTimeout(() => document.addEventListener('click', outsideClick, { once: true }), 100);
   }
@@ -547,6 +596,7 @@
   let fabDragOffsetX = 0;
   let fabDragOffsetY = 0;
   let fabCustomPos = null; // {x, y} when user has dragged to a custom position
+  let modalCustomPos = null; // {x, y} when user drags the modal
 
   function loadFabPosition() {
     try {
@@ -569,18 +619,9 @@
     floatingBtn = document.createElement('div');
       floatingBtn.setAttribute('data-bayan-theme', currentBayanTheme);
     floatingBtn.className = 'bayan-il-fab';
+    const fabLogoUrl = chrome.runtime.getURL('assets/icons/fab_logo.png');
     safeHTML(floatingBtn, `
-      <svg width="18" height="18" viewBox="0 0 100 100" fill="none">
-        <circle cx="50" cy="50" r="46" fill="url(#blGrad)" />
-        <path d="M30 55 Q35 35, 50 30 Q65 35, 70 55 Q65 65, 50 70 Q35 65, 30 55Z" fill="rgba(255,255,255,0.9)" />
-        <circle cx="50" cy="42" r="4" fill="url(#blGrad)" />
-        <defs>
-          <linearGradient id="blGrad" x1="0" y1="0" x2="100" y2="100">
-            <stop offset="0%" stop-color="#6366f1"/>
-            <stop offset="100%" stop-color="#8b5cf6"/>
-          </linearGradient>
-        </defs>
-      </svg>
+      <img src="${fabLogoUrl}" alt="بيان" draggable="false" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; pointer-events: none;" />
       <span class="bayan-il-badge">0</span>
     `);
     floatingBtn.title = 'Bayan — بيان';
@@ -712,6 +753,8 @@
     field.addEventListener('select', onFieldSelect);
     // FIX-20: Removed redundant 'keyup' listener (input event already fires on every change)
 
+    watchAncestorScroll(field);
+
     if (BayanController.hasArabic(getFieldText(field))) {
       onFieldInput();
     }
@@ -727,6 +770,7 @@
       // FIX-20: keyup listener no longer attached
       activeField.removeEventListener('scroll', syncOverlay);
     }
+    unwatchAncestorScroll();
     clearHighlights();
     clearGhost();
     BayanController.cancelAll();
@@ -995,31 +1039,21 @@
       if (floatingBtn?.contains(a)) return;
       if (overlayContainer?.contains(a)) return;
       if (modalPanel?.contains(a)) return;
-      if (modalBackdrop?.contains(a)) return;
+      if (modalPanel?.contains(a)) return;
       if (document.querySelector('.bayan-il-tooltip')) return;
-      detachField();
+      if (document.querySelector('.bayan-il-suggestion-popover')) return;
+      if (isEditableField(a)) return;
+      BayanController.cancelAll();
+      clearGhost();
     }, 300);
   }, true);
 
   window.addEventListener('scroll', () => {
-    if (activeField && floatingBtn) positionFab(activeField);
-    if (overlayContainer && activeField) {
-      const rect = activeField.getBoundingClientRect();
-      overlayContainer.style.top = `${rect.top}px`;
-      overlayContainer.style.left = `${rect.left}px`;
-    }
-    if (ghostEl && activeField) {
-      const rect = activeField.getBoundingClientRect();
-      ghostEl.style.top = `${rect.top}px`;
-      ghostEl.style.left = `${rect.left}px`;
-    }
-  }, { passive: true });
+    repositionOverlay();
+  }, true);
 
   window.addEventListener('resize', () => {
-    if (activeField && floatingBtn) positionFab(activeField);
-    // B4: a viewport resize can change the field's width/position, leaving the
-    // overlay marks misaligned. Re-render the overlay (not just the FAB) so
-    // highlights track the field. Guarded by suggestions to avoid needless work.
+    repositionOverlay();
     if (overlayContainer && activeField && suggestions.length > 0) {
       renderOverlay(activeField, lastAnalyzedText, suggestions);
     }
@@ -1059,7 +1093,6 @@
   // Modal Dialog — Full Analysis Panel
   // ══════════════════════════════════════════════════════════
 
-  let modalBackdrop = null;
   let modalPanel = null;
 
   const TYPE_LABELS = { spelling: 'إملائي', grammar: 'نحوي', punctuation: 'ترقيم' };
@@ -1092,11 +1125,7 @@
   }
 
   function createModal() {
-    if (modalBackdrop) return;
-
-    modalBackdrop = document.createElement('div');
-    modalBackdrop.className = 'bayan-il-modal-backdrop';
-    modalBackdrop.setAttribute('data-bayan-theme', currentBayanTheme);
+    if (modalPanel) return;
 
     modalPanel = document.createElement('div');
     modalPanel.className = 'bayan-il-modal-panel';
@@ -1104,68 +1133,92 @@
     modalPanel.dir = 'rtl';
 
     safeHTML(modalPanel, `
-      <div class="bayan-il-modal-header">
+      <div class="bayan-il-modal-top-bar" id="bayan-modal-drag-handle">
         <div class="bayan-il-modal-brand">
-          <svg width="22" height="22" viewBox="0 0 100 100" fill="none">
-            <circle cx="50" cy="50" r="46" fill="url(#bmGrad)" />
-            <path d="M30 55 Q35 35, 50 30 Q65 35, 70 55 Q65 65, 50 70 Q35 65, 30 55Z" fill="rgba(255,255,255,0.9)" />
-            <circle cx="50" cy="42" r="4" fill="url(#bmGrad)" />
-            <defs>
-              <linearGradient id="bmGrad" x1="0" y1="0" x2="100" y2="100">
-                <stop offset="0%" stop-color="#6366f1"/>
-                <stop offset="100%" stop-color="#8b5cf6"/>
-              </linearGradient>
-            </defs>
-          </svg>
-          <span class="bayan-il-modal-title">بيان</span>
+           <img src="${chrome.runtime.getURL('assets/icons/icon128.png')}" alt="بيان" style="width: 24px; height: 24px; object-fit: contain;" draggable="false" />
+           <div class="bayan-il-header-divider"></div>
+           <span class="bayan-il-modal-title">بيان</span>
         </div>
         <button class="bayan-il-modal-close" title="إغلاق">✕</button>
       </div>
-      <div class="bayan-il-modal-body">
-        <div class="bayan-il-modal-score">
-          <div class="bayan-il-modal-score-ring">
-            <svg viewBox="0 0 160 160">
-              <circle cx="80" cy="80" r="70" fill="none" stroke="#2d2d3d" stroke-width="8" />
-              <circle cx="80" cy="80" r="70" fill="none" stroke="#6366f1" stroke-width="8"
-                stroke-dasharray="${SCORE_CIRCUMFERENCE}" stroke-dashoffset="${SCORE_CIRCUMFERENCE}" stroke-linecap="round"
-                id="bayan-modal-score-circle" transform="rotate(-90 80 80)" />
+
+      <div class="bayan-il-modal-body-scroll">
+        <div class="bayan-il-modal-score-card">
+          <h3 class="bayan-il-modal-section-title">تقييم الكتابة</h3>
+          <div class="bayan-il-modal-score-ring" role="img" aria-label="تقييم الكتابة">
+            <svg viewBox="0 0 160 160" aria-hidden="true">
+              <circle cx="80" cy="80" r="70" fill="none" stroke="rgba(236, 238, 242, 0.09)" stroke-width="10"/>
+              <circle id="bayan-modal-score-circle" cx="80" cy="80" r="70" fill="none" stroke="url(#bayanModalScoreGradient)" stroke-width="10" stroke-linecap="round" stroke-dasharray="439.8" stroke-dashoffset="439.8" class="bayan-il-score-circle"/>
+              <defs><linearGradient id="bayanModalScoreGradient" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#6BA3E0"/><stop offset="100%" stop-color="#A594E8"/></linearGradient></defs>
             </svg>
-            <span class="bayan-il-modal-score-value" id="bayan-modal-score-value">--</span>
+            <div class="bayan-il-modal-score-value"><span id="bayan-modal-score-value">--</span></div>
           </div>
-          <div class="bayan-il-modal-score-meta">
-            <span class="bayan-il-modal-score-hint" id="bayan-modal-score-hint"></span>
-            <div class="bayan-il-modal-counts">
-              <span class="bayan-il-modal-count bayan-il-modal-count--spelling">إملائي: <strong id="bayan-modal-count-spelling">٠</strong></span>
-              <span class="bayan-il-modal-count bayan-il-modal-count--grammar">نحوي: <strong id="bayan-modal-count-grammar">٠</strong></span>
-              <span class="bayan-il-modal-count bayan-il-modal-count--punctuation">ترقيم: <strong id="bayan-modal-count-punctuation">٠</strong></span>
-            </div>
+          <p id="bayan-modal-score-hint" class="bayan-il-modal-score-hint">ابدأ الكتابة لرؤية تقييمك</p>
+          <div class="bayan-il-modal-counts-row">
+            <span class="bayan-il-modal-count bayan-il-modal-count--spelling"><strong id="bayan-modal-count-spelling">٠</strong> إملائي</span>
+            <span class="bayan-il-modal-count bayan-il-modal-count--grammar"><strong id="bayan-modal-count-grammar">٠</strong> نحوي</span>
+            <span class="bayan-il-modal-count bayan-il-modal-count--punctuation"><strong id="bayan-modal-count-punctuation">٠</strong> ترقيم</span>
           </div>
         </div>
-        <div class="bayan-il-modal-sugg-header">
-          <span class="bayan-il-modal-sugg-title">الاقتراحات</span>
-          <span class="bayan-il-modal-sugg-count" id="bayan-modal-sugg-count"></span>
+
+        <div class="bayan-il-modal-sugg-card">
+          <div class="bayan-il-modal-sugg-header">
+            <h3 class="bayan-il-modal-section-title">الاقتراحات (<span id="bayan-modal-sugg-count">٠</span>)</h3>
+            <button id="bayan-modal-apply-all" class="bayan-il-modal-apply-all" style="display:none;" type="button">تطبيق الكل</button>
+          </div>
+          <div id="bayan-modal-cards" class="bayan-il-modal-cards" role="list" aria-live="polite" aria-label="اقتراحات التصحيح"></div>
         </div>
-        <div class="bayan-il-modal-cards" id="bayan-modal-cards"></div>
-        <button class="bayan-il-modal-apply-all" id="bayan-modal-apply-all" style="display:none;">
-          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-          تطبيق الكل
-        </button>
       </div>
     `);
 
-    document.body.appendChild(modalBackdrop);
     document.body.appendChild(modalPanel);
 
     modalPanel.querySelector('.bayan-il-modal-close').addEventListener('click', hideModal);
-    modalBackdrop.addEventListener('click', hideModal);
 
     modalPanel.querySelector('#bayan-modal-apply-all').addEventListener('click', applyAllFixes);
 
     document.addEventListener('keydown', onModalKeydown);
+
+    let modalDragging = false;
+    let modalDragStartX = 0;
+    let modalDragStartY = 0;
+    let modalDragOffsetX = 0;
+    let modalDragOffsetY = 0;
+
+    const dragHandle = modalPanel.querySelector('#bayan-modal-drag-handle');
+    if (dragHandle) {
+      dragHandle.addEventListener('mousedown', (e) => {
+        if (e.target.closest('.bayan-il-modal-close')) return;
+        modalDragging = true;
+        modalDragStartX = e.clientX;
+        modalDragStartY = e.clientY;
+        modalDragOffsetX = parseInt(modalPanel.style.left || 0, 10);
+        modalDragOffsetY = parseInt(modalPanel.style.top || 0, 10);
+        e.preventDefault();
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (!modalDragging) return;
+        const dx = e.clientX - modalDragStartX;
+        const dy = e.clientY - modalDragStartY;
+        modalPanel.style.left = `${modalDragOffsetX + dx}px`;
+        modalPanel.style.top = `${modalDragOffsetY + dy}px`;
+      });
+
+      document.addEventListener('mouseup', () => {
+        if (modalDragging) {
+          modalDragging = false;
+          modalCustomPos = {
+            x: parseInt(modalPanel.style.left, 10),
+            y: parseInt(modalPanel.style.top, 10),
+          };
+        }
+      });
+    }
   }
 
   function onModalKeydown(e) {
-    if (e.key === 'Escape' && modalBackdrop?.classList.contains('bayan-il-modal-backdrop--visible')) {
+    if (e.key === 'Escape' && modalPanel?.classList.contains('bayan-il-modal-panel--visible')) {
       hideModal();
     }
   }
@@ -1173,14 +1226,43 @@
   function showModal() {
     createModal();
 
-    modalBackdrop.setAttribute('data-bayan-theme', currentBayanTheme);
     modalPanel.setAttribute('data-bayan-theme', currentBayanTheme);
 
-    updateModalThemeColors();
     updateModalScore();
     renderModalSuggestions();
 
-    modalBackdrop.classList.add('bayan-il-modal-backdrop--visible');
+    // Position modal
+    if (!modalCustomPos) {
+      if (activeField) {
+        const fieldRect = activeField.getBoundingClientRect();
+        modalPanel.style.position = 'fixed';
+        let left = fieldRect.left + (fieldRect.width / 2) - 180;
+        if (left < 10) left = 10;
+        if (left + 360 > window.innerWidth) left = window.innerWidth - 370;
+        modalPanel.style.left = `${left}px`;
+        
+        let top = fieldRect.bottom + 10;
+        if (top + 400 > window.innerHeight) {
+          top = Math.max(10, window.innerHeight - 410);
+        }
+        modalPanel.style.top = `${top}px`;
+      } else if (floatingBtn) {
+        const fabRect = floatingBtn.getBoundingClientRect();
+        modalPanel.style.position = 'fixed';
+        let left = fabRect.left - 370;
+        if (left < 10) left = 10;
+        modalPanel.style.left = `${left}px`;
+        
+        let top = fabRect.bottom - 400;
+        if (top < 10) top = 10;
+        modalPanel.style.top = `${top}px`;
+      }
+    } else {
+      modalPanel.style.position = 'fixed';
+      modalPanel.style.left = `${modalCustomPos.x}px`;
+      modalPanel.style.top = `${modalCustomPos.y}px`;
+    }
+
     requestAnimationFrame(() => {
       modalPanel.classList.add('bayan-il-modal-panel--visible');
     });
@@ -1188,16 +1270,9 @@
 
   function hideModal() {
     if (modalPanel) modalPanel.classList.remove('bayan-il-modal-panel--visible');
-    if (modalBackdrop) modalBackdrop.classList.remove('bayan-il-modal-backdrop--visible');
   }
 
-  function updateModalThemeColors() {
-    if (!modalPanel) return;
-    const scoreTrack = modalPanel.querySelector('#bayan-modal-score-circle')?.previousElementSibling;
-    if (scoreTrack) {
-      scoreTrack.setAttribute('stroke', currentBayanTheme === 'light' ? '#e5e7eb' : '#2d2d3d');
-    }
-  }
+
 
   function updateModalScore() {
     if (!modalPanel) return;
@@ -1209,7 +1284,7 @@
 
     const score = calculateWritingScore(counts.spelling, counts.grammar, counts.punctuation);
     const color = getScoreColor(score);
-    const offset = SCORE_CIRCUMFERENCE - (SCORE_CIRCUMFERENCE * score) / 100;
+    const offset = 439.8 - (439.8 * score) / 100;
 
     const circle = modalPanel.querySelector('#bayan-modal-score-circle');
     const valueEl = modalPanel.querySelector('#bayan-modal-score-value');
@@ -1221,7 +1296,10 @@
         circle.setAttribute('stroke-dashoffset', String(offset));
       });
     }
-    if (valueEl) valueEl.textContent = String(score);
+    if (valueEl) {
+      const total = counts.spelling + counts.grammar + counts.punctuation;
+      valueEl.textContent = total > 0 ? String(score) : '--';
+    }
     if (hintEl) hintEl.textContent = getScoreHint(score);
 
     const toArabicNum = (n) => String(n).replace(/\d/g, (d) => '٠١٢٣٤٥٦٧٨٩'[d]);
@@ -1256,7 +1334,7 @@
     }
 
     const toArabicNum = (n) => String(n).replace(/\d/g, (d) => '٠١٢٣٤٥٦٧٨٩'[d]);
-    if (countEl) countEl.textContent = `${toArabicNum(suggestions.length)} اقتراح`;
+    if (countEl) countEl.textContent = toArabicNum(suggestions.length);
     if (applyAllBtn) applyAllBtn.style.display = suggestions.length >= 2 ? 'flex' : 'none';
 
     let html = '';
@@ -1264,7 +1342,7 @@
       const alts = resolveAlternatives(s);
       const typeLabel = TYPE_LABELS[s.type] || s.type;
 
-      html += `<div class="bayan-il-modal-card bayan-il-modal-card--${s.type}" data-modal-idx="${idx}">`;
+      html += `<div class="bayan-il-modal-card bayan-il-modal-card--${s.type}" data-suggestion-type="${s.type}" data-modal-idx="${idx}">`;
       html += `<span class="bayan-il-modal-card-badge bayan-il-modal-badge--${s.type}">${typeLabel}</span>`;
       html += `<div class="bayan-il-modal-card-change">`;
       html += `<span class="bayan-il-modal-card-original">${esc(s.original)}</span>`;
@@ -1276,10 +1354,8 @@
       alts.forEach((alt, ai) => {
         const isMain = alt === s.correction && ai === 0;
         const isKeep = alt === s.original;
-        let cls = 'bayan-il-modal-alt-chip';
-        if (isMain) cls += ' bayan-il-modal-alt-chip--main';
-        else if (isKeep) cls += ' bayan-il-modal-alt-chip--keep';
         const label = isKeep ? 'إبقاء الأصل' : esc(alt);
+        const cls = isMain ? 'bayan-il-modal-alt-chip bayan-il-modal-alt-chip--main' : (isKeep ? 'bayan-il-modal-alt-chip bayan-il-modal-alt-chip--keep' : 'bayan-il-modal-alt-chip');
         html += `<button class="${cls}" data-modal-alt="${esc(alt)}" data-modal-sidx="${idx}" data-modal-keep="${isKeep ? '1' : ''}">${label}</button>`;
       });
 
@@ -1334,8 +1410,7 @@
     currentBayanTheme = res.theme || 'dark';
     if (typeof tooltip !== 'undefined' && tooltip) tooltip.setAttribute('data-bayan-theme', currentBayanTheme);
     if (typeof floatingBtn !== 'undefined' && floatingBtn) floatingBtn.setAttribute('data-bayan-theme', currentBayanTheme);
-    if (modalBackdrop) modalBackdrop.setAttribute('data-bayan-theme', currentBayanTheme);
-    if (modalPanel) { modalPanel.setAttribute('data-bayan-theme', currentBayanTheme); updateModalThemeColors(); }
+    if (modalPanel) { modalPanel.setAttribute('data-bayan-theme', currentBayanTheme); }
   });
 
   chrome.storage.onChanged.addListener((changes, namespace) => {
@@ -1343,8 +1418,7 @@
       currentBayanTheme = changes.theme.newValue;
       if (typeof tooltip !== 'undefined' && tooltip) tooltip.setAttribute('data-bayan-theme', currentBayanTheme);
       if (typeof floatingBtn !== 'undefined' && floatingBtn) floatingBtn.setAttribute('data-bayan-theme', currentBayanTheme);
-      if (modalBackdrop) modalBackdrop.setAttribute('data-bayan-theme', currentBayanTheme);
-      if (modalPanel) { modalPanel.setAttribute('data-bayan-theme', currentBayanTheme); updateModalThemeColors(); }
+      if (modalPanel) { modalPanel.setAttribute('data-bayan-theme', currentBayanTheme); }
     }
   });
 
