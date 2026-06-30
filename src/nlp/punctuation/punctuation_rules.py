@@ -91,7 +91,7 @@ def arabic_postprocessing(text: str) -> str:
         if prev_word.startswith(('ال', 'لل', 'بال', 'فال', 'وال', 'كال')):
             return match.group(0)  # Preserve the colon! Do not delete it.
             
-        return match.group(0)
+        return context + ' '
         
     text = re.sub(r'([^:]+)(:)', _colon_guard, text)
     

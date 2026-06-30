@@ -159,7 +159,7 @@ class ArabicGrammarGuard:
         disambig_tokens = self.mle.disambiguate(tokens)
 
         nasb_particles = ['أن', 'ان', 'لن', 'كي', 'لكي', 'حتى', 'حتي', 'إذن', 'اذا']
-        jazm_particles = ['لم', 'لما', 'لا']
+        jazm_particles = ['لم', 'لما']
 
         corrected_tokens = []
 
@@ -250,31 +250,36 @@ class ArabicGrammarGuard:
             stem = m.group(2)
             suffix = m.group(3)
             full_word = stem + suffix
-            # Skip words in blocklist (root nouns, not duals)
-            if full_word in self._PREP_BLOCKLIST:
-                return m.group(0)  # return unchanged
-            # Skip ال-prefixed words ending in ان — almost always root nouns
-            if stem.startswith('ال') and suffix == 'ان':
-                return m.group(0)  # return unchanged
-            return f'{prep} {stem}ين'
+            
+            # Use camel-tools disambiguation to determine if it's really a dual/plural
+            tokens = simple_word_tokenize(full_word)
+            disambig_tokens = self.mle.disambiguate(tokens)
+            if disambig_tokens and disambig_tokens[0].analyses:
+                num = disambig_tokens[0].analyses[0].analysis.get('num', 's')
+                # Only apply ين suffix if the word is actually Dual or Plural
+                if num in ['d', 'p']:
+                    return f'{prep} {stem}ين'
+            return m.group(0)
 
-        text = re.sub(r'\b([وف]?(?:في|من|إلى|على|عن|حتى))\s+([أ-ي]{4,})(ون|ان)\b', _prep_replace, text)
+        text = re.sub(r'\b([وف]?(?:في|من|إلى|على|عن|حتى))\s+([أ-ي]{3,})(ون|ان)\b', _prep_replace, text)
 
         # (وبالمبرمجون) -> (وبالمبرمجين)
         # FIX-33b: Same blocklist protection as first regex
         def _attached_prep_replace(m):
-            prefix = m.group(1)  # وب، ب، فب، ول، ل، etc.
+            prefix = m.group(1)
             stem = m.group(2)
             suffix = m.group(3)
-            full_word = 'ال' + stem + suffix  # reconstruct with ال for blocklist check
-            if full_word in self._PREP_BLOCKLIST:
-                return m.group(0)
-            # Words ending in ان with 4+ char stems are almost always root nouns
-            if suffix == 'ان':
-                return m.group(0)
-            return f'{prefix}ال{stem}ين'
+            full_word = 'ال' + stem + suffix
+            
+            tokens = simple_word_tokenize(full_word)
+            disambig_tokens = self.mle.disambiguate(tokens)
+            if disambig_tokens and disambig_tokens[0].analyses:
+                num = disambig_tokens[0].analyses[0].analysis.get('num', 's')
+                if num in ['d', 'p']:
+                    return f'{prefix}ال{stem}ين'
+            return m.group(0)
 
-        text = re.sub(r'\b([وف]?[بلكف])ال([أ-ي]{4,})(ون|ان)\b', _attached_prep_replace, text)
+        text = re.sub(r'\b([وف]?[بلكف])ال([أ-ي]{3,})(ون|ان)\b', _attached_prep_replace, text)
 
         # (ولمهندسون) -> (ولمهندسين)
         # FIX-33b: Same protection — reconstruct full word for blocklist
@@ -310,8 +315,8 @@ class ArabicGrammarGuard:
                 if word == 'ذو': return 'ذا'
                 if word == 'فو': return 'فا'
                 if word == 'حمو': return 'حما'
-                if word.endswith('ون') and word not in ('قانون', 'فرعون', 'كانون', 'معجون', 'طاعون', 'مجنون'): return word[:-2] + 'ين'
-                if word.endswith('ان') and word not in ('امتحان', 'إنسان', 'ميدان', 'سلطان', 'شيطان'): return word[:-2] + 'ين'
+                if word.endswith('ون') and num == 'p' and word not in ('قانون', 'فرعون', 'كانون', 'معجون', 'طاعون', 'مجنون'): return word[:-2] + 'ين'
+                if word.endswith('ان') and num == 'd' and word not in ('امتحان', 'إنسان', 'ميدان', 'سلطان', 'شيطان'): return word[:-2] + 'ين'
             elif target_case == 'n': # Marfoo'
                 if word in ('أبا', 'أبي'): return 'أبو'
                 if word in ('أخا', 'أخي'): return 'أخو'
@@ -574,13 +579,13 @@ class ArabicGrammarGuard:
         
         # FIX-PC010: Add targeted safe regex for Nasb/Jazm particles + verb
         # Only match clear present tense verbs starting with ي/ت/ن/أ and ending in ون
-        text = re.sub(r'\b(أن|ان|لن|كي|حتى|لم|لما)\s+([يتا][\u0600-\u06FF]{2,})ون\b',
+        text = re.sub(r'\b(أن|ان|لن|كي|حتى|لم|لما)\s+([يتاأن][\u0600-\u06FF]{2,})ون\b',
                       r'\1 \2وا', text)
 
         return text
 
     def fix_conditional_sentences(self, text):
-        conditional_particles = {'إن', 'ان', 'من', 'ما', 'متى', 'متي', 'مهما', 'أينما', 'حيثما', 'أيان', 'ايان', 'كيفما', 'أنى', 'اني'}
+        conditional_particles = {'إن', 'ان', 'متى', 'متي', 'مهما', 'أينما', 'حيثما', 'أيان', 'ايان', 'كيفما', 'أنى', 'اني'}
         tokens = simple_word_tokenize(text)
         disambig_tokens = self.mle.disambiguate(tokens)
         corrected_tokens = list(tokens)
@@ -700,9 +705,11 @@ class ArabicGrammarGuard:
                 if base_adj:
                     if w1.endswith('ون') or w1.endswith('ين') or w1_gen == 'm':
                         is_nom = w1.endswith('ون')
-                        corrected_tokens[i+1] = base_adj + ('ون' if is_nom else 'ين')
+                        if not w2.endswith('ان') and not w2.endswith('ين') and not w2.endswith('ات'):
+                            corrected_tokens[i+1] = base_adj + ('ون' if is_nom else 'ين')
                     elif w1.endswith('ات') or w1_gen == 'f':
-                        corrected_tokens[i+1] = base_adj + 'ات'
+                        if not w2.endswith('ان') and not w2.endswith('ين') and not w2.endswith('ات'):
+                            corrected_tokens[i+1] = base_adj + 'ات'
 
         return " ".join(corrected_tokens)
 
