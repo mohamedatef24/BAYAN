@@ -77,8 +77,31 @@ class ArabicGrammarGuard:
         return " ".join(corrected_tokens)
 
     def smart_asmaa_khamsa_fix(self, text):
-        # Bug 1.1: Disabled blind replacement of ا and ي with و as it corrupts object position
-        return text
+        tokens = simple_word_tokenize(text)
+        disambig_tokens = self.mle.disambiguate(tokens)
+        corrected_tokens = []
+        verb_seen = False
+
+        for i, token_info in enumerate(disambig_tokens):
+            word = tokens[i]
+
+            pos_tag = token_info.analyses[0].analysis.get('pos', 'unknown') if token_info.analyses else 'unknown'
+
+            if pos_tag == 'verb':
+                verb_seen = True
+                corrected_tokens.append(word)
+                continue
+
+            is_asmaa = any(word.startswith(root) or word.startswith('أ' + root[1:]) for root in self.asmaa_khamsa_roots if len(root)>1)
+
+            if is_asmaa and len(word) >= 3:
+                if verb_seen:
+                    word = word.replace('ا', 'و').replace('ي', 'و')
+                    verb_seen = False
+
+            corrected_tokens.append(word)
+
+        return " ".join(corrected_tokens)
 
     def _apply_jazm_to_verb(self, word, token_info):
         # 1. Handle Af'al Khamsa using camel_tools analysis
@@ -159,7 +182,7 @@ class ArabicGrammarGuard:
         disambig_tokens = self.mle.disambiguate(tokens)
 
         nasb_particles = ['أن', 'ان', 'لن', 'كي', 'لكي', 'حتى', 'حتي', 'إذن', 'اذا']
-        jazm_particles = ['لم', 'لما']
+        jazm_particles = ['لم', 'لما', 'لا']
 
         corrected_tokens = []
 
@@ -173,16 +196,12 @@ class ArabicGrammarGuard:
 
             if i > 0:
                 prev_word = tokens[i-1]
-                if prev_word in nasb_particles:
+                if prev_word in nasb_particles or word.startswith('ل'):
                     is_nasb_context = True
-                if prev_word in jazm_particles:
+                if prev_word in jazm_particles or word.startswith('ل') or word.startswith('ول'):
                     is_jazm_context = True
-                # Lam Al-Ta'leel / Lam Al-Amr logic was flawed (triggering for ANY word starting with ل)
-                # Ensure it only applies to actual verbs starting with 'لي' or 'لت' etc.
-                if (word.startswith('ل') or word.startswith('ول') or word.startswith('فل')) and len(word) >= 4 and word[1] in ['ي', 'ت', 'ن', 'أ']:
-                    is_nasb_context = True
 
-            is_present_tense = word.startswith('ي') or word.startswith('ت') or word.startswith('ن') or word.startswith('أ') or word.startswith('لي') or word.startswith('لت') or word.startswith('ولي') or word.startswith('فلي')
+            is_present_tense = word.startswith('ي') or word.startswith('ت') or word.startswith('ن') or word.startswith('أ')
             if (pos_tag == 'verb' or is_present_tense) and (is_nasb_context or is_jazm_context):
                 if is_jazm_context:
                     word = self._apply_jazm_to_verb(word, token_info)
@@ -204,14 +223,9 @@ class ArabicGrammarGuard:
         # When a feminine noun is followed by a masculine adjective, add ة
         # e.g. السيارة جميل → السيارة جميلة
         words = text.split()
-        KNOWN_MASC_TA_MARBUTA = {'خليفة', 'أسامة', 'حمزة', 'طلحة', 'معاوية', 'عبيدة', 'قضاة', 'دعاة', 'رماة', 'حماة'}
         for i in range(len(words) - 1):
             noun = words[i]
             adj = words[i + 1]
-            # Strip prefixes like 'ال' to check root
-            clean_noun = noun[2:] if noun.startswith('ال') else noun
-            if clean_noun in KNOWN_MASC_TA_MARBUTA:
-                continue
             is_fem_noun = (noun in KNOWN_FEMININE_NOUNS or
                           (noun.endswith('ة') and len(noun) >= 3) or
                           (noun.startswith('ال') and noun.endswith('ة')))
@@ -236,9 +250,6 @@ class ArabicGrammarGuard:
         'النيران', 'نيران', 'الألوان', 'ألوان', 'البلدان', 'بلدان',
         'الأوطان', 'أوطان', 'الأبدان', 'أبدان', 'الأركان', 'أركان',
         'الفرسان', 'فرسان', 'الغزلان', 'غزلان', 'القضبان', 'قضبان',
-        'فرعون', 'قانون', 'القانون', 'كانون', 'قارون', 'طاعون',
-        'عربون', 'هارون', 'زيدون', 'معجون', 'مجنون', 'زيتون', 'صابون',
-        'الفرعون', 'قوانين'
     }
 
     def fix_prepositions_advanced(self, text):
@@ -250,36 +261,31 @@ class ArabicGrammarGuard:
             stem = m.group(2)
             suffix = m.group(3)
             full_word = stem + suffix
-            
-            # Use camel-tools disambiguation to determine if it's really a dual/plural
-            tokens = simple_word_tokenize(full_word)
-            disambig_tokens = self.mle.disambiguate(tokens)
-            if disambig_tokens and disambig_tokens[0].analyses:
-                num = disambig_tokens[0].analyses[0].analysis.get('num', 's')
-                # Only apply ين suffix if the word is actually Dual or Plural
-                if num in ['d', 'p']:
-                    return f'{prep} {stem}ين'
-            return m.group(0)
+            # Skip words in blocklist (root nouns, not duals)
+            if full_word in self._PREP_BLOCKLIST:
+                return m.group(0)  # return unchanged
+            # Skip ال-prefixed words ending in ان — almost always root nouns
+            if stem.startswith('ال') and suffix == 'ان':
+                return m.group(0)  # return unchanged
+            return f'{prep} {stem}ين'
 
-        text = re.sub(r'\b([وف]?(?:في|من|إلى|على|عن|حتى))\s+([أ-ي]{3,})(ون|ان)\b', _prep_replace, text)
+        text = re.sub(r'\b([وف]?(?:في|من|إلى|على|عن|حتى))\s+([أ-ي]{4,})(ون|ان)\b', _prep_replace, text)
 
         # (وبالمبرمجون) -> (وبالمبرمجين)
         # FIX-33b: Same blocklist protection as first regex
         def _attached_prep_replace(m):
-            prefix = m.group(1)
+            prefix = m.group(1)  # وب، ب، فب، ول، ل، etc.
             stem = m.group(2)
             suffix = m.group(3)
-            full_word = 'ال' + stem + suffix
-            
-            tokens = simple_word_tokenize(full_word)
-            disambig_tokens = self.mle.disambiguate(tokens)
-            if disambig_tokens and disambig_tokens[0].analyses:
-                num = disambig_tokens[0].analyses[0].analysis.get('num', 's')
-                if num in ['d', 'p']:
-                    return f'{prefix}ال{stem}ين'
-            return m.group(0)
+            full_word = 'ال' + stem + suffix  # reconstruct with ال for blocklist check
+            if full_word in self._PREP_BLOCKLIST:
+                return m.group(0)
+            # Words ending in ان with 4+ char stems are almost always root nouns
+            if suffix == 'ان':
+                return m.group(0)
+            return f'{prefix}ال{stem}ين'
 
-        text = re.sub(r'\b([وف]?[بلكف])ال([أ-ي]{3,})(ون|ان)\b', _attached_prep_replace, text)
+        text = re.sub(r'\b([وف]?[بلكف])ال([أ-ي]{4,})(ون|ان)\b', _attached_prep_replace, text)
 
         # (ولمهندسون) -> (ولمهندسين)
         # FIX-33b: Same protection — reconstruct full word for blocklist
@@ -315,8 +321,8 @@ class ArabicGrammarGuard:
                 if word == 'ذو': return 'ذا'
                 if word == 'فو': return 'فا'
                 if word == 'حمو': return 'حما'
-                if word.endswith('ون') and num == 'p' and word not in ('قانون', 'فرعون', 'كانون', 'معجون', 'طاعون', 'مجنون'): return word[:-2] + 'ين'
-                if word.endswith('ان') and num == 'd' and word not in ('امتحان', 'إنسان', 'ميدان', 'سلطان', 'شيطان'): return word[:-2] + 'ين'
+                if word.endswith('ون'): return word[:-2] + 'ين'
+                if word.endswith('ان'): return word[:-2] + 'ين'
             elif target_case == 'n': # Marfoo'
                 if word in ('أبا', 'أبي'): return 'أبو'
                 if word in ('أخا', 'أخي'): return 'أخو'
@@ -475,18 +481,30 @@ class ArabicGrammarGuard:
                 # FIX-08: Expanded feminine plurals
                 'المهندسات', 'مهندسات', 'الطبيبات', 'طبيبات',
                 'اللاعبات', 'لاعبات', 'الممثلات', 'ممثلات',
+                'الشركات', 'شركات', 'الجامعات', 'جامعات',
+                'المدارس', 'مدارس', 'المستشفيات', 'مستشفيات',
+                'الحكومات', 'حكومات', 'المنظمات', 'منظمات',
+                'الطائرات', 'طائرات', 'السيارات', 'سيارات',
             }
 
-            if noun_num == 'd':
-                pass # Dual noun, skip plural logic to prevent corruption
-            elif noun_word in KNOWN_PLURALS_MASC:
+            if noun_word in KNOWN_PLURALS_MASC:
                 is_plural_masc = True
             elif noun_word in KNOWN_PLURALS_FEM:
                 is_plural_fem = True
-            elif (noun_word.endswith('ون') or (noun_word.endswith('ين') and noun_num == 'p')) and len(noun_word) >= 5:
-                # Bug 1.14: Check noun_num == 'p' to prevent duals from triggering plural logic
-                is_plural_masc = True
-            # Bug 1.2: Disabled POS tagger heuristic for broken plurals and generic 'ات' ending because it forces 'ن' on non-human plurals
+            elif noun_word.endswith('ون') or noun_word.endswith('ين'):
+                # Sound masculine plural — but only if 4+ chars (avoid short words)
+                if len(noun_word) >= 5:
+                    is_plural_masc = True
+            elif noun_word.endswith('ات') and len(noun_word) >= 5:
+                is_plural_fem = True
+            # FIX-08: Broken plural heuristic — common patterns
+            elif noun_num == 'p':
+                # Trust POS tagger when it says plural AND word is long enough
+                if len(noun_word) >= 4:
+                    if noun_gen == 'f':
+                        is_plural_fem = True
+                    else:
+                        is_plural_masc = True
             
             is_singular_fem = False
             if not is_plural_masc and not is_plural_fem:
@@ -556,8 +574,7 @@ class ArabicGrammarGuard:
             return word
 
         # إن وأخواتها
-        # Bug 1.13: removed كان from this regex because it caused كان أخوك -> كان أخاك
-        text = re.sub(r'\b(إن|أن|كأن|لكن|لعل|ليت|ان)\s+(أبوك|ابوك|أخوك|اخوك|ذو|فوك)\b',
+        text = re.sub(r'\b(إن|أن|كأن|لكن|لعل|ليت|ان|كان)\s+(أبوك|ابوك|أخوك|اخوك|ذو|فوك)\b',
                       lambda m: f"{m.group(1)} {_add_hamza(m.group(2)).replace('و', 'ا')}", text)
 
         # الأفعال المتعدية (Object position)
@@ -579,19 +596,19 @@ class ArabicGrammarGuard:
         
         # FIX-PC010: Add targeted safe regex for Nasb/Jazm particles + verb
         # Only match clear present tense verbs starting with ي/ت/ن/أ and ending in ون
-        text = re.sub(r'\b(أن|ان|لن|كي|حتى|لم|لما)\s+([يتاأن][\u0600-\u06FF]{2,})ون\b',
+        text = re.sub(r'\b(أن|ان|لن|كي|حتى|لم|لما)\s+([يتا][\u0600-\u06FF]{2,})ون\b',
                       r'\1 \2وا', text)
 
         return text
 
     def fix_conditional_sentences(self, text):
-        conditional_particles = {'إن', 'ان', 'متى', 'متي', 'مهما', 'أينما', 'حيثما', 'أيان', 'ايان', 'كيفما', 'أنى', 'اني'}
+        conditional_particles = {'إن', 'ان', 'من', 'ما', 'متى', 'متي', 'مهما', 'أينما', 'حيثما', 'أيان', 'ايان', 'كيفما', 'أنى', 'اني'}
         tokens = simple_word_tokenize(text)
         disambig_tokens = self.mle.disambiguate(tokens)
         corrected_tokens = list(tokens)
         
         # Lookahead for 2nd person context
-        has_2nd_person_context = False
+        has_2nd_person_context = any(t.endswith('كم') or t.endswith('كمو') or t.startswith('ت') for t in tokens)
         
         in_cond = False
         verbs_jazmed = 0
@@ -616,6 +633,10 @@ class ArabicGrammarGuard:
             if in_cond and pos_tag == 'verb':
                 # Apply jazm using the comprehensive camel_tools helper
                 word = self._apply_jazm_to_verb(word, token_info)
+                    
+                # Fix pronoun mismatch if 2nd person context exists
+                if has_2nd_person_context and word.startswith('ي') and (word.endswith('وا') or word.endswith('ا') or word.endswith('ي')):
+                    word = 'ت' + word[1:]
                     
                 corrected_tokens[i] = word
                 # Increment jazmed verbs counter (handles both فعل الشرط and جواب الشرط)
@@ -693,8 +714,8 @@ class ArabicGrammarGuard:
                     else:
                         corrected_tokens[i+1] = base_adj + ('ان' if is_nom else 'ين')
                         
-            # Plural Human Adjective Agreement (Sound Plurals Only)
-            elif w1_num == 'p' and w1_pos in ['noun', 'unknown'] and (w1.endswith('ون') or w1.endswith('ين') or w1.endswith('ات')):
+            # Plural Human Adjective Agreement
+            elif w1_num == 'p' and w1_pos in ['noun', 'unknown']:
                 base_adj = None
                 for suffix in ['ان', 'ين', 'تان', 'تين', 'ة', 'ون', 'ات', 'ين', '']:
                     stem = w2[:-len(suffix)] if suffix else w2
@@ -705,11 +726,9 @@ class ArabicGrammarGuard:
                 if base_adj:
                     if w1.endswith('ون') or w1.endswith('ين') or w1_gen == 'm':
                         is_nom = w1.endswith('ون')
-                        if not w2.endswith('ان') and not w2.endswith('ين') and not w2.endswith('ات'):
-                            corrected_tokens[i+1] = base_adj + ('ون' if is_nom else 'ين')
+                        corrected_tokens[i+1] = base_adj + ('ون' if is_nom else 'ين')
                     elif w1.endswith('ات') or w1_gen == 'f':
-                        if not w2.endswith('ان') and not w2.endswith('ين') and not w2.endswith('ات'):
-                            corrected_tokens[i+1] = base_adj + 'ات'
+                        corrected_tokens[i+1] = base_adj + 'ات'
 
         return " ".join(corrected_tokens)
 
@@ -718,35 +737,16 @@ class ArabicGrammarGuard:
         """Apply all grammar rules to model output."""
         text = self.preserve_numbers(original_text, generated_text)
         
-        # ── Fix Hallucinated Subject Gender & Protect Structured Data ──
+        # ── Fix Hallucinated Subject Gender ──
+        # If model incorrectly changes female subject to male, restore it.
         orig_words = original_text.split()
         corr_words = text.split()
         if len(orig_words) == len(corr_words):
-            for i in range(len(orig_words)):
-                o = orig_words[i]
-                c = corr_words[i]
+            for i, (o, c) in enumerate(zip(orig_words, corr_words)):
                 o_clean = o.rstrip('.,،؛;:!؟?()[]{}«»"\'…')
                 c_clean = c.rstrip('.,،؛;:!؟?()[]{}«»"\'…')
-                
-                # Protect structured data (English, JSON, Hashtags, Code)
-                if re.search(r'[a-zA-Z]|\{.*\}|\[.*\]|<.*>|#\S+|@\S+', o):
-                    corr_words[i] = o
-                    # Revert grammar hallucinations on adjacent Arabic words caused by structured data
-                    if i > 0:
-                        prev_o = orig_words[i-1]
-                        prev_c = corr_words[i-1]
-                        clean_c = prev_c.rstrip('.,،؛;:!؟?()[]{}«»"\'…')
-                        if len(clean_c) <= len(prev_o) + 2 and clean_c.startswith(prev_o):
-                            corr_words[i-1] = prev_o + prev_c[len(clean_c):]
-                    if i < len(orig_words) - 1:
-                        next_o = orig_words[i+1]
-                        next_c = corr_words[i+1]
-                        clean_c = next_c.rstrip('.,،؛;:!؟?()[]{}«»"\'…')
-                        if len(clean_c) <= len(next_o) + 2 and clean_c.startswith(next_o):
-                            corr_words[i+1] = next_o + next_c[len(clean_c):]
-                
                 # If model dropped 'ة' from a word of length >= 4
-                elif o_clean.endswith('ة') and not c_clean.endswith('ة') and o_clean[:-1] == c_clean:
+                if o_clean.endswith('ة') and not c_clean.endswith('ة') and o_clean[:-1] == c_clean:
                     corr_words[i] = o
             text = " ".join(corr_words)
 
@@ -866,9 +866,8 @@ class ArabicGrammarGuard:
         }
         words = text.split()
         for i, w in enumerate(words):
-            clean_w = w.rstrip('.,،؛;:!؟?()[]{}«»"\'…')
-            if clean_w in _ALWAYS_TANWEEN:
-                words[i] = _ALWAYS_TANWEEN[clean_w] + w[len(clean_w):]
+            if w in _ALWAYS_TANWEEN:
+                words[i] = _ALWAYS_TANWEEN[w]
         return ' '.join(words)
 
     def fix_initial_hamza(self, text):
@@ -921,27 +920,16 @@ class ArabicGrammarGuard:
         _PRONOUN_SUFFIXES = {'ه', 'ها', 'ك', 'كم', 'كن', 'هم', 'هن', 'ني', 'نا'}
         words = text.split()
         for i, w in enumerate(words):
-            clean_w = w.rstrip('.,،؛;:!؟?()[]{}«»"\'…')
-            if clean_w in _HAMZA_FIXES:
-                words[i] = _HAMZA_FIXES[clean_w] + w[len(clean_w):]
+            if w in _HAMZA_FIXES:
+                words[i] = _HAMZA_FIXES[w]
                 continue
             # إنّ/أنّ: kasra at sentence start, fathah mid-sentence
             _is_sent_start = (i == 0) or (words[i-1][-1] in '.؟!؛' if words[i-1] else False)
-            if _is_sent_start and clean_w in _INNA_SENTENCE_INITIAL:
-                words[i] = _INNA_SENTENCE_INITIAL[clean_w] + w[len(clean_w):]
+            if _is_sent_start and w in _INNA_SENTENCE_INITIAL:
+                words[i] = _INNA_SENTENCE_INITIAL[w]
                 continue
-            if not _is_sent_start and clean_w in _ANNA_MID_SENTENCE:
-                if clean_w == 'ان':
-                    # Bug 1.5: Added تقول and all variants to Qawl check
-                    if i > 0 and words[i-1].rstrip('.,،؛;:!؟?()[]{}«»"\'…') in ('قال', 'قالت', 'يقول', 'يقولون', 'قلت', 'قلنا', 'تقول', 'يقولوا'):
-                        words[i] = 'إن' + w[len(clean_w):]
-                    else:
-                        pass # leave it alone to avoid breaking conditional
-                else:
-                    if i > 0 and words[i-1].rstrip('.,،؛;:!؟?()[]{}«»"\'…') in ('قال', 'قالت', 'يقول', 'يقولون', 'قلت', 'قلنا', 'تقول', 'يقولوا'):
-                        words[i] = _INNA_SENTENCE_INITIAL[clean_w] + w[len(clean_w):]
-                    else:
-                        words[i] = _ANNA_MID_SENTENCE[clean_w] + w[len(clean_w):]
+            if not _is_sent_start and w in _ANNA_MID_SENTENCE:
+                words[i] = _ANNA_MID_SENTENCE[w]
                 continue
             for stem, fixed in _HAMZA_STEMS.items():
                 if w.startswith(stem) and len(w) > len(stem):

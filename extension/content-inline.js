@@ -462,7 +462,7 @@
     if (!original || !correction) return;
 
     const suggestion = { id: sid, original, correction, type, start, end };
-    const typeLabels = { spelling: 'إملائي', grammar: 'نحوي', punctuation: 'ترقيم' };
+    const typeLabels = { spelling: 'خطأ إملائي', grammar: 'خطأ نحوي', punctuation: 'علامات ترقيم' };
 
     tooltip = document.createElement('div');
     tooltip.setAttribute('data-bayan-theme', currentBayanTheme);
@@ -471,23 +471,22 @@
 
     const typeLabel = typeLabels[type] || type;
     const typeClass = type === 'spelling' ? 'bayan-il-popover-type--spelling' : type === 'grammar' ? 'bayan-il-popover-type--grammar' : 'bayan-il-popover-type--punctuation';
-    const icon = type === 'spelling' ? '✕' : type === 'grammar' ? '!' : '✓';
-    
+
     safeHTML(tooltip, `
-        <div class="bayan-il-popover-type ${typeClass}">
-          <span class="bayan-il-popover-type-icon">${icon}</span> ${typeLabel}
-        </div>
+        <div class="bayan-il-popover-type ${typeClass}">${typeLabel}</div>
         <div class="bayan-il-popover-original-word">
           <span class="bayan-il-popover-label">الكلمة:</span>
           <span class="bayan-il-tooltip-original">${esc(original)}</span>
+          <span class="bayan-il-popover-arrow">←</span>
+          <span class="bayan-il-popover-correction">${correction ? esc(correction) : '<s style="opacity:0.5">حذف</s>'}</span>
         </div>
         <div class="bayan-il-popover-alternatives">
           <button class="bayan-il-popover-alt-btn bayan-il-popover-alt-main" data-action="apply">
-            ${correction ? esc(correction) : '<s style="opacity:0.5">حذف</s>'}
+            ${correction ? '✓ ' + esc(correction) : '<s style="opacity:0.5">حذف</s>'}
           </button>
         </div>
         <button type="button" class="bayan-il-popover-dismiss" data-action="ignore" title="تجاهل هذا الاقتراح">تجاهل</button>
-        <p class="bayan-il-popover-hint">اختر التصحيح المناسب</p>
+        <p class="bayan-il-popover-hint">اختر التصحيح المناسب · Escape للإغلاق</p>
     `);
 
     document.body.appendChild(tooltip);
@@ -525,6 +524,11 @@
     });
 
     setTimeout(() => document.addEventListener('click', outsideClick, { once: true }), 100);
+
+    const escHandler = (e) => {
+      if (e.key === 'Escape') { hideTooltip(); document.removeEventListener('keydown', escHandler); }
+    };
+    document.addEventListener('keydown', escHandler);
   }
 
   function outsideClick(e) {
@@ -1135,14 +1139,22 @@
     safeHTML(modalPanel, `
       <div class="bayan-il-modal-top-bar" id="bayan-modal-drag-handle">
         <div class="bayan-il-modal-brand">
-           <img src="${chrome.runtime.getURL('assets/icons/icon128.png')}" alt="بيان" style="width: 24px; height: 24px; object-fit: contain;" draggable="false" />
+           <img src="${chrome.runtime.getURL('assets/icons/icon48.png')}" alt="بيان" style="width: 28px; height: 28px; object-fit: contain; border-radius: 6px;" draggable="false" />
            <div class="bayan-il-header-divider"></div>
            <span class="bayan-il-modal-title">بيان</span>
         </div>
-        <button class="bayan-il-modal-close" title="إغلاق">✕</button>
+        <button class="bayan-il-modal-close" title="إغلاق"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
       </div>
 
       <div class="bayan-il-modal-body-scroll">
+        <div class="bayan-il-modal-sugg-card">
+          <div class="bayan-il-modal-sugg-header">
+            <h3 class="bayan-il-modal-section-title">الاقتراحات (<span id="bayan-modal-sugg-count">٠</span>)</h3>
+            <button id="bayan-modal-apply-all" class="bayan-il-modal-apply-all" style="display:none;" type="button">تطبيق الكل</button>
+          </div>
+          <div id="bayan-modal-cards" class="bayan-il-modal-cards" role="list" aria-live="polite" aria-label="اقتراحات التصحيح"></div>
+        </div>
+
         <div class="bayan-il-modal-score-card">
           <h3 class="bayan-il-modal-section-title">تقييم الكتابة</h3>
           <div class="bayan-il-modal-score-ring" role="img" aria-label="تقييم الكتابة">
@@ -1159,14 +1171,6 @@
             <span class="bayan-il-modal-count bayan-il-modal-count--grammar"><strong id="bayan-modal-count-grammar">٠</strong> نحوي</span>
             <span class="bayan-il-modal-count bayan-il-modal-count--punctuation"><strong id="bayan-modal-count-punctuation">٠</strong> ترقيم</span>
           </div>
-        </div>
-
-        <div class="bayan-il-modal-sugg-card">
-          <div class="bayan-il-modal-sugg-header">
-            <h3 class="bayan-il-modal-section-title">الاقتراحات (<span id="bayan-modal-sugg-count">٠</span>)</h3>
-            <button id="bayan-modal-apply-all" class="bayan-il-modal-apply-all" style="display:none;" type="button">تطبيق الكل</button>
-          </div>
-          <div id="bayan-modal-cards" class="bayan-il-modal-cards" role="list" aria-live="polite" aria-label="اقتراحات التصحيح"></div>
         </div>
       </div>
     `);

@@ -395,18 +395,22 @@
   font-weight: 700 !important;
   background: linear-gradient(135deg, #8BB8E8, #6BA3E0) !important;
   -webkit-background-clip: text !important;
+  background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
   letter-spacing: -0.3px !important;
 }
 
 .bayan-il-modal-close {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 28px !important;
+  height: 28px !important;
   background: none !important;
   border: none !important;
   color: #8A939F !important;
   cursor: pointer !important;
-  font-size: 18px !important;
-  padding: 4px !important;
-  line-height: 1 !important;
+  padding: 0 !important;
   border-radius: 6px !important;
   transition: background 150ms ease, color 150ms ease !important;
 }
@@ -553,9 +557,11 @@
 /* ── Header Divider ── */
 
 .bayan-il-header-divider {
-  width: 1px !important;
-  height: 20px !important;
+  width: 2px !important;
+  height: 24px !important;
   background: #3a3a4d !important;
+  border-radius: 9999px !important;
+  flex-shrink: 0 !important;
 }
 
 /* ── Suggestion Cards ── */
@@ -916,6 +922,15 @@
 .bayan-il-popover-label {
   font-weight: 700 !important;
 }
+.bayan-il-popover-arrow {
+  color: #8A939F !important;
+  font-size: 12px !important;
+  margin: 0 4px !important;
+}
+.bayan-il-popover-correction {
+  color: #6BC98A !important;
+  font-weight: 600 !important;
+}
 .bayan-il-popover-alternatives {
   display: flex !important;
   flex-direction: column !important;
@@ -972,6 +987,58 @@
   text-align: center !important;
   margin-top: 0.5rem !important;
   margin-bottom: 0 !important;
+}
+
+/* ── Tooltip Popover — Light Theme ── */
+
+.bayan-il-suggestion-popover[data-bayan-theme="light"] {
+  background: #FAF9F6 !important;
+  border-color: rgba(26, 29, 33, 0.12) !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.1) !important;
+  color: #1A1D21 !important;
+}
+
+.bayan-il-suggestion-popover[data-bayan-theme="light"] .bayan-il-popover-original-word {
+  color: #3A424E !important;
+}
+
+.bayan-il-suggestion-popover[data-bayan-theme="light"] .bayan-il-tooltip-original {
+  color: #C53030 !important;
+}
+
+.bayan-il-suggestion-popover[data-bayan-theme="light"] .bayan-il-popover-correction {
+  color: #2F8554 !important;
+}
+
+.bayan-il-suggestion-popover[data-bayan-theme="light"] .bayan-il-popover-arrow {
+  color: #5A6472 !important;
+}
+
+.bayan-il-suggestion-popover[data-bayan-theme="light"] .bayan-il-popover-alt-btn {
+  background: #FAF9F6 !important;
+  border-color: rgba(26, 29, 33, 0.12) !important;
+  color: #1A1D21 !important;
+}
+
+.bayan-il-suggestion-popover[data-bayan-theme="light"] .bayan-il-popover-alt-main {
+  background: linear-gradient(135deg, #2B6CB8, #6B57A8) !important;
+  color: white !important;
+  border-color: transparent !important;
+}
+
+.bayan-il-suggestion-popover[data-bayan-theme="light"] .bayan-il-popover-dismiss {
+  border-color: rgba(26, 29, 33, 0.18) !important;
+  color: #5A6472 !important;
+}
+
+.bayan-il-suggestion-popover[data-bayan-theme="light"] .bayan-il-popover-dismiss:hover {
+  color: #C53030 !important;
+  border-color: #C53030 !important;
+  background: rgba(197, 48, 48, 0.06) !important;
+}
+
+.bayan-il-suggestion-popover[data-bayan-theme="light"] .bayan-il-popover-hint {
+  color: #5A6472 !important;
 }
 
 /* Modal Panel UI Sync */
@@ -1141,51 +1208,4 @@
   opacity: 0.9 !important;
 }
 
-/* Modal header wrapper */
-.bayan-il-modal-top-bar {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  padding: 0 0.5rem !important;
-}
-.bayan-il-modal-brand {
-  display: flex !important;
-  align-items: center !important;
-  gap: 0.5rem !important;
-}
-.bayan-il-modal-title {
-  font-size: 1.25rem !important;
-  font-weight: 700 !important;
-  background: linear-gradient(135deg, #6BA3E0, #A594E8) !important;
-  -webkit-background-clip: text !important;
-  -webkit-text-fill-color: transparent !important;
-}
-.bayan-il-modal-close {
-  background: none !important;
-  border: none !important;
-  color: #B4BBC6 !important;
-  font-size: 1.25rem !important;
-  cursor: pointer !important;
-}
-.bayan-il-modal-close:hover {
-  color: #E88A8A !important;
-}
-
-
-
-
-.bayan-il-header-divider {
-  width: 1px !important;
-  height: 18px !important;
-  background: rgba(236, 238, 242, 0.2) !important;
-  margin: 0 10px !important;
-}
-
-.bayan-il-modal-top-bar {
-  cursor: grab !important;
-}
-
-.bayan-il-modal-top-bar:active {
-  cursor: grabbing !important;
-}
 
