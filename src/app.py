@@ -2670,7 +2670,14 @@ def analyze_text():
                     # FIX-52: Universal Structured Data protection for punctuation
                     import re as _re_struct_univ
                     _p_orig = d.get('original', '')
-                    if _p_orig and (any(c.isdigit() for c in _p_orig) or _re_struct_univ.search(r'[a-zA-Z]|\{|\[|<|#|@|://', _p_orig)):
+                    _p_end_idx = d.get('end', 0)
+                    _p_next_text = ctx.current_text[_p_end_idx:].lstrip()
+                    _p_next_word = _p_next_text.split()[0] if _p_next_text else ''
+                    
+                    _is_orig_struct = _p_orig and (any(c.isdigit() for c in _p_orig) or _re_struct_univ.search(r'[a-zA-Z]|\{|\[|<|#|@|://', _p_orig))
+                    _is_next_struct = _p_next_word and (any(c.isdigit() for c in _p_next_word) or _re_struct_univ.search(r'[a-zA-Z]|\{|\[|<|#|@|://', _p_next_word))
+                    
+                    if _is_orig_struct or _is_next_struct:
                         logger.info(
                             f"[PUNC-SAFETY] Blocked structured data punct diff: "
                             f"'{_p_orig}' → '{d.get('correction','')}'"
