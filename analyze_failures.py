@@ -1,67 +1,31 @@
-"""Analyze remaining 24 failures after Layer 1/2/3 fixes."""
-import json, re
+import json
 
-with open('tests/phase10/reports/collision_benchmark_results.json', 'r', encoding='utf-8') as f:
+with open('tests/phase10/reports/phase10_results.json', 'r', encoding='utf-8') as f:
     data = json.load(f)
 
-def norm(t):
-    t = re.sub(r'[\u064B-\u065F\u0670]', '', t)
-    t = t.rstrip('.،؛؟!?!')
-    return re.sub(r'\s+', ' ', t).strip()
+failures = [r for r in data['results'] if r['pipeline_verdict'] in ('FP', 'FN', 'ERROR')]
 
-categories = {}
-for r in data['results']:
-    if r['pipeline_verdict'] != 'FN':
-        continue
-    rid = r['id']
-    exp = r['expected'].strip()
-    act = r['pipeline_output'].strip()
-    inp = r['input'].strip()
-    
-    inp_w = inp.split()
-    exp_w = exp.split()
-    act_w = act.split()
-    
-    issues = []
-    for i in range(min(len(exp_w), len(act_w))):
-        aw = act_w[i].rstrip('.،؛؟!?!')
-        ew = exp_w[i].rstrip('.،؛؟!?!')
-        iw = inp_w[i] if i < len(inp_w) else '—'
-        aw_n = re.sub(r'[\u064B-\u065F]', '', aw)
-        ew_n = re.sub(r'[\u064B-\u065F]', '', ew)
+md_content = "# Analysis of the 33 Benchmark Failures\n\n"
+md_content += "This document contains a detailed breakdown of the 33 examples that failed the benchmark, grouped by their dataset.\n\n"
+
+from collections import defaultdict
+grouped = defaultdict(list)
+for r in failures:
+    grouped[r.get('dataset', 'unknown')].append(r)
+
+for dataset, items in grouped.items():
+    md_content += f"## Dataset: {dataset.upper()} ({len(items)} failures)\n\n"
+    for idx, item in enumerate(items, 1):
+        md_content += f"### {idx}. ID: {item.get('id')} ({item.get('pipeline_verdict')})\n"
+        md_content += f"- **Input:** `{item.get('input')}`\n"
+        md_content += f"- **Expected:** `{item.get('expected')}`\n"
+        md_content += f"- **Actual Output:** `{item.get('pipeline_output')}`\n"
+        md_content += f"- **Failure Reason:** {item.get('pipeline_detail', 'N/A')}\n"
+        md_content += f"- **Root Cause:** {item.get('root_cause_stage', 'unknown')} ({item.get('root_cause_detail', 'N/A')})\n"
         
-        if aw_n == ew_n:
-            continue  # tanween/diacritic only diff
-        if aw != ew:
-            if iw == aw:
-                cause = "MODEL_MISS"
-            elif iw == ew:
-                cause = "CORRUPTED"
-            else:
-                cause = "WRONG_FIX"
-            issues.append(f"    [{i}] '{iw}'→'{aw}' (exp:'{ew}') {cause}")
-    
-    if len(exp_w) != len(act_w):
-        issues.append(f"    word count: {len(act_w)} vs {len(exp_w)}")
-    
-    # Classify
-    has_junk = any('وومن' in a or '.و' in a or 'ةل' in a for a in act_w)
-    has_trailing_و = any(a.endswith('و') and not e.endswith('و') and not e.endswith('وا') 
-                         for a, e in zip(act_w, exp_w) if a != e)
-    
-    cat = r['category']
-    print(f"\n{rid} [{cat}]")
-    print(f"  IN:  {inp[:60]}")
-    print(f"  EXP: {exp[:60]}")
-    print(f"  ACT: {act[:60]}")
-    for iss in issues:
-        print(iss)
-    if has_junk:
-        print("  >>> TRAILING JUNK")
+        md_content += "\n"
 
-# Summary of what each failure needs
-print("\n" + "="*60)
-print("FIXABILITY ANALYSIS")
-print("="*60)
-print(f"\nTotal failures: 24")
-print(f"Need: 17 more passes to reach 85% (43/50)")
+with open('C:\\Users\\youss\\.gemini\\antigravity-ide\\brain\\9f7cefbc-f722-4b96-bc24-80ce6ffbd124\\failures_analysis.md', 'w', encoding='utf-8') as out:
+    out.write(md_content)
+
+print("Analysis successfully written to artifact.")

@@ -1104,7 +1104,9 @@
 
 .suggestion-card:hover,
 .suggestion-card.focused {
-  border-color: var(--color-primary);
+  border-top-color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+  border-left-color: var(--color-primary);
   background: var(--color-suggestion-hover-bg);
   transform: translateX(-2px);
 }

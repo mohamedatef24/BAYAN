@@ -361,7 +361,7 @@ body::-webkit-scrollbar-thumb {
   margin-bottom: 14px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--bayan-radius);
+  border-radius: 12px;
   animation: fadeSlideIn 300ms ease-out;
 }
 
@@ -385,7 +385,7 @@ body::-webkit-scrollbar-thumb {
 }
 
 .bayan-score-ring circle:last-child {
-  transition: stroke-dashoffset 600ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: stroke-dashoffset 600ms ease-in-out;
 }
 
 .bayan-score-value {
@@ -396,7 +396,7 @@ body::-webkit-scrollbar-thumb {
   justify-content: center;
   font-size: 28px;
   font-weight: 700;
-  color: var(--secondary-color);
+  color: var(--color-text-primary, var(--text-color));
 }
 
 .bayan-score-hint {
@@ -538,24 +538,32 @@ body::-webkit-scrollbar-thumb {
 }
 
 .bayan-suggestion-card {
-  padding: 10px 12px;
-  background: var(--color-surface);
+  padding: var(--spacing-md, 16px);
+  padding-right: calc(var(--spacing-md, 16px) + 4px);
+  background: var(--color-surface-elevated, var(--color-surface));
   border: 1px solid var(--color-border);
-  border-radius: var(--bayan-radius);
+  border-right: 4px solid var(--color-border-strong, rgba(236, 238, 242, 0.16));
+  border-radius: 12px;
   cursor: pointer;
-  transition: all var(--bayan-transition);
+  transition: border-color var(--bayan-transition), background var(--bayan-transition), transform var(--bayan-transition);
+  text-align: right;
 }
 .bayan-suggestion-card:hover {
-  border-color: var(--primary-color);
-  background: var(--color-surface-hover);
-  box-shadow: 0 0 0 1px var(--bayan-primary-glow);
+  border-top-color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
+  border-left-color: var(--primary-color);
+  background: var(--color-suggestion-hover-bg, var(--color-surface-hover));
+  transform: translateX(-2px);
 }
+.bayan-suggestion-card:has(.bayan-badge-spelling) { border-right-color: var(--bayan-spelling, var(--color-error)); }
+.bayan-suggestion-card:has(.bayan-badge-grammar) { border-right-color: var(--bayan-grammar, var(--color-warning)); }
+.bayan-suggestion-card:has(.bayan-badge-punctuation) { border-right-color: var(--bayan-punctuation, var(--color-success)); }
 
 .bayan-suggestion-badge {
   display: inline-block;
   padding: 2px 8px;
-  border-radius: 20px;
-  font-size: 10px;
+  border-radius: 999px;
+  font-size: 12px;
   font-weight: 700;
   margin-bottom: 6px;
 }
@@ -578,13 +586,12 @@ body::-webkit-scrollbar-thumb {
   align-items: center;
   gap: 6px;
   margin-bottom: 8px;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .bayan-suggestion-original {
   text-decoration: line-through;
-  opacity: 0.55;
-  color: var(--bayan-error);
+  color: var(--text-muted, var(--bayan-text-muted));
 }
 
 .bayan-suggestion-arrow {
@@ -606,11 +613,11 @@ body::-webkit-scrollbar-thumb {
 .bayan-alt-chip {
   padding: 4px 10px;
   border: 1px solid var(--color-border);
-  border-radius: 20px;
-  background: transparent;
+  border-radius: 100px;
+  background: var(--color-surface);
   color: var(--text-secondary);
   font-family: var(--bayan-font-arabic);
-  font-size: 11px;
+  font-size: 12px;
   cursor: pointer;
   transition: all var(--bayan-transition);
 }
@@ -621,20 +628,85 @@ body::-webkit-scrollbar-thumb {
 }
 
 .bayan-alt-chip--main {
-  background: var(--primary-color);
-  border-color: var(--primary-color);
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  border-color: transparent;
   color: white;
+  font-weight: 700;
 }
 .bayan-alt-chip--main:hover {
-  background: var(--bayan-primary-dark);
-  color: white;
+  opacity: 0.9;
+  border-color: transparent;
 }
 
 .bayan-alt-chip--keep {
-  opacity: 0.65;
+  border-style: dashed;
+  color: var(--bayan-text-muted);
+  font-size: 11px;
 }
 .bayan-alt-chip--keep:hover {
   opacity: 1;
+}
+
+/* ── Apply All Button ── */
+.bayan-apply-all-btn {
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--primary-color, #6BA3E0), var(--secondary-color, #A594E8));
+  color: var(--color-text-inverse, #F4F5F7);
+  font-family: var(--bayan-font-arabic);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  min-height: 44px;
+  transition: opacity 200ms ease, transform 150ms ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.bayan-apply-all-btn:hover { opacity: 0.92; }
+.bayan-apply-all-btn:active { transform: scale(0.98); }
+
+/* ── Empty State ── */
+.bayan-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  text-align: center;
+  gap: 8px;
+}
+.bayan-empty-state-icon-wrap {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--color-surface-elevated, #242833);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+.bayan-empty-state-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-secondary, var(--text-secondary));
+}
+.bayan-empty-state-desc {
+  font-size: 12px;
+  color: var(--color-text-muted, var(--bayan-text-muted));
+  line-height: 1.6;
+}
+
+/* ── Score Hint Subtitle ── */
+.bayan-score-hint-sub {
+  font-size: 11px;
+  color: var(--color-text-muted, var(--bayan-text-muted));
+  display: block;
+  margin-top: 2px;
 }
 
 /* ══════════════════════════════════════════════
