@@ -129,9 +129,14 @@ class AraSpellPostProcessor:
     @staticmethod
     def remove_duplicate_words(text: str) -> str:
         """Remove consecutive duplicate words. e.g. كتاب كتاب → كتاب"""
-        # Bug 2.11: Destroys rhetorical repetition (التوكيد اللفظي) like "صفا صفا".
-        # Disabled as it destroys valid Arabic phrases.
-        return text
+        words = text.split()
+        if len(words) < 2:
+            return text
+        result = [words[0]]
+        for i in range(1, len(words)):
+            if words[i] != words[i-1]:
+                result.append(words[i])
+        return ' '.join(result)
     
     @staticmethod
     def normalize_spaces(text: str) -> str:
@@ -332,11 +337,11 @@ class AraSpellPostProcessor:
             if any(word.endswith(e) for e in PROTECTED_ENDINGS):
                 result.append(word)
                 continue
-            if word in PROTECTED_HA_WORDS or word in ['هذه', 'هاته']:
+            if word in PROTECTED_HA_WORDS:
                 result.append(word)
                 continue
             if len(word) >= 3 and word.endswith('ه'):
-                if word[-2] in AraSpellPostProcessor.ARABIC_CONSONANTS or word[-2] in 'اويءؤئ':
+                if word[-2] in AraSpellPostProcessor.ARABIC_CONSONANTS:
                     candidate_with_ta = word[:-1] + 'ة'
                     # Default: prefer ة (correct Arabic orthography for feminine nouns)
                     if vocab_manager:
@@ -384,8 +389,11 @@ class AraSpellPostProcessor:
             if i + 1 < len(words):
                 next_word = words[i + 1]
                 # Bug 2.11: Destroys Badal structures (الأستاذ أستاذ -> الأستاذ)
-                # and Rhetorical Repetition (التوكيد اللفظي)
-                # Removed the aggressive duplicate word deletion.
+                if word == next_word: # Only remove exact duplicates, not normalized duplicates
+                    keep = next_word if next_word.startswith('ال') and not word.startswith('ال') else word
+                    result.append(keep)
+                    i += 2
+                    continue
             result.append(word)
             i += 1
         return ' '.join(result)
@@ -630,13 +638,6 @@ class OutputValidator:
     def validate(self, original: str, corrected: str, error_type: str) -> Tuple[bool, str]:
         if not corrected or not corrected.strip():
             return False, "empty_output"
-            
-        # ── Protect Structured Data ──
-        # Reject spelling modifications to English, JSON, URLs, Emails, Hashtags
-        if re.search(r'[a-zA-Z]|\{.*\}|\[.*\]|<.*>|#\S+|@\S+', original):
-            if original != corrected:
-                return False, "structural_protection"
-                
         original_no_space = original.replace(' ', '').replace('\u200c', '')
         corrected_no_space = corrected.replace(' ', '').replace('\u200c', '')
         if original_no_space == corrected_no_space:
@@ -1176,15 +1177,7 @@ class ArabicSpellChecker:
             logger.info("[MLM/CONTEXTUAL] Disabled by configuration (use_contextual=False)")
 
     def _fix_repeated_end_chars(self, text: str) -> str:
-        # Exclude 'ي' if it is preceded by a Kasra or another Yaa (e.g., يحيي)
-        def _replace_repeated(m):
-            w = m.group(0)
-            char = m.group(2)
-            if w.endswith('يي'):
-                if self.vocab_manager and self.vocab_manager.is_iv(w):
-                    return w
-            return m.group(1) + char
-        text = re.sub(r'\b([^\s]+?)([\u0621-\u064A])\2+\b', _replace_repeated, text)
+        text = re.sub(r'([ا-ي])\1+\b', r'\1', text)
         return text
     
     def _fix_merged_with_errors(self, text: str) -> str:

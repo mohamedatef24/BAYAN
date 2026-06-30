@@ -129,9 +129,14 @@ class AraSpellPostProcessor:
     @staticmethod
     def remove_duplicate_words(text: str) -> str:
         """Remove consecutive duplicate words. e.g. كتاب كتاب → كتاب"""
-        # Bug 2.11: Destroys rhetorical repetition (التوكيد اللفظي) like "صفا صفا".
-        # Disabled as it destroys valid Arabic phrases.
-        return text
+        words = text.split()
+        if len(words) < 2:
+            return text
+        result = [words[0]]
+        for i in range(1, len(words)):
+            if words[i] != words[i-1]:
+                result.append(words[i])
+        return ' '.join(result)
     
     @staticmethod
     def normalize_spaces(text: str) -> str:
@@ -149,9 +154,17 @@ class AraSpellPostProcessor:
     @staticmethod
     def remove_word_repetition_with_wa(text: str) -> str:
         """Remove word و word → word"""
-        # Bug 2.9: This deletes valid rhetorical repetition (التوكيد اللفظي) like "صنفا وصنفا"
-        # Disabled as it is highly destructive to valid Arabic.
-        return text
+        words = text.split()
+        result = []
+        i = 0
+        while i < len(words):
+            if i + 2 < len(words) and words[i] == words[i+2] and words[i+1] == 'و':
+                result.append(words[i])
+                i += 3
+            else:
+                result.append(words[i])
+                i += 1
+        return ' '.join(result)
     
     # --- Hamza & Ta Marbuta Handling ---
     
@@ -168,7 +181,7 @@ class AraSpellPostProcessor:
         'اذا': 'إذا', 'اذ': 'إذ',
         'اي': 'أي', 'اين': 'أين',
         'او': 'أو',
-        
+        'اما': 'أما',
         'ان': 'أن', 'انه': 'أنه', 'انها': 'أنها', 'انهم': 'أنهم',
         'اخر': 'آخر', 'اخرى': 'أخرى',
         'الان': 'الآن',
@@ -188,9 +201,9 @@ class AraSpellPostProcessor:
         'اهل': 'أهل',
         'اطفال': 'أطفال',
         'اصدقاء': 'أصدقاء', 'اصدقائي': 'أصدقائي',
-        'اريد': 'أريد', 'احب': 'أحب',
-        'اعلم': 'أعلم',
-        'اكل': 'أكل',
+        'اعتقد': 'أعتقد', 'اريد': 'أريد', 'احب': 'أحب',
+        'اعرف': 'أعرف', 'اعلم': 'أعلم',
+        'اخذ': 'أخذ', 'اكل': 'أكل',
         'الايام': 'الأيام',
         'الاطفال': 'الأطفال',
         'الاسعار': 'الأسعار',
@@ -230,8 +243,10 @@ class AraSpellPostProcessor:
         'ادارة': 'إدارة', 'ادارية': 'إدارية',
         'اعلام': 'إعلام', 'اعلامي': 'إعلامي',
         'احتمال': 'احتمال', 'احتفال': 'احتفال',
+        'ازور': 'أزور', 'اذهب': 'أذهب', 'اكتب': 'أكتب',
         'اقرا': 'أقرأ', 'اقرأ': 'أقرأ',
-        'اسافر': 'أسافر',
+        'اعمل': 'أعمل', 'ادرس': 'أدرس',
+        'اشتري': 'أشتري', 'اسافر': 'أسافر',
         'احبه': 'أحبه',
         'مسؤول': 'مسؤول', 'مسؤولية': 'مسؤولية',
         'رؤية': 'رؤية', 'رؤيا': 'رؤيا',
@@ -244,7 +259,7 @@ class AraSpellPostProcessor:
         'مصطفي': 'مصطفى', 'موسي': 'موسى', 'عيسي': 'عيسى',
         'هدي': 'هدى', 'بني': 'بنى',
         'معني': 'معنى', 'مبني': 'مبنى',
-        
+        'علي': 'على',  # Common alif maqsura confusion
         'الي': 'إلى',
         # FIX-47: Verb+pronoun hamza entries (احبه→أحبه)
         'احبه': 'أحبه', 'احبها': 'أحبها', 'احبك': 'أحبك',
@@ -265,9 +280,16 @@ class AraSpellPostProcessor:
     @staticmethod
     def fix_hamza_conservative(text: str) -> str:
         """Conservative Hamza normalization — only at word END, not middle."""
-        # Bug 2.5: Blindly changing أ at the end of word to ا corrupts valid orthography (قرأ -> قرا)
-        # Disabled as it is highly destructive.
-        return text
+        words = text.split()
+        result = []
+        for word in words:
+            if len(word) >= 3:
+                if word.endswith('أ'):
+                    word = word[:-1] + 'ا'
+                if word.endswith('إ'):
+                    word = word[:-1] + 'ا'
+            result.append(word)
+        return ' '.join(result)
     
     # Attached prefixes that can precede hamza-whitelist words
     # Ordered longest-first so وال is tried before و
@@ -332,22 +354,18 @@ class AraSpellPostProcessor:
             if any(word.endswith(e) for e in PROTECTED_ENDINGS):
                 result.append(word)
                 continue
-            if word in PROTECTED_HA_WORDS or word in ['هذه', 'هاته']:
+            if word in PROTECTED_HA_WORDS:
                 result.append(word)
                 continue
             if len(word) >= 3 and word.endswith('ه'):
-                if word[-2] in AraSpellPostProcessor.ARABIC_CONSONANTS or word[-2] in 'اويءؤئ':
+                if word[-2] in AraSpellPostProcessor.ARABIC_CONSONANTS:
                     candidate_with_ta = word[:-1] + 'ة'
                     # Default: prefer ة (correct Arabic orthography for feminine nouns)
                     if vocab_manager:
                         ta_iv = vocab_manager.is_iv(candidate_with_ta)
                         ha_iv = vocab_manager.is_iv(word)
-                        if ha_iv and ta_iv:
-                            # Bug 2.2: Do not prefer ة if ه is also valid (possessive pronoun)
-                            result.append(word)
-                            continue
-                        elif ta_iv:
-                            # Prefer ة when ONLY the ة form is valid
+                        if ta_iv:
+                            # Always prefer ة when it's a valid word
                             result.append(candidate_with_ta)
                             continue
                         elif ha_iv:
@@ -383,9 +401,11 @@ class AraSpellPostProcessor:
                     word = word[:-1]
             if i + 1 < len(words):
                 next_word = words[i + 1]
-                # Bug 2.11: Destroys Badal structures (الأستاذ أستاذ -> الأستاذ)
-                # and Rhetorical Repetition (التوكيد اللفظي)
-                # Removed the aggressive duplicate word deletion.
+                if normalize_word(word) == normalize_word(next_word):
+                    keep = next_word if next_word.startswith('ال') and not word.startswith('ال') else word
+                    result.append(keep)
+                    i += 2
+                    continue
             result.append(word)
             i += 1
         return ' '.join(result)
@@ -434,8 +454,18 @@ class AraSpellPostProcessor:
                     result.append(word + next_word)
                     i += 2
                     continue
-                # Bug 2.3: Destructive word merging (يوم مشمس -> يومشمس)
-                # Removed generic boundary letter merging.
+                if len(word) >= 2 and len(next_word) >= 2 and word[-1] == next_word[0]:
+                    if not (word in STANDALONE_WORDS and next_word in STANDALONE_WORDS):
+                        result.append(word[:-1] + next_word)
+                        i += 2
+                        continue
+                if (2 <= len(word) <= 4 and 
+                    1 <= len(next_word) <= 2 and
+                    3 <= len(word) + len(next_word) <= 7):
+                    if not (word in STANDALONE_WORDS and next_word in STANDALONE_WORDS):
+                        result.append(word + next_word)
+                        i += 2
+                        continue
             result.append(word)
             i += 1
         return ' '.join(result)
@@ -630,13 +660,6 @@ class OutputValidator:
     def validate(self, original: str, corrected: str, error_type: str) -> Tuple[bool, str]:
         if not corrected or not corrected.strip():
             return False, "empty_output"
-            
-        # ── Protect Structured Data ──
-        # Reject spelling modifications to English, JSON, URLs, Emails, Hashtags
-        if re.search(r'[a-zA-Z]|\{.*\}|\[.*\]|<.*>|#\S+|@\S+', original):
-            if original != corrected:
-                return False, "structural_protection"
-                
         original_no_space = original.replace(' ', '').replace('\u200c', '')
         corrected_no_space = corrected.replace(' ', '').replace('\u200c', '')
         if original_no_space == corrected_no_space:
@@ -756,7 +779,15 @@ class WordAligner:
         if in_iv and not out_iv:
             return input_word
         if in_iv and out_iv:
-            # Bug 2.2: Do not prefer ة over ه if both are IV, because ه is often a valid possessive pronoun.
+            # Fix S1: When only difference is ه→ة at word end, prefer ة
+            # (correct Arabic orthography — ة is the standard feminine ending)
+            if (input_word.endswith('ه') and output_word.endswith('ة')
+                    and input_word[:-1] == output_word[:-1]):
+                return output_word
+            # Fix S1: Also handle ة→ه (don't regress a correct ة to ه)
+            if (input_word.endswith('ة') and output_word.endswith('ه')
+                    and input_word[:-1] == output_word[:-1]):
+                return input_word
             return input_word 
         if len(input_word) == len(output_word) and len(input_word) >= 3:
             for i in range(len(input_word)):
@@ -1176,35 +1207,55 @@ class ArabicSpellChecker:
             logger.info("[MLM/CONTEXTUAL] Disabled by configuration (use_contextual=False)")
 
     def _fix_repeated_end_chars(self, text: str) -> str:
-        # Exclude 'ي' if it is preceded by a Kasra or another Yaa (e.g., يحيي)
-        def _replace_repeated(m):
-            w = m.group(0)
-            char = m.group(2)
-            if w.endswith('يي'):
-                if self.vocab_manager and self.vocab_manager.is_iv(w):
-                    return w
-            return m.group(1) + char
-        text = re.sub(r'\b([^\s]+?)([\u0621-\u064A])\2+\b', _replace_repeated, text)
+        text = re.sub(r'([ا-ي])\1+\b', r'\1', text)
         return text
     
     def _fix_merged_with_errors(self, text: str) -> str:
-        # Bug 2.10: This regex was r'ال\2', deleting all instances of the character
-        text = re.sub(r'ال([ا-ي])\1+([ا-ي]{2,})', r'ال\1\2', text)
+        text = re.sub(r'ال([ا-ي])\1+([ا-ي]{2,})', r'ال\2', text)
         text = re.sub(r'\b([ا-ي]{3,})([ا-ي])\2+\b', r'\1\2', text)
         return text
 
     def _split_merged_words_linguistic(self, text: str) -> str:
-        # Bug 2.7: Catastrophic preposition splitting (e.g. منطق -> من طق)
-        # Disabled generic regex splitting as it is highly destructive to valid vocabulary.
+        text = re.sub(
+            r'\b(في|من|إلى|الى|حتى|منذ|خلال|بعد|قبل)(ال)?([ا-ي]{3,})',
+            r'\1 \2\3', text
+        )
+        text = re.sub(r'\b(كل)([ا-ي]{3,})', r'\1 \2', text)
+        text = re.sub(r'([ا-ي]{3,})(ال)([ا-ي]{3,})', r'\1 \2\3', text)
+        text = re.sub(r'\b([بلك])(ال)?([ا-ي]{3,})', r'\1 \2\3', text)
+        text = re.sub(r'([ا-ي]{4,})(عليكم|عليك|عليه|عليها)', r'\1 \2', text)
+        text = re.sub(r'([ا-ي]{3,})(على|عن)([ا-ي]{3,})', r'\1 \2 \3', text)
         return text
     
     def _split_long_words_heuristic(self, text: str, max_length: int = 15) -> str:
-        # Bug 2.8: Overzealous long word splitting (e.g. فيتامينات -> في تامينات)
-        # Disabled as it creates more errors than it fixes.
-        return text
+        words = text.split()
+        result = []
+        for word in words:
+            if len(word) <= max_length:
+                result.append(word)
+                continue
+            if 'ال' in word[2:]:
+                parts = word.split('ال', 1)
+                if len(parts[0]) >= 2 and len(parts[1]) >= 3:
+                    result.extend([parts[0], 'ال' + parts[1]])
+                    continue
+            if len(word) >= 8:
+                split_found = False
+                for split_pos in [2, 3]:
+                    prefix = word[:split_pos]
+                    suffix = word[split_pos:]
+                    if prefix in ['في', 'من', 'على', 'عن', 'مع', 'كل', 'ب', 'ل', 'ك']:
+                        result.extend([prefix, suffix])
+                        split_found = True
+                        break
+                if not split_found:
+                    result.append(word)
+            else:
+                result.append(word)
+        return ' '.join(result)
     
     def _normalize_tanween_patterns(self, text: str) -> str:
-        # Bug 2.6: Blind replacement of trailing أ with اً corrupts verbs and nominative cases (قرأ -> قراً)
+        text = re.sub(r'([ا-ي]{2,})أ\b', r'\1اً', text)
         text = re.sub(r'\s+أ\s+', ' ', text)
         text = re.sub(r'\b([بلك])\s+([ا-ي])', r'\1\2', text)
         return text
@@ -1610,4 +1661,3 @@ class ArabicSpellChecker:
             result = ' '.join(res_words_list)
 
         return result
-

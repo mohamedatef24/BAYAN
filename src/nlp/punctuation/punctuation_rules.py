@@ -165,6 +165,31 @@ def validate_punctuation_diff(diff: dict, full_text: str = '') -> bool:
     original = diff.get('original', '')
     correction = diff.get('correction', '')
 
+    # ── Protect Structured Data (English, URLs, Emails, Hashtags, Code/JSON) ──
+    # Block punctuation modifications near structured data unless it's a valid terminal punctuation
+    if re.search(r'[a-zA-Z]|\{.*\}|\[.*\]|<.*>|#\S+|@\S+', original):
+        is_at_end = False
+        if full_text and 'end' in diff:
+            is_at_end = diff['end'] >= len(full_text) - 2
+        elif not full_text:
+            is_at_end = True
+        
+        orig_punct = sum(1 for c in original if c in '.,،؛؟!:;?!')
+        corr_punct = sum(1 for c in correction if c in '.,،؛؟!:;?!')
+        
+        # Block mid-sentence punctuation additions (e.g. adding comma after English word)
+        if corr_punct > orig_punct and not is_at_end:
+            logger.info(f"[PUNC-SAFETY] Blocked mid-sentence punctuation on structured data: '{original}' -> '{correction}'")
+            return False
+            
+        # Block spacing corruptions in JSON/Code (e.g. {"name"} -> { "name" })
+        if re.search(r'\{.*\}|\[.*\]|<.*>|https?://', original):
+            # Only allow if the ONLY change is appending a terminal mark at the very end
+            if original != correction and not (is_at_end and correction.endswith(('.', '؟')) and correction[:-1].rstrip() == original.rstrip()):
+                logger.info(f"[PUNC-SAFETY] Blocked corruption of JSON/Code/URL: '{original}' -> '{correction}'")
+                return False
+    correction = diff.get('correction', '')
+
     # ── Rule 0 (FIX-01 + FIX-30 + Merged Guard): Terminal punctuation ──
     # PuncAra-v1 unconditionally adds . or ؟ to every sentence.
     # This rule catches the pattern: "word" → "word." / "word؟" / "word،"
