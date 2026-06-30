@@ -1775,6 +1775,15 @@ def analyze_text():
                             start_idx = orig_word_positions[i1][1]
                             end_idx = orig_word_positions[i2-1][2]
 
+                            # ── FIX-54: Universal Spelling structured data protection ──
+                            _o_full = " ".join(o_segment)
+                            import re as _re_struct_univ
+                            if _re_struct_univ.search(r'[a-zA-Z]|\{|\[|<|#|@|://', _o_full) or any(c.isdigit() for c in _o_full):
+                                logger.info(f"[SPELLING] Blocked structured data diff: '{_o_full}'")
+                                for idx in range(i1, i2):
+                                    new_words.append(current_text[orig_word_positions[idx][1]:orig_word_positions[idx][2]])
+                                continue
+
                             if len(o_segment) == 1 and len(c_segment) == 1:
                                 # 1-word → 1-word: accept only small edits (typos)
                                 o_word = o_segment[0]
@@ -2445,6 +2454,18 @@ def analyze_text():
                             logger.info(f'[FILTER-TEL] {_tel_json.dumps({"event":"filter_reject","filter":"PunctuationGuard","original":orig_text[:80],"correction":corr_text[:80]})}')
                             _tel_events.append({"event":"filter_reject","filter":"PunctuationGuard","original":orig_text[:80],"correction":corr_text[:80]})
                             continue
+                    
+                    # ── FIX-27a: Universal Grammar structured data protection ──
+                    # Block grammar diffs where the original contains digits, english letters, or structured symbols.
+                    import re as _re_struct_univ
+                    if orig_text and (any(c.isdigit() for c in orig_text) or _re_struct_univ.search(r'[a-zA-Z]|\{|\[|<|#|@|://', orig_text)):
+                        logger.info(
+                            f"[GRAMMAR] Blocked structured data diff: "
+                            f"'{orig_text}'→'{corr_text}'"
+                        )
+                        logger.info(f'[FILTER-TEL] {_tel_json.dumps({"event":"filter_reject","filter":"DigitGuard","original":orig_text[:80],"correction":corr_text[:80]})}')
+                        _tel_events.append({"event":"filter_reject","filter":"DigitGuard","original":orig_text[:80],"correction":corr_text[:80]})
+                        continue
 
                     # ── FIX-25: Grammar punctuation spacing blocker ──
                     # The grammar model inserts spaces around punctuation:
