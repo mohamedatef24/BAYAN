@@ -62,6 +62,9 @@ class PipelineContext:
         ORIGINAL coords: computed via reverse mapper chain (for API + overlap resolution)
         """
         start_orig, end_orig = self.map_to_original(start_current, end_current)
+        text_len = len(self.original_text)
+        start_orig = max(0, min(start_orig, text_len))
+        end_orig = max(start_orig, min(end_orig, text_len))
 
         patch = CorrectionPatch(
             stage=stage,

@@ -3,7 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=400">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
   <title>بيان</title>
+  <link rel="stylesheet" href="shared/css/tokens.css">
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
@@ -11,12 +15,12 @@
   <!-- Header -->
   <!-- ══════════════════════════════════════════════ -->
   <header class="bayan-header">
-    <div class="bayan-header-brand">
+    <a href="https://bayan10-bayan-api.hf.space/" target="_blank" rel="noopener noreferrer" class="bayan-header-brand" style="text-decoration:none;color:inherit;">
       <img src="assets/icons/icon48.png" alt="بيان" width="28" height="28" style="border-radius:6px;">
-      <div style="height:24px; width:2px; background-color:#d1d5db; border-radius:9999px; flex-shrink:0;"></div>
+      <div style="height:24px; width:2px; background-color:var(--color-border-strong, #d1d5db); border-radius:9999px; flex-shrink:0;"></div>
       <span class="bayan-header-title">بيان</span>
-    </div>
-    
+    </a>
+
     <div style="display: flex; align-items: center; gap: 12px;">
 <button id="ext-theme-toggle" class="theme-toggle-animated" aria-label="تبديل السمة" type="button">
       <svg class="theme-icon-sun" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
@@ -26,6 +30,9 @@
       <span class="bayan-status-dot"></span>
       <span class="bayan-status-text" id="status-text">جاهز</span>
     </div>
+<button id="btn-close-popup" class="bayan-btn-icon" type="button" title="إغلاق" style="margin-right:4px;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
 </div>
   </header>
 
@@ -49,10 +56,6 @@
       <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
       تدقيق النص القرآني
     </button>
-    <button class="bayan-tab" role="tab" aria-selected="false" data-tab="autocomplete" id="tab-autocomplete">
-      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-      إكمال
-    </button>
   </nav>
 
   <!-- ══════════════════════════════════════════════ -->
@@ -61,7 +64,12 @@
   <section class="bayan-panel active" id="panel-correct" role="tabpanel">
     <!-- Input area -->
     <div class="bayan-input-group">
-      <label class="bayan-label" for="input-text">أدخل النص العربي</label>
+      <div class="bayan-label-row">
+        <label class="bayan-label" for="input-text">أدخل النص العربي</label>
+        <button class="bayan-btn-icon" id="btn-copy-text" type="button" title="نسخ النص">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" stroke-width="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" stroke-width="2"/></svg>
+        </button>
+      </div>
       <textarea
         id="input-text"
         class="bayan-textarea"
@@ -86,45 +94,39 @@
       <button class="bayan-btn bayan-btn-ghost" id="btn-clear" type="button">مسح</button>
     </div>
 
-    <!-- Score ring -->
-    <div class="bayan-score-section is-hidden" id="score-section">
-      <div class="bayan-score-ring">
-        <svg viewBox="0 0 160 160" width="80" height="80">
-          <circle cx="80" cy="80" r="70" fill="none" stroke="var(--bayan-border)" stroke-width="8"/>
-          <circle cx="80" cy="80" r="70" fill="none" stroke="var(--bayan-primary)" stroke-width="8"
-            stroke-dasharray="440" stroke-dashoffset="440" stroke-linecap="round"
-            transform="rotate(-90 80 80)" id="score-circle"/>
-        </svg>
-        <span class="bayan-score-value" id="score-value">--</span>
-      </div>
-      <div class="bayan-score-meta">
-        <span class="bayan-score-hint" id="score-hint">ابدأ الكتابة لرؤية تقييمك</span>
-        <div class="bayan-counts" id="error-counts">
-          <span class="bayan-count bayan-count-spelling"><span id="count-spelling">٠</span> إملائي</span>
-          <span class="bayan-count bayan-count-grammar"><span id="count-grammar">٠</span> نحوي</span>
-          <span class="bayan-count bayan-count-punctuation"><span id="count-punctuation">٠</span> ترقيم</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Corrected text result -->
-    <div class="bayan-result is-hidden" id="result-section">
-      <div class="bayan-result-header">
-        <span class="bayan-result-title">النص المصحّح</span>
-        <button class="bayan-btn-icon" id="btn-copy-result" type="button" title="نسخ">
-          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" stroke-width="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" stroke-width="2"/></svg>
-        </button>
-      </div>
-      <div class="bayan-result-text" id="result-text" dir="rtl"></div>
-    </div>
-
-    <!-- Suggestions list -->
+    <!-- Suggestions list (above score) -->
     <div class="bayan-suggestions is-hidden" id="suggestions-section">
       <div class="bayan-suggestions-header">
         <span class="bayan-suggestions-title">الاقتراحات</span>
         <button class="bayan-btn bayan-btn-sm" id="btn-apply-all" type="button">تطبيق الكل</button>
       </div>
       <div class="bayan-suggestions-list" id="suggestions-list" role="list"></div>
+    </div>
+
+    <!-- Score ring -->
+    <div class="bayan-score-section is-hidden" id="score-section">
+      <span class="bayan-score-title">تقييم الكتابة</span>
+      <div class="bayan-score-ring">
+        <svg viewBox="0 0 160 160" width="120" height="120">
+          <defs>
+            <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="var(--color-primary, #6BA3E0)"/>
+              <stop offset="100%" stop-color="var(--color-secondary, #A594E8)"/>
+            </linearGradient>
+          </defs>
+          <circle cx="80" cy="80" r="70" fill="none" stroke="var(--color-border)" stroke-width="10"/>
+          <circle cx="80" cy="80" r="70" fill="none" stroke="url(#scoreGradient)" stroke-width="10"
+            stroke-dasharray="440" stroke-dashoffset="440" stroke-linecap="round"
+            transform="rotate(-90 80 80)" id="score-circle"/>
+        </svg>
+        <span class="bayan-score-value" id="score-value">--</span>
+      </div>
+      <span class="bayan-score-hint" id="score-hint">ابدأ الكتابة لرؤية تقييمك</span>
+      <div class="bayan-counts" id="error-counts">
+        <span class="bayan-count bayan-count-spelling"><span id="count-spelling">٠</span> إملائي</span>
+        <span class="bayan-count bayan-count-grammar"><span id="count-grammar">٠</span> نحوي</span>
+        <span class="bayan-count bayan-count-punctuation"><span id="count-punctuation">٠</span> ترقيم</span>
+      </div>
     </div>
 
     <!-- Timing info -->
@@ -148,9 +150,26 @@
         rows="5"
         maxlength="5000"
       ></textarea>
-      <div class="bayan-input-meta">
-        <span id="summary-char-count">٠</span> حرف
+      <div class="bayan-input-meta-row">
+        <span class="bayan-input-meta"><span id="summary-word-count-input">٠</span> كلمة</span>
+        <label class="bayan-import-btn" title="استيراد ملف">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+          استيراد ملف
+          <input type="file" id="summary-import-input" class="bayan-sr-only" accept=".txt,.docx">
+        </label>
       </div>
+    </div>
+
+    <!-- Mode toggle (paragraph / bullets) -->
+    <div class="bayan-mode-toggle">
+      <button type="button" class="bayan-mode-btn active" id="summary-mode-paragraph" data-mode="paragraph">
+        <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M3 5h18v2H3V5zm0 8h18v2H3v-2zm0 4h12v2H3v-2z"/></svg>
+        فقرة
+      </button>
+      <button type="button" class="bayan-mode-btn" id="summary-mode-bullets" data-mode="bullets">
+        <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M4 6h2v2H4V6zm4 0h12v2H8V6zM4 11h2v2H4v-2zm4 0h12v2H8v-2zm-4 5h2v2H4v-2zm4 0h12v2H8v-2z"/></svg>
+        نقاط
+      </button>
     </div>
 
     <!-- Length selector -->
@@ -173,14 +192,30 @@
 
     <!-- Summary result -->
     <div class="bayan-result is-hidden" id="summary-result-section">
+      <!-- Summary stats -->
+      <div class="bayan-summary-stats is-hidden" id="summary-stats">
+        <div class="bayan-summary-stat"><span>كلمات الملخص:</span> <span class="bayan-summary-stat-value" id="summary-word-count">٠</span></div>
+        <div class="bayan-summary-stat"><span>نسبة الاختصار:</span> <span class="bayan-summary-stat-value" id="summary-compression">٠٪</span></div>
+      </div>
       <div class="bayan-result-header">
         <span class="bayan-result-title">الملخص</span>
-        <button class="bayan-btn-icon" id="btn-copy-summary" type="button" title="نسخ">
-          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" stroke-width="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" stroke-width="2"/></svg>
-        </button>
+        <div class="bayan-result-actions">
+          <button class="bayan-btn-icon" id="btn-copy-summary" type="button" title="نسخ">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" stroke-width="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" stroke-width="2"/></svg>
+          </button>
+          <div class="bayan-export-dropdown" id="summary-export-wrap">
+            <button class="bayan-btn-icon" id="btn-export-summary" type="button" title="تصدير">
+              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M12 4v12m0 0l-4-4m4 4l4-4"/></svg>
+            </button>
+            <div class="bayan-export-menu is-hidden" id="summary-export-menu">
+              <button type="button" class="bayan-export-item" data-format="txt">نصي (.txt)</button>
+              <button type="button" class="bayan-export-item" data-format="docx">Word (.docx)</button>
+              <button type="button" class="bayan-export-item" data-format="pdf">PDF (.pdf)</button>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="bayan-result-text" id="summary-text" dir="rtl"></div>
-      <div class="bayan-summary-meta" id="summary-meta"></div>
     </div>
   </section>
 
@@ -189,12 +224,13 @@
   <!-- ══════════════════════════════════════════════ -->
   <section class="bayan-panel" id="panel-dialect" role="tabpanel">
     <div class="bayan-input-group">
-      <label class="bayan-label" for="dialect-input-text">حوّل العامية إلى الفصحى</label>
+      <label class="bayan-label" for="dialect-input-text">تحويل اللهجات للفصحى</label>
+      <p class="bayan-description">اكتب نصًا بأي لهجة عربية (مصرية، خليجية، شامية...) وسنحوّله إلى لغة عربية فصحى سليمة.</p>
       <textarea
         id="dialect-input-text"
         class="bayan-textarea"
         dir="rtl"
-        placeholder="أدخل نصاً بالعامية..."
+        placeholder="اكتب النص باللهجة هنا..."
         rows="5"
         maxlength="5000"
       ></textarea>
@@ -208,7 +244,7 @@
     </div>
     <div class="bayan-result is-hidden" id="dialect-result-section">
       <div class="bayan-result-header">
-        <span class="bayan-result-title">النص بالفصحى</span>
+        <span class="bayan-result-title" style="color: var(--color-primary, #6BA3E0);">✓ النص بالعربية الفصحى</span>
         <button class="bayan-btn-icon" id="btn-copy-dialect" type="button" title="نسخ">
           <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" stroke-width="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" stroke-width="2"/></svg>
         </button>
@@ -236,48 +272,53 @@
     <div class="bayan-actions">
       <button class="bayan-btn bayan-btn-primary" id="btn-quran" type="button">
         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-        تدقيق الآية
+        بحث وتدقيق
       </button>
     </div>
-    <div class="bayan-result is-hidden" id="quran-result-section">
-      <div class="bayan-result-header">
-        <span class="bayan-result-title">نتيجة التدقيق</span>
+
+    <!-- Quran result -->
+    <div class="bayan-quran-result is-hidden" id="quran-result-section">
+      <div class="bayan-quran-result-header">
+        <span style="color:#06b6d4; font-size:12px; font-weight:700;">✓ النص القرآني المدقق</span>
         <button class="bayan-btn-icon" id="btn-copy-quran" type="button" title="نسخ">
           <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" stroke-width="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" stroke-width="2"/></svg>
         </button>
       </div>
-      <div class="bayan-result-text" id="quran-text" dir="rtl"></div>
-      <div class="bayan-summary-meta" id="quran-meta"></div>
-    </div>
-  </section>
+      <p id="quran-uthmani" class="bayan-quran-uthmani" dir="rtl"></p>
+      <p id="quran-reference" class="bayan-quran-reference"></p>
 
-  <!-- ══════════════════════════════════════════════ -->
-  <!-- Autocomplete Panel (إكمال) -->
-  <!-- ══════════════════════════════════════════════ -->
-  <section class="bayan-panel" id="panel-autocomplete" role="tabpanel">
-    <div class="bayan-input-group">
-      <label class="bayan-label" for="autocomplete-input-text">اقتراحات إكمال الجملة</label>
-      <textarea
-        id="autocomplete-input-text"
-        class="bayan-textarea"
-        dir="rtl"
-        placeholder="اكتب بداية الجملة..."
-        rows="5"
-        maxlength="5000"
-      ></textarea>
-      <div class="bayan-input-meta"><span id="autocomplete-char-count">٠</span> حرف</div>
-    </div>
-    <div class="bayan-actions">
-      <button class="bayan-btn bayan-btn-primary" id="btn-autocomplete" type="button">
-        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-        اقترح إكمالاً
-      </button>
-    </div>
-    <div class="bayan-suggestions is-hidden" id="autocomplete-result-section">
-      <div class="bayan-suggestions-header">
-        <span class="bayan-suggestions-title">اقتراحات الإكمال</span>
+      <!-- Translation -->
+      <div class="bayan-quran-translate">
+        <div class="bayan-quran-translate-row">
+          <svg width="14" height="14" fill="none" stroke="#06b6d4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/></svg>
+          <span style="font-size:12px; font-weight:600; color:var(--text-secondary);">ترجمة الآية</span>
+          <select id="quran-lang-select" class="bayan-quran-lang-select">
+            <option value="">— اختر لغة —</option>
+            <option value="english">🇬🇧 English</option>
+            <option value="french">🇫🇷 Français</option>
+            <option value="turkish">🇹🇷 Türkçe</option>
+            <option value="persian">🇮🇷 فارسی</option>
+            <option value="russian">🇷🇺 Русский</option>
+            <option value="spanish">🇪🇸 Español</option>
+            <option value="german">🇩🇪 Deutsch</option>
+            <option value="indonesian">🇮🇩 Indonesia</option>
+            <option value="malay">🇲🇾 Melayu</option>
+            <option value="bengali">🇧🇩 বাংলা</option>
+            <option value="bosnian">🇧🇦 Bosanski</option>
+            <option value="portuguese">🇵🇹 Português</option>
+            <option value="uzbek">🇺🇿 O'zbek</option>
+          </select>
+        </div>
+        <div id="quran-translation-section" class="bayan-quran-translation is-hidden">
+          <p id="quran-trans-text" dir="auto"></p>
+          <p id="quran-trans-ref" class="bayan-quran-reference" style="display:none;"></p>
+          <div class="bayan-result-actions" id="quran-trans-actions" style="display:none; justify-content:flex-end; gap:4px; margin-top:8px;">
+            <button class="bayan-btn-icon" id="btn-copy-quran-trans" type="button" title="نسخ الترجمة">
+              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" stroke-width="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" stroke-width="2"/></svg>
+            </button>
+          </div>
+        </div>
       </div>
-      <div class="bayan-suggestions-list" id="autocomplete-list" role="list"></div>
     </div>
   </section>
 
@@ -294,6 +335,10 @@
   <!-- ══════════════════════════════════════════════ -->
   <div class="bayan-toast" id="toast" role="status" aria-live="polite"></div>
 
+  <!-- Vendor libs for import/export -->
+  <script src="shared/vendor/mammoth.browser.min.js"></script>
+  <script src="shared/vendor/docx.umd.js"></script>
+  <script src="shared/vendor/html2pdf.bundle.min.js"></script>
   <!-- Scripts: constants first, then config, then shared modules, then popup logic -->
   <script src="shared/constants.js"></script>
   <script src="shared/config.js"></script>

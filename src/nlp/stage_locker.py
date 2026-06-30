@@ -52,6 +52,8 @@ class StageLocker:
 
     def lock(self, start: int, end: int, owner: str):
         """Lock a range in CURRENT_TEXT coordinates."""
+        if start >= end:
+            return
         self.locked_spans.append((start, end, owner))
         if PIPELINE_DEBUG:
             logger.debug(f"[StageLocker] LOCK [{start}:{end}] owner={owner}")
@@ -162,6 +164,13 @@ class StageLocker:
                 owner_priority = STAGE_PRIORITY.get(owner, 0)
                 if owner_priority >= req_priority:
                     return (ls, le, owner)
+                if requesting_stage == 'grammar' and owner == 'spelling':
+                    overlap_start = max(start, ls)
+                    overlap_end = min(end, le)
+                    overlap_width = max(0, overlap_end - overlap_start)
+                    diff_width = max(1, end - start)
+                    if overlap_width / diff_width > 0.5:
+                        return (ls, le, owner)
         return None
 
     def unlock(self, start: int, end: int) -> None:

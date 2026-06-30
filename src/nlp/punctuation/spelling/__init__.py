@@ -1,1 +1,0 @@
-# AraSpell — Arabic Spelling Correction

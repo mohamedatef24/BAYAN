@@ -87,11 +87,22 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-DEBUG_TRACE = True  # Toggleable trace logging
+DEBUG_TRACE = os.environ.get('BAYAN_DEBUG_TRACE', '').lower() in ('1', 'true')  # Enable with env var
 
 # Initialize Flask app
-app = Flask(__name__, static_folder='.', static_url_path='')
+app = Flask(__name__, static_folder='.',  static_url_path='')
 CORS(app, resources={r"/api/*": {"origins": "*"}})  # CORS for API routes only
+
+_ALLOWED_STATIC_EXTENSIONS = {'.css', '.js', '.svg', '.png', '.ico', '.woff', '.woff2', '.ttf', '.jpg', '.jpeg', '.gif', '.webp', '.map'}
+
+@app.before_request
+def _block_source_files():
+    from flask import request as _req, abort as _abort
+    if _req.path.startswith('/api/') or _req.path == '/':
+        return None
+    ext = os.path.splitext(_req.path)[1].lower()
+    if ext and ext not in _ALLOWED_STATIC_EXTENSIONS:
+        _abort(404)
 
 # Configuration
 MAX_TEXT_LENGTH = 5000  # Maximum characters for input text
@@ -186,11 +197,11 @@ def index():
     # Inject Supabase credentials into the meta tags
     html = html.replace(
         '<meta name="supabase-url" content="">',
-        f'<meta name="supabase-url" content="{SUPABASE_URL}">'
+        f'<meta name="supabase-url" content="{__import__("html").escape(SUPABASE_URL or "")}">'
     )
     html = html.replace(
         '<meta name="supabase-anon-key" content="">',
-        f'<meta name="supabase-anon-key" content="{SUPABASE_ANON_KEY}">'
+        f'<meta name="supabase-anon-key" content="{__import__("html").escape(SUPABASE_ANON_KEY or "")}">'
     )
 
     return Response(html, mimetype='text/html')
@@ -243,6 +254,8 @@ def health_check():
 @app.route('/api/debug-models', methods=['GET'])
 def debug_models():
     """Debug endpoint: report model status and startup errors."""
+    if not app.debug:
+        return jsonify({'error': 'Not available in production'}), 403
     from hf_inference import debug_test_all_models
     results = debug_test_all_models()
     
@@ -307,8 +320,8 @@ def _punctuation_available():
 def _autocomplete_available():
     """Check if autocomplete model is loaded (without triggering lazy load)."""
     try:
-        from nlp.autocomplete.autocomplete_service import _instance
-        return _instance is not None and _instance.is_ready()
+        from nlp.autocomplete.autocomplete_service import is_loaded
+        return is_loaded()
     except Exception:
         return False
 
@@ -619,6 +632,12 @@ def add_punctuation():
 
         if not text:
             return jsonify({'error': 'Text is required', 'status': 'error'}), 400
+
+        if len(text) > MAX_TEXT_LENGTH:
+            return jsonify({
+                'error': f'Text too long. Maximum {MAX_TEXT_LENGTH} characters.',
+                'status': 'error'
+            }), 400
 
         logger.info(f"Adding punctuation for text of length: {len(text)}")
         from nlp.punctuation.punctuation_service import get_punctuation_model
@@ -1620,7 +1639,7 @@ def analyze_text():
         text_len = len(current_text)
         run_spelling = text_len <= 1000  # FIX-10: Increased from 300 to 1000
         if not run_spelling:
-            logger.info(f"[ANALYZE] Text length {text_len} > 300 — skipping AraSpell for performance")
+            logger.info(f"[ANALYZE] Text length {text_len} > 1000 — skipping AraSpell for performance")
 
         # ── Batch 2+5: Religious text detection (moved before spelling) ──
         # Religious text must skip ALL stages (spelling + grammar + punctuation)
@@ -1663,7 +1682,7 @@ def analyze_text():
         _has_percent = bool(_re_spell_guard.search(r'\d+\.\d+%', ctx.current_text))
         _has_latin_word = bool(_re_spell_guard.search(r'\b[A-Za-z]{3,}\b', ctx.current_text))
         
-        _skip_all_stages = _is_religious_text or _has_url or _has_email or _has_hashtag or _has_percent or _has_latin_word
+        _skip_all_stages = _is_religious_text
         if _has_url or _has_email:
             logger.info(f"[ANALYZE] Text contains URLs/emails — skipping spelling")
             run_spelling = False
@@ -2059,6 +2078,12 @@ def analyze_text():
             _oov_words = _oov_text.split()
             _oov_changed = False
             _oov_result = []
+            _oov_word_starts = []
+            _oov_search = 0
+            for _ow_w in _oov_words:
+                _ow_found = _oov_text.find(_ow_w, _oov_search)
+                _oov_word_starts.append(_ow_found if _ow_found >= 0 else _oov_search)
+                _oov_search = (_ow_found if _ow_found >= 0 else _oov_search) + len(_ow_w)
 
             for _ow_idx, _ow in enumerate(_oov_words):
                 # Skip short words (prepositions etc.)
@@ -2086,7 +2111,7 @@ def analyze_text():
                         )
                         _oov_result.append(_ta_cand + _punct_suffix)
                         _oov_changed = True
-                        _ow_pos = sum(len(w) + 1 for w in _oov_words[:_ow_idx])
+                        _ow_pos = _oov_word_starts[_ow_idx]
                         if _ow_pos + len(_ow) <= len(_oov_text):
                             ctx.add_patch(
                                 'spelling', _ow_pos, _ow_pos + len(_ow),
@@ -2105,7 +2130,7 @@ def analyze_text():
                         )
                         _oov_result.append(_wo_cand + _punct_suffix)
                         _oov_changed = True
-                        _ow_pos = sum(len(w) + 1 for w in _oov_words[:_ow_idx])
+                        _ow_pos = _oov_word_starts[_ow_idx]
                         if _ow_pos + len(_ow) <= len(_oov_text):
                             ctx.add_patch(
                                 'spelling', _ow_pos, _ow_pos + len(_ow),
@@ -2122,7 +2147,7 @@ def analyze_text():
                         )
                         _oov_result.append(_woa_cand + _punct_suffix)
                         _oov_changed = True
-                        _ow_pos = sum(len(w) + 1 for w in _oov_words[:_ow_idx])
+                        _ow_pos = _oov_word_starts[_ow_idx]
                         if _ow_pos + len(_ow) <= len(_oov_text):
                             ctx.add_patch(
                                 'spelling', _ow_pos, _ow_pos + len(_ow),
@@ -2141,7 +2166,7 @@ def analyze_text():
                         )
                         _oov_result.append(_dotwo_clean + '.')
                         _oov_changed = True
-                        _ow_pos = sum(len(w) + 1 for w in _oov_words[:_ow_idx])
+                        _ow_pos = _oov_word_starts[_ow_idx]
                         if _ow_pos + len(_ow) <= len(_oov_text):
                             ctx.add_patch(
                                 'spelling', _ow_pos, _ow_pos + len(_ow),
@@ -2192,8 +2217,8 @@ def analyze_text():
             # Replace structured content with Arabic placeholder tokens
             if _structured_placeholders:
                 _structured_placeholders.sort(key=lambda x: x[0], reverse=True)
-                for _sp_start, _sp_end, _sp_text in _structured_placeholders:
-                    _grammar_input_text = _grammar_input_text[:_sp_start] + 'بيان' + _grammar_input_text[_sp_end:]
+                for _sp_idx, (_sp_start, _sp_end, _sp_text) in enumerate(_structured_placeholders):
+                    _grammar_input_text = _grammar_input_text[:_sp_start] + f'بيان{_sp_idx}' + _grammar_input_text[_sp_end:]
                 logger.info(f"[ANALYZE] Protected {len(_structured_placeholders)} structured elements")
 
         # 2. Grammar (runs on spelling-corrected text — word-level dependency)
@@ -2214,9 +2239,8 @@ def analyze_text():
 
             # FIX-03: Restore structured content in grammar output
             if _structured_placeholders:
-                # Restore in forward order
-                for _sp_start, _sp_end, _sp_text in reversed(_structured_placeholders):
-                    corrected_grammar = corrected_grammar.replace('بيان', _sp_text, 1)
+                for _sp_idx, (_sp_start, _sp_end, _sp_text) in enumerate(_structured_placeholders):
+                    corrected_grammar = corrected_grammar.replace(f'بيان{_sp_idx}', _sp_text)
 
             if corrected_grammar != ctx.current_text:
                 diffs = get_word_diffs(ctx.current_text, corrected_grammar)
@@ -2354,9 +2378,10 @@ def analyze_text():
                     # - Title case Latin words (proper nouns in mixed text)
                     # - Single words where the grammar just adds/removes spaces
                     if orig_text and corr_text:
-                        # If original has no spaces but correction does (grammar split a name)
-                        _has_latin = any('A' <= c <= 'Z' or 'a' <= c <= 'z' for c in orig_text)
-                        if _has_latin and orig_text != corr_text:
+                        import re as _re_latin
+                        _orig_latin = _re_latin.sub(r'[^A-Za-z]', '', orig_text)
+                        _corr_latin = _re_latin.sub(r'[^A-Za-z]', '', corr_text)
+                        if _orig_latin and _orig_latin != _corr_latin:
                             logger.info(
                                 f"[GRAMMAR] Skipping entity (contains Latin): "
                                 f"'{orig_text}'→'{corr_text}'"
@@ -2520,7 +2545,7 @@ def analyze_text():
                                 _gram_dir_blocked = True
                                 break
                     if _gram_dir_blocked:
-                          logger.error(traceback.format_exc())
+                          logger.info(f"[GRAMMAR] Directional block rejected diff: '{orig_text}'→'{corr_text}'")
                           continue
                     # DEBUG_TRACE
                     if _is_grammar_pattern:
@@ -2533,6 +2558,7 @@ def analyze_text():
                         for _tc in _TANWEEN_CHARS:
                             if _tc in orig_text and _tc not in corr_text:
                                 corr_text = corr_text + _tc
+                                d['correction'] = corr_text
                                 break
 
                     # Re-label: if grammar's change is purely orthographic
@@ -2545,7 +2571,7 @@ def analyze_text():
                     _tel_events.append({"event":"patch_accepted","stage":stage_label,"original":orig_text[:80],"correction":corr_text[:80],"start":d["start"],"end":d["end"]})
                     ctx.add_patch(
                         stage_label, d['start'], d['end'],
-                        corr_text, confidence=1.0
+                        corr_text, confidence=0.85
                     )
 
                 # ── B7 (E6): Bracket-balance guard ──
@@ -2560,11 +2586,11 @@ def analyze_text():
                 corr_balanced = (corr_opens == corr_closes)
                 if orig_balanced and not corr_balanced:
                     logger.info(
-                        f"[GRAMMAR] Rejected bracket-unbalanced output: "
-                        f"orig=({orig_opens},{orig_closes}), corr=({corr_opens},{corr_closes})"
+                        f"[GRAMMAR] Bracket-unbalanced output detected: "
+                        f"orig=({orig_opens},{orig_closes}), corr=({corr_opens},{corr_closes}). "
+                        f"Using individually-accepted diffs only."
                     )
-                    # Don't mutate text — keep pre-grammar text
-                elif _grammar_accepted_diffs:
+                if _grammar_accepted_diffs:
                     # FIX-04: Rebuild grammar text from ACCEPTED diffs only,
                     # not the full model output. Prevents phantom corrections.
                     _safe_grammar = ctx.current_text
@@ -2647,7 +2673,7 @@ def analyze_text():
                     to_remove = set(id(p) for p in punc_patches_sorted[MAX_PUNC_PATCHES_PER_RESPONSE:])
                     # FIX-18: Also remove StageLocker locks for capped patches
                     for _capped_p in punc_patches_sorted[MAX_PUNC_PATCHES_PER_RESPONSE:]:
-                        ctx.stage_locker.unlock(_capped_p.start_original, _capped_p.end_original)
+                        ctx.stage_locker.unlock(_capped_p.start_current, _capped_p.end_current)
                     ctx.patches.patches = [p for p in ctx.patches.patches if id(p) not in to_remove]
                     logger.info(
                         f"[PUNC-CAP] Capped punctuation patches: "
@@ -2743,7 +2769,6 @@ def analyze_text():
             'suggestions': suggestions,
             'timing_ms': timing_ms,
             'status': response_status,
-            'telemetry': _tel_events,
         }
         if stage_errors:
             response_data['warnings'] = stage_errors

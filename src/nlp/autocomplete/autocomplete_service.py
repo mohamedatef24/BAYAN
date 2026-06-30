@@ -45,6 +45,11 @@ def get_autocomplete_model():
     return _instance
 
 
+def is_loaded() -> bool:
+    """Check if the autocomplete model is loaded (without triggering lazy load)."""
+    return _instance is not None and _instance.is_ready()
+
+
 # ─── Cache key helper ─────────────────────────────────────────────────────────
 def _context_key(context: str) -> str:
     """Use last 5 words for cache key — preserves enough context for GPT-2 awareness."""
@@ -100,6 +105,10 @@ class HybridAutoComplete:
                 data = pickle.load(f)
             self.unigrams = data["unigrams"]
             self.bigrams = data["bigrams"]
+            self._top_unigrams = sorted(
+                [(w, c) for w, c in self.unigrams.items() if len(w) >= 2],
+                key=lambda x: x[1], reverse=True
+            )[:200]
             logger.info(
                 f"Bigram model loaded: {len(self.unigrams)} unigrams, "
                 f"{len(self.bigrams)} bigram contexts"
@@ -108,6 +117,7 @@ class HybridAutoComplete:
             logger.error(f"Failed to load bigram model: {e}")
             self.unigrams = {}
             self.bigrams = {}
+            self._top_unigrams = []
 
     def _load_gpt2(self):
         """Load GPT-2 model with OOM fallback."""
@@ -195,12 +205,9 @@ class HybridAutoComplete:
                     continue
                 candidates.append((w, c))
 
-        # Fallback to unigram if no bigram matches
+        # Fallback to precomputed top unigrams if no bigram matches
         if not candidates:
-            for w, c in self.unigrams.items():
-                if len(w) < 2:
-                    continue
-                candidates.append((w, c))
+            candidates = list(self._top_unigrams)
 
         if not candidates:
             return []

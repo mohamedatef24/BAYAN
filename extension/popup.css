@@ -3,41 +3,42 @@
    Arabic-first RTL | Dark mode | Premium feel
    ══════════════════════════════════════════════ */
 
-/* ── Design Tokens ── */
+/* ── Design Tokens (mapped to website tokens.css) ── */
 :root {
-  --bayan-primary: #6366f1;
-  --bayan-primary-light: #818cf8;
-  --bayan-primary-dark: #4f46e5;
-  --bayan-primary-glow: rgba(99, 102, 241, 0.25);
+  --bayan-primary: var(--color-primary, #6BA3E0);
+  --bayan-primary-light: #8BB8E8;
+  --bayan-primary-dark: #5A8FCA;
+  --bayan-primary-glow: var(--focus-ring, rgba(107, 163, 224, 0.25));
 
-  --bayan-bg: #0f0f14;
-  --bayan-surface: #1a1a24;
-  --bayan-surface-hover: #22222e;
-  --bayan-surface-active: #2a2a38;
-  --bayan-border: #2d2d3d;
-  --bayan-border-light: #3a3a4d;
+  --bayan-bg: var(--color-bg, #12141A);
+  --bayan-surface: var(--color-surface, #1A1D26);
+  --bayan-surface-hover: var(--color-surface-elevated, #242833);
+  --bayan-surface-active: #2C3040;
+  --bayan-border: var(--color-border);
+  --bayan-border-light: var(--color-border-strong);
 
-  --bayan-text: #f0f0f5;
-  --bayan-text-secondary: #9898ad;
-  --bayan-text-muted: #6b6b80;
+  --bayan-text: var(--color-text-primary, #ECEEF2);
+  --bayan-text-secondary: var(--color-text-secondary, #B4BBC6);
+  --bayan-text-muted: var(--color-text-muted, #8A939F);
 
-  --bayan-success: #22c55e;
-  --bayan-warning: #f59e0b;
-  --bayan-error: #ef4444;
+  --bayan-success: var(--color-success, #6BC98A);
+  --bayan-warning: var(--color-warning, #E4B35A);
+  --bayan-error: var(--color-error, #E88A8A);
 
-  --bayan-spelling: #ef4444;
-  --bayan-grammar: #f59e0b;
-  --bayan-punctuation: #6BC98A;
+  --bayan-spelling: var(--highlight-spelling-border, #E88A8A);
+  --bayan-grammar: var(--highlight-grammar-border, #E4B35A);
+  --bayan-punctuation: var(--highlight-punctuation-border, #6BC98A);
 
   --bayan-radius: 10px;
   --bayan-radius-sm: 6px;
   --bayan-radius-lg: 14px;
 
-  --bayan-font: 'Segoe UI', 'SF Pro', Tahoma, Arial, sans-serif;
-  --bayan-font-arabic: 'Noto Sans Arabic', 'Segoe UI', Tahoma, sans-serif;
+  --bayan-font-arabic: var(--font-family-primary, 'Cairo', 'Tajawal', 'Noto Sans Arabic', sans-serif);
 
   --bayan-transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
   --bayan-spring: 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --color-surface-hover: var(--color-surface-elevated, #242833);
 }
 
 /* ── Reset ── */
@@ -56,8 +57,8 @@ body {
   font-family: var(--bayan-font-arabic);
   font-size: 14px;
   line-height: 1.6;
-  color: var(--bayan-text);
-  background: var(--bayan-bg);
+  color: var(--text-color);
+  background: var(--color-bg);
   direction: rtl;
   -webkit-font-smoothing: antialiased;
 }
@@ -70,7 +71,7 @@ body::-webkit-scrollbar-track {
   background: transparent;
 }
 body::-webkit-scrollbar-thumb {
-  background: var(--bayan-border);
+  background: var(--color-border);
   border-radius: 4px;
 }
 
@@ -82,8 +83,8 @@ body::-webkit-scrollbar-thumb {
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  background: linear-gradient(135deg, var(--bayan-surface) 0%, var(--bayan-bg) 100%);
-  border-bottom: 1px solid var(--bayan-border);
+  background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-bg) 100%);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .bayan-header-brand {
@@ -99,7 +100,7 @@ body::-webkit-scrollbar-thumb {
 .bayan-header-title {
   font-size: 18px;
   font-weight: 700;
-  background: linear-gradient(135deg, var(--bayan-primary-light), var(--bayan-primary));
+  background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -123,11 +124,11 @@ body::-webkit-scrollbar-thumb {
 }
 .bayan-status-dot.online {
   background: var(--bayan-success);
-  box-shadow: 0 0 6px rgba(34, 197, 94, 0.5);
+  box-shadow: 0 0 6px rgba(107, 201, 138, 0.5);
 }
 .bayan-status-dot.offline {
   background: var(--bayan-error);
-  box-shadow: 0 0 6px rgba(239, 68, 68, 0.4);
+  box-shadow: 0 0 6px rgba(232, 138, 138, 0.4);
 }
 
 /* ══════════════════════════════════════════════
@@ -136,27 +137,28 @@ body::-webkit-scrollbar-thumb {
 .bayan-tabs {
   display: flex;
   gap: 0;
-  border-bottom: 1px solid var(--bayan-border);
-  background: var(--bayan-surface);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
 }
 
 .bayan-tab {
-  flex: 1;
+  flex: 1 1 auto;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 4px;
-  padding: 10px 4px;
+  padding: 10px 6px;
   border: none;
   background: transparent;
   color: var(--bayan-text-muted);
   font-family: var(--bayan-font-arabic);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   cursor: pointer;
   transition: all var(--bayan-transition);
   position: relative;
   white-space: nowrap;
+  min-width: 0;
 }
 
 .bayan-tab::after {
@@ -166,7 +168,7 @@ body::-webkit-scrollbar-thumb {
   left: 20%;
   right: 20%;
   height: 2px;
-  background: var(--bayan-primary);
+  background: var(--primary-color);
   border-radius: 2px 2px 0 0;
   opacity: 0;
   transform: scaleX(0);
@@ -174,12 +176,12 @@ body::-webkit-scrollbar-thumb {
 }
 
 .bayan-tab:hover {
-  color: var(--bayan-text);
-  background: var(--bayan-surface-hover);
+  color: var(--text-color);
+  background: var(--color-surface-hover);
 }
 
 .bayan-tab.active {
-  color: var(--bayan-primary-light);
+  color: var(--secondary-color);
 }
 .bayan-tab.active::after {
   opacity: 1;
@@ -216,22 +218,27 @@ body::-webkit-scrollbar-thumb {
   margin-bottom: 12px;
 }
 
+.bayan-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
 .bayan-label {
-  display: block;
   font-size: 12px;
   font-weight: 600;
-  color: var(--bayan-text-secondary);
-  margin-bottom: 6px;
+  color: var(--text-secondary);
 }
 
 .bayan-textarea {
   width: 100%;
   min-height: 100px;
   padding: 12px 14px;
-  border: 1px solid var(--bayan-border);
+  border: 1px solid var(--color-border);
   border-radius: var(--bayan-radius);
-  background: var(--bayan-surface);
-  color: var(--bayan-text);
+  background: var(--color-surface);
+  color: var(--text-color);
   font-family: var(--bayan-font-arabic);
   font-size: 14px;
   line-height: 1.8;
@@ -242,7 +249,7 @@ body::-webkit-scrollbar-thumb {
 
 .bayan-textarea:focus {
   outline: none;
-  border-color: var(--bayan-primary);
+  border-color: var(--primary-color);
   box-shadow: 0 0 0 3px var(--bayan-primary-glow);
 }
 
@@ -289,33 +296,33 @@ body::-webkit-scrollbar-thumb {
 
 .bayan-btn-primary {
   flex: 1;
-  background: linear-gradient(135deg, var(--bayan-primary), var(--bayan-primary-dark));
+  background: linear-gradient(135deg, var(--color-primary, #6BA3E0), var(--color-secondary, #A594E8));
   color: white;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 2px 8px rgba(107, 163, 224, 0.3);
 }
 .bayan-btn-primary:hover {
-  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.45);
+  box-shadow: 0 4px 16px rgba(107, 163, 224, 0.45);
   transform: translateY(-1px);
 }
 .bayan-btn-primary:active {
   transform: translateY(0);
-  box-shadow: 0 1px 4px rgba(99, 102, 241, 0.2);
+  box-shadow: 0 1px 4px rgba(107, 163, 224, 0.2);
 }
 
 .bayan-btn-ghost {
   background: transparent;
-  color: var(--bayan-text-secondary);
-  border: 1px solid var(--bayan-border);
+  color: var(--text-secondary);
+  border: 1px solid var(--color-border);
 }
 .bayan-btn-ghost:hover {
-  background: var(--bayan-surface-hover);
-  color: var(--bayan-text);
+  background: var(--color-surface-hover);
+  color: var(--text-color);
 }
 
 .bayan-btn-sm {
   padding: 5px 12px;
   font-size: 11px;
-  background: var(--bayan-primary);
+  background: var(--primary-color);
   color: white;
   border-radius: var(--bayan-radius-sm);
 }
@@ -338,8 +345,8 @@ body::-webkit-scrollbar-thumb {
   transition: all var(--bayan-transition);
 }
 .bayan-btn-icon:hover {
-  background: var(--bayan-surface-hover);
-  color: var(--bayan-text);
+  background: var(--color-surface-hover);
+  color: var(--text-color);
 }
 
 /* ══════════════════════════════════════════════
@@ -347,21 +354,30 @@ body::-webkit-scrollbar-thumb {
    ══════════════════════════════════════════════ */
 .bayan-score-section {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 14px;
-  padding: 12px;
+  text-align: center;
+  padding: 16px 12px;
   margin-bottom: 14px;
-  background: var(--bayan-surface);
-  border: 1px solid var(--bayan-border);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: var(--bayan-radius);
   animation: fadeSlideIn 300ms ease-out;
 }
 
+.bayan-score-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+
 .bayan-score-ring {
   position: relative;
-  width: 80px;
-  height: 80px;
+  width: 120px;
+  height: 120px;
   flex-shrink: 0;
+  margin-bottom: 8px;
 }
 
 .bayan-score-ring svg {
@@ -378,19 +394,15 @@ body::-webkit-scrollbar-thumb {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
+  font-size: 28px;
   font-weight: 700;
-  color: var(--bayan-primary-light);
-}
-
-.bayan-score-meta {
-  flex: 1;
+  color: var(--secondary-color);
 }
 
 .bayan-score-hint {
   display: block;
   font-size: 12px;
-  color: var(--bayan-text-secondary);
+  color: var(--text-secondary);
   margin-bottom: 8px;
 }
 
@@ -398,6 +410,7 @@ body::-webkit-scrollbar-thumb {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+  justify-content: center;
 }
 
 .bayan-count {
@@ -432,24 +445,24 @@ body::-webkit-scrollbar-thumb {
 .bayan-result-title {
   font-size: 12px;
   font-weight: 600;
-  color: var(--bayan-text-secondary);
+  color: var(--text-secondary);
 }
 
 .bayan-result-text {
   padding: 12px 14px;
-  background: var(--bayan-surface);
-  border: 1px solid var(--bayan-border);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: var(--bayan-radius);
   font-size: 14px;
   line-height: 2;
-  color: var(--bayan-text);
+  color: var(--text-color);
   min-height: 60px;
   word-wrap: break-word;
 }
 
 /* Error highlights in result */
 .bayan-spelling-error {
-  background: rgba(239, 68, 68, 0.15);
+  background: var(--highlight-spelling-bg, rgba(232, 138, 138, 0.16));
   border-bottom: 2px solid var(--bayan-spelling);
   border-radius: 2px;
   padding: 0 2px;
@@ -457,11 +470,11 @@ body::-webkit-scrollbar-thumb {
   transition: background var(--bayan-transition);
 }
 .bayan-spelling-error:hover {
-  background: rgba(239, 68, 68, 0.25);
+  background: rgba(232, 138, 138, 0.28);
 }
 
 .bayan-grammar-error {
-  background: rgba(245, 158, 11, 0.15);
+  background: var(--highlight-grammar-bg, rgba(228, 179, 90, 0.16));
   border-bottom: 2px solid var(--bayan-grammar);
   border-radius: 2px;
   padding: 0 2px;
@@ -469,7 +482,7 @@ body::-webkit-scrollbar-thumb {
   transition: background var(--bayan-transition);
 }
 .bayan-grammar-error:hover {
-  background: rgba(245, 158, 11, 0.25);
+  background: rgba(228, 179, 90, 0.28);
 }
 
 .bayan-punctuation-suggestion {
@@ -501,7 +514,7 @@ body::-webkit-scrollbar-thumb {
 .bayan-suggestions-title {
   font-size: 12px;
   font-weight: 600;
-  color: var(--bayan-text-secondary);
+  color: var(--text-secondary);
 }
 
 .bayan-suggestions-list {
@@ -526,15 +539,15 @@ body::-webkit-scrollbar-thumb {
 
 .bayan-suggestion-card {
   padding: 10px 12px;
-  background: var(--bayan-surface);
-  border: 1px solid var(--bayan-border);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: var(--bayan-radius);
   cursor: pointer;
   transition: all var(--bayan-transition);
 }
 .bayan-suggestion-card:hover {
-  border-color: var(--bayan-primary);
-  background: var(--bayan-surface-hover);
+  border-color: var(--primary-color);
+  background: var(--color-surface-hover);
   box-shadow: 0 0 0 1px var(--bayan-primary-glow);
 }
 
@@ -548,15 +561,15 @@ body::-webkit-scrollbar-thumb {
 }
 
 .bayan-badge-spelling {
-  background: rgba(239, 68, 68, 0.15);
+  background: var(--color-badge-spelling-bg, rgba(232, 138, 138, 0.18));
   color: var(--bayan-spelling);
 }
 .bayan-badge-grammar {
-  background: rgba(245, 158, 11, 0.15);
+  background: var(--color-badge-grammar-bg, rgba(228, 179, 90, 0.18));
   color: var(--bayan-grammar);
 }
 .bayan-badge-punctuation {
-  background: rgba(107, 201, 138, 0.15);
+  background: var(--color-badge-punctuation-bg, rgba(107, 201, 138, 0.16));
   color: var(--bayan-punctuation);
 }
 
@@ -592,24 +605,24 @@ body::-webkit-scrollbar-thumb {
 
 .bayan-alt-chip {
   padding: 4px 10px;
-  border: 1px solid var(--bayan-border);
+  border: 1px solid var(--color-border);
   border-radius: 20px;
   background: transparent;
-  color: var(--bayan-text-secondary);
+  color: var(--text-secondary);
   font-family: var(--bayan-font-arabic);
   font-size: 11px;
   cursor: pointer;
   transition: all var(--bayan-transition);
 }
 .bayan-alt-chip:hover {
-  border-color: var(--bayan-primary);
-  color: var(--bayan-text);
+  border-color: var(--primary-color);
+  color: var(--text-color);
   background: var(--bayan-surface-active);
 }
 
 .bayan-alt-chip--main {
-  background: var(--bayan-primary);
-  border-color: var(--bayan-primary);
+  background: var(--primary-color);
+  border-color: var(--primary-color);
   color: white;
 }
 .bayan-alt-chip--main:hover {
@@ -630,7 +643,7 @@ body::-webkit-scrollbar-thumb {
 .bayan-timing {
   padding: 8px 0;
   margin-top: 8px;
-  border-top: 1px solid var(--bayan-border);
+  border-top: 1px solid var(--color-border);
   font-size: 10px;
   color: var(--bayan-text-muted);
   text-align: center;
@@ -642,10 +655,176 @@ body::-webkit-scrollbar-thumb {
 .bayan-summary-meta {
   margin-top: 10px;
   padding: 8px 12px;
-  background: var(--bayan-surface-hover);
+  background: var(--color-surface-hover);
   border-radius: var(--bayan-radius-sm);
   font-size: 11px;
   color: var(--bayan-text-muted);
+}
+
+/* ══════════════════════════════════════════════
+   Summary Mode Toggle (paragraph / bullets)
+   ══════════════════════════════════════════════ */
+.bayan-mode-toggle {
+  display: flex;
+  gap: 0;
+  margin-bottom: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--bayan-radius-sm);
+  overflow: hidden;
+}
+
+.bayan-mode-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 7px 10px;
+  border: none;
+  background: transparent;
+  color: var(--bayan-text-muted);
+  font-family: var(--bayan-font-arabic);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--bayan-transition);
+}
+
+.bayan-mode-btn + .bayan-mode-btn {
+  border-right: 1px solid var(--color-border);
+}
+
+.bayan-mode-btn:hover {
+  background: var(--color-surface-hover);
+  color: var(--text-color);
+}
+
+.bayan-mode-btn.active {
+  background: var(--primary-color);
+  color: white;
+}
+
+/* ══════════════════════════════════════════════
+   Summary Stats
+   ══════════════════════════════════════════════ */
+.bayan-summary-stats {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  background: var(--color-surface-hover);
+  border-radius: var(--bayan-radius-sm);
+}
+
+.bayan-summary-stat {
+  font-size: 11px;
+  color: var(--bayan-text-muted);
+  display: flex;
+  gap: 4px;
+}
+
+.bayan-summary-stat-value {
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+/* ══════════════════════════════════════════════
+   Description paragraph (dialect panel)
+   ══════════════════════════════════════════════ */
+.bayan-description {
+  font-size: 11px;
+  color: var(--bayan-text-muted);
+  margin-bottom: 8px;
+  line-height: 1.6;
+}
+
+/* ══════════════════════════════════════════════
+   Input meta row (word count + import)
+   ══════════════════════════════════════════════ */
+.bayan-input-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+}
+
+.bayan-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  border: 0;
+}
+
+.bayan-import-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-family: var(--bayan-font-arabic);
+  color: var(--text-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--bayan-radius-sm);
+  background: transparent;
+  cursor: pointer;
+  transition: all var(--bayan-transition);
+}
+
+.bayan-import-btn:hover {
+  background: var(--color-surface-hover);
+  color: var(--text-color);
+  border-color: var(--primary-color);
+}
+
+/* ══════════════════════════════════════════════
+   Result actions group (copy + export)
+   ══════════════════════════════════════════════ */
+.bayan-result-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* ══════════════════════════════════════════════
+   Export dropdown
+   ══════════════════════════════════════════════ */
+.bayan-export-dropdown {
+  position: relative;
+}
+
+.bayan-export-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 130px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--bayan-radius-sm);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  z-index: 50;
+  overflow: hidden;
+}
+
+.bayan-export-item {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-color);
+  font-family: var(--bayan-font-arabic);
+  font-size: 12px;
+  text-align: right;
+  cursor: pointer;
+  transition: background var(--bayan-transition);
+}
+
+.bayan-export-item:hover {
+  background: var(--color-surface-hover);
 }
 
 /* ══════════════════════════════════════════════
@@ -665,12 +844,12 @@ body::-webkit-scrollbar-thumb {
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  color: var(--bayan-text-secondary);
+  color: var(--text-secondary);
   cursor: pointer;
 }
 
 .bayan-radio input[type="radio"] {
-  accent-color: var(--bayan-primary);
+  accent-color: var(--primary-color);
   width: 14px;
   height: 14px;
   cursor: pointer;
@@ -687,7 +866,7 @@ body::-webkit-scrollbar-thumb {
   align-items: center;
   justify-content: center;
   gap: 14px;
-  background: rgba(15, 15, 20, 0.85);
+  background: var(--color-overlay, rgba(15, 15, 20, 0.85));
   backdrop-filter: blur(4px);
   z-index: 100;
 }
@@ -695,8 +874,8 @@ body::-webkit-scrollbar-thumb {
 .bayan-spinner {
   width: 36px;
   height: 36px;
-  border: 3px solid var(--bayan-border);
-  border-top-color: var(--bayan-primary);
+  border: 3px solid var(--color-border);
+  border-top-color: var(--primary-color);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -707,7 +886,7 @@ body::-webkit-scrollbar-thumb {
 
 .bayan-loading-text {
   font-size: 13px;
-  color: var(--bayan-text-secondary);
+  color: var(--text-secondary);
 }
 
 /* ══════════════════════════════════════════════
@@ -719,10 +898,10 @@ body::-webkit-scrollbar-thumb {
   left: 50%;
   transform: translateX(-50%);
   padding: 8px 18px;
-  background: var(--bayan-surface);
-  border: 1px solid var(--bayan-border);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 20px;
-  color: var(--bayan-text);
+  color: var(--text-color);
   font-size: 12px;
   font-family: var(--bayan-font-arabic);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
@@ -762,6 +941,87 @@ body::-webkit-scrollbar-thumb {
 }
 
 /* ══════════════════════════════════════════════
+   Quran Result
+   ══════════════════════════════════════════════ */
+.bayan-quran-result {
+  background: var(--color-surface);
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  border-radius: var(--bayan-radius);
+  padding: 14px;
+  animation: fadeSlideIn 300ms ease-out;
+}
+
+.bayan-quran-result-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.bayan-quran-uthmani {
+  font-family: 'Amiri Quran', 'Cairo', serif;
+  font-size: 20px;
+  line-height: 2.2;
+  text-align: center;
+  color: var(--text-color);
+  margin-bottom: 4px;
+}
+
+.bayan-quran-reference {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #06b6d4;
+  margin-bottom: 8px;
+}
+
+.bayan-quran-translate {
+  border-top: 1px solid var(--color-border);
+  padding-top: 10px;
+  margin-top: 10px;
+}
+
+.bayan-quran-translate-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.bayan-quran-lang-select {
+  flex: 1;
+  min-width: 120px;
+  padding: 5px 8px;
+  font-size: 12px;
+  color: var(--text-color);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--bayan-radius-sm);
+  font-family: var(--bayan-font-arabic);
+  cursor: pointer;
+}
+
+.bayan-quran-lang-select:focus {
+  outline: none;
+  border-color: #06b6d4;
+}
+
+.bayan-quran-translation {
+  padding: 10px;
+  border-radius: var(--bayan-radius-sm);
+  background: rgba(6, 182, 212, 0.06);
+  border: 1px solid rgba(6, 182, 212, 0.15);
+}
+
+.bayan-quran-translation p {
+  font-size: 16px;
+  line-height: 2;
+  text-align: center;
+  color: var(--text-color);
+}
+
+/* ══════════════════════════════════════════════
    Utilities
    ══════════════════════════════════════════════ */
 .is-hidden {
@@ -769,20 +1029,7 @@ body::-webkit-scrollbar-thumb {
 }
 
 
-/* Light Theme Variables */
-[data-theme="light"] {
-  --bayan-bg: #f9fafb;
-  --bayan-surface: #ffffff;
-  --bayan-surface-hover: #f3f4f6;
-  --bayan-surface-active: #e5e7eb;
-  --bayan-border: #e5e7eb;
-  --bayan-border-light: #d1d5db;
-  --bayan-text: #111827;
-  --bayan-text-secondary: #4b5563;
-  --bayan-text-muted: #9ca3af;
-  --bayan-success: #16a34a;
-  --bayan-warning: #d97706;
-}
+/* Light theme handled by tokens.css */
 
 /* Theme Toggle Button Styles */
 .theme-toggle-animated {
@@ -793,8 +1040,8 @@ body::-webkit-scrollbar-thumb {
   height: 32px;
   border: none;
   border-radius: 50%;
-  background: var(--bayan-surface-hover);
-  color: var(--bayan-text-secondary);
+  background: var(--color-surface-hover);
+  color: var(--text-secondary);
   cursor: pointer;
   transition: background 0.3s ease, transform 0.3s ease, color 0.3s ease;
   position: relative;
@@ -803,7 +1050,7 @@ body::-webkit-scrollbar-thumb {
 }
 
 .theme-toggle-animated:hover {
-  background: var(--bayan-primary);
+  background: var(--primary-color);
   color: #fff;
   transform: rotate(15deg);
 }
