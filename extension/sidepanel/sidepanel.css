@@ -359,7 +359,7 @@ body {
   display: block;
 }
 .sp-score-ring circle:last-child {
-  transition: stroke-dashoffset 600ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: stroke-dashoffset 600ms ease-in-out;
 }
 
 .sp-score-value {
@@ -370,7 +370,7 @@ body {
   justify-content: center;
   font-size: 28px;
   font-weight: 700;
-  color: var(--secondary-color);
+  color: var(--color-text-primary, var(--text-color));
 }
 
 .sp-score-hint {
@@ -494,51 +494,60 @@ body {
 .sp-suggestions-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 /* Suggestion card — reuses bayan-ui.js HTML classes */
 .bayan-suggestion-card {
-  padding: 8px 10px;
-  background: var(--color-surface);
+  padding: var(--spacing-md, 16px);
+  padding-right: calc(var(--spacing-md, 16px) + 4px);
+  background: var(--color-surface-elevated, var(--color-surface));
   border: 1px solid var(--color-border);
-  border-radius: var(--sp-radius-sm);
-  transition: border-color var(--sp-transition), background var(--sp-transition);
+  border-right: 4px solid var(--color-border-strong, rgba(236, 238, 242, 0.16));
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color var(--sp-transition), background var(--sp-transition), transform var(--sp-transition);
+  text-align: right;
 }
 .bayan-suggestion-card:hover {
-  border-color: var(--sp-border-light);
-  background: var(--color-surface-hover);
+  border-top-color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
+  border-left-color: var(--primary-color);
+  background: var(--color-suggestion-hover-bg, var(--color-surface-hover));
+  transform: translateX(-2px);
 }
+.bayan-suggestion-card:has(.bayan-badge-spelling) { border-right-color: var(--sp-spelling, var(--color-error)); }
+.bayan-suggestion-card:has(.bayan-badge-grammar) { border-right-color: var(--sp-grammar, var(--color-warning)); }
+.bayan-suggestion-card:has(.bayan-badge-punctuation) { border-right-color: var(--sp-punctuation, var(--color-success)); }
 
 .bayan-suggestion-badge {
   display: inline-block;
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-size: 9px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
   font-weight: 700;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
-.bayan-badge-spelling { background: rgba(239, 68, 68, 0.15); color: var(--sp-spelling); }
-.bayan-badge-grammar { background: rgba(245, 158, 11, 0.15); color: var(--sp-grammar); }
-.bayan-badge-punctuation { background: rgba(107, 201, 138, 0.15); color: var(--sp-punctuation); }
+.bayan-badge-spelling { background: rgba(232, 138, 138, 0.18); color: var(--sp-spelling); }
+.bayan-badge-grammar { background: rgba(228, 179, 90, 0.18); color: var(--sp-grammar); }
+.bayan-badge-punctuation { background: rgba(107, 201, 138, 0.16); color: var(--sp-punctuation); }
 
 .bayan-suggestion-change {
   display: flex;
   align-items: center;
   gap: 6px;
   margin-bottom: 6px;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .bayan-suggestion-original {
-  color: var(--sp-error);
+  color: var(--sp-text-muted);
   text-decoration: line-through;
-  text-decoration-color: rgba(239, 68, 68, 0.4);
 }
 
 .bayan-suggestion-arrow {
   color: var(--sp-text-muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .bayan-suggestion-correction {
@@ -549,37 +558,104 @@ body {
 .bayan-suggestion-alts {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 6px;
 }
 
 .bayan-alt-chip {
-  padding: 3px 8px;
+  padding: 4px 10px;
   border: 1px solid var(--color-border);
-  border-radius: 12px;
-  background: var(--color-surface-hover);
+  border-radius: 100px;
+  background: var(--color-surface);
   color: var(--text-color);
   font-family: var(--font-family-primary, 'Cairo', 'Tajawal', sans-serif);
-  font-size: 11px;
+  font-size: 12px;
   cursor: pointer;
   transition: all var(--sp-transition);
 }
 .bayan-alt-chip:hover {
   border-color: var(--primary-color);
-  background: var(--sp-primary-glow);
+  color: var(--text-primary, var(--text-color));
+  background: var(--color-surface-elevated, var(--color-surface-hover));
 }
 .bayan-alt-chip--main {
-  border-color: var(--primary-color);
-  background: rgba(99, 102, 241, 0.1);
-  color: var(--secondary-color);
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  border-color: transparent;
+  color: white;
+  font-weight: 700;
+}
+.bayan-alt-chip--main:hover {
+  opacity: 0.9;
+  border-color: transparent;
 }
 .bayan-alt-chip--keep {
-  border-color: var(--color-border);
+  border-style: dashed;
   color: var(--sp-text-muted);
-  font-size: 10px;
+  font-size: 11px;
 }
 .bayan-alt-chip--keep:hover {
-  border-color: var(--sp-text-muted);
-  background: var(--sp-surface-active);
+  color: var(--text-primary, var(--text-color));
+}
+
+/* ── Apply All Button ── */
+.sp-apply-all-btn {
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--primary-color, #6BA3E0), var(--secondary-color, #A594E8));
+  color: var(--color-text-inverse, #F4F5F7);
+  font-family: var(--font-family-primary, 'Cairo', 'Tajawal', sans-serif);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  min-height: 44px;
+  transition: opacity 200ms ease, transform 150ms ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.sp-apply-all-btn:hover { opacity: 0.92; }
+.sp-apply-all-btn:active { transform: scale(0.98); }
+
+/* ── Empty State ── */
+.sp-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  text-align: center;
+  gap: 8px;
+}
+.sp-empty-state-icon-wrap {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--color-surface-elevated, #242833);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+.sp-empty-state-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-secondary, var(--text-secondary));
+}
+.sp-empty-state-desc {
+  font-size: 12px;
+  color: var(--color-text-muted, var(--sp-text-muted));
+  line-height: 1.6;
+}
+
+/* ── Score Hint Subtitle ── */
+.sp-score-hint-sub {
+  font-size: 11px;
+  color: var(--color-text-muted, var(--sp-text-muted));
+  display: block;
+  margin-top: 2px;
 }
 
 /* ══════════════════════════════════════════════

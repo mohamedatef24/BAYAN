@@ -219,14 +219,22 @@ document.addEventListener('DOMContentLoaded', () => {
     scoreSection.classList.remove('is-hidden');
 
     if (scoreValue) {
-      scoreValue.textContent = score > 0 || total > 0 ? score.toLocaleString('ar-EG') : '--';
+      const hasText = inputText.value.trim().length > 0;
+      scoreValue.textContent = (hasText || total > 0) ? score.toLocaleString('ar-EG') : '--';
     }
     if (scoreCircle) {
       const offset = SCORE_CIRCUMFERENCE - (score / 100) * SCORE_CIRCUMFERENCE;
       scoreCircle.style.strokeDashoffset = String(offset);
     }
     if (scoreHint) {
-      scoreHint.textContent = getScoreHint(score, total);
+      const hasText = inputText.value.trim().length > 0;
+      if (total === 0 && hasText) {
+        scoreHint.textContent = 'كتابة ممتازة! استمر.';
+      } else if (total === 0) {
+        scoreHint.innerHTML = 'ابدأ الكتابة لرؤية تقييمك<br><span class="bayan-score-hint-sub">تحسين القواعد يرفع التقييم</span>';
+      } else {
+        scoreHint.textContent = getScoreHint(score, total);
+      }
     }
     if (countSpelling) countSpelling.textContent = spelling.toLocaleString('ar-EG');
     if (countGrammar) countGrammar.textContent = grammar.toLocaleString('ar-EG');
@@ -240,7 +248,13 @@ document.addEventListener('DOMContentLoaded', () => {
     currentSuggestions = suggestions;
 
     if (!suggestions || suggestions.length === 0) {
-      suggestionsSection.classList.add('is-hidden');
+      btnApplyAll.classList.add('is-hidden');
+      if (analyzedText) {
+        suggestionsSection.classList.remove('is-hidden');
+        suggestionsList.innerHTML = '<div class="bayan-empty-state"><svg class="bayan-empty-state-icon" width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><p class="bayan-empty-state-text">نصك ممتاز! لم نجد أي أخطاء</p></div>';
+      } else {
+        suggestionsSection.classList.add('is-hidden');
+      }
       return;
     }
 
@@ -290,8 +304,9 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
 
-    // Show apply-all only when >= 2
-    btnApplyAll.classList.toggle('is-hidden', suggestions.length < 2);
+    // Show apply-all with count
+    btnApplyAll.textContent = 'تطبيق الكل (' + suggestions.length.toLocaleString('ar-EG') + ')';
+    btnApplyAll.classList.remove('is-hidden');
   }
 
   // ══════════════════════════════════════════════════════════
@@ -357,10 +372,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (data.timing_ms) {
           timingSection.classList.remove('is-hidden');
           timingText.textContent = `التحليل: ${data.timing_ms.total_ms || 0}ms (إملائي: ${data.timing_ms.spelling_ms || 0}ms، نحوي: ${data.timing_ms.grammar_ms || 0}ms، ترقيم: ${data.timing_ms.punctuation_ms || 0}ms)`;
-        }
-
-        if (suggestions.length === 0) {
-          showToast('نصك ممتاز! لم نجد أي أخطاء ✨');
         }
 
         saveState();

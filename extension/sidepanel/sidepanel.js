@@ -173,12 +173,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     scoreSection.classList.remove('is-hidden');
 
-    if (scoreValue) scoreValue.textContent = score > 0 || total > 0 ? score.toLocaleString('ar-EG') : '--';
+    if (scoreValue) {
+      const hasText = inputText.value.trim().length > 0;
+      scoreValue.textContent = (hasText || total > 0) ? score.toLocaleString('ar-EG') : '--';
+    }
     if (scoreCircle) {
       const offset = SCORE_CIRCUMFERENCE - (score / 100) * SCORE_CIRCUMFERENCE;
       scoreCircle.style.strokeDashoffset = String(offset);
     }
-    if (scoreHint) scoreHint.textContent = getScoreHint(score, total);
+    if (scoreHint) {
+      const hasText = inputText.value.trim().length > 0;
+      if (total === 0 && hasText) {
+        scoreHint.textContent = 'كتابة ممتازة! استمر.';
+      } else if (total === 0) {
+        scoreHint.innerHTML = 'ابدأ الكتابة لرؤية تقييمك<br><span class="sp-score-hint-sub">تحسين القواعد يرفع التقييم</span>';
+      } else {
+        scoreHint.textContent = getScoreHint(score, total);
+      }
+    }
     if (countSpelling) countSpelling.textContent = spelling.toLocaleString('ar-EG');
     if (countGrammar) countGrammar.textContent = grammar.toLocaleString('ar-EG');
     if (countPunctuation) countPunctuation.textContent = punctuation.toLocaleString('ar-EG');
@@ -191,7 +203,13 @@ document.addEventListener('DOMContentLoaded', () => {
     currentSuggestions = suggestions;
 
     if (!suggestions || suggestions.length === 0) {
-      suggestionsSection.classList.add('is-hidden');
+      btnApplyAll.classList.add('is-hidden');
+      if (analyzedText) {
+        suggestionsSection.classList.remove('is-hidden');
+        suggestionsList.innerHTML = '<div class="sp-empty-state"><svg class="sp-empty-state-icon" width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><p class="sp-empty-state-text">نصك ممتاز! لم نجد أي أخطاء</p></div>';
+      } else {
+        suggestionsSection.classList.add('is-hidden');
+      }
       return;
     }
 
@@ -230,7 +248,9 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
 
-    btnApplyAll.classList.toggle('is-hidden', suggestions.length < 2);
+    // Show apply-all with count
+    btnApplyAll.textContent = 'تطبيق الكل (' + suggestions.length.toLocaleString('ar-EG') + ')';
+    btnApplyAll.classList.remove('is-hidden');
   }
 
   // ══════════════════════════════════════════════════════════
@@ -271,10 +291,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         saveState();
-
-        if (suggestions.length === 0) {
-          showToast('نصك ممتاز! لم نجد أي أخطاء ✨');
-        }
       } else {
         showToast('تعذّر التحليل — حاول مرة أخرى');
       }

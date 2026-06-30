@@ -1447,6 +1447,7 @@ class ArabicSpellChecker:
         result = self.postprocess(best_candidate, original)
         
         # IV-Safe Postprocessing Check
+        hamza_corrections = set(AraSpellPostProcessor.HAMZA_WHITELIST.values())
         if result != best_candidate:
             result_words = result.split()
             best_words = best_candidate.split()
@@ -1456,7 +1457,7 @@ class ArabicSpellChecker:
                     if rw != bw:
                         bw_iv = self.vocab_manager.is_iv(bw)
                         rw_iv = self.vocab_manager.is_iv(rw)
-                        if bw_iv and not rw_iv:
+                        if bw_iv and not rw_iv and rw not in hamza_corrections:
                             fixed_words.append(bw)
                         else:
                             fixed_words.append(rw)

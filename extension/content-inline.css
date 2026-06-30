@@ -420,6 +420,60 @@
   background: rgba(255, 255, 255, 0.08) !important;
 }
 
+.bayan-il-modal-header-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+.bayan-il-modal-theme-toggle {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 28px !important;
+  height: 28px !important;
+  border: none !important;
+  border-radius: 50% !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: #8A939F !important;
+  cursor: pointer !important;
+  padding: 0 !important;
+  position: relative !important;
+  overflow: hidden !important;
+  transition: background 0.3s ease, transform 0.3s ease, color 0.3s ease !important;
+}
+
+.bayan-il-modal-theme-toggle:hover {
+  background: #6BA3E0 !important;
+  color: #fff !important;
+  transform: rotate(15deg) !important;
+}
+
+.bayan-il-modal-theme-toggle svg {
+  transition: transform 0.4s ease, opacity 0.3s ease !important;
+  position: absolute !important;
+}
+
+.bayan-il-modal-panel[data-bayan-theme="dark"] .bayan-il-theme-icon-sun {
+  transform: rotate(90deg) scale(0) !important;
+  opacity: 0 !important;
+}
+
+.bayan-il-modal-panel[data-bayan-theme="dark"] .bayan-il-theme-icon-moon {
+  transform: rotate(0) scale(1) !important;
+  opacity: 1 !important;
+}
+
+.bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-theme-icon-moon {
+  transform: rotate(-90deg) scale(0) !important;
+  opacity: 0 !important;
+}
+
+.bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-theme-icon-sun {
+  transform: rotate(0) scale(1) !important;
+  opacity: 1 !important;
+}
+
 /* ── Modal Top Bar ── */
 
 .bayan-il-modal-top-bar {
@@ -460,6 +514,8 @@
   font-weight: 600 !important;
   margin: 0 0 10px 0 !important;
   color: #B4BBC6 !important;
+  text-align: right !important;
+  align-self: stretch !important;
 }
 
 /* ── Score Card ── */
@@ -472,7 +528,7 @@
   padding: 16px 12px !important;
   background: #1A1D26 !important;
   border: 1px solid rgba(236, 238, 242, 0.09) !important;
-  border-radius: 10px !important;
+  border-radius: 12px !important;
 }
 
 .bayan-il-modal-score-ring {
@@ -491,7 +547,7 @@
 }
 
 .bayan-il-modal-score-ring .bayan-il-score-circle {
-  transition: stroke-dashoffset 800ms cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  transition: stroke-dashoffset 600ms ease-in-out !important;
 }
 
 .bayan-il-modal-score-value {
@@ -502,7 +558,7 @@
   justify-content: center !important;
   font-size: 28px !important;
   font-weight: 700 !important;
-  color: #8BB8E8 !important;
+  color: #ECEEF2 !important;
 }
 
 .bayan-il-modal-score-hint {
@@ -544,15 +600,9 @@
   padding: 16px 12px !important;
   background: #1A1D26 !important;
   border: 1px solid rgba(236, 238, 242, 0.09) !important;
-  border-radius: 10px !important;
+  border-radius: 12px !important;
 }
 
-.bayan-il-modal-sugg-header {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  margin-bottom: 10px !important;
-}
 
 /* ── Header Divider ── */
 
@@ -579,41 +629,50 @@
 .bayan-il-modal-cards::-webkit-scrollbar-thumb { background: #3a3a4d !important; border-radius: 4px !important; }
 
 .bayan-il-modal-card {
-  padding: 10px 12px !important;
-  background: #1A1D26 !important;
+  padding: 16px !important;
+  padding-right: 20px !important;
+  background: #242833 !important;
   border: 1px solid rgba(236, 238, 242, 0.09) !important;
-  border-radius: 10px !important;
+  border-right: 4px solid rgba(236, 238, 242, 0.16) !important;
+  border-radius: 12px !important;
   cursor: pointer !important;
-  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition: border-color 200ms ease, background 200ms ease, transform 200ms ease !important;
+  text-align: right !important;
 }
 
 .bayan-il-modal-card:hover {
-  border-color: #6BA3E0 !important;
-  background: #242833 !important;
-  box-shadow: 0 0 0 1px rgba(107, 163, 224, 0.25) !important;
+  border-top-color: #6BA3E0 !important;
+  border-bottom-color: #6BA3E0 !important;
+  border-left-color: #6BA3E0 !important;
+  background: rgba(107, 163, 224, 0.12) !important;
+  transform: translateX(-2px) !important;
 }
+
+.bayan-il-modal-card--spelling { border-right-color: #E88A8A !important; }
+.bayan-il-modal-card--grammar { border-right-color: #E4B35A !important; }
+.bayan-il-modal-card--punctuation { border-right-color: #6BC98A !important; }
 
 .bayan-il-modal-card-badge {
   display: inline-block !important;
   padding: 2px 8px !important;
-  border-radius: 20px !important;
-  font-size: 10px !important;
+  border-radius: 999px !important;
+  font-size: 12px !important;
   font-weight: 700 !important;
-  margin-bottom: 6px !important;
+  margin-bottom: 8px !important;
 }
 
 .bayan-il-modal-badge--spelling {
-  background: rgba(232, 138, 138, 0.15) !important;
+  background: rgba(232, 138, 138, 0.18) !important;
   color: #E88A8A !important;
 }
 
 .bayan-il-modal-badge--grammar {
-  background: rgba(228, 179, 90, 0.15) !important;
+  background: rgba(228, 179, 90, 0.18) !important;
   color: #E4B35A !important;
 }
 
 .bayan-il-modal-badge--punctuation {
-  background: rgba(107, 201, 138, 0.15) !important;
+  background: rgba(107, 201, 138, 0.16) !important;
   color: #6BC98A !important;
 }
 
@@ -628,9 +687,7 @@
 
 .bayan-il-modal-card-original {
   text-decoration: line-through !important;
-  text-decoration-color: rgba(232, 138, 138, 0.4) !important;
-  color: #E88A8A !important;
-  opacity: 0.75 !important;
+  color: #8A939F !important;
 }
 
 .bayan-il-modal-card-arrow {
@@ -651,12 +708,12 @@
 
 .bayan-il-modal-alt-chip {
   padding: 4px 10px !important;
-  border: 1px solid #3a3a4d !important;
-  border-radius: 20px !important;
-  background: transparent !important;
+  border: 1px solid rgba(236, 238, 242, 0.09) !important;
+  border-radius: 100px !important;
+  background: #1A1D26 !important;
   color: #B4BBC6 !important;
   font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif !important;
-  font-size: 11px !important;
+  font-size: 12px !important;
   cursor: pointer !important;
   transition: all 200ms ease !important;
 }
@@ -664,30 +721,30 @@
 .bayan-il-modal-alt-chip:hover {
   border-color: #6BA3E0 !important;
   color: #ECEEF2 !important;
-  background: rgba(107, 163, 224, 0.1) !important;
+  background: #242833 !important;
 }
 
 .bayan-il-modal-alt-chip--main {
-  background: #6BA3E0 !important;
-  border-color: #6BA3E0 !important;
-  color: white !important;
+  background: linear-gradient(135deg, #6BA3E0, #A594E8) !important;
+  border-color: transparent !important;
+  color: #F4F5F7 !important;
+  font-weight: 700 !important;
 }
 
 .bayan-il-modal-alt-chip--main:hover {
-  background: #5A8FCA !important;
-  color: white !important;
+  opacity: 0.9 !important;
+  border-color: transparent !important;
 }
 
 .bayan-il-modal-alt-chip--keep {
   border-style: dashed !important;
   color: #8A939F !important;
-  opacity: 0.8 !important;
+  font-size: 11px !important;
 }
 
 .bayan-il-modal-alt-chip--keep:hover {
-  opacity: 1 !important;
+  color: #ECEEF2 !important;
   border-color: #8A939F !important;
-  background: rgba(107, 107, 128, 0.1) !important;
 }
 
 /* ── Apply All Button ── */
@@ -697,15 +754,15 @@
   margin-top: 10px !important;
   padding: 10px 18px !important;
   border: none !important;
-  border-radius: 10px !important;
-  background: linear-gradient(135deg, #6BA3E0, #5A8FCA) !important;
-  color: white !important;
+  border-radius: 12px !important;
+  background: linear-gradient(135deg, #6BA3E0, #A594E8) !important;
+  color: #F4F5F7 !important;
   font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
   cursor: pointer !important;
-  transition: transform 150ms ease, box-shadow 150ms ease !important;
-  box-shadow: 0 2px 8px rgba(107, 163, 224, 0.3) !important;
+  min-height: 44px !important;
+  transition: opacity 200ms ease, transform 150ms ease !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -713,27 +770,86 @@
 }
 
 .bayan-il-modal-apply-all:hover {
-  transform: translateY(-1px) !important;
-  box-shadow: 0 4px 16px rgba(107, 163, 224, 0.45) !important;
+  opacity: 0.92 !important;
 }
 
 .bayan-il-modal-apply-all:active {
-  transform: translateY(0) !important;
+  transform: scale(0.98) !important;
 }
 
 /* ── Empty State ── */
 
 .bayan-il-modal-empty {
-  text-align: center !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
   padding: 24px 16px !important;
-  color: #8A939F !important;
-  font-size: 13px !important;
+  text-align: center !important;
+  gap: 8px !important;
 }
 
-.bayan-il-modal-empty-icon {
-  font-size: 32px !important;
-  margin-bottom: 8px !important;
+.bayan-il-modal-empty-icon-wrap {
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 50% !important;
+  background: #242833 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-bottom: 4px !important;
+}
+
+.bayan-il-modal-empty-title {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: #B4BBC6 !important;
+}
+
+.bayan-il-modal-empty-desc {
+  font-size: 12px !important;
+  color: #8A939F !important;
+  line-height: 1.6 !important;
+}
+
+/* ── Score Hint Subtitle ── */
+
+.bayan-il-modal-score-hint-sub {
+  font-size: 11px !important;
+  color: #8A939F !important;
   display: block !important;
+  margin-top: 2px !important;
+}
+
+/* ── Loading Spinner ── */
+
+.bayan-il-modal-loading-spinner {
+  width: 32px !important;
+  height: 32px !important;
+  border: 3px solid rgba(107, 163, 224, 0.2) !important;
+  border-top-color: #6BA3E0 !important;
+  border-radius: 50% !important;
+  animation: bayanIlSpin 0.7s linear infinite !important;
+  margin-bottom: 8px !important;
+}
+
+@keyframes bayanIlSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Logo Link ── */
+
+.bayan-il-modal-logo-link {
+  display: flex !important;
+  align-items: center !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+  border-radius: 6px !important;
+  transition: opacity 200ms ease !important;
+}
+
+.bayan-il-modal-logo-link:hover {
+  opacity: 0.8 !important;
 }
 
 /* ══════════════════════════════════════════════
@@ -761,6 +877,16 @@
   background: rgba(0, 0, 0, 0.05) !important;
 }
 
+.bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-modal-theme-toggle {
+  background: rgba(0, 0, 0, 0.05) !important;
+  color: #5A6472 !important;
+}
+
+.bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-modal-theme-toggle:hover {
+  background: #2B6CB8 !important;
+  color: #fff !important;
+}
+
 .bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-modal-body-scroll::-webkit-scrollbar-thumb {
   background: rgba(26, 29, 33, 0.18) !important;
 }
@@ -769,13 +895,18 @@
   color: #3A424E !important;
 }
 
+.bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-modal-loading-spinner {
+  border-color: rgba(43, 108, 184, 0.2) !important;
+  border-top-color: #2B6CB8 !important;
+}
+
 .bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-modal-score-card {
   background: #FAF9F6 !important;
   border-color: rgba(26, 29, 33, 0.1) !important;
 }
 
 .bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-modal-score-value {
-  color: #6B57A8 !important;
+  color: #1A1D21 !important;
 }
 
 .bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-modal-score-hint {
@@ -805,13 +936,18 @@
 }
 
 .bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-modal-card:hover {
-  background: #EFEBE4 !important;
-  border-color: #2B6CB8 !important;
-  box-shadow: 0 0 0 1px rgba(43, 108, 184, 0.32) !important;
+  background: rgba(43, 108, 184, 0.07) !important;
+  border-top-color: #2B6CB8 !important;
+  border-bottom-color: #2B6CB8 !important;
+  border-left-color: #2B6CB8 !important;
 }
 
+.bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-modal-card--spelling { border-right-color: #C53030 !important; }
+.bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-modal-card--grammar { border-right-color: #B7791F !important; }
+.bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-modal-card--punctuation { border-right-color: #2F8554 !important; }
+
 .bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-modal-card-original {
-  color: #C53030 !important;
+  color: #5A6472 !important;
 }
 
 .bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-modal-card-arrow {
@@ -835,8 +971,8 @@
 }
 
 .bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-modal-alt-chip--main {
-  background: #2B6CB8 !important;
-  border-color: #2B6CB8 !important;
+  background: linear-gradient(135deg, #2B6CB8, #6B57A8) !important;
+  border-color: transparent !important;
   color: white !important;
 }
 
@@ -850,7 +986,19 @@
   background: rgba(0, 0, 0, 0.03) !important;
 }
 
-.bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-modal-empty {
+.bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-modal-empty-icon-wrap {
+  background: #FAF9F6 !important;
+}
+
+.bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-modal-empty-title {
+  color: #3A424E !important;
+}
+
+.bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-modal-empty-desc {
+  color: #5A6472 !important;
+}
+
+.bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-modal-score-hint-sub {
   color: #5A6472 !important;
 }
 
@@ -863,7 +1011,7 @@
 .bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-modal-count--punctuation strong { color: #2F8554 !important; }
 
 .bayan-il-modal-panel[data-bayan-theme="light"] .bayan-il-modal-apply-all {
-  background: linear-gradient(135deg, #2B6CB8, #1A5CA0) !important;
+  background: linear-gradient(135deg, #2B6CB8, #6B57A8) !important;
   box-shadow: 0 2px 8px rgba(43, 108, 184, 0.3) !important;
 }
 
