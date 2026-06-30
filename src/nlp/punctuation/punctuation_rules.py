@@ -183,7 +183,7 @@ def validate_punctuation_diff(diff: dict, full_text: str = '') -> bool:
             return False
             
         # Block spacing corruptions in JSON/Code (e.g. {"name"} -> { "name" })
-        if re.search(r'\{|\[|<|://', original):
+        if re.search(r'[a-zA-Z]|\{|\[|<|#|@|://', original):
             # Only allow if the ONLY change is appending a terminal mark at the very end
             if original != correction and not (is_at_end and correction.endswith(('.', '؟')) and correction[:-1].rstrip() == original.rstrip()):
                 logger.info(f"[PUNC-SAFETY] Blocked corruption of JSON/Code/URL: '{original}' -> '{correction}'")
