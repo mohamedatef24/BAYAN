@@ -167,7 +167,7 @@ def validate_punctuation_diff(diff: dict, full_text: str = '') -> bool:
 
     # ── Protect Structured Data (English, URLs, Emails, Hashtags, Code/JSON) ──
     # Block punctuation modifications near structured data unless it's a valid terminal punctuation
-    if re.search(r'[a-zA-Z]|\{.*\}|\[.*\]|<.*>|#\S+|@\S+', original):
+    if re.search(r'[a-zA-Z]|\{|\[|<|#|@|://', original):
         is_at_end = False
         if full_text and 'end' in diff:
             is_at_end = diff['end'] >= len(full_text) - 2
@@ -183,7 +183,7 @@ def validate_punctuation_diff(diff: dict, full_text: str = '') -> bool:
             return False
             
         # Block spacing corruptions in JSON/Code (e.g. {"name"} -> { "name" })
-        if re.search(r'\{.*\}|\[.*\]|<.*>|https?://', original):
+        if re.search(r'\{|\[|<|://', original):
             # Only allow if the ONLY change is appending a terminal mark at the very end
             if original != correction and not (is_at_end and correction.endswith(('.', '؟')) and correction[:-1].rstrip() == original.rstrip()):
                 logger.info(f"[PUNC-SAFETY] Blocked corruption of JSON/Code/URL: '{original}' -> '{correction}'")
