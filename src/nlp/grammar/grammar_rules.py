@@ -718,7 +718,14 @@ class ArabicGrammarGuard:
         """Apply all grammar rules to model output."""
         text = self.preserve_numbers(original_text, generated_text)
         
-        # ── Fix Hallucinated Subject Gender & Protect Structured Data ──
+        # ── Fix T5 Spacing Hallucinations & Protect Structured Data ──
+        # T5 often adds spaces around structural brackets. Fix them before splitting.
+        for bracket in ['{', '}', '[', ']', '<', '>']:
+            if f' {bracket}' not in original_text:
+                text = text.replace(f' {bracket}', bracket)
+            if f'{bracket} ' not in original_text:
+                text = text.replace(f'{bracket} ', bracket)
+                
         orig_words = original_text.split()
         corr_words = text.split()
         if len(orig_words) == len(corr_words):
@@ -728,8 +735,8 @@ class ArabicGrammarGuard:
                 o_clean = o.rstrip('.,،؛;:!؟?()[]{}«»"\'…')
                 c_clean = c.rstrip('.,،؛;:!؟?()[]{}«»"\'…')
                 
-                # Protect structured data (English, JSON, Hashtags, Code)
-                if re.search(r'[a-zA-Z]|\{.*\}|\[.*\]|<.*>|#\S+|@\S+', o):
+                # Protect structured data (English, JSON, Code, URLs)
+                if re.search(r'[a-zA-Z]|\{|\[|<|#|@|://', o):
                     corr_words[i] = o
                     # Revert grammar hallucinations on adjacent Arabic words caused by structured data
                     if i > 0:
