@@ -1532,6 +1532,7 @@ def quran_verify():
         data = request.get_json()
         text = data.get('text', '').strip()
         language = data.get('language', 'تدقيق الايات').strip()
+        top_n = min(int(data.get('top_n', 1)), 10)
 
         if not text:
             return jsonify({'error': 'النص المُدخل فارغ'}), 400
@@ -1539,10 +1540,10 @@ def quran_verify():
         if len(text) > 2000:
             return jsonify({'error': 'النص طويل جداً (الحد الأقصى 2000 حرف)'}), 400
 
-        app.logger.info(f'[QURAN] Query: "{text[:60]}..." lang={language}')
+        app.logger.info(f'[QURAN] Query: "{text[:60]}..." lang={language} top_n={top_n}')
         start_time = time.time()
 
-        result = search_bayan(text, target_type=language)
+        result = search_bayan(text, target_type=language, top_n=top_n)
 
         elapsed = int((time.time() - start_time) * 1000)
         app.logger.info(f'[QURAN] Done in {elapsed}ms')

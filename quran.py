@@ -40,6 +40,33 @@ def _build_similarity_table():
 
 _SIM_TABLE = _build_similarity_table()
 
+# Compiled regex patterns for input sanitization
+_RE_INVISIBLE = re.compile(
+    '[​-‏  ﻿­]'
+)
+_RE_SPACES = re.compile(
+    '[  -   　]'
+)
+_PUNCT_CHARS = (
+    '،؛؟'
+    '!.,:;?\\-—–'
+    '()\\[\\]{}«»'
+    '﴾﴿⌈⌉❝❞'
+    + chr(0x201C) + chr(0x201D) + chr(0x2018) + chr(0x2019)
+    + chr(0x22) + chr(0x27) +
+    'ـ'
+    '۝؀-؃'
+    '0-9٠-٩'
+    '⁰¹²³⁴-⁹'
+    'ﷺﷻﷲ'
+    '#@&%\\^*+=/\\\\|~`_'
+)
+_RE_PUNCT = re.compile('[' + _PUNCT_CHARS + ']')
+_RE_DIACRITICS = re.compile(
+    '[ً-ٰٟٱٖ'
+    'ۖ-ۜ۟-۪ۤۧۨ-ۭ]'
+)
+
 def normalize_arabic(text: str, *, deep: bool = False) -> str:
     """
     تطبيع النص العربي.
@@ -48,17 +75,12 @@ def normalize_arabic(text: str, *, deep: bool = False) -> str:
     """
     if not text:
         return ""
-    # إزالة التشكيل والعلامات القرآنية
-    text = re.sub(
-        r'[\u064B-\u065F\u0670\u0671\u0656'
-        r'\u06D6-\u06DC\u06DF-\u06E4\u06E7\u06E8\u06EA-\u06ED]',
-        '', text
-    )
-    # همزات
+    text = _RE_INVISIBLE.sub('', text)
+    text = _RE_SPACES.sub(' ', text)
+    text = _RE_PUNCT.sub('', text)
+    text = _RE_DIACRITICS.sub('', text)
     text = re.sub(r'[أإآٱ]', 'ا', text)
-    # تاء مربوطة
     text = re.sub(r'ة', 'ه', text)
-    # ألف مقصورة
     text = re.sub(r'ى', 'ي', text)
 
     if deep:
@@ -89,7 +111,6 @@ def _score_window(query_words: list[str], window_words: list[str],
 
     total = 0.0
     for qw, ww, qd, wd in zip(query_words, window_words, query_deep, window_deep):
-        # نأخذ أعلى نتيجة بين المقارنة الخفيفة والعميقة
         s_light = _word_similarity(qw, ww)
         s_deep  = _word_similarity(qd, wd)
         total += max(s_light, s_deep)
@@ -104,7 +125,8 @@ def _score_window(query_words: list[str], window_words: list[str],
 def search_bayan(query_text: str,
                  target_type: str = "تدقيق الايات",
                  fuzzy_threshold: float = 0.72,
-                 db_path: str = None) -> dict:
+                 db_path: str = None,
+                 top_n: int = 1) -> dict:
     """
     البحث عن آية قرآنية مع دعم الأخطاء الإملائية.
 
@@ -154,7 +176,6 @@ def search_bayan(query_text: str,
     n = len(query_light)
 
     # ── إذا بدأ الاستعلام بالبسملة → أعطِ الفاتحة أولوية ──
-    # بدون ده، "بسم الله الرحمن الرحيم الحمد لله" بيطابق ١١٢ سورة
     _query_starts_basmala = False
     if n >= 4:
         first4_q = normalize_arabic(' '.join(query_light[:4]), deep=False)
@@ -168,7 +189,6 @@ def search_bayan(query_text: str,
 
     for i in range(n, 0, -1):
         anchor = ' '.join(query_light[:i])
-        # بحث LIKE عادي أولاً (سريع)
         cursor.execute("""
             SELECT v.sura_num, v.aya_num
             FROM verses v
@@ -189,9 +209,7 @@ def search_bayan(query_text: str,
             candidate_starts.insert(0, fatiha)
 
     # إذا لم تجد شيئاً بالمرساة الخفيفة → جرّب المرساة العميقة
-    # (يستخدم text_deep إذا كان موجوداً، وإلا يعود لـ text_clean)
     if not candidate_starts:
-        # اكتشف أعمدة الجدول
         cursor.execute("PRAGMA table_info(verses)")
         cols = {row[1] for row in cursor.fetchall()}
         deep_col = "v.text_deep" if "text_deep" in cols else "v.text_clean"
@@ -238,6 +256,7 @@ def search_bayan(query_text: str,
     best_score     = -1.0
     best_match_idx = -1
     best_rows      = None
+    all_matches    = []
 
     for start_sura, start_aya in candidate_starts:
         cursor.execute(f"""
@@ -252,10 +271,9 @@ def search_bayan(query_text: str,
         fetched = cursor.fetchall()
 
         QURAN_MARKS = {
-              'ۖ', 'ۗ', 'ۘ', 'ۙ', 'ۚ', 'ۛ', 'ۜ', '۝',
-              '۞', '۩'
+              'ۖ', 'ۗ', 'ۘ', 'ۙ', 'ۚ',
+              'ۛ', 'ۜ', '۝', '۞', '۩'
           }
-
 
         # بناء خريطة الكلمات
         combined_light, combined_deep, word_map = [], [], []
@@ -263,7 +281,6 @@ def search_bayan(query_text: str,
             s_num, a_num, t_clean, t_uthmani, t_target, s_name = row
 
             # ── شيل البسملة من text_clean في البحث (مش الفاتحة) ──
-            # بدون ده، anchor "بسم الله الرحمن الرحيم" بيطابق ١١٢ سورة
             if a_num == 1 and s_num != 1:
                 tc_words = t_clean.split()
                 if len(tc_words) >= 4:
@@ -300,111 +317,139 @@ def search_bayan(query_text: str,
         if total_words < n:
             continue
 
-        # نافذة منزلقة — ابحث عن أعلى نتيجة
+        # نافذة منزلقة
+        best_cand_score = -1.0
+        best_cand_idx   = -1
         for j in range(total_words - n + 1):
             score = _score_window(
                 query_light, combined_light[j:j+n],
                 query_deep,  combined_deep[j:j+n]
             )
-            if score > best_score:
-                best_score     = score
-                best_match_idx = j
-                best_rows      = word_map
+            if score > best_cand_score:
+                best_cand_score = score
+                best_cand_idx   = j
 
-        # إذا وجدنا تطابقاً كاملاً، لا داعي للاستمرار
-        if best_score >= 0.999:
+        if best_cand_score >= fuzzy_threshold and best_cand_idx != -1:
+            if best_cand_score > best_score:
+                best_score     = best_cand_score
+                best_match_idx = best_cand_idx
+                best_rows      = word_map
+            if top_n > 1:
+                all_matches.append((best_cand_score, best_cand_idx, word_map))
+
+        if best_score >= 0.999 and top_n == 1:
             break
 
     conn.close()
-
-    # if best_score < fuzzy_threshold or best_match_idx == -1:
-    #     return {
-    #         "error": (
-    #             f"أقرب تطابق وجدناه بدرجة {best_score:.0%} وهي أقل من الحد المقبول "
-    #             f"({fuzzy_threshold:.0%}). تحقق من النص المُدخل."
-    #         )
-    #     }
 
     # ==========================================
     # تشكيل المخرجات
     # ==========================================
 
-    # تحويل الأرقام اللاتينية إلى عربية
-    def to_arabic_nums(n):
-        """Convert 31 → ٣١"""
+    def to_arabic_nums(num):
         ar_digits = '٠١٢٣٤٥٦٧٨٩'
-        return ''.join(ar_digits[int(d)] for d in str(n))
+        return ''.join(ar_digits[int(d)] for d in str(num))
 
-    matched_words = best_rows[best_match_idx: best_match_idx + n]
+    def fmt_num(num):
+        return to_arabic_nums(num) if lang_code == "uthmani" else str(num)
 
-    # دالة تنسيق الرقم حسب اللغة
-    def fmt_num(n):
-        """Arabic-Indic for uthmani, Latin for translations"""
-        return to_arabic_nums(n) if lang_code == "uthmani" else str(n)
-
-    # الآيات المشمولة — مرتبة بالترتيب (من الـ matched window)
-    involved: dict[tuple, dict] = {}
-    for w in matched_words:
-        key = (w["sura_num"], w["aya_num"])
-        if key not in involved:
-            involved[key] = {
-                "sura_name": w["sura_name"],
-                "target_text": w["target_text"],
-                "uthmani": w.get("uthmani", ""),
-            }
-
-    # منع تجاوز حدود السورة: اختر السورة الأكثر تمثيلاً فقط
-    sura_counts: dict[int, int] = {}
-    for w in matched_words:
-        sura_counts[w["sura_num"]] = sura_counts.get(w["sura_num"], 0) + 1
-    primary_sura = max(sura_counts, key=sura_counts.get)
-    involved = {k: v for k, v in involved.items() if k[0] == primary_sura}
-
-    ayah_nums = [a_num for (_, a_num) in involved]
-    sura_name = next(iter(involved.values()))["sura_name"]
-
-    # ── بناء النص الكامل من الآيات الكاملة (مش من الـ window بس) ──
-    # إزالة البسملة من أول آية (مدمجة في الـ DB) — ماعدا الفاتحة
     def _strip_basmala(text):
-        """Remove Basmala from beginning of verse text"""
         words = text.split()
         if len(words) < 4:
             return text
-        # Normalize first 4 words and check against known Basmala forms
         first4_norm = normalize_arabic(' '.join(words[:4]), deep=False)
-        # ٱ (Alef Wasla) gets stripped during normalization → 'بسم لله لرحمـن لرحيم'
         basmala_forms = [
-            'بسم الله الرحمن الرحيم',    # standard alef
-            'بسم لله لرحمن لرحيم',        # alef wasla stripped
-            'بسم لله لرحمـن لرحيم',       # with tatweel ـ
+            'بسم الله الرحمن الرحيم',
+            'بسم لله لرحمن لرحيم',
+            'بسم لله لرحمـن لرحيم',
         ]
         if first4_norm in basmala_forms:
             return ' '.join(words[4:])
         return text
 
-    verse_parts = []
-    for (s_num, a_num), data in involved.items():
-        txt = data['target_text']
-        # شيل البسملة من الآية الأولى (إلا سورة الفاتحة)
-        if a_num == 1 and s_num != 1:
-            txt = _strip_basmala(txt)
-        verse_parts.append(f"{txt} ({fmt_num(a_num)})")
+    def _format_one(rows, idx, score_val):
+        matched_words = rows[idx: idx + n]
+        if not matched_words:
+            return None
 
-    combined_body = " ".join(verse_parts)
+        involved = {}
+        for w in matched_words:
+            key = (w["sura_num"], w["aya_num"])
+            if key not in involved:
+                involved[key] = {
+                    "sura_name": w["sura_name"],
+                    "target_text": w["target_text"],
+                }
 
-    # بناء المرجع: نطاق (من-إلى) بدل سرد كل الأرقام
-    if len(ayah_nums) == 1:
-        ref = f"{sura_name}: {fmt_num(ayah_nums[0])}"
-    else:
-        first = fmt_num(ayah_nums[0])
-        last = fmt_num(ayah_nums[-1])
-        ref = f"{sura_name}: {first}-{last}"
+        sura_counts = {}
+        for w in matched_words:
+            sura_counts[w["sura_num"]] = sura_counts.get(w["sura_num"], 0) + 1
+        p_sura = max(sura_counts, key=sura_counts.get)
+        involved = {k: v for k, v in involved.items() if k[0] == p_sura}
 
-    result_text = f"({combined_body}) 【{ref}】"
+        ayah_nums = [a for (_, a) in involved]
+        s_name = next(iter(involved.values()))["sura_name"]
 
-    is_exact = best_score >= 0.999
+        verse_parts = []
+        for (s_num, a_num), data in involved.items():
+            txt = data['target_text']
+            if a_num == 1 and s_num != 1:
+                txt = _strip_basmala(txt)
+            verse_parts.append(f"{txt} ({fmt_num(a_num)})")
+
+        combined_body = " ".join(verse_parts)
+
+        if len(ayah_nums) == 1:
+            ref = f"{s_name}: {fmt_num(ayah_nums[0])}"
+        else:
+            ref = f"{s_name}: {fmt_num(ayah_nums[0])}-{fmt_num(ayah_nums[-1])}"
+
+        result_text = f"({combined_body}) 【{ref}】"
+
+        return {
+            "matched_segment": result_text,
+            "full_verse": result_text,
+            "similarity_score": score_val,
+            "sura_num": p_sura,
+            "aya_start": ayah_nums[0],
+        }
+
+    # ── مسار النتيجة الواحدة (backward compat) ──
+    if top_n <= 1:
+        if best_score < fuzzy_threshold or best_match_idx == -1:
+            return {
+                "error": "لم يُعثر على تطابق كافٍ — تحقق من النص المُدخل."
+            }
+        return _format_one(best_rows, best_match_idx, best_score)
+
+    # ── مسار النتائج المتعددة ──
+    if not all_matches:
+        return {
+            "error": "لم يُعثر على تطابق كافٍ — تحقق من النص المُدخل."
+        }
+
+    # ترتيب حسب الدرجة تنازلياً + إزالة التكرار بنفس (سورة، آية)
+    all_matches.sort(key=lambda x: x[0], reverse=True)
+    seen_keys = set()
+    unique = []
+    for score_val, idx, rows in all_matches:
+        result = _format_one(rows, idx, score_val)
+        if result is None:
+            continue
+        dedup_key = (result["sura_num"], result["aya_start"])
+        if dedup_key in seen_keys:
+            continue
+        seen_keys.add(dedup_key)
+        unique.append(result)
+        if len(unique) >= top_n:
+            break
+
+    if not unique:
+        return {
+            "error": "لم يُعثر على تطابق كافٍ — تحقق من النص المُدخل."
+        }
+
     return {
-        "matched_segment": result_text,
-        "full_verse": result_text,
-
+        "matches": unique,
+        "total_found": len(all_matches),
     }

@@ -575,19 +575,97 @@ document.addEventListener('DOMContentLoaded', () => {
   const quranCharCount = document.getElementById('quran-char-count');
   const btnQuran = document.getElementById('btn-quran');
   const quranResultSection = document.getElementById('quran-result-section');
-  const quranUthmani = document.getElementById('quran-uthmani');
-  const quranReference = document.getElementById('quran-reference');
-  const btnCopyQuran = document.getElementById('btn-copy-quran');
-  const quranLangSelect = document.getElementById('quran-lang-select');
-  const quranTransSection = document.getElementById('quran-translation-section');
-  const quranTransText = document.getElementById('quran-trans-text');
-  const quranTransRef = document.getElementById('quran-trans-ref');
+  const quranMatchList = document.getElementById('quran-match-list');
 
   let _quranQuery = '';
-  let _quranVerse = '';
-  let _quranRef = '';
-  let _quranTransText = '';
-  let _quranTransRef = '';
+
+  function _parseSegment(seg) {
+    const refMatch = seg.match(/【([^】]+)】/);
+    const verseText = seg.replace(/\s*【[^】]+】\s*$/, '').replace(/^\(/, '').replace(/\)$/, '');
+    const reference = refMatch ? refMatch[1] : '';
+    return { verseText, reference };
+  }
+
+  function _langOptionsHTML() {
+    return '<option value="">— اختر لغة —</option>'
+      + '<option value="english">English</option>'
+      + '<option value="french">Français</option>'
+      + '<option value="turkish">Türkçe</option>'
+      + '<option value="persian">فارسی</option>'
+      + '<option value="russian">Русский</option>'
+      + '<option value="spanish">Español</option>'
+      + '<option value="german">Deutsch</option>'
+      + '<option value="indonesian">Indonesia</option>'
+      + '<option value="malay">Melayu</option>'
+      + '<option value="bengali">বাংলা</option>'
+      + '<option value="bosnian">Bosanski</option>'
+      + '<option value="portuguese">Português</option>'
+      + '<option value="uzbek">O'zbek</option>';
+  }
+
+  function _renderMatchCards(matches) {
+    quranMatchList.innerHTML = '';
+    matches.forEach(function(m, i) {
+      var parsed = _parseSegment(m.matched_segment || '');
+      var card = document.createElement('div');
+      card.className = 'bayan-quran-match-card';
+      card.innerHTML = '<div class="bayan-quran-result-header">'
+        + '<span style="color:#06b6d4;font-size:12px;font-weight:700;">✓ نتيجة ' + (i + 1) + '</span>'
+        + '<button class="bayan-btn-icon qmc-copy" type="button" title="نسخ">'
+        + '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" stroke-width="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" stroke-width="2"/></svg>'
+        + '</button></div>'
+        + '<p class="bayan-quran-uthmani" dir="rtl">' + _escHTML(parsed.verseText) + '</p>'
+        + '<p class="bayan-quran-reference">' + (parsed.reference ? '[' + _escHTML(parsed.reference) + ']' : '') + '</p>'
+        + '<div class="bayan-quran-translate">'
+        + '<div class="bayan-quran-translate-row">'
+        + '<span style="font-size:12px;font-weight:600;color:var(--text-secondary);">ترجمة الآية</span>'
+        + '<select class="bayan-quran-lang-select qmc-lang">' + _langOptionsHTML() + '</select>'
+        + '</div>'
+        + '<div class="bayan-quran-translation is-hidden qmc-trans-section">'
+        + '<p class="qmc-trans-text" dir="auto"></p>'
+        + '<button class="bayan-btn-icon qmc-copy-trans" type="button" title="نسخ الترجمة" style="margin-top:4px;">'
+        + '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" stroke-width="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" stroke-width="2"/></svg>'
+        + '</button></div></div>';
+
+      card.querySelector('.qmc-copy').addEventListener('click', function() {
+        var txt = parsed.verseText + (parsed.reference ? ' [' + parsed.reference + ']' : '');
+        navigator.clipboard.writeText(txt)
+          .then(function() { showToast('✓ تم النسخ'); })
+          .catch(function() { showToast('تعذّر النسخ'); });
+      });
+
+      var langSel = card.querySelector('.qmc-lang');
+      var transSec = card.querySelector('.qmc-trans-section');
+      var transP = card.querySelector('.qmc-trans-text');
+      var copyTransBtn = card.querySelector('.qmc-copy-trans');
+
+      langSel.addEventListener('change', async function() {
+        var lang = langSel.value;
+        if (!lang || !_quranQuery) return;
+        transSec.classList.remove('is-hidden');
+        transP.textContent = '⏳ جاري الترجمة...';
+        try {
+          var data = await bayanQuran(_quranQuery, lang);
+          if (data.error) { transP.textContent = data.error; return; }
+          var seg = data.matched_segment || '';
+          var p = _parseSegment(seg);
+          transP.textContent = p.verseText;
+        } catch (err) {
+          transP.textContent = 'حدث خطأ في الترجمة';
+        }
+      });
+
+      copyTransBtn.addEventListener('click', function() {
+        navigator.clipboard.writeText(transP.textContent || '')
+          .then(function() { showToast('✓ تم نسخ الترجمة'); })
+          .catch(function() { showToast('تعذّر النسخ'); });
+      });
+
+      quranMatchList.appendChild(card);
+    });
+  }
+
+  function _escHTML(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
   if (quranInput) {
     quranInput.addEventListener('input', () => { updateCounts(quranInput, quranCharCount, null); saveState(); });
@@ -598,93 +676,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
       _quranQuery = text;
       setLoading(true, 'جارٍ التدقيق...');
-      quranTransSection.classList.add('is-hidden');
-      quranLangSelect.value = '';
 
       try {
-        const data = await bayanQuran(text);
+        const data = await bayanQuran(text, 'تدقيق الايات', null, 5);
         quranResultSection.classList.remove('is-hidden');
 
         if (data.error) {
-          quranUthmani.textContent = data.error;
-          quranReference.textContent = '';
+          quranMatchList.innerHTML = '<p style="color:var(--text-secondary);font-size:13px;padding:8px;">' + _escHTML(data.error) + '</p>';
           return;
         }
 
-        const seg = data.matched_segment || '';
-        const refMatch = seg.match(/【([^】]+)】/);
-        const verseText = seg.replace(/\s*【[^】]+】\s*$/, '').replace(/^\(/, '').replace(/\)$/, '');
-        const reference = refMatch ? refMatch[1] : '';
-
-        _quranVerse = verseText;
-        _quranRef = reference;
-        quranUthmani.textContent = verseText;
-        quranReference.textContent = reference ? `[${reference}]` : '';
+        var matches = data.matches || [data];
+        _renderMatchCards(matches);
         showToast('✓ تم التدقيق');
       } catch (error) {
         console.error('[Bayan] Quran error:', error);
         quranResultSection.classList.remove('is-hidden');
-        quranUthmani.textContent = 'خطأ في الاتصال — تحقق من الإنترنت';
-        quranReference.textContent = '';
+        quranMatchList.innerHTML = '<p style="color:var(--text-secondary);font-size:13px;padding:8px;">خطأ في الاتصال — تحقق من الإنترنت</p>';
       } finally {
         setLoading(false);
       }
     });
-
-    // Translation dropdown
-    quranLangSelect.addEventListener('change', async () => {
-      const lang = quranLangSelect.value;
-      if (!lang || !_quranQuery) return;
-
-      quranTransSection.classList.remove('is-hidden');
-      quranTransText.textContent = '⏳ جاري الترجمة...';
-      if (quranTransRef) quranTransRef.style.display = 'none';
-
-      try {
-        const data = await bayanQuran(_quranQuery, lang);
-
-        if (data.error) {
-          quranTransText.textContent = data.error;
-          return;
-        }
-
-        const seg = data.matched_segment || '';
-        const refMatch = seg.match(/【([^】]+)】/);
-        const transText = seg.replace(/\s*【[^】]+】\s*$/, '').replace(/^\(/, '').replace(/\)$/, '');
-        const transRef = refMatch ? refMatch[1] : '';
-
-        _quranTransText = transText;
-        _quranTransRef = transRef;
-
-        quranTransText.textContent = transText;
-        if (quranTransRef && transRef) {
-          quranTransRef.textContent = `[${transRef}]`;
-          quranTransRef.style.display = '';
-        }
-        const transActions = document.getElementById('quran-trans-actions');
-        if (transActions) transActions.style.display = 'flex';
-      } catch (error) {
-        console.error('[Bayan] Quran translation error:', error);
-        quranTransText.textContent = 'حدث خطأ في الترجمة';
-      }
-    });
-
-    btnCopyQuran.addEventListener('click', () => {
-      const text = (_quranVerse || '') + (_quranRef ? ` [${_quranRef}]` : '');
-      navigator.clipboard.writeText(text)
-        .then(() => showToast('✓ تم النسخ'))
-        .catch(() => showToast('تعذّر النسخ'));
-    });
-
-    const btnCopyQuranTrans = document.getElementById('btn-copy-quran-trans');
-    if (btnCopyQuranTrans) {
-      btnCopyQuranTrans.addEventListener('click', () => {
-        const text = (_quranTransText || '') + (_quranTransRef ? ` [${_quranTransRef}]` : '');
-        navigator.clipboard.writeText(text)
-          .then(() => showToast('✓ تم نسخ الترجمة'))
-          .catch(() => showToast('تعذّر النسخ'));
-      });
-    }
   }
 
   // ══════════════════════════════════════════════════════════

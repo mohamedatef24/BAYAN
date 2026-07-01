@@ -79,11 +79,13 @@ async function bayanDialect(text, signal) {
  * @param {AbortSignal} [signal] - Optional abort signal
  * @returns {Promise<Object>} { matched_segment, full_verse, ... } or { error }
  */
-async function bayanQuran(text, language = 'تدقيق الايات', signal) {
+async function bayanQuran(text, language = 'تدقيق الايات', signal, topN = 1) {
+  const body = { text, language };
+  if (topN > 1) body.top_n = topN;
   const response = await fetch(`${CONFIG.API_BASE}/api/quran`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text, language }),
+    body: JSON.stringify(body),
     signal,
   });
   // Quran endpoint returns 404 with a JSON {error} body on "no match" —

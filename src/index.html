@@ -940,46 +940,8 @@
            </div>
            <textarea id="quran-input" class="w-full p-4 rounded-xl text-right text-lg" dir="rtl" rows="4" placeholder="اكتب الآية أو جزءًا منها هنا..." style="background: var(--color-surface); border: 1px solid var(--color-border); color: var(--color-text-primary); resize: vertical; font-family: 'Amiri Quran', 'Cairo', serif; font-size: 20px; line-height: 2;"></textarea>
            <button id="quran-search-btn" onclick="searchQuranStandalone()" class="btn-primary w-full py-4 text-lg mt-4 mb-4" type="button">بحث وتدقيق</button>
-           <div id="quran-inline-result" class="is-hidden" style="background: var(--color-surface); border: 1px solid rgba(6,182,212,0.2); border-radius: 1rem; padding: 1.5rem;">
-            <div class="flex items-center justify-between mb-3">
-             <div class="text-sm font-bold" style="color:#06b6d4;">✓ النص القرآني المدقق</div>
-             <div class="flex items-center gap-2">
-              <button onclick="copyQuranInlineResult()" class="quran-copy-btn" type="button" title="نسخ">📋</button>
-              <button id="quran-inline-apply-btn" onclick="applyQuranInlineResult()" class="quran-apply-btn" type="button">تطبيق في المحرر ✓</button>
-             </div>
-            </div>
-            <p id="quran-inline-uthmani" class="quran-uthmani" style="font-size: 24px; line-height: 2.2; text-align: center;"></p>
-            <p id="quran-inline-reference" class="quran-reference text-center mt-2"></p>
-            <div class="mt-4 pt-4" style="border-top:1px solid var(--color-border);">
-             <div class="flex items-center gap-3 mb-3 flex-wrap">
-              <svg width="16" height="16" fill="none" stroke="#06b6d4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/></svg>
-              <span class="text-sm font-bold">ترجمة الآية</span>
-              <select id="quran-inline-lang" onchange="translateQuranInline()" class="quran-lang-select">
-               <option value="">— اختر لغة —</option>
-               <option value="english">🇬🇧 English</option>
-               <option value="french">🇫🇷 Français</option>
-               <option value="turkish">🇹🇷 Türkçe</option>
-               <option value="persian">🇮🇷 فارسی</option>
-               <option value="russian">🇷🇺 Русский</option>
-               <option value="spanish">🇪🇸 Español</option>
-               <option value="german">🇩🇪 Deutsch</option>
-               <option value="indonesian">🇮🇩 Indonesia</option>
-               <option value="malay">🇲🇾 Melayu</option>
-               <option value="bengali">🇧🇩 বাংলা</option>
-               <option value="bosnian">🇧🇦 Bosanski</option>
-               <option value="portuguese">🇵🇹 Português</option>
-               <option value="uzbek">🇺🇿 O'zbek</option>
-              </select>
-             </div>
-             <div id="quran-inline-translation" class="is-hidden p-4 rounded-xl" style="background:rgba(6,182,212,0.06); border:1px solid rgba(6,182,212,0.15);">
-              <p id="quran-inline-trans-text" style="font-size:18px; line-height:2; color:var(--color-text-primary); text-align:center;"></p>
-               <p id="quran-inline-trans-ref" class="text-sm text-center mt-2" style="color:#06b6d4; font-weight:600; display:none;"></p>
-               <div class="flex items-center justify-center gap-2 mt-3" id="quran-inline-trans-actions" style="display:none;">
-                <button onclick="copyQuranInlineTranslation()" class="quran-copy-btn" type="button" title="نسخ الترجمة">📋 نسخ</button>
-                <button onclick="applyQuranInlineTranslation()" class="quran-apply-btn" type="button">تطبيق الترجمة ✓</button>
-               </div>
-             </div>
-            </div>
+           <div id="quran-inline-result" class="is-hidden">
+             <div id="quran-inline-match-list" class="quran-inline-match-list"></div>
            </div>
           </div>
         </div>
@@ -1412,117 +1374,37 @@
     }
 
     /* ═══════════════════════════════════════════
-       Quran Standalone Panel Functions
+       Quran Standalone Panel Functions (multi-match)
        ═══════════════════════════════════════════ */
-    let _quranInlineVerse = '';
-    let _quranInlineRef = '';
     let _quranInlineQuery = '';
 
-    async function searchQuranStandalone() {
-      var input = document.getElementById('quran-input').value.trim();
-      if (!input) { if (typeof showToast === 'function') showToast('الرجاء كتابة نص قرآني أولاً', 'warning'); return; }
-      _quranInlineQuery = input;
-      var resultDiv = document.getElementById('quran-inline-result');
-      var uthmaniEl = document.getElementById('quran-inline-uthmani');
-      var refEl = document.getElementById('quran-inline-reference');
-      var searchBtn = document.getElementById('quran-search-btn');
-      uthmaniEl.innerHTML = '<span class="text-secondary">⏳ جاري البحث...</span>';
-      refEl.textContent = '';
-      resultDiv.classList.remove('is-hidden');
-      document.getElementById('quran-inline-translation').classList.add('is-hidden');
-      document.getElementById('quran-inline-lang').value = '';
-      if (searchBtn) { searchBtn.disabled = true; searchBtn.textContent = '⏳ جاري البحث...'; }
-      var _abortCtrl = new AbortController();
-      var _timeout = setTimeout(function(){ _abortCtrl.abort(); }, 30000);
-      try {
-        var res = await fetch('/api/quran', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: input, language: 'تدقيق الايات' }),
-          signal: _abortCtrl.signal
-        });
-        var data = await res.json();
-        if (data.error) {
-          uthmaniEl.innerHTML = '<span class="text-secondary">' + data.error.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</span>';
-          return;
-        }
-        var seg = data.matched_segment || '';
-        var refMatch = seg.match(/【([^】]+)】/);
-        var verseText = seg.replace(/\s*【[^】]+】\s*$/, '').replace(/^\(/, '').replace(/\)$/, '');
-        var reference = refMatch ? refMatch[1] : '';
-        _quranInlineVerse = verseText;
-        _quranInlineRef = reference;
-        uthmaniEl.textContent = verseText;
-        refEl.textContent = reference ? '[' + reference + ']' : '';
-      } catch (err) {
-        var msg = err.name === 'AbortError' ? 'انتهى وقت الانتظار — حاول مرة أخرى' : 'حدث خطأ أثناء البحث — تأكد من الاتصال';
-        uthmaniEl.innerHTML = '<span class="text-secondary">' + msg + '</span>';
-      } finally {
-        clearTimeout(_timeout);
-        if (searchBtn) { searchBtn.disabled = false; searchBtn.textContent = 'بحث وتدقيق'; }
-      }
+    function _qEsc(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    function _qParseSegment(seg) {
+      var refMatch = seg.match(/【([^】]+)】/);
+      var verseText = seg.replace(/\s*【[^】]+】\s*$/, '').replace(/^\(/, '').replace(/\)$/, '');
+      var reference = refMatch ? refMatch[1] : '';
+      return { verseText: verseText, reference: reference };
     }
 
-    let _quranInlineTransText = '';
-    let _quranInlineTransRef = '';
-
-    async function translateQuranInline() {
-      var lang = document.getElementById('quran-inline-lang').value;
-      if (!lang || !_quranInlineQuery) return;
-      var resultDiv = document.getElementById('quran-inline-translation');
-      var textEl = document.getElementById('quran-inline-trans-text');
-      var refEl = document.getElementById('quran-inline-trans-ref');
-      var actionsEl = document.getElementById('quran-inline-trans-actions');
-      textEl.innerHTML = '<span class="text-secondary">⏳ جاري الترجمة...</span>';
-      if (refEl) refEl.style.display = 'none';
-      if (actionsEl) actionsEl.style.display = 'none';
-      resultDiv.classList.remove('is-hidden');
-      var _abortCtrl = new AbortController();
-      var _timeout = setTimeout(function(){ _abortCtrl.abort(); }, 30000);
-      try {
-        var res = await fetch('/api/quran', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: _quranInlineQuery, language: lang }),
-          signal: _abortCtrl.signal
-        });
-        var data = await res.json();
-        if (data.error) {
-          textEl.innerHTML = '<span class="text-secondary">' + data.error.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</span>';
-          return;
-        }
-        var seg = data.matched_segment || '';
-        var refMatch = seg.match(/【([^】]+)】/);
-        var transText = seg.replace(/\s*【[^】]+】\s*$/, '').replace(/^\(/, '').replace(/\)$/, '');
-        var transRef = refMatch ? refMatch[1] : '';
-        _quranInlineTransText = transText;
-        _quranInlineTransRef = transRef;
-        textEl.textContent = transText;
-        if (refEl && transRef) { refEl.textContent = '[' + transRef + ']'; refEl.style.display = ''; }
-        if (actionsEl) actionsEl.style.display = '';
-      } catch (err) {
-        var msg = err.name === 'AbortError' ? 'انتهى وقت الانتظار' : 'حدث خطأ في الترجمة';
-        textEl.innerHTML = '<span class="text-secondary">' + msg + '</span>';
-      } finally { clearTimeout(_timeout); }
+    function _qLangOptions() {
+      return '<option value="">— اختر لغة —</option>'
+        + '<option value="english">English</option>'
+        + '<option value="french">Français</option>'
+        + '<option value="turkish">Türkçe</option>'
+        + '<option value="persian">فارسی</option>'
+        + '<option value="russian">Русский</option>'
+        + '<option value="spanish">Español</option>'
+        + '<option value="german">Deutsch</option>'
+        + '<option value="indonesian">Indonesia</option>'
+        + '<option value="malay">Melayu</option>'
+        + '<option value="bengali">বাংলা</option>'
+        + '<option value="bosnian">Bosanski</option>'
+        + '<option value="portuguese">Português</option>'
+        + '<option value="uzbek">O\'zbek</option>';
     }
 
-    function copyQuranInlineResult() {
-      var text = (_quranInlineVerse || '') + (_quranInlineRef ? ' [' + _quranInlineRef + ']' : '');
-      if (!text.trim()) return;
-      navigator.clipboard.writeText(text).then(function() {
-        if (typeof showToast === 'function') showToast('✓ تم نسخ النص المدقق');
-      });
-    }
-
-    function copyQuranInlineTranslation() {
-      var text = (_quranInlineTransText || '') + (_quranInlineTransRef ? ' [' + _quranInlineTransRef + ']' : '');
-      if (!text.trim()) return;
-      navigator.clipboard.writeText(text).then(function() {
-        if (typeof showToast === 'function') showToast('✓ تم نسخ الترجمة');
-      });
-    }
-
-    function _replaceQueryInEditor(newText, ref) {
+    function _qReplaceInEditor(newText, ref) {
       var editor = document.getElementById('editor-container');
       if (!editor) return false;
       var plain = editor.textContent || '';
@@ -1530,70 +1412,153 @@
       var idx = plain.indexOf(query);
       if (idx === -1) return false;
       if (typeof pushUndoState === 'function') pushUndoState();
-      var esc = function(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
       var before = plain.substring(0, idx);
       var after = plain.substring(idx + query.length);
-      var refHTML = ref ? ' <span class="quran-ref-inline">[' + esc(ref) + ']</span>' : '';
-      editor.innerHTML = esc(before) +
+      var refHTML = ref ? ' <span class="quran-ref-inline">[' + _qEsc(ref) + ']</span>' : '';
+      editor.innerHTML = _qEsc(before) +
         '<span class="quran-applied" contenteditable="false" data-quran="true">' +
-        esc(newText) + refHTML + '</span>' + esc(after);
+        _qEsc(newText) + refHTML + '</span>' + _qEsc(after);
       editor.focus();
       editor.dispatchEvent(new Event('input', { bubbles: true }));
       return true;
     }
 
-    function applyQuranInlineResult() {
-      if (!_quranInlineVerse) return;
-      var editor = document.getElementById('editor-container');
-      if (!editor) return;
-      // Try to replace original query text in editor
-      if (_quranInlineQuery && _replaceQueryInEditor(_quranInlineVerse, _quranInlineRef)) {
-        switchTab('write');
-        if (typeof showToast === 'function') showToast('✓ تم استبدال النص بالنص القرآني المدقق');
-      } else {
-        // Fallback: append if original text not found in editor
-        if (typeof pushUndoState === 'function') pushUndoState();
-        var esc = function(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
-        var refHTML = _quranInlineRef ? ' <span class="quran-ref-inline">[' + esc(_quranInlineRef) + ']</span>' : '';
-        var existing = editor.innerHTML;
-        editor.innerHTML = existing + (existing ? '<br>' : '') +
-          '<span class="quran-applied" contenteditable="false" data-quran="true">' +
-          esc(_quranInlineVerse) + refHTML + '</span>';
-        editor.dispatchEvent(new Event('input', { bubbles: true }));
-        switchTab('write');
-        if (typeof showToast === 'function') showToast('✓ تم إضافة النص القرآني في المحرر');
-      }
-    }
+    function _qRenderInlineCards(matches) {
+      var list = document.getElementById('quran-inline-match-list');
+      list.innerHTML = '';
+      matches.forEach(function(m, i) {
+        var p = _qParseSegment(m.matched_segment || '');
+        var card = document.createElement('div');
+        card.className = 'quran-inline-match-card';
+        card.innerHTML = '<div class="flex items-center justify-between mb-3">'
+          + '<div class="text-sm font-bold" style="color:#06b6d4;">✓ نتيجة ' + (i + 1) + '</div>'
+          + '<div class="flex items-center gap-2">'
+          + '<button class="quran-copy-btn qic-copy" type="button" title="نسخ">📋</button>'
+          + '<button class="quran-apply-btn qic-apply" type="button">تطبيق في المحرر ✓</button>'
+          + '</div></div>'
+          + '<p class="quran-uthmani" style="font-size:24px;line-height:2.2;text-align:center;" dir="rtl">' + _qEsc(p.verseText) + '</p>'
+          + '<p class="quran-reference text-center mt-2">' + (p.reference ? '[' + _qEsc(p.reference) + ']' : '') + '</p>'
+          + '<div class="mt-4 pt-4" style="border-top:1px solid var(--color-border);">'
+          + '<div class="flex items-center gap-3 mb-3 flex-wrap">'
+          + '<span class="text-sm font-bold">ترجمة الآية</span>'
+          + '<select class="quran-lang-select qic-lang">' + _qLangOptions() + '</select>'
+          + '</div>'
+          + '<div class="qic-trans-section is-hidden p-4 rounded-xl" style="background:rgba(6,182,212,0.06);border:1px solid rgba(6,182,212,0.15);">'
+          + '<p class="qic-trans-text" style="font-size:18px;line-height:2;color:var(--color-text-primary);text-align:center;"></p>'
+          + '<div class="flex items-center justify-center gap-2 mt-3">'
+          + '<button class="quran-copy-btn qic-copy-trans" type="button" title="نسخ الترجمة">📋 نسخ</button>'
+          + '<button class="quran-apply-btn qic-apply-trans" type="button">تطبيق الترجمة ✓</button>'
+          + '</div></div></div>';
 
-    function applyQuranInlineTranslation() {
-      if (!_quranInlineTransText) return;
-      var editor = document.getElementById('editor-container');
-      if (!editor) return;
-      if (_quranInlineQuery) {
-        var plain = editor.textContent || '';
-        var idx = plain.indexOf(_quranInlineQuery);
-        if (idx !== -1) {
+        card.querySelector('.qic-copy').addEventListener('click', function() {
+          var txt = p.verseText + (p.reference ? ' [' + p.reference + ']' : '');
+          navigator.clipboard.writeText(txt).then(function() { if (typeof showToast === 'function') showToast('✓ تم النسخ'); });
+        });
+
+        card.querySelector('.qic-apply').addEventListener('click', function() {
+          if (_qReplaceInEditor(p.verseText, p.reference)) {
+            switchTab('write');
+            if (typeof showToast === 'function') showToast('✓ تم استبدال النص بالنص القرآني المدقق');
+          } else {
+            var editor = document.getElementById('editor-container');
+            if (!editor) return;
+            if (typeof pushUndoState === 'function') pushUndoState();
+            var refHTML = p.reference ? ' <span class="quran-ref-inline">[' + _qEsc(p.reference) + ']</span>' : '';
+            var existing = editor.innerHTML;
+            editor.innerHTML = existing + (existing ? '<br>' : '') +
+              '<span class="quran-applied" contenteditable="false" data-quran="true">' +
+              _qEsc(p.verseText) + refHTML + '</span>';
+            editor.dispatchEvent(new Event('input', { bubbles: true }));
+            switchTab('write');
+            if (typeof showToast === 'function') showToast('✓ تم إضافة النص القرآني في المحرر');
+          }
+        });
+
+        var langSel = card.querySelector('.qic-lang');
+        var transSec = card.querySelector('.qic-trans-section');
+        var transP = card.querySelector('.qic-trans-text');
+        var copyTransBtn = card.querySelector('.qic-copy-trans');
+        var applyTransBtn = card.querySelector('.qic-apply-trans');
+
+        langSel.addEventListener('change', async function() {
+          var lang = langSel.value;
+          if (!lang || !_quranInlineQuery) return;
+          transSec.classList.remove('is-hidden');
+          transP.innerHTML = '<span class="text-secondary">⏳ جاري الترجمة...</span>';
+          var ctrl = new AbortController();
+          var tmo = setTimeout(function(){ ctrl.abort(); }, 30000);
+          try {
+            var res = await fetch('/api/quran', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ text: _quranInlineQuery, language: lang }),
+              signal: ctrl.signal
+            });
+            var data = await res.json();
+            if (data.error) { transP.innerHTML = '<span class="text-secondary">' + _qEsc(data.error) + '</span>'; return; }
+            var seg = data.matched_segment || '';
+            var tp = _qParseSegment(seg);
+            transP.textContent = tp.verseText;
+          } catch (err) {
+            transP.innerHTML = '<span class="text-secondary">' + (err.name === 'AbortError' ? 'انتهى وقت الانتظار' : 'حدث خطأ في الترجمة') + '</span>';
+          } finally { clearTimeout(tmo); }
+        });
+
+        copyTransBtn.addEventListener('click', function() {
+          navigator.clipboard.writeText(transP.textContent || '').then(function() {
+            if (typeof showToast === 'function') showToast('✓ تم نسخ الترجمة');
+          });
+        });
+
+        applyTransBtn.addEventListener('click', function() {
+          var txt = transP.textContent || '';
+          if (!txt) return;
+          var editor = document.getElementById('editor-container');
+          if (!editor) return;
           if (typeof pushUndoState === 'function') pushUndoState();
-          var esc = function(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
-          var before = plain.substring(0, idx);
-          var after = plain.substring(idx + _quranInlineQuery.length);
-          var refHTML = _quranInlineTransRef ? ' <span class="quran-ref-inline">[' + esc(_quranInlineTransRef) + ']</span>' : '';
-          editor.innerHTML = esc(before) + esc(_quranInlineTransText) + refHTML + esc(after);
-          editor.focus();
+          var existing = editor.innerHTML;
+          editor.innerHTML = existing + (existing ? '<br>' : '') + _qEsc(txt);
           editor.dispatchEvent(new Event('input', { bubbles: true }));
           switchTab('write');
           if (typeof showToast === 'function') showToast('✓ تم تطبيق الترجمة في المحرر');
+        });
+
+        list.appendChild(card);
+      });
+    }
+
+    async function searchQuranStandalone() {
+      var input = document.getElementById('quran-input').value.trim();
+      if (!input) { if (typeof showToast === 'function') showToast('الرجاء كتابة نص قرآني أولاً', 'warning'); return; }
+      _quranInlineQuery = input;
+      var resultDiv = document.getElementById('quran-inline-result');
+      var matchList = document.getElementById('quran-inline-match-list');
+      var searchBtn = document.getElementById('quran-search-btn');
+      matchList.innerHTML = '<p class="text-secondary text-center" style="padding:1rem;">⏳ جاري البحث...</p>';
+      resultDiv.classList.remove('is-hidden');
+      if (searchBtn) { searchBtn.disabled = true; searchBtn.textContent = '⏳ جاري البحث...'; }
+      var _abortCtrl = new AbortController();
+      var _timeout = setTimeout(function(){ _abortCtrl.abort(); }, 30000);
+      try {
+        var res = await fetch('/api/quran', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: input, language: 'تدقيق الايات', top_n: 5 }),
+          signal: _abortCtrl.signal
+        });
+        var data = await res.json();
+        if (data.error) {
+          matchList.innerHTML = '<p class="text-secondary text-center" style="padding:1rem;">' + _qEsc(data.error) + '</p>';
           return;
         }
+        var matches = data.matches || [data];
+        _qRenderInlineCards(matches);
+      } catch (err) {
+        var msg = err.name === 'AbortError' ? 'انتهى وقت الانتظار — حاول مرة أخرى' : 'حدث خطأ أثناء البحث — تأكد من الاتصال';
+        matchList.innerHTML = '<p class="text-secondary text-center" style="padding:1rem;">' + msg + '</p>';
+      } finally {
+        clearTimeout(_timeout);
+        if (searchBtn) { searchBtn.disabled = false; searchBtn.textContent = 'بحث وتدقيق'; }
       }
-      // Fallback: append
-      if (typeof pushUndoState === 'function') pushUndoState();
-      var esc2 = function(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
-      var existing = editor.innerHTML;
-      editor.innerHTML = existing + (existing ? '<br>' : '') + esc2(_quranInlineTransText);
-      editor.dispatchEvent(new Event('input', { bubbles: true }));
-      switchTab('write');
-      if (typeof showToast === 'function') showToast('✓ تم إضافة الترجمة في المحرر');
     }
     let _dialectResult = '';
     let _dialectInput = '';
