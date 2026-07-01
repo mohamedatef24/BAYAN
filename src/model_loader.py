@@ -7,16 +7,14 @@ import os
 import logging
 from pathlib import Path
 import json
-import pickle
 import difflib
 import torch
 import importlib.util
 from transformers import (
-    MBartForConditionalGeneration, 
-    AutoTokenizer, 
+    MBartForConditionalGeneration,
+    AutoTokenizer,
     AutoConfig,
     AutoModelForSeq2SeqLM,
-    AutoModelForCausalLM,
     EncoderDecoderModel,
     BertConfig,
     EncoderDecoderConfig
@@ -33,7 +31,6 @@ MODEL_BASE_PATH = Path(__file__).parent.parent / "models"
 SUMMARIZATION_PATH = MODEL_BASE_PATH / "Summarization" / "Model"
 SPELLING_PATH = MODEL_BASE_PATH / "Spelling" / "Model"
 AUTOCOMPLETE_PATH = MODEL_BASE_PATH / "Autocomplete" / "Model"
-GRAMMAR_PATH = MODEL_BASE_PATH / "Grammrar" / "Model"
 PUNCTUATION_PATH = MODEL_BASE_PATH / "Punctuation" / "Model"
 
 
@@ -91,43 +88,29 @@ class SummarizationModel:
         logger.info(f"Model path validated: {self.model_path}")
     
     def _fix_generation_config(self):
-        """Fix generation_config.json and config.json if early_stopping is None/null."""
+        """Check generation configs for early_stopping=None and log a warning.
+        In-memory fix is applied after loading at line ~177."""
         if self._is_remote_source:
             return
 
-        gen_config_path = self.model_path / "generation_config.json"
         config_path = self.model_path / "config.json"
-        
+        gen_config_path = self.model_path / "generation_config.json"
+
         try:
-            # Fix config.json first (this is the main issue)
             if config_path.exists():
                 with open(config_path, 'r', encoding='utf-8') as f:
                     config = json.load(f)
-                
-                # Check if early_stopping exists in config and is None
                 if 'early_stopping' in config and config['early_stopping'] is None:
-                    logger.info("Fixing early_stopping in config.json (was None)")
-                    config['early_stopping'] = True
-                    with open(config_path, 'w', encoding='utf-8') as f:
-                        json.dump(config, f, indent=2, ensure_ascii=False)
-                    logger.info("Fixed config.json - set early_stopping to True")
-            
-            # Fix generation_config.json
+                    logger.info("early_stopping is None in config.json — will fix in-memory after load")
+
             if gen_config_path.exists():
                 with open(gen_config_path, 'r', encoding='utf-8') as f:
                     gen_config = json.load(f)
-                
-                # Fix early_stopping if it's None/null
                 if gen_config.get('early_stopping') is None:
-                    logger.info("Fixing early_stopping in generation_config.json (was None)")
-                    gen_config['early_stopping'] = True
-                    with open(gen_config_path, 'w', encoding='utf-8') as f:
-                        json.dump(gen_config, f, indent=2, ensure_ascii=False)
-                    logger.info("Fixed generation_config.json - set early_stopping to True")
-        
+                    logger.info("early_stopping is None in generation_config.json — will fix in-memory after load")
+
         except Exception as e:
-            logger.warning(f"Could not fix generation config files: {str(e)}")
-            # Continue anyway, we'll try to load with workaround
+            logger.warning(f"Could not read generation config files: {str(e)}")
     
     def _load_model(self):
         """Load the model and tokenizer."""
@@ -145,14 +128,14 @@ class SummarizationModel:
             try:
                 self.tokenizer = AutoTokenizer.from_pretrained(
                     self.model_source,
-                    local_files_only=True,
+                    local_files_only=not self._is_remote_source,
                     trust_remote_code=False
                 )
                 logger.info("Tokenizer loaded successfully")
             except Exception as e:
-                logger.error(f"Failed to load tokenizer: {str(e)}")
-                # Try without local_files_only as fallback
-                logger.info("Retrying tokenizer load without local_files_only...")
+                if not self._is_remote_source:
+                    logger.error(f"Failed to load tokenizer: {str(e)}")
+                    logger.info("Retrying tokenizer load without local_files_only...")
                 self.tokenizer = AutoTokenizer.from_pretrained(
                     self.model_source,
                     trust_remote_code=False
@@ -169,7 +152,7 @@ class SummarizationModel:
             try:
                 config = AutoConfig.from_pretrained(
                     self.model_source,
-                    local_files_only=True,
+                    local_files_only=not self._is_remote_source,
                     trust_remote_code=False
                 )
                 
@@ -384,20 +367,27 @@ class SummarizationModel:
 
 class SpellingModel:
     """Wrapper class for the Arabic spelling correction model."""
-    
+
     def __init__(self, model_path=None):
         """
         Initialize the spelling model.
-        
+
         Args:
             model_path: Path to the model directory (defaults to SPELLING_PATH)
         """
         self.model_path = Path(model_path) if model_path else SPELLING_PATH
         self.model = None
         self.device = None
-        
+
         self._validate_path()
         self._load_model()
+
+    def __del__(self):
+        if self.model is not None:
+            del self.model
+            self.model = None
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
     
     def _validate_path(self):
         """Validate that the model path exists."""
@@ -464,7 +454,7 @@ class SpellingModel:
             # Load state dict
             pt_file = list(self.model_path.glob("*.pt"))[0]
             logger.info(f"Loading weights from {pt_file}...")
-            checkpoint = torch.load(pt_file, map_location=self.device)
+            checkpoint = torch.load(pt_file, map_location=self.device, weights_only=True)
             
             if "model_state_dict" in checkpoint:
                 state_dict = checkpoint["model_state_dict"]
@@ -657,161 +647,13 @@ class AutocompleteModel:
             raise RuntimeError(f"Autocomplete prediction failed: {str(e)}")
 
 
-class GrammarModel:
-    """Wrapper class for the Arabic grammar correction model."""
-    
-    def __init__(self, model_path=None):
-        """
-        Initialize the grammar model.
-        
-        Args:
-            model_path: Path to the model directory (defaults to GRAMMAR_PATH)
-        """
-        self.model_path = Path(model_path) if model_path else GRAMMAR_PATH
-        self.model = None
-        self.tokenizer = None
-        self.device = None
-        
-        self._validate_path()
-        self._load_model()
-    
-    def _validate_path(self):
-        """Validate that the model path exists and contains required files."""
-        if not self.model_path.exists():
-            raise FileNotFoundError(f"Model path does not exist: {self.model_path}")
-        
-        required_files = ['config.json', 'tokenizer.json', 'model.safetensors']
-        missing_files = [f for f in required_files if not (self.model_path / f).exists()]
-        
-        if missing_files:
-            raise FileNotFoundError(f"Missing required files: {', '.join(missing_files)}")
-        
-        logger.info(f"Grammar model path validated: {self.model_path}")
-    
-    def _load_model(self):
-        """Load the grammar model and tokenizer."""
-        try:
-            # Force CPU-only to avoid GPU OOM / system freezes
-            self.device = torch.device('cpu')
-            logger.info("Loading grammar model on CPU (GPU disabled by design)...")
-            
-            self.tokenizer = AutoTokenizer.from_pretrained(
-                str(self.model_path),
-                local_files_only=True
-            )
-            
-            self.model = AutoModelForCausalLM.from_pretrained(
-                str(self.model_path),
-                local_files_only=True,
-                trust_remote_code=True,
-                torch_dtype=torch.float32  # safe default for CPU inference
-            )
-            
-            self.model.to(self.device)
-            self.model.eval()
-            
-            logger.info("Grammar model loaded successfully")
-        except Exception as e:
-            logger.error(f"Error loading grammar model: {str(e)}")
-            raise RuntimeError(f"Failed to load grammar model: {str(e)}")
-    
-    def correct(self, text):
-        """
-        Correct grammar in Arabic text with a timeout.
-        
-        Args:
-            text: Input Arabic text
-            
-        Returns:
-            str: Grammar-corrected text
-        """
-        if self.model is None or self.tokenizer is None:
-            raise RuntimeError("Model not loaded")
-        
-        import threading
-        result = [text]  # default to original
-        error = [None]
-        
-        def _generate():
-            try:
-                # Use Gemma 3 chat template — pass text only (model is GEC-trained)
-                messages = [{"role": "user", "content": text}]
-                prompt = self.tokenizer.apply_chat_template(
-                    messages,
-                    tokenize=False,
-                    add_generation_prompt=True,
-                )
-                
-                inputs = self.tokenizer(
-                    prompt,
-                    max_length=256,
-                    truncation=True,
-                    padding=True,
-                    return_tensors="pt",
-                    add_special_tokens=False,
-                )
-                
-                inputs = {k: v.to(self.device) for k, v in inputs.items()}
-                input_length = inputs['input_ids'].shape[1]
-                
-                with torch.no_grad():
-                    outputs = self.model.generate(
-                        **inputs,
-                        max_new_tokens=64,   # enough for corrected sentence
-                        do_sample=False,
-                    )
-                
-                # Decode only the NEW tokens (skip the prompt)
-                new_tokens = outputs[0][input_length:]
-                corrected = self.tokenizer.decode(new_tokens, skip_special_tokens=True).strip()
-                
-                # If model returned empty or nonsense, keep original
-                if not corrected or len(corrected) < 2:
-                    return
-                
-                # Reject generic instruction phrases (model fallback, not actual correction)
-                generic_phrases = (
-                    "أعد كتابتها", "أعد كتابته", "أعد كتابتها.", "أعد كتابته.",
-                    "اعيد كتابتها", "اعيد كتابته", "أعد كتابة", "اعيد كتابة",
-                    "أعد كتابتها فقط", "أعد كتابته فقط",
-                )
-                corrected_lower = corrected.strip()
-                for phrase in generic_phrases:
-                    if phrase in corrected_lower or corrected_lower.startswith(phrase):
-                        return
-                
-                # Take only the first non-empty line as the corrected sentence
-                corrected_lines = [l.strip() for l in corrected.split('\n') if l.strip()]
-                if corrected_lines:
-                    first = corrected_lines[0]
-                    if first and len(first) >= 2 and first not in generic_phrases:
-                        result[0] = first
-            except Exception as e:
-                error[0] = e
-        
-        # Run generation in a thread with a 30s timeout
-        thread = threading.Thread(target=_generate)
-        thread.start()
-        thread.join(timeout=30)
-        
-        if thread.is_alive():
-            logger.warning("[Grammar] Timed out after 30s — returning original text")
-            return text
-        
-        if error[0]:
-            logger.error(f"Error during grammar correction: {str(error[0])}")
-            logger.warning("Returning original text due to grammar error.")
-        
-        return result[0]
-
-
 class PunctuationModel:
     """Wrapper class for the Arabic punctuation model."""
-    
+
     def __init__(self, model_path=None):
         """
         Initialize the punctuation model.
-        
+
         Args:
             model_path: Path to the model directory (defaults to PUNCTUATION_PATH)
         """
@@ -819,9 +661,19 @@ class PunctuationModel:
         self.model = None
         self.tokenizer = None
         self.device = None
-        
+
         self._validate_path()
         self._load_model()
+
+    def __del__(self):
+        if self.model is not None:
+            del self.model
+            self.model = None
+        if self.tokenizer is not None:
+            del self.tokenizer
+            self.tokenizer = None
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
     
     def _validate_path(self):
         """Validate that the model path exists and contains required files."""

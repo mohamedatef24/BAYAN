@@ -55,6 +55,13 @@ document.addEventListener('DOMContentLoaded', () => {
    */
   let analyzedText = '';
 
+  const _dismissedWords = new Set(
+    JSON.parse(localStorage.getItem('bayan_dismissed_words') || '[]')
+  );
+  function _saveDismissedWords() {
+    try { localStorage.setItem('bayan_dismissed_words', JSON.stringify([..._dismissedWords])); } catch {}
+  }
+
   /**
    * MED-2: Whether the analysis results are stale.
    * Set to true when the user edits the textarea after analysis.
@@ -251,7 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
       btnApplyAll.classList.add('is-hidden');
       if (analyzedText) {
         suggestionsSection.classList.remove('is-hidden');
-        suggestionsList.innerHTML = '<div class="bayan-empty-state"><svg class="bayan-empty-state-icon" width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><p class="bayan-empty-state-text">نصك ممتاز! لم نجد أي أخطاء</p></div>';
+        suggestionsList.innerHTML = '<div class="bayan-empty-state"><svg class="bayan-empty-state-icon" width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><p class="bayan-empty-state-title">نصك ممتاز!</p><p class="bayan-empty-state-desc">لم نجد أي أخطاء — أحسنت! ✨</p></div>';
       } else {
         suggestionsSection.classList.add('is-hidden');
       }
@@ -279,7 +286,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!suggestion) return;
 
         if (altText === suggestion.original) {
-          // Dismiss — remove from list, no text change, no rebase needed
+          // Dismiss — remove from list, add to permanent whitelist
+          _dismissedWords.add(suggestion.original);
+          _saveDismissedWords();
           currentSuggestions = removeSuggestion(currentSuggestions, suggestion.id);
         } else {
           // ═══════════════════════════════════════════════════
@@ -304,9 +313,13 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
 
-    // Show apply-all with count
-    btnApplyAll.textContent = 'تطبيق الكل (' + suggestions.length.toLocaleString('ar-EG') + ')';
-    btnApplyAll.classList.remove('is-hidden');
+    // Show apply-all only when more than 1 suggestion
+    if (suggestions.length > 1) {
+      btnApplyAll.textContent = 'تطبيق الكل (' + suggestions.length.toLocaleString('ar-EG') + ')';
+      btnApplyAll.classList.remove('is-hidden');
+    } else {
+      btnApplyAll.classList.add('is-hidden');
+    }
   }
 
   // ══════════════════════════════════════════════════════════
@@ -349,7 +362,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await bayanAnalyze(text);
 
       if (data.status === 'success' || data.status === 'partial') {
-        const suggestions = sortSuggestions(data.suggestions || []);
+        const suggestions = sortSuggestions(data.suggestions || []).filter(
+          s => !_dismissedWords.has(s.original)
+        );
         currentSuggestions = suggestions;
 
         // MED-2: Snapshot the analyzed text — all offsets reference THIS string

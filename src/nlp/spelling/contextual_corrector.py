@@ -12,6 +12,7 @@
 import logging
 import torch
 import threading
+from collections import OrderedDict
 from typing import List, Tuple, Optional, Dict
 
 logger = logging.getLogger(__name__)
@@ -19,7 +20,7 @@ logger = logging.getLogger(__name__)
 # Singleton instance
 _instance = None
 _loading = False
-_lock = threading.Lock()
+_lock = threading.RLock()
 
 
 class ContextualCorrector:
@@ -44,7 +45,7 @@ class ContextualCorrector:
         self.model.eval()
 
         # Simple cache for scores
-        self._cache: Dict[str, float] = {}
+        self._cache: OrderedDict[str, float] = OrderedDict()
         self._cache_max = 5000
 
         # Vocab for candidate filtering
@@ -63,8 +64,9 @@ class ContextualCorrector:
         Returns:
             Probability score (0.0 to 1.0) — higher = better fit
         """
-        cache_key = f"{text[:200]}|{len(text)}|{position}|{word}"
+        cache_key = f"{hash(text)}|{position}|{word}"
         if cache_key in self._cache:
+            self._cache.move_to_end(cache_key)
             return self._cache[cache_key]
 
         words = text.split()
@@ -99,13 +101,10 @@ class ContextualCorrector:
             if not word_tokens:
                 return 0.0
 
-            if len(word_tokens) == 1:
-                score = probs[word_tokens[0]].item()
-            else:
-                score = probs[word_tokens[0]].item()
-                for t_id in word_tokens[1:]:
-                    score *= probs[t_id].item()
-                score = score ** (1.0 / len(word_tokens))
+            # Use first subword token probability only. For multi-subword
+            # words, the single [MASK] distribution only predicts the first
+            # subword — multiplying unrelated token probs is nonsensical.
+            score = probs[word_tokens[0]].item()
 
         except Exception as e:
             logger.warning(f"[MLM] Score error for '{word}': {e}")
@@ -113,10 +112,8 @@ class ContextualCorrector:
 
         # Cache management
         if len(self._cache) >= self._cache_max:
-            # Remove oldest 20% of entries
-            keys_to_remove = list(self._cache.keys())[:self._cache_max // 5]
-            for k in keys_to_remove:
-                del self._cache[k]
+            for _ in range(self._cache_max // 5):
+                self._cache.popitem(last=False)
         self._cache[cache_key] = score
 
         return score
@@ -175,8 +172,8 @@ class ContextualCorrector:
             if corr_score > confidence_threshold:
                 continue
 
-            # Score the original word in the corrected context
-            orig_score = self.score_word_in_context(corrected_text, i, orig_w)
+            # Score the original word in its own context (not contaminated by other corrections)
+            orig_score = self.score_word_in_context(original_text, i, orig_w)
 
             # If original scores better, revert
             if orig_score > corr_score * 10 and orig_score > 0.01:
@@ -271,9 +268,6 @@ class ContextualCorrector:
         if not a or not b:
             return 0.0
         max_len = max(len(a), len(b))
-        if max_len == 0:
-            return 1.0
-        # Inline Levenshtein to avoid extra dependency
         m, n = len(a), len(b)
         dp = list(range(n + 1))
         for i in range(1, m + 1):
