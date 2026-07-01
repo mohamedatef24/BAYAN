@@ -94,6 +94,8 @@ class StageLocker:
         req_priority = STAGE_PRIORITY.get(requesting_stage, 0)
         for ls, le, owner in self.locked_spans:
             if start < le and end > ls:
+                if owner == 'protection':
+                    return True
                 owner_priority = STAGE_PRIORITY.get(owner, 0)
                 if owner_priority >= req_priority:
                     if PIPELINE_DEBUG:
@@ -161,6 +163,8 @@ class StageLocker:
         req_priority = STAGE_PRIORITY.get(requesting_stage, 0)
         for ls, le, owner in self.locked_spans:
             if start < le and end > ls:
+                if owner == 'protection':
+                    return (ls, le, owner)
                 owner_priority = STAGE_PRIORITY.get(owner, 0)
                 if owner_priority >= req_priority:
                     return (ls, le, owner)

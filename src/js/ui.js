@@ -26,7 +26,9 @@ function updateWritingScore(spelling, grammar, punctuation) {
   const hintEl = document.getElementById('score-hint');
 
   if (valueEl) {
-    valueEl.textContent = score > 0 || (spelling + grammar + punctuation) > 0
+    const editorText = typeof getEditorText === 'function' ? getEditorText() : '';
+    const hasText = editorText.trim().length > 0;
+    valueEl.textContent = (hasText || (spelling + grammar + punctuation) > 0)
       ? score.toLocaleString('ar-EG')
       : '--';
   }
@@ -38,7 +40,11 @@ function updateWritingScore(spelling, grammar, punctuation) {
 
   if (hintEl) {
     const total = spelling + grammar + punctuation;
-    if (total === 0) {
+    const editorText = typeof getEditorText === 'function' ? getEditorText() : '';
+    const hasText = editorText.trim().length > 0;
+    if (total === 0 && hasText) {
+      hintEl.textContent = 'كتابة ممتازة! استمر.';
+    } else if (total === 0) {
       hintEl.innerHTML = 'ابدأ الكتابة لرؤية تقييمك<br><span class="text-xs">تحسين القواعد يرفع التقييم</span>';
     } else if (score >= 90) {
       hintEl.textContent = 'كتابة ممتازة! استمر.';

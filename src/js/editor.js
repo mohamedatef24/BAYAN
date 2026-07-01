@@ -300,7 +300,7 @@ async function analyzeText() {
 
     const data = await response.json();
 
-    if (data.status !== 'success' || !data.suggestions) {
+    if ((data.status !== 'success' && data.status !== 'partial') || !data.suggestions) {
       renderWithoutSuggestions(text);
       return;
     }

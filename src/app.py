@@ -46,12 +46,10 @@ from model_loader import (
     SummarizationModel,
     SpellingModel,
     AutocompleteModel,
-    GrammarModel,
     PunctuationModel,
     SUMMARIZATION_PATH,
     SPELLING_PATH,
     AUTOCOMPLETE_PATH,
-    GRAMMAR_PATH,
     PUNCTUATION_PATH
 )
 
@@ -754,24 +752,34 @@ class OffsetMapper:
         inverted range (start > end) due to non-monotonic edits,
         the end is clamped to max(new_start, new_end).
         """
-        new_start = self._forward_map_pos(start_in_before)
-        new_end = self._forward_map_pos(end_in_before)
+        new_start = self._forward_map_pos(start_in_before, is_end=False)
+        new_end = self._forward_map_pos(end_in_before, is_end=True)
         # Monotonicity guard: prevent inverted ranges
         new_end = max(new_start, new_end)
         return new_start, new_end
 
-    def _forward_map_pos(self, pos):
+    def _forward_map_pos(self, pos, is_end=False):
         """Map a single position text_before → text_after. PRIVATE."""
+        matches = []
         for i1, i2, j1, j2 in self._opcodes:
             if i1 <= pos <= i2:
-                if i2 == i1:
-                    return j1
+                matches.append((i1, i2, j1, j2))
+                
+        if not matches:
+            if self._opcodes:
+                last = self._opcodes[-1]
+                return last[3] + (pos - last[1])
+            return pos
+
+        mapped = []
+        for i1, i2, j1, j2 in matches:
+            if i2 == i1: # insertion in text_after
+                mapped.append(j2 if is_end else j1)
+            else:
                 ratio = (pos - i1) / (i2 - i1)
-                return int(j1 + ratio * (j2 - j1))
-        if self._opcodes:
-            last = self._opcodes[-1]
-            return last[3] + (pos - last[1])
-        return pos
+                mapped.append(round(j1 + ratio * (j2 - j1)))
+
+        return max(mapped) if is_end else min(mapped)
 
 
 
@@ -1521,7 +1529,7 @@ def quran_verify():
         if not logger_quran_ok:
             return jsonify({'error': 'Quran search module not available'}), 503
 
-        data = request.get_json(force=True)
+        data = request.get_json()
         text = data.get('text', '').strip()
         language = data.get('language', 'تدقيق الايات').strip()
 
@@ -2226,8 +2234,10 @@ def analyze_text():
             # Replace structured content with Arabic placeholder tokens
             if _structured_placeholders:
                 _structured_placeholders.sort(key=lambda x: x[0], reverse=True)
+                import uuid as _uuid_struct
+                _ph_prefix = _uuid_struct.uuid4().hex[:8]
                 for _sp_idx, (_sp_start, _sp_end, _sp_text) in enumerate(_structured_placeholders):
-                    _grammar_input_text = _grammar_input_text[:_sp_start] + f'بيان{_sp_idx}' + _grammar_input_text[_sp_end:]
+                    _grammar_input_text = _grammar_input_text[:_sp_start] + f'ـ{_ph_prefix}{_sp_idx}ـ' + _grammar_input_text[_sp_end:]
                 logger.info(f"[ANALYZE] Protected {len(_structured_placeholders)} structured elements")
 
         # 2. Grammar (runs on spelling-corrected text — word-level dependency)
@@ -2249,7 +2259,7 @@ def analyze_text():
             # FIX-03: Restore structured content in grammar output
             if _structured_placeholders:
                 for _sp_idx, (_sp_start, _sp_end, _sp_text) in enumerate(_structured_placeholders):
-                    corrected_grammar = corrected_grammar.replace(f'بيان{_sp_idx}', _sp_text)
+                    corrected_grammar = corrected_grammar.replace(f'ـ{_ph_prefix}{_sp_idx}ـ', _sp_text)
 
             if corrected_grammar != ctx.current_text:
                 diffs = get_word_diffs(ctx.current_text, corrected_grammar)
@@ -2504,19 +2514,6 @@ def analyze_text():
                             )
                             continue
 
-                    # ── FIX-27a: Grammar structured data protection ──
-                    # Block grammar diffs where the original contains digits.
-                    # The grammar model corrupts dates/numbers/times/percentages.
-                    # e.g., '2026-06-22' → 'عشرين 26-06-22ا'
-                    if orig_text and any(c.isdigit() for c in orig_text):
-                        logger.info(
-                            f"[GRAMMAR] Blocked digit-containing diff: "
-                            f"'{orig_text}'\u2192'{corr_text}'"
-                        )
-                        logger.info(f'[FILTER-TEL] {_tel_json.dumps({"event":"filter_reject","filter":"DigitGuard","original":orig_text[:80],"correction":corr_text[:80]})}')
-                        _tel_events.append({"event":"filter_reject","filter":"DigitGuard","original":orig_text[:80],"correction":corr_text[:80]})
-                        continue
-
                     # ── FIX-27b: Grammar hallucination guard (Jaccard) ──
                     # Block grammar diffs where the correction is too different
                     # from the original (character-level Jaccard < 0.5).
@@ -2575,10 +2572,13 @@ def analyze_text():
                     # FIX-22: Protect tanween (preserve ً ٌ ٍ from original)
                     _TANWEEN_CHARS = set('ًٌٍ')
                     if any(c in _TANWEEN_CHARS for c in orig_text) and not any(c in _TANWEEN_CHARS for c in corr_text):
-                        # Grammar stripped tanween — reattach it
+                        # Grammar stripped tanween — reattach before trailing punctuation
                         for _tc in _TANWEEN_CHARS:
                             if _tc in orig_text and _tc not in corr_text:
-                                corr_text = corr_text + _tc
+                                _tn_punct_idx = len(corr_text)
+                                while _tn_punct_idx > 0 and corr_text[_tn_punct_idx - 1] in '.،؛؟!?!':
+                                    _tn_punct_idx -= 1
+                                corr_text = corr_text[:_tn_punct_idx] + _tc + corr_text[_tn_punct_idx:]
                                 d['correction'] = corr_text
                                 break
 
@@ -2609,14 +2609,25 @@ def analyze_text():
                     logger.info(
                         f"[GRAMMAR] Bracket-unbalanced output detected: "
                         f"orig=({orig_opens},{orig_closes}), corr=({corr_opens},{corr_closes}). "
-                        f"Using individually-accepted diffs only."
+                        f"Rejecting all grammar diffs."
                     )
+                    _grammar_accepted_diffs = []
                 if _grammar_accepted_diffs:
                     # FIX-04: Rebuild grammar text from ACCEPTED diffs only,
                     # not the full model output. Prevents phantom corrections.
+                    # Remove intra-stage overlaps: keep higher-start diff on conflict
+                    _grammar_accepted_diffs.sort(key=lambda x: x['start'])
+                    _non_overlapping = []
+                    for _ad in _grammar_accepted_diffs:
+                        if _non_overlapping and _ad['start'] < _non_overlapping[-1]['end']:
+                            logger.info(
+                                f"[GRAMMAR] Dropped overlapping diff [{_ad['start']}:{_ad['end']}] "
+                                f"(overlaps [{_non_overlapping[-1]['start']}:{_non_overlapping[-1]['end']}])"
+                            )
+                            continue
+                        _non_overlapping.append(_ad)
                     _safe_grammar = ctx.current_text
-                    # Apply accepted diffs in reverse order to build safe text
-                    for _ad in sorted(_grammar_accepted_diffs, key=lambda x: x['start'], reverse=True):
+                    for _ad in reversed(_non_overlapping):
                         _safe_grammar = (_safe_grammar[:_ad['start']] +
                                         _ad['correction'] +
                                         _safe_grammar[_ad['end']:])
@@ -2630,8 +2641,6 @@ def analyze_text():
 
         # 3. Punctuation (runs on grammar-corrected text — PuncAra-v1 local model)
         # FIX-07: Skip punctuation for religious text
-        # FIX-51: Skip punctuation when spelling+grammar found no errors (clean text)
-        _has_real_corrections = any(p.stage in ('spelling', 'grammar') for p in ctx.patches.patches)
         if not _skip_all_stages:
           try:
             t0 = time.time()
