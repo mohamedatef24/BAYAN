@@ -600,7 +600,7 @@ document.addEventListener('DOMContentLoaded', () => {
       + '<option value="bengali">বাংলা</option>'
       + '<option value="bosnian">Bosanski</option>'
       + '<option value="portuguese">Português</option>'
-      + ‘<option value="uzbek">O&#x2019;zbek</option>’;
+      + '<option value="uzbek">O&#x2019;zbek</option>';
   }
 
   function _renderMatchCards(matches) {
