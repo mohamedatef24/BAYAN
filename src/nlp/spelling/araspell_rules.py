@@ -684,8 +684,7 @@ class VocabularyManager:
         return not self.is_iv(word)
     
     def get_frequency_rank(self, word: str) -> int:
-        clean = re.sub(r'[^\w]', '', word)
-        return self.vocab_rank.get(clean, 999999)
+        return 999999
     
     def all_words_iv(self, text: str) -> bool:
         words = text.split()

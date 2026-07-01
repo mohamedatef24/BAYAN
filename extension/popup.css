@@ -1093,6 +1093,22 @@ body::-webkit-scrollbar-thumb {
   color: var(--text-color);
 }
 
+.bayan-quran-match-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.bayan-quran-match-card {
+  background: var(--color-surface);
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  border-radius: var(--bayan-radius);
+  padding: 14px;
+  animation: fadeSlideIn 300ms ease-out;
+}
+
 /* ══════════════════════════════════════════════
    Utilities
    ══════════════════════════════════════════════ */
