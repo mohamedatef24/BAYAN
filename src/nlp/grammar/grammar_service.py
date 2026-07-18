@@ -21,7 +21,15 @@ _load_error = None
 _lock = threading.Lock()
 
 GRADIO_SPACE = "mohammedahmedezz2004/bayan_arabic_grammarly_correction"
-HF_TOKEN = os.environ.get("HF_TOKEN", "").strip() or None
+
+# Read HF_TOKEN and ensure it's set in the environment so gradio_client picks it up
+# automatically (works across all gradio_client versions)
+_hf_token = os.environ.get("HF_TOKEN", "").strip()
+if _hf_token:
+    os.environ["HF_TOKEN"] = _hf_token
+    logger.info("HF_TOKEN found — Gradio Client will use authenticated requests")
+else:
+    logger.warning("HF_TOKEN not set — Gradio Client will send unauthenticated requests (lower rate limits)")
 
 
 class GrammarChecker:
@@ -156,6 +164,7 @@ def get_grammar_model():
             logger.info("Loading Grammar model (lazy init)...")
 
             # 1. Initialize Gradio Client — with retry for rate limiting / sleeping Spaces
+            # HF_TOKEN is already set in the environment (module-level) so Client picks it up automatically
             from gradio_client import Client
             client = None
             max_retries = 3
@@ -163,13 +172,8 @@ def get_grammar_model():
 
             for attempt in range(1, max_retries + 1):
                 try:
-                    if HF_TOKEN:
-                        logger.info(f"Connecting to Gradio Space: {GRADIO_SPACE} with HF token (attempt {attempt}/{max_retries})")
-                        client = Client(GRADIO_SPACE, hf_token=HF_TOKEN)
-                    else:
-                        logger.warning("HF_TOKEN not set — sending unauthenticated requests (lower rate limits)")
-                        logger.info(f"Connecting to Gradio Space: {GRADIO_SPACE} WITHOUT token (attempt {attempt}/{max_retries})")
-                        client = Client(GRADIO_SPACE)
+                    logger.info(f"Connecting to Gradio Space: {GRADIO_SPACE} (attempt {attempt}/{max_retries})")
+                    client = Client(GRADIO_SPACE)
                     logger.info("Gradio Client connected")
                     break
                 except Exception as conn_err:
