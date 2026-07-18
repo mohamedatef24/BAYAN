@@ -9,6 +9,7 @@ Model + rules loaded on first request and kept in memory.
 """
 
 import logging
+import os
 import time
 import threading
 
@@ -20,6 +21,7 @@ _load_error = None
 _lock = threading.Lock()
 
 GRADIO_SPACE = "mohammedahmedezz2004/bayan_arabic_grammarly_correction"
+HF_TOKEN = os.environ.get("HF_TOKEN", "").strip() or None
 
 
 class GrammarChecker:
@@ -161,8 +163,13 @@ def get_grammar_model():
 
             for attempt in range(1, max_retries + 1):
                 try:
-                    logger.info(f"Connecting to Gradio Space: {GRADIO_SPACE} (attempt {attempt}/{max_retries})")
-                    client = Client(GRADIO_SPACE)
+                    if HF_TOKEN:
+                        logger.info(f"Connecting to Gradio Space: {GRADIO_SPACE} with HF token (attempt {attempt}/{max_retries})")
+                        client = Client(GRADIO_SPACE, hf_token=HF_TOKEN)
+                    else:
+                        logger.warning("HF_TOKEN not set — sending unauthenticated requests (lower rate limits)")
+                        logger.info(f"Connecting to Gradio Space: {GRADIO_SPACE} WITHOUT token (attempt {attempt}/{max_retries})")
+                        client = Client(GRADIO_SPACE)
                     logger.info("Gradio Client connected")
                     break
                 except Exception as conn_err:
