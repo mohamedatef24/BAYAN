@@ -136,6 +136,78 @@ class GrammarChecker:
             return text
 
 
+def _wake_sleeping_space(space_id: str, timeout: int = 120, poll_interval: int = 5):
+    """
+    Check if a HF Space is sleeping and wake it up before connecting.
+
+    Free cpu-basic Spaces sleep after 48h of inactivity.  The Gradio Client
+    can't fetch the config while the container is booting, so we proactively
+    wake it and wait until the runtime stage becomes RUNNING.
+
+    Args:
+        space_id: The HuggingFace Space ID (e.g. "user/space-name").
+        timeout:  Maximum seconds to wait for the Space to wake up.
+        poll_interval: Seconds between status polls.
+    """
+    try:
+        import requests as _requests
+
+        hf_token = os.environ.get("HF_TOKEN", "").strip()
+        headers = {}
+        if hf_token:
+            headers["Authorization"] = f"Bearer {hf_token}"
+
+        api_url = f"https://huggingface.co/api/spaces/{space_id}"
+
+        # Check current runtime stage
+        resp = _requests.get(api_url, headers=headers, timeout=15)
+        resp.raise_for_status()
+        info = resp.json()
+        stage = info.get("runtime", {}).get("stage", "UNKNOWN")
+        logger.info(f"Space '{space_id}' runtime stage: {stage}")
+
+        if stage == "RUNNING":
+            return  # Already running, nothing to do
+
+        if stage in ("SLEEPING", "PAUSED", "STOPPED"):
+            # Hit the Space URL to trigger a wake-up
+            host = info.get("host", f"https://{space_id.replace('/', '-')}.hf.space")
+            logger.info(f"Space is {stage} — sending wake-up request to {host}")
+            try:
+                _requests.get(host, headers=headers, timeout=10)
+            except Exception:
+                pass  # The request itself may timeout; that's fine — it triggers the wake
+
+            # Poll until RUNNING or timeout
+            start = time.time()
+            while time.time() - start < timeout:
+                time.sleep(poll_interval)
+                try:
+                    resp = _requests.get(api_url, headers=headers, timeout=15)
+                    resp.raise_for_status()
+                    stage = resp.json().get("runtime", {}).get("stage", "UNKNOWN")
+                    logger.info(f"Space '{space_id}' stage: {stage} (waited {time.time() - start:.0f}s)")
+                    if stage == "RUNNING":
+                        logger.info(f"Space '{space_id}' is now RUNNING")
+                        return
+                    if stage in ("BUILD_ERROR", "RUNTIME_ERROR", "CONFIG_ERROR"):
+                        logger.error(f"Space '{space_id}' entered error stage: {stage}")
+                        return  # Let the Gradio Client handle the error
+                except Exception as poll_err:
+                    logger.warning(f"Error polling Space status: {poll_err}")
+
+            logger.warning(
+                f"Space '{space_id}' did not reach RUNNING within {timeout}s "
+                f"(last stage: {stage}). Proceeding anyway..."
+            )
+        else:
+            logger.info(f"Space stage is '{stage}' — proceeding with Gradio Client connection")
+
+    except Exception as e:
+        # Non-critical: if we can't check/wake, fall through to normal Gradio retry logic
+        logger.warning(f"Could not check/wake Space '{space_id}': {e}")
+
+
 def get_grammar_model():
     """
     Lazy-load the grammar model on first call.
@@ -163,11 +235,14 @@ def get_grammar_model():
             t0 = time.time()
             logger.info("Loading Grammar model (lazy init)...")
 
-            # 1. Initialize Gradio Client — with retry for rate limiting / sleeping Spaces
+            # 1. Wake the Space if it is sleeping (free cpu-basic Spaces sleep after 48h)
+            _wake_sleeping_space(GRADIO_SPACE)
+
+            # 2. Initialize Gradio Client — with retry for cold-start / rate limiting
             # HF_TOKEN is already set in the environment (module-level) so Client picks it up automatically
             from gradio_client import Client
             client = None
-            max_retries = 3
+            max_retries = 5
             last_err = None
 
             for attempt in range(1, max_retries + 1):
@@ -181,10 +256,11 @@ def get_grammar_model():
                     err_msg = str(conn_err).lower()
                     is_retryable = any(kw in err_msg for kw in [
                         'too many requests', 'rate limit', '429',
-                        'timeout', 'connection', 'sleeping'
+                        'timeout', 'connection', 'sleeping',
+                        'could not fetch config',
                     ])
                     if is_retryable and attempt < max_retries:
-                        wait = 2 ** attempt  # 2s, 4s, 8s
+                        wait = min(10 * attempt, 30)  # 10s, 20s, 30s, 30s
                         logger.warning(
                             f"Gradio connection attempt {attempt} failed ({conn_err}). "
                             f"Retrying in {wait}s..."
@@ -196,13 +272,13 @@ def get_grammar_model():
             if client is None:
                 raise RuntimeError(f"Gradio connection failed after {max_retries} attempts: {last_err}")
 
-            # 2. Initialize rule-based post-processor (camel-tools)
+            # 3. Initialize rule-based post-processor (camel-tools)
             logger.info("Loading ArabicGrammarGuard (camel-tools MLE disambiguator)...")
             from nlp.grammar.grammar_rules import ArabicGrammarGuard
             rules = ArabicGrammarGuard()
             logger.info("ArabicGrammarGuard loaded")
 
-            # 3. Create GrammarChecker instance
+            # 4. Create GrammarChecker instance
             _grammar_checker = GrammarChecker(client, rules)
 
             elapsed = time.time() - t0
@@ -215,11 +291,11 @@ def get_grammar_model():
             logger.error(f"Failed to load grammar model: {e}")
             logger.error(traceback.format_exc())
 
-            # Transient errors (rate limiting, network) should NOT be cached —
+            # Transient errors (rate limiting, network, sleeping) should NOT be cached —
             # allow retry on next request
             transient_keywords = ['Too many requests', 'rate limit', 'timeout',
                                   'ConnectionError', 'ConnectTimeout', 'ReadTimeout',
-                                  '429', 'sleeping']
+                                  '429', 'sleeping', 'could not fetch config']
             is_transient = any(kw.lower() in error_msg.lower() for kw in transient_keywords)
 
             if is_transient:
